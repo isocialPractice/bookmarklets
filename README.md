@@ -12,10 +12,11 @@ In short a bookmarklet is saved as a browser bookmark, but in
 lieu of URL is condensed JavaScript. When on a page select the
 bookmark (<em>best to have bookmarklets on bookmark bar</em>) where
 the bookmarklet was saved. This will then change the current page in
-the browser according to the bookmarkets JavaScript. Below is a 
+the browser according to the bookmarket's JavaScript. Below are two 
 blank canvas bookmarklet ready to copy/paste: <br>
-<strong>NOTE</strong> - ENSURE FINAL JS IS CONDENSED (<em>one line little spacing</em>):
+<strong>IMPORTANT</strong> - Ensure final JS is condensed (<em>one line little space</em>):
 
+<strong>JS Formatted:</strong>
 ```markdown
 javascript:(function(){ 
 /*
@@ -26,6 +27,12 @@ javascript:(function(){
   Make new bookmark in browser
   Name then paste final condensed JS in lieu of URL
 */ })();
+```
+<br>
+
+<strong>Condensed Ready:</strong>
+```markdown
+javascript:(function() {  })();
 ```
 
 ## Navigation Sidebar Bookmarklets
