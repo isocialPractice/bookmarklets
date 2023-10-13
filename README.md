@@ -6,7 +6,8 @@ to copy and paste. The root of the repo contains the bookmarklets
 ready to use. In the folder JSFormatted are the bookmarklets as 
 uncondensed JavaScript.
 
-<em>ctrl + click</em> for more info on [Browser Bookmarklets](https://subsimple.com/bookmarklets/index.php).
+<em>ctrl + click</em> for more info on [Browser Bookmarklets](https://subsimple.com/bookmarklets/index.php). <br>
+<em>ctrl + click</em> for more info on [Making Bookmarklets](https://gist.github.com/caseywatts/c0cec1f89ccdb8b469b1).
 
 In short a bookmarklet is saved as a browser bookmark, but in 
 lieu of URL is condensed JavaScript. When on a page select the
