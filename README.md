@@ -29,20 +29,24 @@ javascript:(function(){
   Name then paste final condensed JS in lieu of URL
 */ })();
 ```
-<br>
 
 <strong>Condensed Ready:</strong>
 ```markdown
 javascript:(function() {  })();
 ```
 
-## Navigation Sidebar Bookmarklets
+<br><hr>
+
+# Navigation Sidebar Bookmarklets
 The below bookmarklets are for pages withe a side nav with many links.
 Copy and paste (<em>making any needed adjustments</em>) to use.
 
-### Highlight Current Page:
+## Highlight Current Page:
 If a page has side navigation that doesn't hightlight the current page
-then use this bookmarklet:
+then use this bookmarklet: <br>
+
+### USE - AS IS
+
 <details>
 
 <summary>nav_Sidebar_HighlightCurrentPage.js</summary>
@@ -56,9 +60,24 @@ javascript:(function(){var styleBackground="white";/*<<--CHANGE*/var styleColor=
 
 </details>
 
-## Site Specific Bookmarklets:
-### ChatGPT - Bookmark a specific response
+<br><hr>
+
+# Site Specific Bookmarklets:
+The below bookmarklets will only work when used on the website specified.
+
+## ChatGPT - Bookmark a specific response
 Bookmark ChatGPT response as basic text or HTML. Change variable textOut to 1 for text and 0 for HTML.
+If any error, escape quotes and special characters in text and repaste. <br>
+
+### USE - STEPS 
+<strong>Required \(x1\)</strong><br>
+ 1. Paste response from clipboard in lieu of "PASTE_RESPONSE". 
+ 
+<strong>Optional \(x2\)</strong> 
+ 1. Change "DEFAULT_TITLE" 
+ 2. Change ``textOut`` variable \(<em>i.e. HTML not parsing right</em>\). <br>
+
+<strong>NOTE</strong> - two spaces in pasted text will add line break.
 <details>
 
 <summary>siteSpecific_chatGPT_BookmarkResponse.js</summary>
@@ -67,12 +86,15 @@ Bookmark ChatGPT response as basic text or HTML. Change variable textOut to 1 fo
 Gist page for [siteSpecific_chatGPT_BookmarkResponse.js](https://gist.github.com/jhauga/328eccd84d072664c68bf2079fd11bab)
 
 ```markdown
-javascript:(function(){var textOut=0;var rawText="PASTE_RESPONSE";var htmlOut;if(textOut==1){htmlOut=0;}else{htmlOut=1;}var styleEl="<style>p, ol, ul { +  max-width: 90%; } p {  line-height: 18pt;  font-size: 16pt; } ol, ul {  margin: 10px 3px; } ul {  list-style: disc; } li {  margin: 3px 0;  font-size: 14pt; } div div, pre div {  background:black;  color:white;  max-width: 800px;  margin:0 10px;  overflow:auto } div pre {  padding-left:10px }</style>";let onWord=0;var splitMarks="--__EDjr1DZD--split--EDjr1DZD__--";var makeMarks=function(splitChar){if(splitChar==undefined){splitChar="";}rawText=rawText.replace(/\n/g,"\\n");rawText=rawText.replace(/```[^```]*```|&lt;[^&]*&gt;|\;/g,function(match){if(match===";"){return";\n";}return match;});rawText=rawText.replace(/([0-9]+)/g,"  $1");rawText=rawText.replace(/(\w[:'"`])\.([A-Z])/g,"$1. $2");rawText=rawText.replace(/(```)*([{](?![a-zA-Z]))/g,"$1$2 \n");rawText=rawText.replace(/(```)*([}](?![ }]))/g,"$1 \n $2 \n");let checkEx=1;let onoff=0;while(checkEx==1){if(rawText.indexOf("```")>-1){checkEx=1;if(onoff==0){if(textOut==1){rawText=rawText.replace("``` ","```");rawText=rawText.replace(" ```","```");rawText=rawText.replace("```","<hr><div><code>");}else{rawText=rawText.replace("``` ","```");rawText=rawText.replace(" ```","```");rawText=rawText.replace("```","<hr><div><pre><code>");}onoff=1;}else{if(textOut==1){rawText=rawText.replace("``` ","```");rawText=rawText.replace(" ```","```");rawText=rawText.replace("```","</code></div><hr>");}else{rawText=rawText.replace("``` ","```");rawText=rawText.replace(" ```","```");rawText=rawText.replace("```","</code></pre></div><hr>");}onoff=0;}}else{checkEx=0;}}rawText=rawText.replace(/ {2,}([0-9]+)/g,splitChar+"\n\n$1 ");rawText=rawText.replace(/ {2,}(-)/g,splitChar+"\n$1");rawText=rawText.replace(/: {2,}/g,splitChar+"\n");rawText=rawText.replace(/ {2,}/g,"__"+splitChar+"__"+" \n\n");let tempSplitWord=new RegExp("__"+splitChar+"__","g");let extractCodeText=rawText.substring(rawText.indexOf("<code>")+6,rawText.lastIndexOf("</code>")-7);let tempText=extractCodeText.replace(tempSplitWord,"");tempText=tempText.replace(/\*\*/g,"");rawText=rawText.replace(extractCodeText,tempText);if(htmlOut==1){rawText=rawText.replace(/\\n/g,splitMarks+"--NEW-LINE");rawText=rawText.replace(/\n/g,"<br>");let splitMarkNewLine=new RegExp(splitMarks+"--NEW-LINE","g");rawText=rawText.replace(splitMarkNewLine,"\\n");rawText=rawText.replace(/\*\*/g," ** ");}};var checkNest=function(){if(liHTML==1){nestedList=1;}};var checkState=function(swOne,swTwo,htmlOne,htmlTwo){checkNest();outText+=htmlOne+htmlTwo;};var parseHTML=function(cw){outText+=cw+" ";};let setMaxWords=25,count=1;let outText="";if(textOut==1){outText="<pre>";makeMarks(splitMarks);}else{outText="<div>";makeMarks(splitMarks);}let rawTextArr=rawText.split(" ");for(i in rawTextArr){if(textOut==1){if(rawTextArr[i].indexOf("\n")>-1){count=1;}if(count>=setMaxWords){outText+="\n"+rawTextArr[i]+" ";count=1;}else{outText+=rawTextArr[i]+" ";count+=1;}if(i==rawTextArr.length-1){outText+=rawTextArr[i]+"</pre>";}}else{parseHTML(rawTextArr[i]);if(rawTextArr[i].indexOf("<br>")>-1){count=1;}if(count>=setMaxWords){outText+="<br>";count=1;}else{count+=1;}if(i==rawTextArr.length-1){outText+=rawTextArr[i]+"</div>";}}}if(textOut==1){let splitReg=new RegExp("__"+splitMarks+"__","g");outText=outText.replace(splitReg,"");let splitRegII=new RegExp(splitMarks,"g");outText=outText.replace(splitRegII,"");}else{let splitReg=new RegExp("__"+splitMarks+"__","g");outText=outText.replace(splitReg,"<br>");let splitRegII=new RegExp(splitMarks,"g");outText=outText.replace(splitRegII,"");outText=outText.replace(/\*\* <br>/g,"</strong><br>");outText=outText.replace(/ \*\* :/g,"</strong>: ");outText=outText.replace(/\*\* /g,"<strong>");outText=outText.replace(/\.([A-Z])/g,". $1");}document.write(styleEl+outText);})();
+javascript:(function(){var rawText="PASTE_RESPONSE";var textOut=0;var changeTitle="DEFAULT_TITLE";var htmlOut;if(textOut==1){htmlOut=0;}else{htmlOut=1;}var styleEl="<style>p, ol, ul { +  max-width: 90%; } p {  line-height: 18pt;  font-size: 16pt; } ol, ul {  margin: 10px 3px; } ul {  list-style: disc; } li {  margin: 3px 0;  font-size: 14pt; } div div, pre div {  background:black;  color:white;  max-width: 800px;  margin:0 10px;  overflow:auto } div pre {  padding-left:10px }</style>";let onWord=0;var makeMarks=function(){rawText=rawText.replace(/\n/g,"\\n");rawText=rawText.replace(/(([0-9]+)\.)/g,"  $1");rawText=rawText.replace(/(\w[:'"`])\.([A-Z])/g,"$1. $2");rawText=rawText.replace(/```((html)|(css)|(javascript)|(python)|(java)|(c\+\+)|(c#)|(ruby)|(php)|(sql)|(bash)|(json)|(xml)|(typescript)|(swift)|(go)|(rust)|(perl)|(powershell)|(shell script)|(docker)|(git)|(rest api)|(node.js)|(react)|(angular)|(vue.js)|(express.js)|(django)|(flask)|(ruby on rails)|(spring boot)|(database)|(file handling)|(error handling)|(loop)|(function)|(class)|(interface)|(unit test)|(event handling)|(dom manipulation)|(regular expression)|(configuration)|(authentication)|(authorization)|(networking)|(file upload)|(data retrieval)|(sorting)|(batch)|(recursion)|(sorting algorithms)|(data structures)|(linked list)|(tree traversal)|(graph algorithms)|(algorithm optimization)|(memory management)|(multithreading)|(parallel computing)|(asynchronous programming)|(object-oriented programming)|(design patterns)|(dependency injection)|(code refactoring)|(unit testing framework)|(code analysis)|(performance profiling)|(garbage collection)|(virtualization)|(api integration)|(websockets)|(regular expression)|(functional programming)|(code comments)|(network configuration)|(firewall setup)|(dns configuration)|(vpn configuration)|(cybersecurity)|(cloud computing)|(virtual private cloud \(vpc\))|(database management)|(data backup)|(server administration)|(system monitoring)|(containerization)|(devops)|(load balancing)|(infrastructure as code)|(data migration)|(incident response)|(network security)|(it compliance)|(cloud services)|(software deployment)|(it documentation)|(backup and recovery)|(disaster recovery)|(it policies and procedures)|(batch file basics)|(batch file variables)|(if statements)|(conditional[s])|(for loop[s])|(while loop[s])|(file and folder operations)|(environment variables)|(batch file input)|(batch file output)|(user account management)|(registry editing)|(task scheduling)|(windows services)|(error handling)|(text file processing)|(string manipulation)|(batch file functions)|(windows event logs)|(network configuration)|(powershell scripting)|(windows security policies)|(active directory operations)|(windows script host)|(windows management instrumentation \(wmi\))|(remote desktop connection)|(windows command prompt tips)|(mac and linux command line titles:)|(basic command line navigation)|(file and directory operations)|(text file processing)|(permissions and ownership)|(process management)|(package management \(apt, yum, brew\))|(scripting with bash)|(command substitution)|(shell script debugging)|(regular expressions in the command line)|(input and output redirection)|(pipes and filters)|(environment variables)|(shell script functions)|(cron jobs and scheduling)|(ssh and remote access)|(file compression and archiving)|(system monitoring \(top, ps\))|(networking and ip configuration)|(system updates and upgrades)|(disk space management)|(file system analysis)|(text processing with awk)|(version control \(git\))|(container management \(docker\))|(boolean)|(variable)|(function)|(switch)|(object)|(variable[s])|(array[s])|(function[s])|(class[s])|(object[s])|(method[s])|(loop[s])|(conditional[s])|(string[s])|(integer[s])|(float[s])|(boolean[s])|(pointer[s])|(enumeration[s])|(inheritance[s])|(interface[s])|(exception[s])|(module[s])|(library[s])|(package[s])|(import[s])|(return[s])|(parameter[s])|(operator[s])|(assignment[s])|(declaration[s])|(data type[s])|(statement[s])|(comment[s])|(syntax[s])|(expression[s])|(recursion[s])|(constructor[s])|(destructor[s])|(collection[s])|(hash table[s])|(linked list[s])|(queue[s])|(stack[s])|(dictionary[s])|(set[s])|(tuple[s])|(lambda[s])|(callback[s])|(closure[s])|(event[s])|(thread[s])|(mutex[s])|(semaphore[s])|(singleton[s]))/g,"%60%60%60");rawText=rawText.replace(/(%60%60%60)*((\{(?![a-zA-Z]))|(\[)|(\()) {1,}/g,"$1$2\n  ");rawText=rawText.replace(/(%60%60%60)*(( {1,}\})|( {1,}\])|( {1,}\)))/g,"$1$2 \n  ");rawText=rawText.replace(/(((?!%60)(&lt;\/[a-zA-Z]+&gt;)|(&lt;[a-zA-Z]+&gt;)(?!%60)))/g,"$1<br>");rawText=rawText.replace(/(?!\()(\$[a-zA-Z]+)/g,"<br>$1");let checkEx=1;let onoff=0;while(checkEx==1){if(rawText.indexOf("**")>-1){if(onoff==0){rawText=rawText.replace("**","<strong>");onoff=1;}else{rawText=rawText.replace("**","</strong>: ");onoff=0;}}else{checkEx=0;}}checkEx=1;onoff=0;while(checkEx==1){if(rawText.indexOf("%60%60%60")>-1){checkEx=1;if(onoff==0){if(textOut==1){rawText=rawText.replace("%60%60%60 ","%60%60%60");rawText=rawText.replace(" %60%60%60","%60%60%60");rawText=rawText.replace("%60%60%60","<hr><div><code>");}else{rawText=rawText.replace("%60%60%60 ","%60%60%60");rawText=rawText.replace(" %60%60%60","%60%60%60");rawText=rawText.replace("%60%60%60","<hr><div><pre><code>");}onoff=1;}else{if(textOut==1){rawText=rawText.replace("%60%60%60 ","%60%60%60");rawText=rawText.replace(" %60%60%60","%60%60%60");rawText=rawText.replace("%60%60%60","</code></div><hr>");}else{rawText=rawText.replace("%60%60%60 ","%60%60%60");rawText=rawText.replace(" %60%60%60","%60%60%60");rawText=rawText.replace("%60%60%60","</code></pre></div><hr>");}onoff=0;}}else{checkEx=0;}}rawText=rawText.replace(/ {2,}([0-9]+)/g,"\n\n$1 ");rawText=rawText.replace(/ {2,}(-)/g,"\n$1");rawText=rawText.replace(/: {2,}/g,"\n");rawText=rawText.replace(/ {2,}/g," \n\n");if(htmlOut==1){rawText=rawText.replace(/\\n/g,"<br>");rawText=rawText.replace(/\n/g,"<br>");}};var checkNest=function(){if(liHTML==1){nestedList=1;}};var checkState=function(swOne,swTwo,htmlOne,htmlTwo){checkNest();outText+=htmlOne+htmlTwo;};let setMaxWords=25,count=1;var parseHTML=function(cw,curCount){outText+=cw+" ";count=curCount;};let outText="";if(changeTitle=="DEFAULT_TITLE"){outText="<h1>ChatGPT Bookmarklet Response</h1><hr>";}else{outText="<h1>"+changeTitle+"</h1><hr>";}if(textOut==1){outText+="<pre>";makeMarks();}else{outText+="<div>";makeMarks();}let rawTextArr=rawText.split(" ");for(i in rawTextArr){if(rawTextArr[i].indexOf("\n")>-1||rawTextArr[i].indexOf("<br>")>-1){count=1;}if(textOut==1){if(count>=setMaxWords){parseHTML("\n"+rawTextArr[i],1);}else{parseHTML(rawTextArr[i],Number(count+1));}}else{if(count>=setMaxWords){parseHTML("<br>"+rawTextArr[i],1);}else{parseHTML(rawTextArr[i],Number(count+1));}}}if(textOut==1){outText+="</pre>";}else{outText+="</div>";}outText=outText.replace(/\.([A-Z])/g,". $1");document.write(styleEl+outText);})();
 ```
 </details>
 
-### ChatGPT - Resize Prompt
-Resize the ChatGPT text prompt.
+## ChatGPT - Resize Prompt
+Resize the ChatGPT text prompt. <br>
+
+### USE - AS IS
+
 <details>
 
 <summary>siteSpecific_chatGPT_ResizePrompt.js</summary>
@@ -81,7 +103,7 @@ Resize the ChatGPT text prompt.
 Gist page for [siteSpecific_chatGPT_ResizePrompt.js](https://gist.github.com/jhauga/edf8e8a842ebe8b00e1a5ff3ec24892c)
 
 ```markdown
-javascript:(function(){var promptTextarea=document.getElementById("prompt-textarea");var subButton=promptTextarea.nextElementSibling;promptTextarea.style.resize="horizontal";promptTextarea.style.padding="100px";subButton.style.right="unset";subButton.style.left="10px";subButton.style.bottom="0px";subButton.style.width="50px";subButton.style.height="50px";})();
+javascript:(function(){var promptTextarea=document.getElementById("prompt-textarea");var subButton=promptTextarea.nextElementSibling;var parElement=promptTextarea.parentElement;var grandParElement=parElement.parentElement;grandParElement.style.transform="rotateX(180deg)";grandParElement.style.overflow="auto";grandParElement.style.resize="both";grandParElement.style.minHeight="40px !important";grandParElement.style.maxHeight="775px !important";grandParElement.style.minWidth="280px !important";grandParElement.style.maxWidth="95% !important";parElement.style.display="inline-block";parElement.style.transform="rotateX(180deg)";parElement.style.minWidth="100%";parElement.style.maxWidth="100%";parElement.style.height="95%";parElement.style.minHeight="95%";promptTextarea.style.paddingRight="100px";promptTextarea.style.paddingLeft="30px";promptTextarea.style.width="100% !important";var neededStyling=document.createElement("style");neededStyling.innerHTML="textarea#prompt-textarea {   max-height: 800px !important;   min-height: 100% !important;   overflow: scroll !important;  }  form div.relative.flex.h-full.flex-1 div + div.flex.w-full.items-center {   min-height: 40px !important;   max-height: 775px !important;   min-width: 280px !important;   max-width: 95% !important;  } ";document.body.appendChild(neededStyling);})();
 ```
 
 </details>
