@@ -1,0 +1,1 @@
+javascript:(function(){var promptTextarea=document.getElementById("prompt-textarea");var subButton=promptTextarea.nextElementSibling;promptTextarea.style.resize="horizontal";promptTextarea.style.padding="100px";subButton.style.right="unset";subButton.style.left="10px";subButton.style.bottom="0px";subButton.style.width="50px";subButton.style.height="50px";})();
