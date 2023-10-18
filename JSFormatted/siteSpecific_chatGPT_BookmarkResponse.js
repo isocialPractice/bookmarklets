@@ -71,8 +71,7 @@ javascript:(function(){
   rawText = rawText.replace(/ {2,}(-)/g, "\n$1");
   rawText = rawText.replace(/: {2,}/g, "\n");
   rawText = rawText.replace(/ {2,}/g, " \n\n");
-  if (htmlOut == 1) {
-   rawText = rawText.replace(/\\n/g, "<br>");
+  if (htmlOut == 1) {   
    rawText = rawText.replace(/\n/g, "<br>");   
   }
  };
