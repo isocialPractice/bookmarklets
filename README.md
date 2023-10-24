@@ -60,6 +60,25 @@ javascript:(function(){var styleBackground="white";/*<<--CHANGE*/var styleColor=
 
 </details>
 
+## Underline Anchor Linke
+If a page has a side navigation with many anchor links, which do not underline
+when clicked use this bookmarklet: <br>
+
+### USE - AS IS
+
+<details>
+
+<summary>nav_Sidebar_UnderlineAnchorLink.js</summary>
+<br>
+
+Gist page for [nav_Sidebar_UnderlineAnchorLink.js](https://gist.github.com/jhauga/34b965a0e2a49fdf075fdf44d15306d0)
+
+```markdown
+javascript:(function(){var a=document.getElementsByTagName("a");var aLen=a.length;var oneCheck=0;for(i=0;i<a.length;i++){if(a[i].href.indexOf(location.href.substr(location.href.lastIndexOf("#")+1))>-1&&oneCheck==0){a[i].style.textDecoration="underline";oneCheck=1;}a[i].addEventListener("click",function(){if(this.href.indexOf("#")>-1){for(j=0;j<aLen;j++){if(a[j].href.indexOf("#")>-1){a[j].style.textDecoration="";}}this.style.textDecoration="underline";}});}})();
+```
+
+</details>
+
 <br><hr>
 
 # Site Specific Bookmarklets:
