@@ -1,5 +1,4 @@
 javascript: (function () {
- var update = true;
  var styleBackground = "white";/*<<-- CHANGE*/
  var styleColor = "black";/*<<-- CHANGE*/
  var pathName = location.pathname; 
