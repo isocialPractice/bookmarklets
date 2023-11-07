@@ -1,5 +1,4 @@
 javascript: (function () {
- var update = true; 
  var promptTextarea = document.getElementById("prompt-textarea");
  var subButton = promptTextarea.nextElementSibling;
  var parElement = promptTextarea.parentElement; 
