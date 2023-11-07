@@ -1,4 +1,5 @@
 javascript:(function(){ 
+ var update = true; 
  var rawText = "PASTE_RESPONSE"; 
  /* Output type switches */
  var textOut = 0; /* change to 1 for raw text output */
