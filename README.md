@@ -1,5 +1,20 @@
 # Browser Bookmarklets
 <div>
+<details>
+<summary>Document Navigation: </summary>
+
+- [Navigation Bookmarklets](#navigation-bookmarklets)
+  - [Highlight Current Page](#highlight-current-page)
+  - [Underline Anchor Linke](#underline-anchor-link)
+- [Site Specific Bookmarklets](#site-specific-bookmarklets)
+  - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response)
+  - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt)
+  - [GitHub - Alternate Row Color](#github---alternate-row-color)
+  - [GitHub - Show File Size](#github---show-file-size)
+</details>
+</div>
+
+<div>
 This is a running list of browser bookmarklets. Below each listed 
 bookmarklet is a collapsible section with the bookmarklet ready 
 to copy and paste. The root of the repo contains the bookmarklets
@@ -61,7 +76,7 @@ javascript:(function(){var styleBackground="white";/*<<--CHANGE*/var styleColor=
 </details>
 </dd></dl></dd></dl>
 
-Underline Anchor Linke
+Underline Anchor Link:
 ----
 <dl><dd><dl><dd>
 If a page has a side navigation with many anchor links, which do not underline
@@ -132,10 +147,32 @@ javascript:(function(){var promptTextarea=document.getElementById("prompt-textar
 </details>
 </dd></dl></dd></dl>
 
+GitHub - Alternate Row Color:
+----
+<dl><dd><dl><dd>
+Alternate the row colors of repo directory. Activate in repo root and file viewing. Works with:
+
+1. GitHub - Show File Size 
+
+<strong>USE - AS IS</strong>
+<details>
+
+<summary>siteSpecific_GitHub_AlternateRowColor.js</summary><br>
+
+Gist page for [siteSpecific_GitHub_AlternateRowColor.js](https://gist.github.com/jhauga/bb175713e395ac4135f21e7de11245a3)
+
+```markdown
+javascript:(function(){var color="aliceblue";/*<-- CHANGE IS OPTIONAL */var tableRow,tableRowLen,thead,curPage,curExtract,curUser,curRepo;var onRoot=0,tablePage=1,recurseIndex,runCompleted=0;var curDir=window.location.href,turnOff=0;var setGlobals=function(){curPage=location.host+location.pathname;if(curPage.indexOf("github.com")>-1){let checkRoleRow=document.querySelectorAll('div[role="row"]');if(curPage.indexOf("tree")>-1){if(checkRoleRow.length>=1){onRoot=1;tablePage=0;}else{onRoot=0;tablePage=1;}}else{if(checkRoleRow.length>=1){onRoot=1;tablePage=0;}else{onRoot=0;tablePage=1;}}if(onRoot==0&&tablePage==1){tableRow=document.getElementsByTagName("tr");tableRowLen=tableRow.length;}else{tableRow=document.querySelectorAll('div[role="row"]');tableRowLen=tableRow.length;}turnOff=0;}};var githubTableFunction=function(){if(turnOff==1){return;}recurseIndex=1;let alternateTableColor=function(){if(tableRow[recurseIndex]){tableRow[recurseIndex].style.backgroundColor=color;}};let recurseTableColor=function(){if(recurseIndex<=(tableRowLen-1)){if(recurseIndex%2==0){alternateTableColor();}recurseIndex+=1;setTimeout(recurseTableColor,10);}else{return;}};recurseTableColor();};var runBookmarklet=function(){console.log("Bookmarklet running:");setGlobals();if(turnOff==0){setTimeout(githubTableFunction,500);}else{return;}};runBookmarklet();var checkIfRunCompleted=function(){let curColorCount=0;let totalRows=tableRowLen-2;let evenOrOdd="odd",rowsChanged;if(totalRows%2==0){evenOrOdd="even";rowsChanged=Math.floor(totalRows/2);}else{rowsChanged=Math.floor((totalRows/2)-1);}for(i=0;i<tableRowLen;i++){if(tableRow[i].style.backgroundColor==color){curColorCount+=1;}}if(!curColorCount>=rowsChanged){console.log("Run did not complete. Retrying:");setTimeout(githubTableFunction,500);}else{console.log("Run completed:");runCompleted=1;}};var checkForChangeDir=function(){if(curDir!==window.location.href&&turnOff==0){curDir=window.location.href;runCompleted=0;runBookmarklet();}if(turnOff==0){setTimeout(checkForChangeDir,1000);}else{console.log("Bookmarklet did not run:");return;}};if(turnOff==0){if(runCompleted==0){runBookmarklet();}checkForChangeDir();}else{console.log("Bookmarklet is not running:");return;}})();
+```
+</details>
+</dd></dl></dd></dl>
+
 GitHub - Show File Size:
 ---- 
 <dl><dd><dl><dd>
-When viewing files in repo add a column showing file size. <br><br>
+When viewing files in repo add a column showing file size. Activate in repo root and file viewing. Works with:
+
+1. GitHub - Alternate Row Color
 
 Loosely based on [stackoverflow answer](https://stackoverflow.com/questions/38675428/list-file-sizes-in-github#answer-75526865)
 
@@ -151,6 +188,6 @@ javascript:(function(){var tableRow,tableRowLen,thead,curPage,curExtract,curUser
 ```
 </details>
 </dd></dl></dd></dl>
+
 </div>
 <hr><br>
-
