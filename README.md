@@ -1,4 +1,4 @@
-# Browser Bookmarklets
+# Browser Bookmarklets ![repo icon](!favicon.png)
 <div>
 <details>
 <summary>Document Navigation: </summary>
