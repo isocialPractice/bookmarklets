@@ -15,6 +15,14 @@
 </div>
 
 <div>
+<details>
+<summary>Video Demonstration for Ready to Use Bookmarklets</summary>
+
+![ready to use demo](support/Demo-ReadyToUse.gif)
+</details>
+</div>
+
+<div>
 This is a running list of browser bookmarklets. Below each listed 
 bookmarklet is a collapsible section with the bookmarklet ready 
 to copy and paste. The root of the repo contains the bookmarklets
