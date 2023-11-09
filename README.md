@@ -1,4 +1,4 @@
-# Browser Bookmarklets ![repo icon](!favicon.png)
+# Browser Bookmarklets ![repo icon](favicon.png)
 <div>
 <details>
 <summary>Document Navigation: </summary>
@@ -57,7 +57,7 @@ javascript:(function() {  })();
 The below bookmarklets are for pages withe a side nav with many links.
 Copy and paste (<em>making any needed adjustments</em>) to use.
 
-Highlight Current Page:
+Sidebar - Highlight Current Page:
 ----
 <dl><dd><dl><dd>
 If a page has side navigation that doesn't hightlight the current page
@@ -76,7 +76,7 @@ javascript:(function(){var styleBackground="white";/*<<--CHANGE*/var styleColor=
 </details>
 </dd></dl></dd></dl>
 
-Underline Anchor Link:
+Sidebar - Underline Anchor Link:
 ----
 <dl><dd><dl><dd>
 If a page has a side navigation with many anchor links, which do not underline
