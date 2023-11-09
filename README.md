@@ -4,13 +4,13 @@
 <summary>Document Navigation: </summary>
 
 - [Navigation Bookmarklets](#navigation-bookmarklets)
-  - [Highlight Current Page](#highlight-current-page)
-  - [Underline Anchor Linke](#underline-anchor-link)
+  - [Highlight Current Page](#sidebar---highlight-current-page) - ready to use
+  - [Underline Anchor Linke](#sidebar---underline-anchor-link) - ready to use
 - [Site Specific Bookmarklets](#site-specific-bookmarklets)
-  - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response)
-  - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt)
-  - [GitHub - Alternate Row Color](#github---alternate-row-color)
-  - [GitHub - Show File Size](#github---show-file-size)
+  - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response) - requires 1 change
+  - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - ready to use
+  - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
+  - [GitHub - Show File Size](#github---show-file-size) - ready to use
 </details>
 </div>
 
@@ -63,7 +63,7 @@ Sidebar - Highlight Current Page:
 If a page has side navigation that doesn't hightlight the current page
 then use this bookmarklet: <br><br>
 
-<strong>USE - AS IS</strong>
+<strong>USE - ready to use</strong>
 <details>
 
 <summary>nav_Sidebar_HighlightCurrentPage.js</summary><br>
@@ -82,7 +82,7 @@ Sidebar - Underline Anchor Link:
 If a page has a side navigation with many anchor links, which do not underline
 when clicked use this bookmarklet: <br><br>
 
-<strong>USE - AS IS</strong>
+<strong>USE - ready to use</strong>
 <details>
 
 <summary>nav_Sidebar_UnderlineAnchorLink.js</summary><br>
@@ -107,7 +107,7 @@ ChatGPT - Bookmark a specific response
 Bookmark ChatGPT response as basic text or HTML. Change variable textOut to 1 for text and 0 for HTML.
 If any error, escape quotes and special characters in text and repaste. <br><br>
 
-<strong>USE - STEPS </strong>
+<strong>USE - requires 1 change </strong>
 <details>
 
 <summary>siteSpecific_chatGPT_BookmarkResponse.js</summary><br>
@@ -134,7 +134,7 @@ ChatGPT - Resize Prompt
 <dl><dd><dl><dd>
 Resize the ChatGPT text prompt. <br><br>
 
-<strong>USE - AS IS</strong>
+<strong>USE - ready to use</strong>
 <details>
 
 <summary>siteSpecific_chatGPT_ResizePrompt.js</summary><br>
@@ -154,7 +154,7 @@ Alternate the row colors of repo directory. Activate in repo root and file viewi
 
 1. GitHub - Show File Size 
 
-<strong>USE - AS IS</strong>
+<strong>USE - ready to use</strong>
 <details>
 
 <summary>siteSpecific_GitHub_AlternateRowColor.js</summary><br>
@@ -176,7 +176,7 @@ When viewing files in repo add a column showing file size. Activate in repo root
 
 Loosely based on [stackoverflow answer](https://stackoverflow.com/questions/38675428/list-file-sizes-in-github#answer-75526865)
 
-<strong>USE - AS IS</strong>
+<strong>USE - ready to use</strong>
 <details>
 
 <summary>siteSpecific_GitHub_ShowFileSize.js</summary><br>
