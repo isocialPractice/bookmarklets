@@ -94,7 +94,8 @@ javascript:(function(){
  /* Use for making HTML */
  let outText = "";
  if (changeTitle == "DEFAULT_TITLE") {
-  outText = "<h1>ChatGPT Bookmarklet Response</h1><hr>";  
+  changeTitle = "ChatGPT Bookmarklet Response";
+  outText = "<h1>" + changeTitle + "</h1><hr>";
  } else {
   outText = "<h1>" + changeTitle + "</h1><hr>";  
  }
@@ -130,5 +131,5 @@ javascript:(function(){
   outText += "</div>";
  }
  outText = outText.replace(/\.([A-Z])/g, ". $1");   
- document.write(styleEl + outText);
+ document.write("<title>" + changeTitle + "</title>" + styleEl + outText);
 })();
