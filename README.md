@@ -12,6 +12,7 @@
   - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - ready to use
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
+  - [OctoPrint - Change Graph Image](#octoprint---change-graph-image)
 </details>
 </div>
 <!-- Ready to Use Demo -->
@@ -199,5 +200,46 @@ javascript:(function(){var tableRow,tableRowLen,thead,curPage,curExtract,curUser
 </details>
 </dd></dl></dd></dl>
 
+OctoPrint - Change Graph Image:
+----
+<dl><dd><dl><dd>
+Change or remove the main image displayed in the graph when using [OctoPrint](https://github.com/OctoPrint/OctoPrint). If uses as is then image is removed.
+
+<strong>IMPORTANT NOTE</strong> - this has only been tested via Unix like OS (Raspberry Pi)
+and has not been tested using OctoPrint via OctoPi OS. <br><br>
+
+<strong>USE - ready to use</strong>
+
+<strong>USE - optional 1 change(s)</strong>
+ 
+<details>
+
+<summary>siteSpecific_OctoPrint_ChangeGraphImage.js</summary><br>
+
+<strong>Optional \(x1\)</strong> 
+
+<strong>NOTE</strong> - this assumes you have access to the OS OctoPrint is installed on via ssh or a GUI.
+
+ 1. Change the ``img`` variable to the image name put in "img" folder \(<em>see text/video below for details</em>\).
+    - Starting at the user's folder navigate to ".octoprint/generated/webassets".
+    - Make a new directory called "img".
+    - Store images to use for background here.
+    
+<details>
+<summary>Video Demonstration for Optional Use</summary>
+
+![octoprint - change image demo](support/Demo-OctoPrint-ChangeImage.gif)
+
+</details>
+
+Gist page for [siteSpecific_OctoPrint_ChangeGraphImage.js](https://gist.github.com/jhauga/f853e5427458c9e065695e32e4a8ed4f)
+
+```markdown
+javascript:(function(){var img="CHANGE_IMAGE";/* NAME and EXTENSION i.e. pic.jpg */var graph=document.getElementById("temperature-graph");if(img==0||img=="CHANGE_IMAGE"||img==""||img=="0"){graph.style.background="none";}else{graph.style.background="url(/static/webassets/img/"+img+") no-repeat center";}})();
+```
+</details>
+</dd></dl></dd></dl>
+
 </div>
 <hr><br>
+
