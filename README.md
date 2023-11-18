@@ -9,6 +9,7 @@
   - [Underline Anchor Linke](#sidebar---underline-anchor-link) - ready to use
 - [Site Specific Bookmarklets](#site-specific-bookmarklets)
   - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response) - requires 1 change
+  - [ChatGPT - Paste Ready Bookmark Response](#chatgpt---paste-ready-bookmark-response)
   - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - ready to use
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
@@ -140,6 +141,25 @@ javascript:(function(){var rawText="PASTE_RESPONSE";var textOut=0;var changeTitl
 </details>
 </dd></dl></dd></dl>
 
+ChatGPT - Paste Ready Bookmark Response:
+----
+<dl><dd><dl><dd>
+Copy a ready bookmarklet to the clipboard. Once run all copied answers will be copied and ready to paste as new bookmarklet. Works with:
+
+1, ChatGPT - Resize Prompt
+
+<strong>USE - ready to use</strong>
+<details>
+
+<summary>siteSpecific_chatGPT_PasteReadyBookmarkResponse.js</summary><br>
+
+Gist page for [sed_file_name_js](https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2)
+
+```markdown
+javascript:(function(){var pageTitle="ChatGPT Bookmark";/* <-- OPTIONAL - change title */var pageHead="ChatGPT Response";/* <-- OPTIONAL - change head */var copyButton=document.getElementsByClassName("flex ml-auto gizmo:ml-0 gap-1 items-center rounded-md p-1 text-xs");var copyButtonLen=copyButton.length;for(i=0;i<copyButtonLen;i++){copyButton[i].addEventListener("click",function(){let buttonBar=this.parentElement.parentElement;let answerArea=buttonBar.previousElementSibling;let answerText=answerArea.getElementsByClassName("markdown prose w-full break-words");let copiedContent=answerText[0].innerHTML;copiedContent=copiedContent.replace(/\n/g,"");copiedContent=copiedContent.replace(/"/g,'\\"');copiedContent=copiedContent.replace(/'/g,"\\'");alert("Wait 2 seconds for content to generate as bookmarklet on clipboard. \nThen open bookmark manager and make new bookmark by pasting into url field");var bookmarklet='javascript:(function() {document.write("'+"<!DOCTYPE HTML><html><head><title>"+pageTitle+"</title>"+"<style>button {display:none;} pre {max-width: 800px;background:black; color:white;}</style>"+"</head><body><h1>"+pageHead+"</h1>"+copiedContent+"</body></html>"+'");})()';setTimeout(function(){navigator.clipboard.writeText(bookmarklet);},2000);});}})();
+```
+</details>
+</dd></dl></dd></dl>
 ChatGPT - Resize Prompt
 ----
 <dl><dd><dl><dd>
