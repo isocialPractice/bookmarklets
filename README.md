@@ -204,6 +204,7 @@ javascript:(function(){var color="aliceblue";/*<-- CHANGE IS OPTIONAL */var tabl
 GitHub - Show File Size:
 ---- 
 <dl><dd><dl><dd>
+
 When viewing files in repo add a column showing file size. Activate in repo root and file viewing. Works with:
 
 1. GitHub - Alternate Row Color
@@ -226,6 +227,7 @@ javascript:(function(){var tableRow,tableRowLen,thead,curPage,curExtract,curUser
 OctoPrint - Change Graph Image:
 ----
 <dl><dd><dl><dd>
+
 Change or remove the main image displayed in the graph when using [OctoPrint](https://github.com/OctoPrint/OctoPrint). If uses as is then image is removed.
 
 <strong>IMPORTANT NOTE</strong> - this has only been tested via Unix like OS (Raspberry Pi)
