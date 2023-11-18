@@ -164,7 +164,9 @@ javascript:(function(){var pageTitle="ChatGPT Bookmark";/* <-- OPTIONAL - change
 ChatGPT - Resize Prompt
 ----
 <dl><dd><dl><dd>
-Resize the ChatGPT text prompt. <br><br>
+Resize the ChatGPT text prompt. Works with:
+
+1. ChatGPT - Paste Ready Bookmark Response
 
 <strong>USE - ready to use</strong>
 <details>
