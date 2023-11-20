@@ -256,12 +256,10 @@ and has not been tested using OctoPrint via OctoPi OS.
     - Make a new directory called "img".
     - Store images to use for background here.
     
-<details>
-<summary>Video Demonstration for Optional Use</summary>
+<strong>Video Demonstration for Optional Use:</strong>
 
-![octoprint - change image demo](support/Demo-OctoPrint-ChangeImage.gif)
+`Ctrl + click` link to view demo on YouTube [OctoPrint - Change Graph Image Demo](https://youtu.be/Fb8SSQmgs4Y)
 
-</details>
 
 Gist page for [siteSpecific_OctoPrint_ChangeGraphImage.js](https://gist.github.com/jhauga/f853e5427458c9e065695e32e4a8ed4f)
 
