@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Bookmarklet Examples</title>
+<style>
+* {
+ font-family: sans-serif, system-ui, helvetica;
+ box-sizing: border-box;
+}
+h1 {
+ margin-left: 30px;
+}
+div.sideNav,
+div.sideNav a,
+div.sideNav h3,
+div.sideNav a[data-active="0"] {
+ background: #021;
+ color: white;
+}
+div.sideNav {
+ display: inline-block;
+ position: absolute;
+ width: 15%; 
+ min-height: 500px;
+ margin-left: 30px;
+ padding: 20px 5px;
+ top: auto;
+ border: 0px solid;
+ border-radius: 5px; 
+}
+div.sideNav a {
+ display: block;
+ padding: 10px;
+ text-decoration: none; 
+}
+div.sideNav a[data-active="1"] {
+ background: white;
+ color: #021; 
+}
+main.examples {
+ display: inline-block;
+ position: relative;
+ float: right;
+ width: 80%;
+ right: 20px;
+ margin-left: 30px;
+ min-height: 800px;
+ height: auto;
+ max-height: none;
+}
+iframe {
+ display: inline-block;
+ position: relative;
+ width: 100%;
+ height: 100%;
+}
+</style>
+<script>
+ var slide = 0;
+</script>
+</head>
+
+<body>
+
+<h1>Bookmarklets Examples</h1><hr>
+
+<div class="sideNav">
+ <h3>ChatGPT - Paste Ready Bookmark Response</h3><hr>
+ <a href="examples/chatGPT_Bookmark_Schedule.html" 
+    data-active="0"
+    target="examples"
+    onmouseover="slide = 1;"
+    onclick="sizeExample(this)">ChatGPT - Schedule</a>
+ <a href="examples/chatGPT_Bookmark_BroadwayMusical.html" 
+    data-active="0"
+    target="examples"
+    onmouseover="slide = 1;"
+    onclick="sizeExample(this)">ChatGPT - Broadway Musical</a>
+ <a href="examples/chatGPT_Bookmark_GreenMarketing.html" 
+    data-active="0"
+    target="examples"
+    onmouseover="slide = 1;"
+    onclick="sizeExample(this)">ChatGPT - Green Marketing</a>
+ <a href="examples/chatGPT_Bookmark_IntroToComputerScience.html" 
+    data-active="0"
+    target="examples"
+    onmouseover="slide = 1;"
+    onclick="sizeExample(this)">ChatGPT - Intro To Computer Science</a>
+ <a href="examples/chatGPT_Bookmark_SocialMediaMarketing.html" 
+    data-active="0"
+    target="examples"
+    onmouseover="slide = 1;"
+    onclick="sizeExample(this)">ChatGPT - Social Media Marketing</a>
+<!--    
+ RECYCLE - Copy/Paste
+ <a href="examples/chatGPT_Bookmark_CHANGE_PAGE.html" 
+    data-active="0"
+    target="examples"
+    onmouseover="slide = 1;"
+    onclick="sizeExample(this)">ChatGPT - CHANGE_TEXT</a>
+-->    
+</div>
+
+<main class="examples">
+ <iframe name="examples" id="examples" 
+  src="examples/chatGPT_Bookmark_Schedule.html"frameborder="0"></iframe>
+</main>
+
+<script>
+ var navDataActive = document.querySelectorAll("[data-active]");
+ var navDataActiveLen = navDataActive.length;
+ var example = document.getElementsByTagName("iframe")[0];
+ var exampleHasBeenClicked = 0;
+ var sizeToExample, exampleHeight;
+ 
+ // Resize iframe to fit example.
+ function sizeExample(cur) {
+  if (slide == 1) { exampleHasBeenClicked = 1; }
+  sizeToExample = setInterval(function() {
+   let exampleFrame = example.contentWindow || example.document;  
+   if (exampleFrame.contentWindow) exampleFrame = exampleFrame.contentWindow;
+   else exampleFrame = exampleFrame.document;
+   let frameBody = exampleFrame.body;  
+   if (frameBody) exampleHeight = frameBody.scrollHeight;
+   if (example.height != exampleHeight || example.height != exampleHeight+100) {
+    if (exampleHeight < 800) {
+     example.style.height = exampleHeight + 100 + "px";
+    } else {
+     example.style.height = exampleHeight + "px";
+    }
+   } else {
+    return;
+   }
+   
+  }, 100);  
+  setTimeout(function() { clearInterval(sizeToExample); }, 300);
+  let resetDataSets = function() {
+   for (i = 0; i < navDataActiveLen; i++) {
+    navDataActive[i].dataset.active = "0";
+   }
+  };  
+  resetDataSets();
+  cur.dataset.active = "1";  
+ }
+ 
+ // Play slide show of examples until clicked.
+ var curExample = 0;
+ function exampleSlideShow() {
+  if (exampleHasBeenClicked == 0) {
+   let curEx = document.getElementsByTagName("a");
+   let curName = curEx[curExample].click(); 
+   if (curExample == curEx.length-1) {
+    curExample = 0;
+   } else {
+    curExample++;
+   }   
+   setTimeout(exampleSlideShow, 3000);
+  }
+ }
+ exampleSlideShow();
+</script>
+</body>
+</html>

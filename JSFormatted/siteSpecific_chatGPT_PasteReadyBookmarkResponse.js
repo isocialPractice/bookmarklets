@@ -25,10 +25,10 @@ javascript:(function(){
    var bookmarkPageStyle = `
 <style>
  body {
-   max-width: 50%;
-   margin-left:auto;
-   margin-right: auto;
-   background:rgb(47 79 79 / 3%);
+  max-width: 50%;
+  margin-left:auto;
+  margin-right: auto;
+  background:rgb(47 79 79 / 3%);
  }
  p code {    
   color: black;
@@ -42,6 +42,7 @@ javascript:(function(){
   font-size: 12pt;
   margin-bottom: 1.25em;
   margin-top: 1.25em;
+  line-height: 14pt;
  }
  pre {
    max-width: 800px;
@@ -83,15 +84,15 @@ javascript:(function(){
   color: #df3079;
  }
  div[data-side='1'] {
-   display:inline-block;
-   position:fixed;
-   left:0px;
-   top: 0px;
-   width:20%;
-   height:auto;
-   border: 2px solid black;
-   border-bottom-right-radius: 80px;
-   background: #000;
+  display:inline-block;
+  position:fixed;
+  left:0px;
+  top: 0px;
+  width:20%;
+  height:auto;
+  border: 2px solid black;
+  border-bottom-right-radius: 80px;
+  background: #000;
  }
  div[data-side='1'] svg, 
  div[data-side='1'] path,
@@ -99,11 +100,11 @@ javascript:(function(){
   display: inline-block;
  }
  div[data-side='1'] svg {    
-   background: white;
-   border-radius: 100%;
-   margin-top: 20px;
-   margin-left: 20px;
-   padding:3px;    
+  background: white;
+  border-radius: 100%;
+  margin-top: 20px;
+  margin-left: 20px;
+  padding:3px;    
  }
  div[data-side='1'] h3 {    
   position: relative;
@@ -113,6 +114,23 @@ javascript:(function(){
   top: -15px !important;
   color: white;
  }   
+ table,th,td {
+  font-family: sans-serif;
+  border: 1px solid #d9d9e3;
+ }
+ table {    
+  border-collapse: separate;
+  border-spacing: 0px;
+  border-radius: 5px;
+  width: 100%;   
+  max-width: none !important;
+ }
+ th,td {
+  padding: 5px 5px;     
+ }
+ th {
+  background-color: rgba(236,236,241,.2); 
+ } 
  button {
   display: none;
  }
