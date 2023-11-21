@@ -27,7 +27,7 @@
 <!-- Description -->
 <div>
 
-`Ctrl + click` to see example of some [bookmarklets](https://jhauga.github.io/bookmarklets/)
+`Ctrl + click` to see example of some [bookmarklets](https://isocialpractice.github.io/bookmarklets/)
 
 
 This is a running list of browser bookmarklets. Below each listed 
