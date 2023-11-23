@@ -296,7 +296,7 @@ Add a button to extract an answers id and add to address bar as if clicking an a
 
 <!-- PASTE VIDEO HERE -->
 
-Gist page for [siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js](https://gist.github.com/jhauga/CHANGE_ID)
+Gist page for [siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js](https://gist.github.com/jhauga/4cb77c8ca7966c63e23f6f13db316ea1)
 
 ```markdown
 javascript:(function() {var answers = document.getElementsByClassName("answer"); var answersLen = answers.length; var votingContainer; for (i = 0; i < answersLen; i++) {votingContainer = answers[i].getElementsByClassName("js-voting-container")[0]; let anchorButton = document.createElement("a"); anchorButton.innerHTML = "| # |"; anchorButton.setAttribute("href", "#"+answers[i].id); anchorButton.style.marginTop = "10px"; anchorButton.style.marginLeft = "12px"; anchorButton.style.color = "gray"; votingContainer.insertAdjacentElement("beforeend", anchorButton);} })();
@@ -305,6 +305,7 @@ javascript:(function() {var answers = document.getElementsByClassName("answer");
 </dd></dl></dd></dl>
 
 </div>
+
 <hr><br>
 
 
