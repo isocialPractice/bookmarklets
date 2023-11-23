@@ -14,6 +14,7 @@
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
   - [OctoPrint - Change Graph Image](#octoprint---change-graph-image) - ready to use - <em>1 optional change</em>
+  - [Stackoverflow - Add Answer Anchor Links](#stackoverflow---add-answer-anchor-links) - ready to use
 </details>
 </div>
 <!-- Ready to Use Demo -->
@@ -281,6 +282,30 @@ javascript:(function(){var img="CHANGE_IMAGE";/* NAME and EXTENSION i.e. pic.jpg
 </details>
 </dd></dl></dd></dl>
 
+Stackoverflow - Add Answer Anchor Links: 
+----
+<dl><dd><dl><dd>
+
+Add a button to extract an answers id and add to address bar as if clicking an anchor link. Adds button to bottom of voting area for all answers. Use to easily bookmark a StackOverflow answer. <br><br>
+
+<strong>USE - ready to use</strong>
+
+<details>
+
+<summary>siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js</summary>
+
+<!-- PASTE VIDEO HERE -->
+
+Gist page for [siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js](https://gist.github.com/jhauga/CHANGE_ID)
+
+```markdown
+javascript:(function() {var answers = document.getElementsByClassName("answer"); var answersLen = answers.length; var votingContainer; for (i = 0; i < answersLen; i++) {votingContainer = answers[i].getElementsByClassName("js-voting-container")[0]; let anchorButton = document.createElement("a"); anchorButton.innerHTML = "| # |"; anchorButton.setAttribute("href", "#"+answers[i].id); anchorButton.style.marginTop = "10px"; anchorButton.style.marginLeft = "12px"; anchorButton.style.color = "gray"; votingContainer.insertAdjacentElement("beforeend", anchorButton);} })();
+```
+</details>
+</dd></dl></dd></dl>
+
 </div>
 <hr><br>
+
+
 
