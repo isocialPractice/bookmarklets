@@ -164,11 +164,12 @@ Copy a ready bookmarklet to the clipboard. Once run all copied answers will be c
 <strong>USE - ready to use</strong>
 <details>
 
-<summary>siteSpecific_chatGPT_PasteReadyBookmarkResponse.js</summary>
+<summary>siteSpecific_chatGPT_PasteReadyBookmarkResponse.js</summary><br>
 
 <strong>Video Demonstration for Use:</strong>
 
 `Ctrl + click` link to view demo on YouTube [ChatGPT - Paste Ready Bookmark Response](https://youtu.be/0aGQyrg7vo0)
+
 
 Gist page for [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2)
 
@@ -292,7 +293,7 @@ Add a button to extract an answers id and add to address bar as if clicking an a
 
 <details>
 
-<summary>siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js</summary>
+<summary>siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js</summary><br>
 
 <!-- PASTE VIDEO HERE -->
 
@@ -307,6 +308,3 @@ javascript:(function() {var answers = document.getElementsByClassName("answer");
 </div>
 
 <hr><br>
-
-
-
