@@ -2,7 +2,9 @@ javascript:(function(){
  var pageTitle = "ChatGPT Bookmark"; /* <-- OPTIONAL - change title */
  var pageHead  = "ChatGPT Response"; /* <-- OPTIONAL - change head  */
  /* Select copybuttons. */
- var copyButton = document.getElementsByClassName("flex ml-auto gizmo:ml-0 gap-1 items-center rounded-md p-1 text-xs");
+ var selectClass = /* this may need to be changed */
+  "flex items-center gap-1.5 rounded-md p-1 pl-0 text-xs" ||"flex ml-auto gizmo:ml-0 gap-1 items-center rounded-md p-1 text-xs";
+ var copyButton = document.getElementsByClassName(selectClass);
  var copyButtonLen = copyButton.length;
  for (i = 0; i < copyButtonLen; i++) {
   copyButton[i].addEventListener("click", function () {
