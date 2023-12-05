@@ -70,7 +70,7 @@ javascript:(function(){
     
     /* style the bookmarked page */
     var bookmarkPageStyle = `
- <style>
+<style>
   body {
    max-width: 50%;
    margin-left:auto;
@@ -193,7 +193,7 @@ javascript:(function(){
   ul li code::after {
    content: '\`';
   }
- </style>
+</style>
     `;
     /* alert to wait - if pasted immediately = does not work */
     alert("Wait 2 seconds for content to generate as bookmarklet on clipboard. \nThen open bookmark manager and make new bookmark by pasting into url field");
