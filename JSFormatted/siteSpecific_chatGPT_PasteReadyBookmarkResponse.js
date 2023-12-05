@@ -58,13 +58,15 @@ javascript:(function(){
     let copiedContent = /* get the content being copied */
      answerText.innerHTML;
     
-    /* clean up a bit */
+    /* clean up a bit */	
     copiedContent = copiedContent.replace(/\\n/g, "--new_line_Unlikely_TEXT--new_line--");
     copiedContent = copiedContent.replace(/\n/g, "  ");
-    copiedContent = copiedContent.replace(/"/g, '\\"');  
+	   copiedContent = copiedContent.replace(/\\"/g, "&#92;&quot;");
+    copiedContent = copiedContent.replace(/"/g, '\\"');
+    copiedContent = copiedContent.replace(/\\'/g, "&#92;&apos;'");
     copiedContent = copiedContent.replace(/'/g, "\\'");
     copiedContent = copiedContent.replace(/([ \t]{2,})/g, "<br>$1");
-    copiedContent = copiedContent.replace(/--new_line_Unlikely_TEXT--new_line--/g, "\n");
+    copiedContent = copiedContent.replace(/--new_line_Unlikely_TEXT--new_line--/g, "\n");	   
     
     /* style the bookmarked page */
     var bookmarkPageStyle = `
@@ -178,6 +180,18 @@ javascript:(function(){
   } 
   button {
    display: none;
+  }
+  ul li {
+   margin-top: 12px;    
+  }
+  ul li code {
+   color: black;
+   font-weight: bold;
+   font-size: larger;
+  }
+  ul li code::before,
+  ul li code::after {
+   content: '\`';
   }
  </style>
     `;
