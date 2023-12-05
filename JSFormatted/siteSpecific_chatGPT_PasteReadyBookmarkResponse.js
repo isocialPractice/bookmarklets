@@ -58,15 +58,15 @@ javascript:(function(){
     let copiedContent = /* get the content being copied */
      answerText.innerHTML;
     
-    /* clean up a bit */	
-    copiedContent = copiedContent.replace(/\\n/g, "--new_line_Unlikely_TEXT--new_line--");
-    copiedContent = copiedContent.replace(/\n/g, "  ");
-	   copiedContent = copiedContent.replace(/\\"/g, "&#92;&quot;");
-    copiedContent = copiedContent.replace(/"/g, '\\"');
-    copiedContent = copiedContent.replace(/\\'/g, "&#92;&apos;'");
-    copiedContent = copiedContent.replace(/'/g, "\\'");
-    copiedContent = copiedContent.replace(/([ \t]{2,})/g, "<br>$1");
-    copiedContent = copiedContent.replace(/--new_line_Unlikely_TEXT--new_line--/g, "\n");	   
+    /* clean up a bit */	                         /* so new lines can be inserted at end */
+    copiedContent = copiedContent.replace(/\\n/g, "--new_line_Unlikely_TEXT--new_line--"); /* ------ STARTS --A */
+    copiedContent = copiedContent.replace(/\n/g, "  ");              /* where <br> tag is inserted - STARTS --B */
+	   copiedContent = copiedContent.replace(/\\"/g, "&#92;&quot;");    /* use html encoding for escaped double quotes */
+    copiedContent = copiedContent.replace(/"/g, '\\"');              /* keep double quotes as needed for inline html */
+    copiedContent = copiedContent.replace(/\\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes */
+    copiedContent = copiedContent.replace(/'/g, "\\'");              /* keep single quotes as needed for inline html */
+    copiedContent = copiedContent.replace(/([ \t]{2,})/g, "<br>$1"); /* replace 2 or momre spaces with <br> tag  - ENDS --B */
+    copiedContent = copiedContent.replace(/--new_line_Unlikely_TEXT--new_line--/g, "\n");	/* place new line back - ENDS --A */
     
     /* style the bookmarked page */
     var bookmarkPageStyle = `
