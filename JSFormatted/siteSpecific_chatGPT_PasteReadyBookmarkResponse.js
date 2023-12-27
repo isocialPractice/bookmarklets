@@ -89,8 +89,8 @@ javascript:(function(){
    font-size: 12pt;
    margin-bottom: 1.25em;
    margin-top: 1.25em;
-   line-height: 14pt;
-  }
+   line-height: 16pt;
+  } 
   pre {
     max-width: 800px;
     overflow-x: scroll;
@@ -99,6 +99,58 @@ javascript:(function(){
     background: black;
     color: white;
   }
+  pre div.bg-black.rounded-md code {
+   line-height: 1;    
+  }
+  pre div.bg-black.rounded-md code .hljs-comment,
+  pre div.bg-black.rounded-md code.hljs-meta {
+   display: block;
+   color: hsla(0,0%,100%,.5);
+  }
+  pre div.bg-black.rounded-md code .hljs-meta:first-of-type {
+   display: inline-block;
+   position: relative;
+   top: -20px;
+   line-height: 2;
+  }
+  pre div.bg-black.rounded-md code .hljs-meta:last-of-type {
+   display: block;
+   margin-bottom: -10px;
+   line-height: 1.5;
+  }
+  pre div.bg-black.rounded-md .flex.items-center.relative.text-gray-200.bg-gray-800, 
+  pre div.bg-black.rounded-md button {
+   vertical-align: middle;
+   padding: 5px 40px;
+   color: rgb(217,217,227);
+  }
+  pre div.bg-black.rounded-md .flex.items-center.relative.text-gray-200.bg-gray-800 {
+   display: inline-block;
+   position: relative;
+   width: 100%;
+   top: -20px;
+   right: -5% !important;
+   margin-left: -8% !important;
+   overflow-x: hidden !important;    
+   background: rgb(52,53,65);
+  }
+  pre div.bg-black.rounded-md .flex.items-center.relative.text-gray-200.bg-gray-800 span:first-of-type {
+   line-height: 2;
+  }
+  pre div.bg-black.rounded-md button {
+   display: inline-block;
+   float: right;
+   cursor: pointer;
+   max-width:150px; 
+   background: none;    
+   border: none; 
+   text-decoration: line-through;
+  }
+  pre div.bg-black.rounded-md button svg { 
+   height: 15px;
+   width: 20px;
+   margin-right: 3px;
+  }    
   .hljs-doctag, 
   .hljs-formula, 
   .hljs-keyword, 
@@ -119,7 +171,6 @@ javascript:(function(){
   .hljs-class .hljs-title {
    color: #e9950c;
   }
-
   .hljs-attr, 
   .hljs-number, 
   .hljs-selector-attr, 
@@ -129,7 +180,7 @@ javascript:(function(){
   .hljs-type, 
   .hljs-variable {
    color: #df3079;
-  }
+  }  
   div[data-side='1'] {
    display:inline-block;
    position:fixed;
