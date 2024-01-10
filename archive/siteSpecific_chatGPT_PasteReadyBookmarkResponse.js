@@ -5,33 +5,40 @@ javascript:(function(){
  /* Select copy buttons by selecting tag. This will be narrowed later. */
  var copyButton = document.getElementsByTagName("button");
  var copyButtonLen = copyButton.length;
-  
- /* Define variables for later use. */
- var answerRow, buttonRow, copyButton, cancelWhile = 0, 
-     answerArea, answerDIV, answerDIVLen, answerText;
  
+ /* Define variables for later use. */
+ var buttonBar, buttonPar, cancelWhile = 0, 
+     answerArea, answerDIV, answerDIVLen, answerText;
+     
  for (i = 0; i < copyButtonLen; i++) {
-  /* get the copy button <- ASSUMES HTML SEMATICS */  
-  if (copyButton[i].className.indexOf("flex items-center gap-1.5 rounded-md p-1 text-xs") > -1) {
+  /* check if first child is svg then add event <- ASSUMES HTML SEMATICS */
+  let checkSVG = copyButton[i].children[0].tagName;
+  if (checkSVG == "SVG" || checkSVG == "svg") {     
    copyButton[i].addEventListener("click", function () {
-    buttonRow = this.parentElement;    
-    /* start process to select answer ares */        
-    let checkForAnswerArea = function() {
-     if (buttonRow.className.indexOf("mt-1 flex justify-start gap-3") == -1 && cancelWhile < 20) {
+    /* start process to select answer ares */
+    buttonBar = this.parentElement; 
+    buttonPar = buttonBar.parentElement;
+    
+    /* recurse to get the asnwer area <----------- ASSUMES HTML SEMATICS */
+    let getButtoneParentWithSibling = function() {     
+     if (buttonPar.previousElementSibling == false || cancelWhile >= 20) {
+      buttonBar = buttonPar.parentElement;
+      buttonPar = buttonBar.parentElement;
       cancelWhile+=1;
-      buttonRow = buttonRow.parentElement;
-      answerRow = document.getElementsByClassName("flex flex-grow flex-col max-w-full")[i];
-      checkForAnswerArea();
-     } else {
-      answerRow = buttonRow.previousElementSibling;
+      getButtoneParentWithSibling();
      }
     };
-    checkForAnswerArea();    
     
-    answerArea = answerRow;
+    /* call recursing function initially to select correct html */
+    getButtoneParentWithSibling();
+    
+    answerArea = /* answer's parent */
+     buttonPar.previousElementSibling; 
+     
+    /* select the last div which holds answer <--- ASSUMES HTML SEMATICS */
     answerDIV = answerArea.getElementsByTagName("div");
-    answerDIVLen = answerDIV.length;       
-
+    answerDIVLen = answerDIV.length;
+    
     /* start process to get div holding answer <-- ASSUMES HTML SEMATICS*/
     let j = 0; /* <-- switch to turn off loop */
     let l = 0; /* increase nested div tag */    
@@ -50,23 +57,20 @@ javascript:(function(){
     /* now the answer's div element should be extracted */
     let copiedContent = /* get the content being copied */
      answerText.innerHTML;
-
+    
     /* clean up a bit */	                         /* so new lines can be inserted at end */
     copiedContent = copiedContent.replace(/\\n/g, "--new_line_Unlikely_TEXT--new_line--"); /* ------ STARTS --A */
     copiedContent = copiedContent.replace(/\n/g, "  ");              /* where <br> tag is inserted - STARTS --B */
-    copiedContent = copiedContent.replace(/\\"/g, "&#92;&quot;");    /* use html encoding for escaped double quotes */
+	   copiedContent = copiedContent.replace(/\\"/g, "&#92;&quot;");    /* use html encoding for escaped double quotes */
     copiedContent = copiedContent.replace(/"/g, '\\"');              /* keep double quotes as needed for inline html */
     copiedContent = copiedContent.replace(/\\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes */
     copiedContent = copiedContent.replace(/'/g, "\\'");              /* keep single quotes as needed for inline html */
     copiedContent = copiedContent.replace(/([ \t]{2,})/g, "<br>$1"); /* replace 2 or momre spaces with <br> tag  - ENDS --B */
     copiedContent = copiedContent.replace(/--new_line_Unlikely_TEXT--new_line--/g, "\n");	/* place new line back - ENDS --A */
-
+    
     /* style the bookmarked page */
     var bookmarkPageStyle = `
- <style>
-  * {
-   font-family: sans-serif,system-ui;
-  } 
+<style>
   body {
    max-width: 50%;
    margin-left:auto;
@@ -77,6 +81,9 @@ javascript:(function(){
    color: black;
    font-size: 12pt;
    font-weight: 600;
+  }
+  p,h1,h2,h3 {
+   font-family: sans-serif,system-ui;
   }
   p {    
    font-size: 12pt;
@@ -198,13 +205,15 @@ javascript:(function(){
    padding:3px;    
   }
   div[data-side='1'] h3 {    
-   position: relative;   
+   position: relative;
+   font-family: sans-serif;
    font-size: 12pt;
    margin-left: 20px;
    top: -15px !important;
    color: white;
   }   
-  table,th,td {   
+  table,th,td {
+   font-family: sans-serif;
    border: 1px solid #d9d9e3;
   }
   table {    
@@ -235,11 +244,11 @@ javascript:(function(){
   ul li code::after {
    content: '\`';
   }
- </style>
+</style>
     `;
     /* alert to wait - if pasted immediately = does not work */
     alert("Wait 2 seconds for content to generate as bookmarklet on clipboard. \nThen open bookmark manager and make new bookmark by pasting into url field");
-
+    
     /* store new bookmarklet to be written to clipboard */
     var bookmarklet = 'javascript:(function() {document.write("' + 
      /* write html head content */
@@ -257,12 +266,12 @@ javascript:(function(){
      "</body></html>" +
      /* close bookmarklet */
      '");})()';    
-
+     
     /* set timeout so bookmarklet content is copied after answers' text */
     setTimeout(function () {
      navigator.clipboard.writeText(bookmarklet);
     }, 2000);     
-   });    
+   });
   }
  }
 })();
