@@ -203,7 +203,7 @@ javascript:(function(){
         if (tableRow[i].innerText.indexOf("(Directory)") == -1) {
          sizeTD.dataset.fileSize = "1";
          fileName = tableRow[i].children[1].innerText;        
-         fileName = fileName.substr(0,fileName.indexOf("\n"));
+         /*fileName = fileName.substr(0,fileName.indexOf("\n"));*/
          for (j in cur) {
           if (cur[j].name == fileName) {
            sizeTD.innerText = 
