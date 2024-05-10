@@ -1,0 +1,1 @@
+javascript:(function() {var faviconImageURL = "CHANGE"; /* CHANGE - url where image is located. Locally hosted urls will work. */ document.getElementsByTagName("head")[0].innerHTML += "<link rel='icon' href='" + faviconImageURL + "' type='image/x-icon'>"; /* Append a link tag to head HTML tag and done. */})();

@@ -7,6 +7,8 @@
 - [Navigation Bookmarklets](#navigation-bookmarklets)
   - [Highlight Current Page](#sidebar---highlight-current-page) - ready to use
   - [Underline Anchor Linke](#sidebar---underline-anchor-link) - ready to use
+- [Style Bookmarklets](#style-bookmarklets)
+  - [Favicon - Change or Add Favicon](#favicon---change-or-add-favicon) - requires 1 change(s)
 - [Site Specific Bookmarklets](#site-specific-bookmarklets)
   - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response) - requires 1 change
   - [ChatGPT - Paste Ready Bookmark Response](#chatgpt---paste-ready-bookmark-response) - ready to use
@@ -114,6 +116,41 @@ Gist page for [nav_Sidebar_UnderlineAnchorLink.js](https://gist.github.com/jhaug
 
 ```markdown
 javascript:(function(){var a=document.getElementsByTagName("a");var aLen=a.length;var oneCheck=0;for(i=0;i<a.length;i++){if(a[i].href.indexOf(location.href.substr(location.href.lastIndexOf("#")+1))>-1&&oneCheck==0){a[i].style.textDecoration="underline";oneCheck=1;}a[i].addEventListener("click",function(){if(this.href.indexOf("#")>-1){for(j=0;j<aLen;j++){if(a[j].href.indexOf("#")>-1){a[j].style.textDecoration="";}}this.style.textDecoration="underline";}});}})();
+```
+</details>
+</dd></dl></dd></dl>
+</div>
+<hr><br>
+
+# Style Bookmarklets
+<div>
+The below bookmarklets are to change style elements (<em>images, background, text, etc.</em>) of a web page.
+Copy and paste (<em>making any needed adjustments</em>) to use.
+
+Favicon - Change or Add Favicon: 
+----
+<dl><dd><dl><dd>
+
+Change or add a website favicon. For fun or to help identify sites by tab or bookmark icons; e.g. add an icon to appear in bookmarks when bookmarking a site without a favicon.. Works with:
+
+1. Remote URL - website or application
+2. Local URL - locally hosted website or application
+
+<strong>USE - requires 1 change</strong>
+
+<details>
+
+<summary>style_Favicon_ChangeOrAddFavicon</summary><br>
+
+<strong>Required \(x1\)</strong>
+ 1. Change value of `faviconImageURL` variable to image's url.
+
+<!-- PASTE VIDEO HERE -->
+
+Gist page for [style_Favicon_ChangeOrAddFavicon](https://gist.github.com/jhauga/82ddb109ee790c2a3670457a8cbbff73)
+
+```markdown
+javascript:(function() {var faviconImageURL = "CHANGE"; /* CHANGE - url where image is located. Locally hosted urls will work. */ document.getElementsByTagName("head")[0].innerHTML += "<link rel='icon' href='" + faviconImageURL + "' type='image/x-icon'>"; /* Append a link tag to head HTML tag and done. */})();
 ```
 </details>
 </dd></dl></dd></dl>
