@@ -4,13 +4,13 @@ javascript:(function(){
  
  /* NOTE - 'HOT-GLUE' comments for fast patched */ 
  /* Class names to identify button row in each answer. */
- var ButtonClassNameIdentifier = "rounded-lg text-token-text-secondary"; /* THIS IS HIGHLY LIKELY TO CHANGE */
+ var ButtonClassNameIdentifier = "rounded-lg text-token-text-secondary";   /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
  
  /* Class names to identify div that is parent of button row. */
- var DivClassNameIdentifier = "items-center justify-start rounded-xl p-1"; /* THIS IS HIGHLY LIKELY TO CHANGE */
+ var DivClassNameIdentifier = "items-center justify-start rounded-xl p-1"; /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
- var answerAreaClassNameIdentifier = "mt-1 flex gap-3";  /********************* THIS IS HIGHLY LIKELY TO CHANGE */
+ var answerAreaClassNameIdentifier = "mt-1 flex gap-3";  /******************* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
  
  /* Select all divs and use in loop. */
  var allDivElements = document.getElementsByTagName("div");
@@ -25,9 +25,11 @@ javascript:(function(){
  
  for (i = 0; i < allDivElementsLen; i++) {
   /* get the copy button <- ASSUMES HTML SEMATICS */  
-  if (allDivElements[i].className.indexOf(DivClassNameIdentifier) > -1) {   
+  if (allDivElements[i].className.indexOf(DivClassNameIdentifier) > -1 && 
+      /* HOT-GLUE - if a conversation has question edits - HOT-GLUE */
+      allDivElements[i].getElementsByTagName("path").length > 2) {
    /* start process to select the copy button */
-   let selectCopyButton = function() {    
+   let selectCopyButton = function() {
     currentButtonsPath = allDivElements[i].getElementsByTagName("path");
     currentButtonsPathArr = [];
     for (j = 0; j < currentButtonsPath.length; j++) {
@@ -98,14 +100,12 @@ javascript:(function(){
       answerText.innerHTML;
 
      /* clean up a bit */                          /* so new lines can be inserted at end */
-     copiedContent = copiedContent.replace(/\n/g, "--new_line_Unlikely_TEXT--new_line--"); /* ------ STARTS --A */
-     copiedContent = copiedContent.replace(/\n/g, "  ");             /* where <br> tag is inserted - STARTS --B */
+     copiedContent = copiedContent.replace(/\n/g, "<br>");
      copiedContent = copiedContent.replace(/\"/g, '&#92;&quot;');    /* use html encoding for escaped double quotes */
      copiedContent = copiedContent.replace(/"/g, '\"');              /* keep double quotes as needed for inline html */
      copiedContent = copiedContent.replace(/\\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes */
      copiedContent = copiedContent.replace(/'/g, "\'");              /* keep single quotes as needed for inline html */
-     copiedContent = copiedContent.replace(/([ 	]{2,})/g, "<br>$1"); /* replace 2 or momre spaces with <br> tag  - ENDS --B */
-     copiedContent = copiedContent.replace(/--new_line_Unlikely_TEXT--new_line--/g, "\n"); /* place new line back - ENDS --A */
+     copiedContent = copiedContent.replace(/([ 	]{2,})/g, "<br>$1"); /* replace 2 or momre spaces with <br> tag */
      copiedContent = copiedContent.replace(/class=&#92;&quot;/g, "class='"); /* HOT-GLUE - correct open class  - HOT-GLUE */
      copiedContent = copiedContent.replace(/&#92;&quot;>/g, "'>");           /* HOT-GLUE - correct close class - HOT-GLUE */
 
