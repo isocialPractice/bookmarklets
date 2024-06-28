@@ -17,6 +17,8 @@
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
   - [OctoPrint - Change Graph Image](#octoprint---change-graph-image) - ready to use - <em>1 optional change</em>
   - [Stackoverflow - Add Answer Anchor Links](#stackoverflow---add-answer-anchor-links) - ready to use
+- [Window Bookmarklets](#window-bookmarklets)
+  - [Page Offset - Custom Page Down](#page-offset---custom-page-down) - ready to use
 </details>
 </div>
 <!-- Ready to Use Demo -->
@@ -131,7 +133,7 @@ Favicon - Change or Add Favicon:
 ----
 <dl><dd><dl><dd>
 
-Change or add a website favicon. For fun or to help identify sites by tab or bookmark icons; e.g. add an icon to appear in bookmarks when bookmarking a site without a favicon.. Works with:
+Change or add a website favicon. For fun or to help identify sites by tab or bookmark icons; e.g. add an icon to appear in bookmarks when bookmarking a site without a favicon. Works with:
 
 1. Remote URL - website or application
 2. Local URL - locally hosted website or application
@@ -140,7 +142,7 @@ Change or add a website favicon. For fun or to help identify sites by tab or boo
 
 <details>
 
-<summary>style_Favicon_ChangeOrAddFavicon</summary><br>
+<summary>style_Favicon_ChangeOrAddFavicon.js</summary><br>
 
 <strong>Required \(x1\)</strong>
  1. Change value of `faviconImageURL` variable to image's url.
@@ -343,5 +345,32 @@ javascript:(function() {var answers = document.getElementsByClassName("answer");
 </dd></dl></dd></dl>
 
 </div>
+
+<hr><br>
+
+# Window Bookmarklets
+<div>
+The below bookmarklets pertain to the browser window object, enabling user experience \(<em>UX</em>\) customization.
+
+Page Offset - Custom Page Down: 
+----
+<dl><dd><dl><dd>
+
+Click anywhere on a webpage with a customized page down value. Good for reading certain pages. <br><br>
+
+<strong>USE - ready to use</strong>
+<details>
+
+<summary>window_PageOffset_CustomPageDown.js</summary>
+
+Gist page for [window_PageOffset_CustomPageDown.js](https://gist.github.com/jhauga/5b5bf9e7ae170f1f412085b1005114d8)
+
+```markdown
+javascript:(function(){var pageDownBy=500;function runPageDown(y){scrollTo(0,y);}document.body.addEventListener("click",function(){pageDown=pageYOffset+pageDownBy;runPageDown(pageDown)});})();
+```
+</details>
+</dd></dl></dd></dl>
+</div>
+
 
 <hr><br>
