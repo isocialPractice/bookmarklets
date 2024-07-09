@@ -4,10 +4,11 @@ javascript:(function(){
  
  /* NOTE - 'HOT-GLUE' comments for fast patched */ 
  /* Class names to identify button row in each answer. */
- var ButtonClassNameIdentifier = "rounded-lg text-token-text-secondary";   /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
+ var ButtonClassNameIdentifier = "rounded-lg text-token-text-secondary";    /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
  
  /* Class names to identify div that is parent of button row. */
- var DivClassNameIdentifier = "items-center justify-start rounded-xl p-1"; /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
+ var DivClassNameIdentifier = "items-center justify-start rounded-xl p-1";  /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE ************/
+ var DivClassNameIdentifierII = "-ml-1 mt-0 flex h-7 items-center justify-center gap"; /*  This checks class on signed out guest page */
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier = "mt-1 flex gap-3";  /******************* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
@@ -25,9 +26,16 @@ javascript:(function(){
  
  for (i = 0; i < allDivElementsLen; i++) {
   /* get the copy button <- ASSUMES HTML SEMATICS */  
-  if (allDivElements[i].className.indexOf(DivClassNameIdentifier) > -1 && 
+  if (( /* condition for logged out or guest chatgpt.com page */
+      allDivElements[i].className.indexOf(DivClassNameIdentifierII) > -1 && 
       /* HOT-GLUE - if a conversation has question edits - HOT-GLUE */
-      allDivElements[i].getElementsByTagName("path").length > 2) {
+      allDivElements[i].getElementsByTagName("path").length >= 1
+      ) || 
+      ( /* condition for logged in account page - working with everyday 3.5 chatGPT */
+      allDivElements[i].className.indexOf(DivClassNameIdentifier) > -1 && 
+      /* HOT-GLUE - if a conversation has question edits - HOT-GLUE */
+      allDivElements[i].getElementsByTagName("path").length > 2
+      )) {
    /* start process to select the copy button */
    let selectCopyButton = function() {
     currentButtonsPath = allDivElements[i].getElementsByTagName("path");
@@ -36,29 +44,34 @@ javascript:(function(){
      currentSelection = currentButtonsPath[j];
      pathPar = currentSelection.parentElement; /* select svg */
      pathGrandPar = pathPar.parentElement;     /* select/check if span */
-     if (pathGrandPar.tagName == "SPAN") {     /* HOT-GLUE */
+     if (pathGrandPar.tagName == "SPAN" || pathGrandPar.tagName == "BUTTON") {     /* HOT-GLUE */
       currentButtonsPathArr.push(currentSelection.getAttribute("d"));
      }
     }
-    for (j = 0; j < currentButtonsPathArr.length; j++) {
-     currentSelection = currentButtonsPathArr[j];
-     if (j == 0) {
-      priorSelection = currentSelection;
-      priorSelectionIndex = 0;
-     } else {
-      priorSelection = priorSelection;
-      priorSelectionIndex = priorSelectionIndex;
-     }
-     if (priorSelection.length < currentSelection.length) {
-      /* none of the other variables need to change */
-      copyButtonIndex = priorSelectionIndex;
-     } else {
-      /* other variables need to change */
-      copyButtonIndex = j;
-      priorSelectionIndex = j;
-      priorSelection = currentSelection;
-     }
+    if (currentButtonsPathArr.length == 1) {
+     copyButtonIndex = 0; 
+    } else {
+     for (j = 0; j < currentButtonsPathArr.length; j++) {
+      currentSelection = currentButtonsPathArr[j];
+      if (j == 0) {
+       priorSelection = currentSelection;
+       priorSelectionIndex = 0;
+      } else {
+       priorSelection = priorSelection;
+       priorSelectionIndex = priorSelectionIndex;
+      }
+      if (priorSelection.length < currentSelection.length) {
+       /* none of the other variables need to change */
+       copyButtonIndex = priorSelectionIndex;
+      } else {
+       /* other variables need to change */
+       copyButtonIndex = j;
+       priorSelectionIndex = j;
+       priorSelection = currentSelection;
+      }
+     }    
     }
+
     copyButton = allDivElements[i].getElementsByTagName("button")[copyButtonIndex];
    };
    selectCopyButton();
