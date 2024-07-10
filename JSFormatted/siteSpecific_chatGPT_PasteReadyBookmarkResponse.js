@@ -22,7 +22,7 @@ javascript:(function(){
      answerArea, answerDIV, answerDIVLen, answerText,
      currentButtonsPath, currentButton, currentButtonsPathArr,
      currentSelection, priorSelection, copyButtonIndex, priorSelectionIndex,
-     pathPar, pathGrandPar;
+     pathPar, pathGrandPar, pathGreatGrandPar;
  
  for (i = 0; i < allDivElementsLen; i++) {
   /* get the copy button <- ASSUMES HTML SEMATICS */  
@@ -36,15 +36,16 @@ javascript:(function(){
       /* HOT-GLUE - if a conversation has question edits - HOT-GLUE */
       allDivElements[i].getElementsByTagName("path").length > 2
       )) {
-   /* start process to select the copy button */
+   /* start process to select the copy button */   
    let selectCopyButton = function() {
     currentButtonsPath = allDivElements[i].getElementsByTagName("path");
     currentButtonsPathArr = [];
     for (j = 0; j < currentButtonsPath.length; j++) {
      currentSelection = currentButtonsPath[j];
      pathPar = currentSelection.parentElement; /* select svg */
-     pathGrandPar = pathPar.parentElement;     /* select/check if span */
-     if (pathGrandPar.tagName == "SPAN" || pathGrandPar.tagName == "BUTTON") {     /* HOT-GLUE */
+     pathGrandPar = pathPar.parentElement;     /* select/check if span */     
+     if (pathGrandPar.tagName == "SPAN" ||     /* HOT-GLUE - check if parent span */
+         pathGrandPar.tagName == "BUTTON") {   /* HOT-GLUE - logged out was button */
       currentButtonsPathArr.push(currentSelection.getAttribute("d"));
      }
     }
