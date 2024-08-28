@@ -363,7 +363,6 @@ To pause press `Ctrl`, `Shift`, and `Space` \(in that order\). <br><br>
 <!--
  _OPTIONAL---------------------------------------------------------------------------------------
  <strong>Video Demonstration for Use:</strong>
- Github task test
  `Ctrl + click` link to view demo on YouTube [TEXT_NAME_MATCHING_FILE](YOU_TUBE_LINK)
  _OPTIONAL---------------------------------------------------------------------------------------
           ---------------------------------------------------------------------------------------
