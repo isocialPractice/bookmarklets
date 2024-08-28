@@ -357,7 +357,7 @@ To copy notes to clipboard hold down `Enter` for 2-is seconds. <br><br>
 <strong>USE - ready to use</strong>
 <details>
 
-<summary>siteSpecific_YouTube_takeNotesAndAddTimeMarks.js</summary>
+<summary>siteSpecific_YouTube_takeNotesAndAddTimeMarks.js</summary><br>
 
 <!--
  _OPTIONAL---------------------------------------------------------------------------------------
@@ -393,7 +393,7 @@ Click anywhere on a webpage with a customized page down value. Good for reading 
 <strong>USE - ready to use</strong>
 <details>
 
-<summary>window_PageOffset_CustomPageDown.js</summary>
+<summary>window_PageOffset_CustomPageDown.js</summary><br>
 
 Gist page for [window_PageOffset_CustomPageDown.js](https://gist.github.com/jhauga/5b5bf9e7ae170f1f412085b1005114d8)
 
