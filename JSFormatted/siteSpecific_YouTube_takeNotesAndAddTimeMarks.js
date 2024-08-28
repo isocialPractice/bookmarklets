@@ -223,6 +223,5 @@ javascript:(function(){
   }); 
  };
  
- player.click();
  addKeyDown();
 })();
