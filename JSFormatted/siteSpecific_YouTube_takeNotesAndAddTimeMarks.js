@@ -1,13 +1,19 @@
 javascript:(function(){ 
  /* Global DOM variables */
- var noteAreaID =           /* parent for note elements */
+ var noteAreaID =            /* parent for note elements */
   document.getElementById("noteArea");
- var noteBox =              /* textare element for taking notes */
+ var noteBox =               /* textare element for taking notes */
   document.getElementById("noteBox");
- var aboveTheFold =         /* html after vidoe box */
+ var aboveTheFold =          /* html after vidoe box */
   document.getElementById("above-the-fold");
- var currentTimeClassName = /* class element with current time */
+ var player =                /* video player topmost parent */
+  document.getElementById("player"); 
+ var playButton =            /* play button - needed to update time mark */
+  document.getElementsByClassName("ytp-play-button");
+ var currentTimeClassName =  /* class element with current time */
   "ytp-time-current"; 
+ var curTimeElement;         /* redefined to get time mark  */
+ var timePreCal, timeSecCal; /* redefined - time mark in seconds and time mark */
  
  /* Note box setup. */
  var noteTextArea, noteArea;
@@ -34,37 +40,63 @@ javascript:(function(){
  /* Redefine noteBox */
  noteBox = document.getElementById("noteBox");
  
- /* Global config variables */
- var enterCount = 0; /* hold for 2 seconds to copy notes */
- var shiftCount = 0; /* hold for 2 seconds to mark video time */
- 
  /***** SUPPORT FUNCTIONS *****/
  /* Copy notes in textare to clipboard. */
  function copyNotes() {
   noteBox.select();
   navigator.clipboard.writeText(noteBox.value);
  }
+ 
  /* 
     Focus on textarea whenever keydown occurs. 
     NOTE - if using key combe `Ctrl + Shift + Home` press shift key first.
  */
+ const updateCurrentTime = () => {
+  /* update HTML element holding time value */
+  let playButtonData = playButton[0].dataset.titleNoTooltip;
+  if (playButtonData != "Play") {
+   playButton[0].click(); playButton[0].click();
+  }
+  /* update time value HTML element */
+  curTimeElement = /* select element with current time */
+   document.getElementsByClassName(currentTimeClassName); 
+  curTimeElementText = curTimeElement[0].textContent;
+  /* extract time and calculate in seconds */
+  timePreCal = curTimeElementText.split(":");    
+ };
  function keypressToNote() {
   let activeID = document.activeElement.id;
   let lastKeyPress; /* used to check for key combos */
   lastKeyPress = sessionStorage.getItem("lastKeyPress");
+  
+  /* for first key press */
   if (lastKeyPress == null) { 
    sessionStorage.setItem("lastKeyPress", event.key);
    lastKeyPress = sessionStorage.getItem("lastKeyPress");
   }
+  
+  /* store key press and check active element */
   let currentKeyPress = event.key;
-  let ignoredKeys = "Home"; 
+  let ignoredKeys = "Home"; /* keys pressed that do not active not box */
+
+  /* start conditions to activate note box or run function accordingly  */
   if (activeID != "comments" || /* if any of these elements have focus */
       activeID != "search"   || /* then don't take notes */
-      activeID != "contenteditable-root") {   
+      activeID != "contenteditable-root" ||
+      activeID != "player") {   
    let checkKeyCombo = /* check for combos */
     lastKeyPress + "+" + currentKeyPress;
+    
+   /* check key combos and run function accordingly */
    if (checkKeyCombo == "Control+Shift") {
     noteBox.blur();    /* out of note box */
+   } /* add time marker adjacent to notes */
+   else if (checkKeyCombo == "Control+m") {    
+    updateCurrentTime();
+    markTime();    
+   }  /* select and copy notes to clipboard  */
+   else if (checkKeyCombo == "Alt+a") {
+    copyNotes();
    } else {
     /* only if note box is not active element */
     if (activeID != "noteBox") {
@@ -95,12 +127,8 @@ javascript:(function(){
  /* Add time mark button to the right of textarea. */
  function markTime() {  
   noteBox.blur(); /* quickly deactivate note box */
-  let curTimeElement = 
-   document.getElementsByClassName(currentTimeClassName); 
-  /* extract time and calculate in seconds */
-  let timePreCal = curTimeElement[0].innerText.split(":");  
-  /* calculate time in seconds */
-  let timeSecCal;
+  noteBox.setAttribute("disabled", true);
+  
   if (timePreCal.length == 3) { /* not handling videos over 24 hours - no */
    timeSecCal = 
     Number(Number(timePreCal[0]*60) * 60) + /* hours to seconds   */
@@ -116,7 +144,7 @@ javascript:(function(){
    timeSecCal =      
     Number(timePreCal[0]); /* seconds */
   }
-  
+
   let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
   let timeMarkButtonArea;
   if (!timeMarkButtonAreaID) { /* create area for time mark buttons */
@@ -155,10 +183,10 @@ javascript:(function(){
    curTimeMarkBtn.target = "_blank";   
    let vidURL = location.href;
    /* conditions if url did not already have time value */
-   if (vidURL.indexOf("t=") > -1) { /* had time value   */
+   if (vidURL.indexOf("&t=") > -1) { /* had time value   */
     vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCal);
    } else {                         /* no time value    */
-    vidURL += "&t=" + timeSecCal + "s";
+    vidURL = vidURL + "&t=" + timeSecCal + "s";
    }   
    curTimeMarkBtn.href = vidURL;
    /* use hour : minutes: seconds */
@@ -173,82 +201,28 @@ javascript:(function(){
      curTimeMarkBtn.innerText += timePreCal[i] + ":";
     }
    }
-   
+
    timeMarkButtonAreaID.insertAdjacentElement("beforeend", curTimeMarkBtn);
-  }
+  }    
+  
   /* focus back on note box */
+  noteBox.removeAttribute("disabled");
   noteBox.focus();
  }
  
  /* Begin taking notes. */
  noteBox.focus();
- noteBox.addEventListener("keydown", function() {
-  /*** INLINE FUNCTIONS ***/
-  /*
-  check if enter pressed for over 2 second-ish 
-  copy contents of text area to clipboard 
-  */
-  let checkEnter = () => {
-   if (enterCount >= 2) { /* prevent multiple new lines from being created */
-    let noteVal = noteBox.value;
-    let lastLineBreak = noteVal.lastIndexOf("\n");
-    let firstLineBreak = noteVal.indexOf("\n");
-    if (lastLineBreak != firstLineBreak) {
-     /* delete every new line after the last one */
-     noteVal = noteVal.substr(0, lastLineBreak);
-     noteBox.value = noteVal;    
-    }
-   }  
-   /*hold donw enter for 2-ish seconds */
-   if (enterCount >= 20) {
-    copyNotes(); /* copy note box to clipboard */
-    /* prevent notes and clipboard from being cleared */
-    document.body.removeEventListener("keydown", keypressToNote);
-    noteBox.blur();
-    enterCount = 0;
-    document.body.addEventListener("click", addKeyDown);
-   }
-  };
-  /*
-  check if shift pressed for over 2 seconds-ish 
-  add timemark button to right of textarea 
-  */
-  let checkShift = () => {
-   /* hold down shift for 2-ish seconds */
-   if (shiftCount >= 20) {    
-    markTime();
-    shiftCount = 0;    
-   }
-  };    
-  /* check how long enter is pressed */
-  if (event.key == "Enter") {
-   checkEnter();
-   enterCount++;
-  } 
-  /* check how long shift is pressed */
-  if (event.key == "Shift") {
-   checkShift();
-   shiftCount++;
-  }   
- });
  
  /* Quickly get back to notes */
- const addKeyDown = () => { document.body.addEventListener("keydown", keypressToNote); };
- /* Reset Shift and Enter time switches on keyup. */
- document.body.addEventListener("keyup", function() {
-  /* reset enter counter */
-  enterCount = 0;
-  shiftCount = 0;
-  /* prevent fullscreen from occuring *//*
-  **************************************
-  NOTE - THIS DOES NOT WORK
-  *************************
-  let firstKey = event.key;
-  if (firstKey == "f") {
-   document.body.dispatchEvent(new KeyboardEvent('keyup', {'key': 'Esc'}));   
-  }
-  **************************************
-  ***************************************/
- });
+ const addKeyDown = () => { document.body.addEventListener("keydown", function() {
+  keypressToNote();  
+  }); 
+ }; 
+ const addKeyUp = () => { document.body.addEventListener("keyup", function() {
+  keypressToNote();
+  }); 
+ };
+ 
+ player.click();
  addKeyDown();
 })();
