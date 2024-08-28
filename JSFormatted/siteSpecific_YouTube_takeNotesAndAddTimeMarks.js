@@ -15,26 +15,81 @@ javascript:(function(){
  var curTimeElement;         /* redefined to get time mark  */
  var timePreCal, timeSecCal; /* redefined - time mark in seconds and time mark */
  
+ /* CSS style sheet */
+ var noteCSS = `
+  div#noteArea {
+   display: inline-flex;
+   flex-wrap: nowrap;
+   position: relative;
+   top: 0px;
+   width: 100%;
+  }
+  div #noteArea div {
+   display: inline-block; 
+   position: relative;
+   margin: 0px;
+   max-width: 450px;
+   width: min-content;
+  }
+  div#noteArea div+div {
+   display: inline-block;
+   position: relative;
+   max-width: 800px;
+   width: auto !important;
+   left: 0px; 
+  }
+  textarea#noteBox {
+   max-width: 450px;  
+   width: 450px;
+   height: 100px; 
+   border-radius: 10px;
+  }
+  span#timeMarkButtonArea {
+   display: inline-block;
+   position: relative;
+   float: left;
+   max-width: 750px;
+   width: auto;
+   margin-left: 10px;
+  }
+  span#timeMarkButtonArea a {
+    box-sizing: unset !important;
+    display: inline-flex !important;
+    position: relative;
+    flex-wrap: wrap !important;
+    top: 0px !important;
+    left: unset !important;
+    cursor: pointer;
+    width: auto;
+    height: 25px;
+    margin-left: 10px;
+    margin-top: 3px;
+    padding: 5px 10px 10px;
+    background: rgb(40, 40, 40);
+    color: white;  
+  }`;
+  
  /* Note box setup. */
- var noteTextArea, noteArea;
+ var noteTextArea, noteArea, noteBoxDiv;
  if (!noteAreaID) {
   /* are for notes */
   noteArea = document.createElement("div");
-  noteArea.id = "noteArea";
-  noteArea.style.display = "inline-grid";
-  noteArea.style.position = "relative";
-  noteArea.style.top = "0px";
-  noteArea.style.width = "100%";  
+  noteArea.id = "noteArea";   
   aboveTheFold.insertAdjacentElement("beforebegin", noteArea); 
+  let noteStyle =         /* using noteCSS from above */
+   document.createElement("style"); 
+  noteStyle.textContent = /* add css properties */
+   noteCSS;        
+  noteArea.insertAdjacentElement("beforebegin", noteStyle);
   noteAreaID = document.getElementById("noteArea");
   /* note box */
   noteTextArea = document.createElement("textarea"); 
   noteTextArea.id = "noteBox"; 
-  noteTextArea.style.maxWidth = "450px";
-  noteTextArea.style.width = "450px";
-  noteTextArea.style.height = "100px";
-  noteTextArea.style.borderRadius = "10px";
-  noteAreaID.insertAdjacentElement("afterbegin", noteTextArea); 
+  noteBoxDiv = document.createElement("div");
+  /* insert div to hold textarea */
+  noteAreaID.insertAdjacentElement("afterbegin", noteBoxDiv);
+  /* insert textare html elements to take notes */
+  noteBoxDiv.insertAdjacentElement("afterbegin", noteTextArea); 
  }
  
  /* Redefine noteBox */
@@ -47,10 +102,7 @@ javascript:(function(){
   navigator.clipboard.writeText(noteBox.value);
  }
  
- /* 
-    Focus on textarea whenever keydown occurs. 
-    NOTE - if using key combe `Ctrl + Shift + Home` press shift key first.
- */
+ /* Focus on textarea whenever keydown occurs. */
  const updateCurrentTime = () => {
   /* update HTML element holding time value */
   let playButtonData = playButton[0].dataset.titleNoTooltip;
@@ -148,46 +200,33 @@ javascript:(function(){
   let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
   let timeMarkButtonArea;
   if (!timeMarkButtonAreaID) { /* create area for time mark buttons */
-   timeMarkButtonArea = document.createElement("span");
-   timeMarkButtonArea.id = "timeMarkButtonArea";
-   timeMarkButtonArea.style.display = "inline-flex";
-   timeMarkButtonArea.style.flexWrap = "wrap";
-   timeMarkButtonArea.style.position = "relative";    
-   timeMarkButtonArea.style.float = "left";
-   timeMarkButtonArea.style.left = "450px";
-   timeMarkButtonArea.style.maxWidth = "750px";
-   timeMarkButtonArea.style.marginLeft = "10px";       
-   /* insert area for time marks */
-   noteBox.insertAdjacentElement("afterend", timeMarkButtonArea);
+   let timeMarkDiv =    /* parent for time mark box */
+    document.createElement("div");
+   timeMarkButtonArea = /* time mark box - parent for timemarks */
+    document.createElement("span"); 
+   timeMarkButtonArea.id = "timeMarkButtonArea"; 
+   /* insert time mark box parent div */
+   noteBoxDiv.insertAdjacentElement("afterend", timeMarkDiv);   
+   /* insert time mark box */
+   timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
   }
   let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCal);
   let curTimeMarkBtn;
   if (!curTimeMarkBtnID) { /* create time mark buttons */
    let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
-   curTimeMarkBtn = document.createElement("a");
-   curTimeMarkBtn.id = "timeMarkBtn" + timeSecCal;
-   curTimeMarkBtn.style.cursor = "pointer";
-   curTimeMarkBtn.style.boxSizing = "border-box";
-   curTimeMarkBtn.style.display = "inline-table";
-   curTimeMarkBtn.style.position = "relative";   
-   curTimeMarkBtn.style.top = "-100px";
-   curTimeMarkBtn.style.left = "10px";      
-   curTimeMarkBtn.style.width = "auto";
-   curTimeMarkBtn.style.height = "25px";
-   curTimeMarkBtn.style.marginLeft = "10px";
-   curTimeMarkBtn.style.marginTop = "3px";
-   curTimeMarkBtn.style.padding = "10px"; 
-   curTimeMarkBtn.style.paddingTop = "5px";
-   curTimeMarkBtn.style.background = "#282828";
-   curTimeMarkBtn.style.color = "white";   
-   curTimeMarkBtn.target = "_blank";   
-   let vidURL = location.href;
+   curTimeMarkBtn =     /* time mark linking tom marked times */
+    document.createElement("a");
+   curTimeMarkBtn.id =  /* give each a unique id */
+    "timeMarkBtn" + timeSecCal;
+   /* open link in new tab - _blank */
+   curTimeMarkBtn.target =  "_blank";   
+   let vidURL = location.href; /* extract current url */
    /* conditions if url did not already have time value */
    if (vidURL.indexOf("&t=") > -1) { /* had time value   */
     vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCal);
    } else {                         /* no time value    */
     vidURL = vidURL + "&t=" + timeSecCal + "s";
-   }   
+   }      
    curTimeMarkBtn.href = vidURL;
    /* use hour : minutes: seconds */
    for (i in timePreCal) {
