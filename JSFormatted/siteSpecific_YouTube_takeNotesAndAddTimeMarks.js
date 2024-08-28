@@ -45,15 +45,20 @@ javascript:(function(){
    border-radius: 10px;
   }
   span#timeMarkButtonArea {
+   box-sizing: border-box;   
    display: inline-block;
    position: relative;
    float: left;
    max-width: 750px;
    width: auto;
-   margin-left: 10px;
+   height: 100%;
+   border-radius: 10px;
+   margin-left: 10px;   
+   padding: 5px;
+   background: rgba(0, 0, 0, .025);      
   }
   span#timeMarkButtonArea a {
-    box-sizing: unset !important;
+    box-sizing: border-box !important;
     display: inline-flex !important;
     position: relative;
     flex-wrap: wrap !important;
@@ -62,12 +67,17 @@ javascript:(function(){
     cursor: pointer;
     width: auto;
     height: 25px;
+    border-radius: 3px;
     margin-left: 10px;
     margin-top: 3px;
     padding: 5px 10px 10px;
-    background: rgb(40, 40, 40);
-    color: white;  
-  }`;
+    background: rgba(40, 40, 40, .85);
+    color: white;    
+    text-decoration: none;    
+  }
+  span#timeMarkButtonArea a:hover { 
+    background: rgba(40, 40, 40, 1);
+  } `;
   
  /* Note box setup. */
  var noteTextArea, noteArea, noteBoxDiv;
