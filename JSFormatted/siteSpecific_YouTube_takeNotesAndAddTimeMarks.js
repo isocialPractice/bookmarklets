@@ -15,6 +15,12 @@ javascript:(function(){
  var curTimeElement;         /* redefined to get time mark  */
  var timePreCal, timeSecCal; /* redefined - time mark in seconds and time mark */
  
+ /* Global configuration variables */
+ var ignoredKeys = /* keys pressed that do not active not box */
+  "Home End PageUp PageDown"; 
+ var ignoredDOMElements =  /* stop function if one of these is active */
+  ["comments", "search", "contenteditable-root", "player"]; 
+ 
  /* CSS style sheet */
  var noteCSS = `
   div#noteArea {
@@ -139,13 +145,18 @@ javascript:(function(){
   
   /* store key press and check active element */
   let currentKeyPress = event.key;
-  let ignoredKeys = "Home"; /* keys pressed that do not active not box */
 
   /* start conditions to activate note box or run function accordingly  */
-  if (activeID != "comments" || /* if any of these elements have focus */
-      activeID != "search"   || /* then don't take notes */
-      activeID != "contenteditable-root" ||
-      activeID != "player") {   
+  /* if any of these elements have focus */
+  /** ignoredDOMElements = "comments search contenteditable-root player"; **/
+  /* then don't take notes - note - variable defined at start */
+  for (i in ignoredDOMElements) {
+   if (activeID == ignoredDOMElements[i]) { 
+    /* quit function  */
+    return;
+   } 
+  }  /* else */
+  { /* the active element is not in ignored list, run function */
    let checkKeyCombo = /* check for combos */
     lastKeyPress + "+" + currentKeyPress;
     
