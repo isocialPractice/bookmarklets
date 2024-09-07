@@ -28,15 +28,15 @@ javascript:(function(){
   button#closeNoteBoxBtn {
    display: inline;
    position: relative;
-   left: -35px;
-   top: 20px;
+   left: -5px;
+   top: 5px;
    width: 25px;
    height: 25px;
    background: red;
    color: white;
    border: none;
    border-radius: 5px;
-   z-index: 0;
+   z-index: 1;
   }
   button#closeNoteBoxBtn:hover,
   button#closeNoteBoxBtn:hover ~ input#closeCheckbox:hover {
@@ -46,10 +46,9 @@ javascript:(function(){
    box-sizing: content-box;
    display: inline-block;
    position: absolute;
-   left: -35px;
-   top: 20px;
-   padding: 100px;
-   z-index: 1;
+   left: -5px;
+   top: 5px;
+   z-index: 2;
    opacity: 0;
   }
   input#closeCheckbox:hover {
@@ -91,6 +90,7 @@ javascript:(function(){
    max-width: 450px;  
    width: 450px;
    height: 100px; 
+   padding: 10px;
    border-radius: 10px;
   }
   span#timeMarkButtonArea {
