@@ -367,7 +367,7 @@ To pause press `Ctrl`, `Shift`, and `Space` \(in that order\). <br><br>
  _OPTIONAL---------------------------------------------------------------------------------------
           ---------------------------------------------------------------------------------------
 -->		 
- 
+
 Gist page for [siteSpecific_YouTube_takeNotesAndAddTimeMarks.js](https://gist.github.com/jhauga/7cd368113b0a083e063310d5deb8c718)
 
 ```markdown
