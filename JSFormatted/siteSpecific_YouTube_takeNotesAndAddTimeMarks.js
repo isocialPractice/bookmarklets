@@ -338,6 +338,6 @@ javascript:(function(){
   keypressToNote();
   }); 
  };
- 
+ /* Listen for keydonw event. */
  addKeyDown();
 })();
