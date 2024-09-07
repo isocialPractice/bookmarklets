@@ -4,6 +4,8 @@ javascript:(function(){
   document.getElementById("noteArea");
  var noteBox =               /* textare element for taking notes */
   document.getElementById("noteBox");
+ var closeNoteBox =          /* Close notebox element */
+  document.getElementById("closeNoteBox");
  var aboveTheFold =          /* html after vidoe box */
   document.getElementById("above-the-fold");
  var player =                /* video player topmost parent */
@@ -23,6 +25,47 @@ javascript:(function(){
  
  /* CSS style sheet */
  var noteCSS = `
+  button#closeNoteBoxBtn {
+   display: inline;
+   position: relative;
+   left: -35px;
+   top: 20px;
+   width: 25px;
+   height: 25px;
+   background: red;
+   color: white;
+   border: none;
+   border-radius: 5px;
+   z-index: 0;
+  }
+  button#closeNoteBoxBtn:hover,
+  button#closeNoteBoxBtn:hover ~ input#closeCheckbox:hover {
+   border: 3px solid gray;
+  }
+  input#closeCheckbox {
+   box-sizing: content-box;
+   display: inline-block;
+   position: absolute;
+   left: -35px;
+   top: 20px;
+   padding: 100px;
+   z-index: 1;
+   opacity: 0;
+  }
+  input#closeCheckbox:hover {
+   width: 20px;
+   height: 20px; 
+   border: 2px solid gray;
+   opacity: .25;
+  }
+  
+  input#closeCheckbox:checked + div#noteArea {
+   display: inline-flex;
+  }
+  
+  input#closeCheckbox + div {
+   display: none;
+  }
   div#noteArea {
    display: inline-flex;
    flex-wrap: nowrap;
@@ -86,7 +129,8 @@ javascript:(function(){
   } `;
   
  /* Note box setup. */
- var noteTextArea, noteArea, noteBoxDiv;
+ var noteTextArea, noteArea, noteBoxDiv, 
+     closeNoteBoxBtn, closeCheckbox;
  if (!noteAreaID) {
   /* are for notes */
   noteArea = document.createElement("div");
@@ -106,6 +150,18 @@ javascript:(function(){
   noteAreaID.insertAdjacentElement("afterbegin", noteBoxDiv);
   /* insert textare html elements to take notes */
   noteBoxDiv.insertAdjacentElement("afterbegin", noteTextArea); 
+  /* ckise buttnon */
+  closeNoteBoxBtn = document.createElement("button");
+  closeNoteBoxBtn.id = "closeNoteBoxBtn";
+  noteStyle.insertAdjacentElement("afterend", closeNoteBoxBtn);
+  closeNoteBoxBtn.textContent = "X";
+  /* checkbox to show hide with css */
+  closeCheckbox = document.createElement("input");
+  closeCheckbox.type = "checkbox";
+  closeCheckbox.id = "closeCheckbox";  
+  closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
+  closeCheckbox = document.getElementById("closeCheckbox");
+  closeCheckbox.setAttribute("checked", true);
  }
  
  /* Redefine noteBox */
