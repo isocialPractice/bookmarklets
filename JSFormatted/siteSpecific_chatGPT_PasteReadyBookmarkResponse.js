@@ -11,7 +11,7 @@ javascript:(function(){
  var DivClassNameIdentifierII = "-ml-1 mt-0 flex h-7 items-center justify-center gap"; /*  This checks class on signed out guest page */
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
- var answerAreaClassNameIdentifier = "mb-2 flex gap-3";  /******************* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
+ var answerAreaClassNameIdentifier = "mb-2 flex gap-3";  /******************** HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
  
  /* Select all divs and use in loop. */
  var allDivElements = document.getElementsByTagName("div");
