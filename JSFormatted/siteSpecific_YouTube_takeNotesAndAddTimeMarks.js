@@ -75,7 +75,7 @@ javascript:(function(){
   div #noteArea div {
    display: inline-block; 
    position: relative;
-   margin: 0px;
+   margin: 0px 10px;
    max-width: 450px;
    width: min-content;
   }
