@@ -11,7 +11,7 @@ javascript:(function(){
  var DivClassNameIdentifierII = "-ml-1 mt-0 flex h-7 items-center justify-center gap"; /*  This checks class on signed out guest page */
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
- var answerAreaClassNameIdentifier = "mt-1 flex gap-3";  /******************* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
+ var answerAreaClassNameIdentifier = "mb-2 flex gap-3";  /******************* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
  
  /* Select all divs and use in loop. */
  var allDivElements = document.getElementsByTagName("div");
@@ -117,9 +117,9 @@ javascript:(function(){
      copiedContent = copiedContent.replace(/\n/g, "<br>");
      copiedContent = copiedContent.replace(/\"/g, '&#92;&quot;');    /* use html encoding for escaped double quotes */
      copiedContent = copiedContent.replace(/"/g, '\"');              /* keep double quotes as needed for inline html */
-     copiedContent = copiedContent.replace(/\\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes */
-     copiedContent = copiedContent.replace(/'/g, "\'");              /* keep single quotes as needed for inline html */
-     copiedContent = copiedContent.replace(/([ 	]{2,})/g, "<br>$1"); /* replace 2 or momre spaces with <br> tag */
+     copiedContent = copiedContent.replace(/\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes */
+     copiedContent = copiedContent.replace(/'/g, "'");              /* keep single quotes as needed for inline html */
+     copiedContent = copiedContent.replace(/([ ]{2,})/g, "<br>$1"); /* replace 2 or momre spaces with <br> tag */
      copiedContent = copiedContent.replace(/class=&#92;&quot;/g, "class='"); /* HOT-GLUE - correct open class  - HOT-GLUE */
      copiedContent = copiedContent.replace(/&#92;&quot;>/g, "'>");           /* HOT-GLUE - correct close class - HOT-GLUE */
 
