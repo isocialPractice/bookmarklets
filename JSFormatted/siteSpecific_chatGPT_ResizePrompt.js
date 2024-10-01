@@ -58,10 +58,10 @@ textarea#prompt-textarea {
  overflow: scroll !important;  
 }  
 form div.relative.flex.h-full.flex-1 div + div.flex.w-full.items-center {   
- min-height: ` + setMinHeight + ` !important;   
- max-height: ` + setMaxHeight + ` !important;   
- min-width: `  + setMinWidth  + ` !important;   
- max-width: `  + setMaxWidth  + ` !important;  
+ min-height: ${setMinHeight} !important;   
+ max-height: ${setMaxHeight} !important;   
+ min-width:  ${setMinWidth} !important;   
+ max-width:  ${setMaxWidth} !important;  
 } 
 `;
  document.body.appendChild(neededStyling);
