@@ -25,6 +25,7 @@ javascript: (function () {
  }
  var parElement = promptPar.parentElement; 
  var grandParElement = parElement.parentElement; 
+ var greatGrandParElement = grandParElement.parentElement;
  var textareaParent = parElement.children[0];
  var formParent;
  grandParElement.style.transform = "rotateX(180deg)";
@@ -32,8 +33,15 @@ javascript: (function () {
  grandParElement.style.resize = "both";  
  grandParElement.style.minHeight = "100px";
  grandParElement.style.maxHeight = "800px";
- grandParElement.style.minWidth = "50%"; 
- grandParElement.style.maxWidth = "100%"; 
+ grandParElement.style.minWidth = "60%"; 
+ grandParElement.style.maxWidth = "150%"; 
+ grandParElement.style.padding = "10px";
+ grandParElement.style.background ="rgb(244, 244, 244)";
+ grandParElement.style.borderRadius = "25px";
+ grandParElement.children[0].style.paddingLeft = "10px";
+ greatGrandParElement.style.minWidth = "100%";
+ greatGrandParElement.style.maxWidth = "100%";
+ greatGrandParElement.style.background = "none";
  parElement.style.display = "inline-block";
  parElement.style.transform = "rotateX(180deg)"; 
  parElement.style.maxWidth = "100%";
@@ -49,7 +57,7 @@ javascript: (function () {
  var neededStyling = document.createElement("style");
  neededStyling.innerHTML = `
 form.w-full {
- width: auto !important;
+ width: 100% !important;
 }
 textarea#prompt-textarea {   
  max-height: 800px !important;   
