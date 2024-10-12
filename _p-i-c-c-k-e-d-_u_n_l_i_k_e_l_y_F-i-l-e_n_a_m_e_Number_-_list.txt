@@ -1,1 +1,0 @@
-siteSpecific_chatGPT_ResizePrompt.js
