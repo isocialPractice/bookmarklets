@@ -2,28 +2,37 @@ javascript:(function(){
  /* Global DOM variables */
  var noteAreaID =            /* parent for note elements */
   document.getElementById("noteArea");
+ 
  var noteBox =               /* textare element for taking notes */
   document.getElementById("noteBox");
+ 
  var closeNoteBox =          /* Close notebox element */
   document.getElementById("closeNoteBox");
+ 
  var aboveTheFold =          /* html after vidoe box */
   document.getElementById("above-the-fold");
+ 
  var player =                /* video player topmost parent */
   document.getElementById("player"); 
+ 
  var playButton =            /* play button - needed to update time mark */
   document.getElementsByClassName("ytp-play-button");
+ 
  var currentTimeClassName =  /* class element with current time */
   "ytp-time-current"; 
+ 
  var curTimeElement;         /* redefined to get time mark  */
  var timePreCal, timeSecCal; /* redefined - time mark in seconds and time mark */
  
  /* Global configuration variables */
  var ignoredKeys = /* keys pressed that do not active not box */
   "Home End PageUp PageDown"; 
+ 
  var ignoredDOMElements =  /* stop function if one of these is active */
   ["comments", "search", "contenteditable-root", "player"]; 
  
  /* CSS style sheet */
+ {
  var noteCSS = `
   button#closeNoteBoxBtn {
    display: inline;
@@ -127,7 +136,7 @@ javascript:(function(){
   span#timeMarkButtonArea a:hover { 
     background: rgba(40, 40, 40, 1);
   } `;
-  
+  }
  /* Note box setup. */
  var noteTextArea, noteArea, noteBoxDiv, 
      closeNoteBoxBtn, closeCheckbox;
@@ -136,25 +145,33 @@ javascript:(function(){
   noteArea = document.createElement("div");
   noteArea.id = "noteArea";   
   aboveTheFold.insertAdjacentElement("beforebegin", noteArea); 
+  
   let noteStyle =         /* using noteCSS from above */
    document.createElement("style"); 
+  
   noteStyle.textContent = /* add css properties */
    noteCSS;        
+  
   noteArea.insertAdjacentElement("beforebegin", noteStyle);
   noteAreaID = document.getElementById("noteArea");
+  
   /* note box */
   noteTextArea = document.createElement("textarea"); 
   noteTextArea.id = "noteBox"; 
   noteBoxDiv = document.createElement("div");
+  
   /* insert div to hold textarea */
   noteAreaID.insertAdjacentElement("afterbegin", noteBoxDiv);
+  
   /* insert textare html elements to take notes */
   noteBoxDiv.insertAdjacentElement("afterbegin", noteTextArea); 
+  
   /* ckise buttnon */
   closeNoteBoxBtn = document.createElement("button");
   closeNoteBoxBtn.id = "closeNoteBoxBtn";
   noteStyle.insertAdjacentElement("afterend", closeNoteBoxBtn);
   closeNoteBoxBtn.textContent = "X";
+  
   /* checkbox to show hide with css */
   closeCheckbox = document.createElement("input");
   closeCheckbox.type = "checkbox";
@@ -162,6 +179,14 @@ javascript:(function(){
   closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
   closeCheckbox = document.getElementById("closeCheckbox");
   closeCheckbox.setAttribute("checked", true);
+  /* alternate blose button status */
+  closeCheckbox.addEventListener("click", function() {
+   if (this.previousElementSibling.textContent == "X") {
+    this.previousElementSibling.textContent = "O";
+   } else {
+    this.previousElementSibling.textContent = "X";
+   }
+  });
  }
  
  /* Redefine noteBox */
@@ -273,9 +298,11 @@ javascript:(function(){
    timeSecCal =      
     Number(timePreCal[0]); /* seconds */
   }
-
+  /* create time mark area and elements */
   let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
   let timeMarkButtonArea;
+  
+  /* don't duplicate parent container */
   if (!timeMarkButtonAreaID) { /* create area for time mark buttons */
    let timeMarkDiv =    /* parent for time mark box */
     document.createElement("div");
@@ -287,17 +314,25 @@ javascript:(function(){
    /* insert time mark box */
    timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
   }
+  
+  /* give each mark id with time appended */
   let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCal);
   let curTimeMarkBtn;
+  
+  /* don't duplicate time marks */
   if (!curTimeMarkBtnID) { /* create time mark buttons */
    let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
+   
    curTimeMarkBtn =     /* time mark linking tom marked times */
     document.createElement("a");
+   
    curTimeMarkBtn.id =  /* give each a unique id */
     "timeMarkBtn" + timeSecCal;
+   
    /* open link in new tab - _blank */
    curTimeMarkBtn.target =  "_blank";   
    let vidURL = location.href; /* extract current url */
+   
    /* conditions if url did not already have time value */
    if (vidURL.indexOf("&t=") > -1) { /* had time value   */
     vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCal);
@@ -305,6 +340,7 @@ javascript:(function(){
     vidURL = vidURL + "&t=" + timeSecCal + "s";
    }      
    curTimeMarkBtn.href = vidURL;
+   
    /* use hour : minutes: seconds */
    for (i in timePreCal) {
     if (i == Number(timePreCal.length-1)) {
@@ -317,8 +353,16 @@ javascript:(function(){
      curTimeMarkBtn.innerText += timePreCal[i] + ":";
     }
    }
-
+   /* insert time marked at key combo "Ctrl + m" */
    timeMarkButtonAreaID.insertAdjacentElement("beforeend", curTimeMarkBtn);
+   
+   /* add click event to pause video if clicked and video is playing */
+   curTimeMarkBtn.addEventListener("click", function() {
+    let playButtonData = playButton[0].dataset.titleNoTooltip;
+    if (playButtonData != "Play") {
+     playButton[0].click();
+    }
+   });     
   }    
   
   /* focus back on note box */
