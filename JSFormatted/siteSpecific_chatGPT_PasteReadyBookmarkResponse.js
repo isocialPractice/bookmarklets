@@ -7,8 +7,7 @@ javascript:(function(){
  var ButtonClassNameIdentifier = "rounded-lg text-token-text-secondary";    /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
  
  /* Class names to identify div that is parent of button row. */
- var DivClassNameIdentifier = "items-center justify-start rounded-xl p-1";  /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE ************/
- var DivClassNameIdentifierII = "-ml-1 mt-0 flex h-7 items-center justify-center gap"; /*  This checks class on signed out guest page */
+ var DivClassNameIdentifierII = "mb-2 flex gap-3"; /*  This checks class on signed out guest page */
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier = "mb-2 flex gap-3";  /******************** HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
@@ -30,11 +29,6 @@ javascript:(function(){
       allDivElements[i].className.indexOf(DivClassNameIdentifierII) > -1 && 
       /* HOT-GLUE - if a conversation has question edits - HOT-GLUE */
       allDivElements[i].getElementsByTagName("path").length >= 1
-      ) || 
-      ( /* condition for logged in account page - working with everyday 3.5 chatGPT */
-      allDivElements[i].className.indexOf(DivClassNameIdentifier) > -1 && 
-      /* HOT-GLUE - if a conversation has question edits - HOT-GLUE */
-      allDivElements[i].getElementsByTagName("path").length > 2
       )) {
    /* start process to select the copy button */   
    let selectCopyButton = function() {
