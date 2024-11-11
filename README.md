@@ -17,6 +17,7 @@
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
   - [OctoPrint - Change Graph Image](#octoprint---change-graph-image) - ready to use - <em>1 optional change</em>
   - [Stackoverflow - Add Answer Anchor Links](#stackoverflow---add-answer-anchor-links) - ready to use
+  - [Stackoverflow - Copy Answer Anchor Links](#stackoverflow---copy-answer-anchor-links) - ready to use
   - [YouTube - Add Time Marks](#youtube---add-time-marks) - ready to use
   - [YouTube - Take Notes and Add Time Marks](#youtube---take-notes-and-add-time-marks) - ready to use
 - [Window Bookmarklets](#window-bookmarklets)
@@ -342,6 +343,25 @@ Gist page for [siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js](https://gi
 
 ```markdown
 javascript:(function() {var answers = document.getElementsByClassName("answer"); var answersLen = answers.length; var votingContainer; for (i = 0; i < answersLen; i++) {votingContainer = answers[i].getElementsByClassName("js-voting-container")[0]; let anchorButton = document.createElement("a"); anchorButton.innerHTML = "| # |"; anchorButton.setAttribute("href", "#"+answers[i].id); anchorButton.style.marginTop = "10px"; anchorButton.style.marginLeft = "12px"; anchorButton.style.color = "gray"; votingContainer.insertAdjacentElement("beforeend", anchorButton);} })();
+```
+</details>
+</dd></dl></dd></dl>
+
+Stackoverflow - Copy Answer Anchor Links: 
+----
+<dl><dd><dl><dd>
+
+Add a button to extract an answers id, adding it to address bar as anchor link, and copy full url to the clipboard. dds button to bottom of voting area for all answers. Use to easily bookmark and reference a StackOverflow answer.  <br><br>
+
+<strong>USE - ready to use</strong>
+<details>
+
+<summary>siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js</summary><br>
+		 
+Gist page for [siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js](https://gist.github.com/jhauga/80fa99670b2d27c373e11e485ba451bd)
+
+```markdown
+javascript: (function () { var answers = document.getElementsByClassName("answer"); var answersLen = answers.length; var votingContainer; for (i = 0; i < answersLen; i++) { votingContainer = answers[i].getElementsByClassName("js-voting-container")[0]; let anchorButton = document.createElement("a"); anchorButton.innerHTML = "| # |"; anchorButton.setAttribute("href", "#" + answers[i].id); anchorButton.style.marginTop = "10px"; anchorButton.style.marginLeft = "12px"; anchorButton.style.color = "gray"; votingContainer.insertAdjacentElement("beforeend", anchorButton); anchorButton.addEventListener("click", function() { setTimeout(function() { navigator.clipboard.writeText(anchorButton.href); }, 100); }); }})();
 ```
 </details>
 </dd></dl></dd></dl>
