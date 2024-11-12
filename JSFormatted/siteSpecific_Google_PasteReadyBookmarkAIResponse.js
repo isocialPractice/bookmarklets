@@ -189,7 +189,7 @@ div div div div div span {
  answerDivHTML = answerDivHTML.replace(/\'/g, "&#92;&apos;'");   
  answerDivHTML = answerDivHTML.replace(/'/g, "'");              
  answerDivHTML = answerDivHTML.replace(/([ ]{2,})/g, "<br>$1"); 
- answerDivHTML = answerDivHTML.replace(/%/g, "\\\%"); 
+ answerDivHTML = answerDivHTML.replace(/%/g, "\\%"); 
  
  /************************************************************* Make bookmarklet with answer bookmarked. */
  var copiedAnswer = 'javascript:(function() {document.write("' + 
