@@ -402,7 +402,9 @@ YouTube - Add Time Marks
 ----
 <dl><dd><dl><dd>
 
-Add time marks to current video, creating links with value of marked time. When click video will open in new tab at tim indicated in link.
+Add time marks to current video, creating links with value of marked time. When click video will open in new tab at tim indicated in link. Works with:
+
+1. YouTube - Take Video Notes
 
 
 <strong>Add Time Mark</strong> - ` Ctrl + m `.<br>
@@ -561,14 +563,6 @@ javascript:(function(){var pageDownBy=500;function runPageDown(y){scrollTo(0,y);
 
 <hr><br>
 
-<!-- End of File -->
- 
-```
-</details>
-</dd></dl></dd></dl>
-```
-</details>
-</dd></dl></dd></dl>
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
  
