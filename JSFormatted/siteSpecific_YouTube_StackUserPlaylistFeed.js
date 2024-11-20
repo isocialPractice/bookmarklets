@@ -33,6 +33,7 @@ javascript:(function(){
  }
  
  div#contents div#content {
+   width: 850%;
    margin-left: 10px;
  }
  
@@ -45,10 +46,6 @@ javascript:(function(){
    padding: 15px 5px 10px 15px;
    border-top: 1px solid lightslategray;
    border-bottom: 2px solid lightslategray;
- }
- 
- div#contents div#content {
-   width: 850%;
  }
  
  yt-lockup-view-model.ytd-rich-item-renderer.lockup div.yt-lockup-view-model-wiz {
@@ -64,7 +61,7 @@ javascript:(function(){
  
  div.yt-lockup-view-model-wiz div.yt-lockup-view-model-wiz__metadata {
    position: absolute !important;
-   left: 300px;
+   margin-left: 50px;
  }
  
  div.yt-lockup-view-model-wiz div.yt-lockup-view-model-wiz__metadata div h3 a span {
