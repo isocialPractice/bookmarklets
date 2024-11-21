@@ -26,6 +26,7 @@
   - [YouTube - Take Video Notes](#youtube---take-video-notes) - ready to use 
 - [Window Bookmarklets](#window-bookmarklets)
   - [Page Offset - Custom Page Down](#page-offset---custom-page-down) - ready to use
+  - [URI - Anchor Higlighted Text](#uri---anchor-higlighted-text) - ready to use 
 </details>
 </div>
 <!-- Ready to Use Demo -->
@@ -559,10 +560,35 @@ javascript:(function(){var pageDownBy=500;function runPageDown(y){scrollTo(0,y);
 ```
 </details>
 </dd></dl></dd></dl>
+
+URI - Anchor Higlighted Text: 
+----
+<dl><dd><dl><dd>
+
+Select text and add it to URI as anchor link. NOTE - for best results limit selection to one line, avoiding special characters. <br><br>
+
+
+<strong>USE - ready to use</strong>
+<details>
+
+<summary>window_URI_AnchorHighlightedText.js</summary><br>
+
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [window_URI_AnchorHighlightedText.js](https://gist.github.com/jhauga/861f74e65191714ecbd2d0eee7712754)
+
+```markdown
+javascript:(function() { /* Define global variables. */ var currentPage = location.href.replace(/#~:text=*/g, ""); /* current uri */ var initTextAnchor = "#:~:text="; /* anchor syntax for text */ /* Store highlighted text in a variable using function. */ const selectHighlightedText = () => { let selection = window.getSelection(); /* use window property */ if (selection.rangeCount > 0) { /* if some text selected */ return encodeURI(selection /* return it as am emcpded */ .getRangeAt(0).toString() /* URI string replacing */ .replace(/ {2,}/g, " ") /* two or more spaces */ .replace(/\n/g, "")); /* and rendered new lines str */ } else { /* if none selected */ return ""; /* return empty string */ } }; /* Store results of selectHighlightedText() call. */ var selectedText = selectHighlightedText(); /* Set URI with anchor to highlighted text. */ location.href = %60${currentPage}${initTextAnchor}${selectedText}%60;})();
+```
+</details>
+</dd></dl></dd></dl>
+
 </div>
 
 <hr><br>
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
- 
+  
