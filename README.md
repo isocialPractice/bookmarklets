@@ -543,7 +543,7 @@ javascript:(function(){ /* Global DOM variables */ var noteAreaTakeNotesIDTakeNo
 
 # Window Bookmarklets
 <div>
-The below bookmarklets pertain to the browser window object, enabling user experience \(<em>UX</em>\) customization.
+The below bookmarklets pertain to the browser window object, enabling user experience (<em>UX</em>) customization.
 
 Page Offset - Custom Page Down: 
 ----
@@ -569,7 +569,7 @@ Style - Bold Selected Text:
 ----
 <dl><dd><dl><dd>
 
-Run this bookmarklet when you want to bold selected text on a webpage. Press ctrl + b to make the selected text bold. Works with:
+Run this bookmarklet when you want to bold selected text on a webpage. Press `ctrl + b` to make the selected text bold. Works with:
 
 1. Style - Italic Selectied Text
 2. Style - Underline Selected Text
@@ -619,7 +619,7 @@ Style - Italic Selected Text:
 ----
 <dl><dd><dl><dd>
 
-Run this bookmarklet when you want to italicize selected text on a webpage. Press ctrl + i to make the selected text italic. Works with:
+Run this bookmarklet when you want to italicize selected text on a webpage. Press `ctrl + i` to make the selected text italic. Works with:
 
 1. Style - Bold Selected Text
 1. Style - Underline Selected Text
@@ -669,7 +669,7 @@ Style - Underline Selected Text:
 ----
 <dl><dd><dl><dd>
 
-Run this bookmarklet when you want to underline selected text on a webpage. Press Control + Shift + u to make the selected text underlined. Works with:
+Run this bookmarklet when you want to underline selected text on a webpage. Press `Control + Shift + u` to make the selected text underlined. Works with:
 
 1. Style - Bold Selected Text
 2. Style - Italic Selected Text
