@@ -28,6 +28,7 @@
   - [Page Offset - Custom Page Down](#page-offset---custom-page-down) - ready to use
   - [Style - Bold Selected Text](#style---bold-selected-text) - ready to use 
   - [Style - Italic Selected Text](#style---italic-selected-text) - ready to use 
+  - [Style - Underline Selected Text](#style---underline-selected-text) - ready to use 
   - [URI - Anchor Higlighted Text](#uri---anchor-higlighted-text) - ready to use 
 </details>
 </div>
@@ -668,6 +669,58 @@ javascript:(function() { /* OPTIONAL - set to 0 or delete to turn off instrucito
 </details>
 </dd></dl></dd></dl>
 
+Style - Underline Selected Text: 
+----
+<dl><dd><dl><dd>
+
+Run this bookmarklet when you want to underline selected text on a webpage. Press Control + ; to make the selected text underlined <br><br>
+
+<!------------------------------------------
+Run this bookmarklet when you want to underline selected text on a webpage. Press Control + u to make the selected text underlined. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>window_style_underlineSelectedText.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [window_style_underlineSelectedText.js](https://gist.github.com/jhauga/645e97a7af14a14965d040d3bb2aa45f)
+
+```markdown
+javascript:(function() { /* OPTIONAL - set to 0 or delete to turn off instruciton pop-up, */ var alertWithInstructions_underlineText = 1; /* Define global variables. */ var currentUnderlineCount = 1; /* count number of times run to get unique ids */ var currentStyleOpenTag_underlineText = "<u>"; /* open tag to style selection */ var currentStyleCloseTag_underlineText = "</u>"; /* close tag to style selection */ var keyCombo_underlineText = "Control+;"; /* key combo to change style */ /* Declare global variables */ var range_underlineText, selection_underlineText, selectionParent_underlineText, selectedString_underlineText, parentIDWithSelectedText_underlineText; /***** MAIN FUNCTION *****/ function keypressToBookmarklet_underlineText() { /* keyboard combo that enablse text to be style underline */ let lastUnderlineKeypress = sessionStorage.getItem("bm_last_underline_keypress"); let currentUnderlineKeyPress = event.key; /* check if sessionStorage already contains data with above var names */ if (lastUnderlineKeypress == null) { sessionStorage.setItem("bm_last_underline_keypress", event.key); lastUnderlineKeypress = sessionStorage.getItem("bm_last_underline_keypress"); } /* variable to check key combo */ let checkKeyComboUnderlineText = lastUnderlineKeypress + "+" + currentUnderlineKeyPress; /* check if key combo is ctrl + u */ if (checkKeyComboUnderlineText == keyCombo_underlineText) { currentUnderlineCount += 1; /* increment count for unique id */ getParentElementOfSelection(); /* get parent of selected text */ /* add a delay to ensure two previous blocks run */ setTimeout(function() { underlineTheSelectedText(); /* wrap the selected text in <u> tag */ }, 100); } } /***** Support Functions: *****/ /* Get parent of selection, give it id and use it to style selected text. */ const getParentElementOfSelection = () => { /* get the current selection */ selection_underlineText = window.getSelection(); if (selection_underlineText.rangeCount > 0) { /* ensure something is selected */ /* prepare elements to change selection */ range_underlineText = selection_underlineText.getRangeAt(0); /* first object of selection */ selectionParent_underlineText = range_underlineText.commonAncestorContainer; /* node of selection */ selectedString_underlineText = range_underlineText.toString(); /* store as string */ /* ensure selection is a text node */ if (selectionParent_underlineText.nodeType === 3) { /* if it is a text node */ let curPar = selectionParent_underlineText.parentElement; /* store the parent element */ /* give parent a unique id */ if (curPar.hasAttribute("id") == true) { let curID = curPar.id; if (curID.indexOf("bm_window_style_underlineSelectedText_") > -1) { /* don't include prior unique ids */ curID = curID.replace(/bm_window_style_underlineSelectedText_[0-9]+/g, "bm_window_style_underlineSelectedText_" + currentUnderlineCount); /* set the parents' id to unique id */ curPar.id = curID; } else { /* append unique id to the current id value */ curPar.id += " bm_window_style_underlineSelectedText_" + currentUnderlineCount; } } else { /* set the parents' id to unique id */ curPar.setAttribute("id", "bm_window_style_underlineSelectedText_" + currentUnderlineCount); } /* select by id to get parent element */ parentIDWithSelectedText_underlineText = document.getElementById("bm_window_style_underlineSelectedText_" + currentUnderlineCount); } else { let skip; } } }; /* Style text using the ID added to parent element in getParentElementOfSelection(). */ const underlineTheSelectedText = () => { /* store the curren innerHTML to update with underline text */ let curInnerHTML = parentIDWithSelectedText_underlineText.innerHTML; /* wrap selection in HTML u tag */ let underlineStyleSelection = /* use variables defined at top and in main function */ currentStyleOpenTag_underlineText + selectedString_underlineText + currentStyleCloseTag_underlineText; /* if only one occurence of selected text in parent element */ if (curInnerHTML.indexOf(selectedString_underlineText) == curInnerHTML.lastIndexOf(selectedString_underlineText)) { /* replace selection with newly styled text */ curInnerHTML = curInnerHTML.replace(selectedString_underlineText, underlineStyleSelection); /* Update parent HTML with newly styled text */ parentIDWithSelectedText_underlineText.innerHTML = curInnerHTML; } else { /* variable used so insertion is not duplicated */ let curLengthOfText = selectedString_underlineText.length; /* HOT-GLUE - make a good guess as to where index of current selection is within parent */ var getCurIndex = () => { /* Ensure parent is an element node */ if (selectionParent_underlineText.nodeType === Node.ELEMENT_NODE) { return range_underlineText.startOffset; } else { return range_underlineText.startOffset; } }; let curIndex = getCurIndex(); /* HOT-GLUE CALL - get the guessed index */ var insertAtIndex = (orgStr, insStr, index, insCount) => { /* insert new underline text */ return orgStr.slice(0, index) + insStr + orgStr.slice(Number(index + insCount)); }; /* update the parent HTML with text containg underline selection */ parentIDWithSelectedText_underlineText.innerHTML = insertAtIndex(curInnerHTML, underlineStyleSelection, curIndex, curLengthOfText); } }; /* Listen form key combo to underline text. */ const addKeyDown_underlineText = () => { document.body.addEventListener("keydown", function() { keypressToBookmarklet_underlineText(); }); }; /****************************************************************** Listen for keydonw event, running main function and underline selected text if the keyboard input is keyCombo_underlineText variable. *******************************************************************/ addKeyDown_underlineText(); /* Add alert event so that instructions for use are communicated. */ if (alertWithInstructions_underlineText != undefined && alertWithInstructions_underlineText == 1) { let alertText = "Press '" + keyCombo_underlineText + "' to make selected text underline. \n\n" + "For best results: \n\n" + " - Avoid selecting text with different sytling. \n" + " - Avoid selecting a word that is often repeated. \n" + " - Select text on the same line. \n" + " - Ensure selection contains entire words. \n"; alert(alertText); } })();
+```
+</details>
+</dd></dl></dd></dl>
+
 URI - Anchor Higlighted Text: 
 ----
 <dl><dd><dl><dd>
@@ -698,3 +751,4 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
+ 
