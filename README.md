@@ -20,6 +20,7 @@
   - [Stackoverflow - Add Answer Anchor Links](#stackoverflow---add-answer-anchor-links) - ready to use
   - [Stackoverflow - Copy Answer Anchor Links](#stackoverflow---copy-answer-anchor-links) - ready to use
   - [YouTube - Add Time Marks](#youtube---add-time-marks) - ready to use
+  - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
   - [YouTube - Take Notes and Add Time Marks](#youtube---take-notes-and-add-time-marks) - ready to use
@@ -428,6 +429,58 @@ javascript:(function(){ /* OPTIONAL - set to 0 or delete to turn off instruction
 </details>
 </dd></dl></dd></dl>
 
+YouTube - Darken Bottom Controls: 
+----
+<dl><dd><dl><dd>
+
+Darken the bottom controls of a YouTube video when the video has a constant light background. <br><br>
+
+<!------------------------------------------
+Darken the bottom controls of a YouTube video when the video has a constant light background.. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>siteSpecific_YouTube_DarkenBottomControls.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [siteSpecific_YouTube_DarkenBottomControls.js](https://gist.github.com/jhauga/b0405d62454e073d9512cbb20d1399ef)
+
+```markdown
+javascript:(function() { /* Simple process; select body, make style element, add CSS rules, and insert. */ var videoPageBodyElement = document.getElementsByTagName("body"); /* Create an HTML style tag to insert into page. */ var styleVideoBottomControls = document.createElement("style"); /* Make CSS rules to use for bottom controls. */ var cssVideoBottomControls = ` /* style control text */ div.ytp-time-display span { color: black; } /* style elements in controls */ div.ytp-progress-bar-container + div.ytp-chrome-controls { color: black; } /* style control icons */ div.ytp-progress-bar-container + div.ytp-chrome-controls path { fill: black; } /* style toggle */ div.ytp-autonav-toggle-button { background: black !important; }`;/* Add CSS rules to the created style tag. */styleVideoBottomControls.innerText = cssVideoBottomControls;videoPageBodyElement[0] /* insert the style tag after body element begins. */.insertAdjacentElement("afterbegin", styleVideoBottomControls);})();
+```
+</details>
+</dd></dl></dd></dl>
+
 YouTube - Stack User Playlist Feed: 
 ----
 <dl><dd><dl><dd>
@@ -744,4 +797,3 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
- 
