@@ -15,6 +15,7 @@
   - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - ready to use
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
+  - [Gmail - Style Sponsored Email](#gmail---style-sponsored-email) - ready to use 
   - [Google - Paste Ready Bookmark AI Response](#google---paste-ready-bookmark-ai-response) - ready to use
   - [OctoPrint - Change Graph Image](#octoprint---change-graph-image) - ready to use - <em>1 optional change</em>
   - [Stackoverflow - Add Answer Anchor Links](#stackoverflow---add-answer-anchor-links) - ready to use
@@ -294,6 +295,59 @@ javascript:(function(){var tableRow,tableRowLen,thead,curPage,curExtract,curUser
 ```
 </details>
 </dd></dl></dd></dl>
+
+Gmail - Style Sponsored Email: 
+----
+<dl><dd><dl><dd>
+
+Use this bookmarklet to get contrast between regular emails and sponsored emails in gmail <br><br>
+
+<!------------------------------------------
+getting contrast between regular emails and sponsored emails in gmail. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>siteSpecific_Gmail_StyleSponsoredEmail.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [siteSpecific_Gmail_StyleSponsoredEmail.js](https://gist.github.com/jhauga/98f86d2bab59a2a9618644cf598077ce)
+
+```markdown
+javascript:(function() { /* Define and declare globals in config variables. */ var rowTextGmailSponsored = "Sponsored"; var backgroundStyleGmailSponsoredEmail = "rgba(240,128,128,.1)"; /* Keeps recursive styling going. */ var switchVariableGmailSponsorStyle = 0; var sponsorsPositionedAtTopStyleGmailSponsoredEmail = 0; /* Will be used later. */ var focalElementGmailSponsorStyle; var sponsorRowsMarkedStyleGmailSponsoredEmail; var checkRowsMarkedStyleGmailSponsoredEmail; /* Define table rows for potential styling. */ var trGmailStyleSponsoredEmail = document.getElementsByTagName("tr"); var trGmailStyleSponsoredEmailLen = trGmailStyleSponsoredEmail.length; /******************************************************************************** * MAIN FUNCTION * * Styles the table row if marked "Sponsored". * *********************************************************************************/ function styleSponsorRowsStyleSponsorEmail(recur) { if (recur == undefined) { recur = 0; } /* run as normal */ /* local nested function to recurse parent elements */ let toTop = (par) => { if (par.tagName =="TBODY") { /* insert sponsors at top */ par.insertAdjacentElement("afterbegin", focalElementGmailSponsorStyle); /* mark top rows so recurse repeats when changed */ focalElementGmailSponsorStyle.dataset.markSponsor = 1; } else { /* go to next parent element */ toTop(par.parentElement); } }; /* running idel */ if (recur == 1) { checkRowsMarkedStyleGmailSponsoredEmail = /* select number of marked rows */ document.querySelectorAll("[data-mark-sponsor]").length; } else { /* run marking rows and adding data attribute for recures toggling */ for (i = 0; i < trGmailStyleSponsoredEmailLen; i++) { if (trGmailStyleSponsoredEmail[i].innerText.indexOf(rowTextGmailSponsored) > -1) { trGmailStyleSponsoredEmail[i].style.background = /* use config var above */ backgroundStyleGmailSponsoredEmail; focalElementGmailSponsorStyle = /* define declared var above */ trGmailStyleSponsoredEmail[i]; /* call local function to main function */ toTop(focalElementGmailSponsorStyle.parentElement); } else { /* no need to do anything */ let skip; } if (i >= Number(trGmailStyleSponsoredEmailLen-1)) { /* end recursion */ switchVariableGmailSponsorStyle = 1; sponsorRowsMarkedStyleGmailSponsoredEmail = /* select number of marked rows */ document.querySelectorAll("[data-mark-sponsor]").length; } } } } /***** Support functions. *****/ const toggleSwitchVarGmailStyleSponsoredEmail = () => { let theTables = document.getElementsByTagName("table"); let mailTable = theTables[Number(theTables.length-1)]; let firstRow = mailTable.getElementsByTagName("tr"); /* condition to toggle switches cand check for row changes */ if (switchVariableGmailSponsorStyle == 0) { if (firstRow[0].hasAttribute("data-mark-sponsor")) { sponsorsPositionedAtTopStyleGmailSponsoredEmail = 1; } else { sponsorsPositionedAtTopStyleGmailSponsoredEmail = 0; /* rows have changed */ switchVariableGmailSponsorStyle = 0; /* continues recurse */ } } }; /* repeats main or support functions */ const recurseGmailStyleSponsoredEmail = (idle) => { if (idle == undefined) { idle = "no"; } /* runs doing something */ /* status check */ console.log("running"); if (sponsorsPositionedAtTopStyleGmailSponsoredEmail == 0) { if (idle == "no") { /* Call main function */ styleSponsorRowsStyleSponsorEmail(); /* Recurse to style if sponsors change. */ toggleSwitchVarGmailStyleSponsoredEmail(); } else { /* keep recurse running */ if (checkRowsMarkedStyleGmailSponsoredEmail == sponsorRowsMarkedStyleGmailSponsoredEmail) { styleSponsorRowsStyleSponsorEmail(1); recurseGmailStyleSponsoredEmail(1); } else { recurseGmailStyleSponsoredEmail(); } } } else { if (switchVariableGmailSponsorStyle == 0 && /* both switches are off */ sponsorsPositionedAtTopStyleGmailSponsoredEmail == 0 ) { /* call recurse again */ recurseGmailStyleSponsoredEmail(); } else { /* reset turning switches off */ switchVariableGmailSponsorStyle = 0; sponsorsPositionedAtTopStyleGmailSponsoredEmail = 0; /* and call recurse again */ recurseGmailStyleSponsoredEmail(1); } } }; /*Make intitial call. */ recurseGmailStyleSponsoredEmail(); /* Recurse functions after initial call. */ var recurseVarGmailStyleSponsoredEmail = setInterval(function() { recurseGmailStyleSponsoredEmail(); }, 5000);})(); 
+```
+</details>
+</dd></dl></dd></dl>
+
 
 Google - Paste Ready Bookmark AI Response:
 ----
@@ -797,3 +851,12 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
+ 
+<!------------------------------------------
+  - [_make Shift Title NBMTwo](#_make-shift-title-nbmtwo) - ready to use 
+    ---OR---
+  - [_make Shift Title NBMTwo](#_make-shift-title-nbmtwo) - requires [x] change(s) <---CHANGE[x]
+-------------------------------------------->
+
+<!-- BOOKMARKLET LIST ITEM -->
+    
