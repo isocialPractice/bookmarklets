@@ -41,7 +41,8 @@ javascript:(function() {
     document.querySelectorAll("[data-mark-sponsor]").length;  
   } else { /* run marking rows and adding data attribute for recures toggling    */
    for (i = 0; i < trGmailStyleSponsoredEmailLen; i++) {
-    if (trGmailStyleSponsoredEmail[i].innerText.indexOf(rowTextGmailSponsored) > -1) {
+    if (trGmailStyleSponsoredEmail[i]  && /* enusre loaded correct               */
+        trGmailStyleSponsoredEmail[i].innerText.indexOf(rowTextGmailSponsored) > -1) {
      trGmailStyleSponsoredEmail[i].style.background = /* use config var above     */
       backgroundStyleGmailSponsoredEmail; 
 
@@ -49,7 +50,10 @@ javascript:(function() {
       trGmailStyleSponsoredEmail[i]; 
 
      /* call local function to main function                                      */ 
-     toTop(focalElementGmailSponsorStyle.parentElement);
+     if ( /* if no data  marker                                                   */
+          focalElementGmailSponsorStyle.hasAttribute("data-mark-sponsor") == false) { 
+      toTop(focalElementGmailSponsorStyle.parentElement); /* place element at top */
+     }
     } else {
      /* no need to do anything                                                    */
      let skip;
