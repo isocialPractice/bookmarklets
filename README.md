@@ -4,8 +4,9 @@
 <details>
 <summary>Document Navigation: </summary>
 
-- [DOM Bookmarklets](#dom---bookmarklets)
-  - [Parse - Dom Stop Page Parsed Height](#parse---dom-stop-page-parsed-height) - ready to use 
+- [DOM Bookmarklets](#dom-bookmarklets)
+  - [Parse - Dom Stop Page Parsing](#parse---dom-stop-page-parsing) - ready to use 
+  - [Parse - Dom Stop Page Parsed Height](#parse---dom-stop-page-parsed-height) - ready to use   
 - [Navigation Bookmarklets](#navigation-bookmarklets)
   - [Highlight Current Page](#sidebar---highlight-current-page) - ready to use
   - [Underline Anchor Linke](#sidebar---underline-anchor-link) - ready to use
@@ -96,6 +97,58 @@ javascript:(function() {  })();
 <div>
 The below bookmarklets are for pages with parsed DOM content,
 or when editing the structure and/or adjusting HTML DOM.
+
+
+Parse - Dom Stop Page Parsing: 
+----
+<dl><dd><dl><dd>
+
+Page usese lazy loading and prevnet parsed content as scrolling down, making it hard to ready last few posts or footer from being viewed <br><br>
+
+<!------------------------------------------
+Page usese lazy loading and prevnet parsed content as scrolling down, making it hard to ready last few posts or footer from being viewed. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+Loosely Teste on [taxnotes.com](https://www.taxnotes.com/). <br>
+Page tessted - **[Featured News](https://www.taxnotes.com/featured-news)**.
+
+<details>
+
+<summary>dom_Parse_DomStopPageParsing.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [dom_Parse_DomStopPageParsing.js](https://gist.github.com/jhauga/bd8d1598d8731d242e0f18100b27edd9)
+
+```markdown
+javascript:(function() { /* Configurable variables .*/ const loadTextDomStopPageParsing = /* lazy loader class name contains these */ ["lazy_loader", "lazy-loader", "lazyLoader", "lazyObject", "lazyData"]; /* Global variables. */ const allElementsDomStopPageParsing = /* select all page HTML elements in the dom */ document.querySelectorAll('*'); /********************************************************************************************************************** * MAIN FUNCTION * * Loop through DOM and check if class names match that of array loadTextDomStopPageParsing * ***********************************************************************************************************************/ /* Loop through each element and output class if match configu var. */ var spinnerDomStopPageParsing, spinnerDomStopPageParsingClassDomStopPageParsing = 0; function outloadTextDomStopPageParsing(curArray, curClass) { let outClass = 0; /* store return in var and/or check if 0 later */ for (j in curArray) { /* loop arrary from parameter */ let lowClass = curClass.toLowerCase(); /* enusre match case */ let lowArr = curArray[j].toLowerCase();/* enusre match case */ if (lowClass.indexOf(lowArr) > -1) { /* has class match */ if (document.getElementsByClassName(curClass).length == 1) {/* 1 */ outClass = curClass; /* good to go */ break; } } } return outClass; }; /************** INITAL STATEMENTS **************/ /* Go through all elements and chekc if lazy load class match. *******/ allElementsDomStopPageParsing.forEach(element => { /* get class */ if (spinnerDomStopPageParsingClassDomStopPageParsing == 0) { /* get the class list of the element */ let classList = element.classList; /* check if the element has any classes */ if (classList.length > 0) { /* loop through each class */ classList.forEach(className => { /* check if class name matches lazy load guess, store in var */ spinnerDomStopPageParsingClassDomStopPageParsing = outloadTextDomStopPageParsing(loadTextDomStopPageParsing, className); }); } } }); /* If a class was output means on by that name so modify element. ****/ if (spinnerDomStopPageParsingClassDomStopPageParsing != 0 ) { spinnerDomStopPageParsing = /* only one so select at index 0 */ document.getElementsByClassName(spinnerDomStopPageParsingClassDomStopPageParsing)[0]; /* hide from dom so no random spinner going on */ spinnerDomStopPageParsing.style.display = "none"; let spinMark = spinnerDomStopPageParsing.previousElementSibling; if (spinMark) { /* may be the prior sibling as parse anchor */ if (spinMark.innerText.length <= 1) { /* make sure it's empty */ spinMark.remove(); /* looks like the tag looking for so remove */ console.log("Parsing to Page has been Disabled:"); /* notify */ } } }})(); 
+```
+</details>
+</dd></dl></dd></dl>
 
 Parse - Dom Stop Page Parsed Height: 
 ----
@@ -913,5 +966,3 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
-  
-    
