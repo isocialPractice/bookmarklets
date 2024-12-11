@@ -1,6 +1,6 @@
 javascript:(function() {
  /* Configurable variables .*/
- const noPageParseDomStopPageParsedHeight = 1;    /* prevent new items from being parsed to page */
+ const noPageParseDomStopPageParsedHeight = 0;    /* prevent new items from being parsed to page */
  const loadTextDomStopPageParsedHeight =          /* lazy loader class name contains these       */ 
   ["lazy_loader", "lazy-loader", "lazyLoader", "lazyObject", "lazyData"];
  const tagCheckDomStopPageParsedHeight =          /* parent element where content may be parsed   */
