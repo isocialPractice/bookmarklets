@@ -59,11 +59,11 @@ javascript:(function() {
 
  /***** Support Functions: *****/ 
  /* Get parent of selection, give it id and use it to style selected text. */
- const getParentElementOfSelection_boldText = () => {
+  const getParentElementOfSelection_boldText = () => {
    /* get the current selection */
    selection_boldText = window.getSelection();
    
-   if (selection_boldText.rangeCount > 0) { /* ensure something is selected                 */
+   if (selection_boldText.rangeCount > 0) { /* ensure something is selected            */
     /* prepare elements to change selection                                                 */
     range_boldText = selection_boldText.getRangeAt(0);  /* first object of selection        */
     selectionParent_boldText = range_boldText.commonAncestorContainer; /* node of selection */
@@ -79,20 +79,39 @@ javascript:(function() {
      }     
     }
     
-     selectedString_boldText = range_boldText.toString(); /* store as string            */     
-     /* ensure selection is a text node                                                 */
+     selectedString_boldText = range_boldText.toString(); /* store as string       */     
+     /* ensure selection is a text node                                                      */
      if (selectionParent_boldText.nodeType === 3) { /* if it is a text node             */
       let curPar = selectionParent_boldText.parentElement; /* store the parent element  */
-      let checkIfStyleApplied = /* check if the style has already been applied          */
+      let outText = curPar.outerHTML;  /* select all of the styled element                   */
+      let keepText = curPar.innerText; /* select only the text of styled element             */
+      let checkIfStyleApplied = /* check if the style has already been applied               */
        currentStyleOpenTag_boldText.replace(/[<>]/g, "").toUpperCase();
+       
+      /* account for  style attributes that may be applied intemplate                        */
+      if (checkIfStyleApplied.indexOf(" ") > -1) {
+        checkIfStyleApplied = /* extract only the tag name                                   */
+         checkIfStyleApplied.substr(0, checkIfStyleApplied.indexOf(" "));
+      }
       
-      if (checkIfStyleApplied == curPar.tagName) { /* remove if already applied          */
-        let grandParentOfSelection = curPar.parentElement; /* get tag nesting selection  */
-        let curInnerHTML = grandParentOfSelection.innerText; /* innerText to replace     */
-        curInnerHTML = /* replace innderText, but remove style tag already applied       */
-         curInnerHTML.replace(/currentStyleOpenTag_boldText/, "").replace(/currentStyleCloseTag_boldText/, "");
-        /* update with the styled tag removed */
-        grandParentOfSelection.innerHTML = curInnerHTML;        
+      if (checkIfStyleApplied == curPar.tagName) { /* remove if already applied              */
+        let grandParentOfSelection = curPar.parentElement; /* get tag nesting selection      */
+        let curChildStyle = /* get all tag names used from top style configuration           */
+         grandParentOfSelection.getElementsByTagName(curPar.tagName);
+         
+        for (j = 0; j < curChildStyle.length; j++) { /* loop with all tags and check text     */
+          let curCheck = curChildStyle[j]; /* get each tag with configged style tag           */
+          let text = curCheck.innerText;   /* extract the text from tag                       */         
+          /* HOT-GLUE - makes a pretty good guess as to whether or not this is selection      */
+          if (outText.indexOf(text) > -1) { /* out text - selection parent outerHTML          */
+            curCheck.outerText = text; /* Replace outerText which removes stringed style      */
+            /* end loop as this is probably the selected text and no more styled tags to rm   */
+            break;
+          } else {
+            /* Do nothing - not the tag to remove                                             */
+            let skip;
+          }
+        }
       } else {
       /* give parent a global style id                    */
       if (curPar.hasAttribute("id") == true) {
