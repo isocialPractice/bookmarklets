@@ -794,7 +794,7 @@ Style - Bold Selected Text:
 
 Run this bookmarklet when you want to bold selected text on a webpage. Press `ctrl + b` to make the selected text bold. Works with:
 
-1. Style - \* Selected Text Window Bookmarklets
+1. Style - **\*\[ALL\]** Selected Text -\> *Window Bookmarklets*
 
 
 <strong>USE - ready to use</strong>
@@ -844,7 +844,7 @@ Style- Highlight Selected Text:
 Run this bookmarklet when you want to highlight selected text on a webpage. Press `ctrl + Shift + h` to make the selected text highlighted. Works with:
 
 
-1. Style - \* Selected Text Window Bookmarklets
+1. Style - **\*\[ALL\]** Selected Text -\> *Window Bookmarklets*
 
 
 <strong>USE - ready to use</strong>
@@ -893,7 +893,7 @@ Style - Italic Selected Text:
 
 Run this bookmarklet when you want to italicize selected text on a webpage. Press `ctrl + i` to make the selected text italic. Works with:
 
-1. Style - \* Selected Text Window Bookmarklets
+1. Style - **\*\[ALL\]** Selected Text -\> *Window Bookmarklets*
 
 
 <strong>USE - ready to use</strong>
@@ -942,7 +942,7 @@ Style - Underline Selected Text:
 
 Run this bookmarklet when you want to underline selected text on a webpage. Press `Control + Shift + u` to make the selected text underlined. Works with:
 
-1. Style - \* Selected Text Window Bookmarklets
+1. Style - **\*\[ALL\]** Selected Text -\> *Window Bookmarklets*
 
 <strong>USE - ready to use</strong>
 
