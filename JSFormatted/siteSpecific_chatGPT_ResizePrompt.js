@@ -33,8 +33,8 @@ javascript: (function () {
  grandParElement.style.resize = "both";  
  grandParElement.style.minHeight = "100px";
  grandParElement.style.maxHeight = "800px";
- grandParElement.style.minWidth = "60%"; 
- grandParElement.style.maxWidth = "150%"; 
+ grandParElement.style.minWidth = "20px"; 
+ grandParElement.style.maxWidth = "1000px"; 
  grandParElement.style.padding = "10px";
  grandParElement.style.background ="rgb(244, 244, 244)";
  grandParElement.style.borderRadius = "25px";
