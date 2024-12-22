@@ -1,6 +1,6 @@
 # Browser Bookmarklets ![repo icon](favicon.png)
 <!-- Navigation -->
-<div>
+<div> 
 <details>
 <summary>Document Navigation: </summary>
 
@@ -14,7 +14,7 @@
   - [Favicon - Change or Add Favicon](#favicon---change-or-add-favicon) - requires 1 change(s)
 - [Site Specific Bookmarklets](#site-specific-bookmarklets)
   - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response) - requires 1 change
-  - [ChatGPT- Navigate Answers](#chatgpt--navigate-answers) - ready to use 
+  - [ChatGPT - Navigate Answers](#chatgpt--navigate-answers) - ready to use 
   - [ChatGPT - Paste Ready Bookmark Response](#chatgpt---paste-ready-bookmark-response) - ready to use
   - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - ready to use
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
