@@ -62,7 +62,7 @@ ready to use. In the folder JSFormatted are the bookmarklets as
 uncondensed JavaScript.
 
 
-`Ctrl + click` for more info on [Browser Bookmarklets](https://subsimple.com/bookmarklets/index.php). <br>
+`Ctrl + click` for more info on [Browser Bookmarklets](https://en.wikipedia.org/wiki/Bookmarklet). <br>
 `Ctrl + click` for more info on [Making Bookmarklets](https://gist.github.com/caseywatts/c0cec1f89ccdb8b469b1).
 
 
@@ -764,6 +764,7 @@ YouTube - Saved Page Notes to Notebox:
 Extract saved notes taken of a YouTube video for later referencing or to continue notes later on unfinished video.. Works with:
 
 1. YouTube - Save Page Notes to Local Storage - **Get Saved Notes for Video** 
+2. YouTube - Add Time Marks
 
 
 <strong>USE - ready to use</strong>
