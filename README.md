@@ -26,6 +26,7 @@
   - [Stackoverflow - Copy Answer Anchor Links](#stackoverflow---copy-answer-anchor-links) - ready to use
   - [YouTube - Add Time Marks](#youtube---add-time-marks) - ready to use
   - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
+  - [YouTube - Save Page Notes to Local Storage](#site-specific---youtube---save-page-notes-to-local-storage) - ready to use 
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
   - [YouTube - Take Notes and Add Time Marks](#youtube---take-notes-and-add-time-marks) - ready to use
@@ -700,6 +701,56 @@ Gist page for [siteSpecific_YouTube_DarkenBottomControls.js](https://gist.github
 
 ```markdown
 javascript:(function() { /* Simple process; select body, make style element, add CSS rules, and insert. */ var videoPageBodyElement = document.getElementsByTagName("body"); /* Create an HTML style tag to insert into page. */ var styleVideoBottomControls = document.createElement("style"); /* Make CSS rules to use for bottom controls. */ var cssVideoBottomControls = ` /* style control text */ div.ytp-time-display span { color: black; } /* style elements in controls */ div.ytp-progress-bar-container + div.ytp-chrome-controls { color: black; } /* style control icons */ div.ytp-progress-bar-container + div.ytp-chrome-controls path { fill: black; } /* style toggle */ div.ytp-autonav-toggle-button { background: black !important; }`;/* Add CSS rules to the created style tag. */styleVideoBottomControls.innerText = cssVideoBottomControls;videoPageBodyElement[0] /* insert the style tag after body element begins. */.insertAdjacentElement("afterbegin", styleVideoBottomControls);})();
+```
+</details>
+</dd></dl></dd></dl>
+
+YouTube - Save Page Notes to Local Storage: 
+----
+<dl><dd><dl><dd>
+
+Saving notes taken of a YouTube video for later referencing or to continue notes later on unfinished video. Works with:
+
+1. YouTube - Take Notes - **Saves notes taken**
+2. YouTube - Saved Page Notes to Notebox - **Extracts and parses to notebox**
+
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>siteSpecific_YouTube_SavePageNotesToLocalStorage.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [siteSpecific_YouTube_SavePageNotesToLocalStorage.js](https://gist.github.com/jhauga/1a1ab0a105b5ba616de1f2c46816a0a4)
+
+```markdown
+javascript:(function() { /* Select current not box. */ var noteBox = document.getElementById("noteBox"); if (!noteBox) { noteBox = document.getElementById("noteBoxTakNotes"); } /* Store value of page notes. */ var noteBoxVal = noteBox.value; /* Get the url of video. */ var videoURL = location.href; /* Get the video title. */ var titlePar = document.getElementsByClassName("style-scope ytd-watch-metadata"); var videoTitle = titlePar[0].innerText.replace(/\n.*/g,""); /* Get the user name. */ var username = document.getElementsByClassName("yt-simple-endpoint style-scope yt-formatted-string"); var usernameVal = username[0].innerText; /* Generate name for localStorage variable. */ var storageVar = usernameVal + "--" + videoTitle; storageVar = storageVar.replace(/ {1,}/g, "-"); /* Start value of local storage with video url. */ var localStorageVal = videoURL + " --:-- \n" + noteBoxVal.replace(/\n/g, "<br>"); /* Store notes in local storage as variable formatted: usename--Video-Title */ localStorage.setItem(storageVar, localStorageVal); })(); 
 ```
 </details>
 </dd></dl></dd></dl>
