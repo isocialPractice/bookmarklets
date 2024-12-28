@@ -25,5 +25,6 @@ javascript:(function() {
   usename--Video-Title
  */
  localStorage.setItem(storageVar, localStorageVal);    
- 
+ alert("Notes taken for this page have been saved to local Storage as: \n" +
+ storageVar);
  })(); 
