@@ -232,8 +232,8 @@ Take notes on a html page with video tag or iframe playing video or videos. Work
 [Loosely] [b]Based on [SITE_NAME](REF_LINK)
 -------------------------------------------->
 
-Loosely Teste on [taxnotes.com](https://www.zaproxy.org/). <br>
-Page tested - **[Featured News](https://www.zaproxy.org/zap-in-ten/)**.
+Loosely Teste on [zaproxy.org](https://www.zaproxy.org/). <br>
+Page tested - **[ZAP in Ten](https://www.zaproxy.org/zap-in-ten/)**.
 
 <details>
 
