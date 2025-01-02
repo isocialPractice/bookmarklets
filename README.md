@@ -127,7 +127,7 @@ Page usese lazy loading and prevnet parsed content as scrolling down, making it 
 -------------------------------------------->
 
 Loosely Teste on [taxnotes.com](https://www.taxnotes.com/). <br>
-Page tessted - **[Featured News](https://www.taxnotes.com/featured-news)**.
+Page tested - **[Featured News](https://www.taxnotes.com/featured-news)**.
 
 <details>
 
@@ -178,8 +178,7 @@ Page loads parsed content as scrolling down, making it hard to ready last few po
 -------------------------------------------->
 
 Loosely Teste on [taxnotes.com](https://www.taxnotes.com/). <br>
-Page tessted - **[Featured News](https://www.taxnotes.com/featured-news)**.
-
+Page tested - **[Featured News](https://www.taxnotes.com/featured-news)**.
 
 <details>
 
@@ -232,6 +231,9 @@ Take notes on a html page with video tag or iframe playing video or videos. Work
 <!------------------------------------------
 [Loosely] [b]Based on [SITE_NAME](REF_LINK)
 -------------------------------------------->
+
+Loosely Teste on [taxnotes.com](https://www.zaproxy.org/). <br>
+Page tested - **[Featured News](https://www.zaproxy.org/zap-in-ten/)**.
 
 <details>
 
