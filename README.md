@@ -29,6 +29,7 @@
   - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use 
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use 
+  - [You Tube- Show Short Release Date](#you-tube--show-short-release-date) - ready to use 
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
   - [YouTube - Take Notes and Add Time Marks](#youtube---take-notes-and-add-time-marks) - ready to use
@@ -862,6 +863,62 @@ javascript:(function(){ /* Global DOM variables */ var noteAreaSavedPageNotesIDS
 </details>
 </dd></dl></dd></dl>
 
+You Tube- Show Short Release Date: 
+----
+<dl><dd><dl><dd>
+
+Quickly getting the release of a YouTube short. NOTE - after 1st scroll down and back up to get short date. <br><br>
+
+<!------------------------------------------
+Quickly getting the release of a YouTube short. NOTE - after 1st scroll down and back up to get short date. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<strong>NOTE</strong> - after 1st short has loaded, scroll down and back up, then click in white space to get release date.
+
+<strong>NOTE</strong> - delay of 1 second before release date is added to top of right-most action widgets.
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>siteSpecific_YouTube_ShowShortReleaseDate.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [siteSpecific_YouTube_ShowShortReleaseDate.js](https://gist.github.com/jhauga/6924dfc7556ae2c9e2a9c6ea57231d45)
+
+```markdown
+javascript:(function() { /* OPTIONAL - alert with instructions. */var alertInstructionsYoutTubeShortRelese = 1; var factoidsYoutTubeShortRelese, releaseDateYoutTubeShortRelese, actionsIDYoutTubeShortRelese, putReleaseYoutTubeShortRelese; document.body.addEventListener("click", function() { /* Have to delay a bit - using one second cause - seems right. */ setTimeout(function() { /* Remove if already placed. */ putReleaseYoutTubeShortRelese = document.getElementById("putReleaseYoutTubeShortRelese"); if (putReleaseYoutTubeShortRelese) {putReleaseYoutTubeShortRelese.remove();} /* Parsed id of side widgets. " factoidsYoutTubeShortRelese = document.getElementById("factoids"); /* Get release date. */ releaseDateYoutTubeShortRelese = factoids.children[2].innerText; /* Placing before this item. */ actionsIDYoutTubeShortRelese = document.getElementById("actions"); /* Make presentable */ putReleaseYoutTubeShortRelese = document.createElement("p"); putReleaseYoutTubeShortRelese .style.fontFamily = "Roboto"; putReleaseYoutTubeShortRelese .style.fontWeight = "bold"; putReleaseYoutTubeShortRelese .style.marginLeft = "10px"; putReleaseYoutTubeShortRelese .style.textAlign = "center"; putReleaseYoutTubeShortRelese .style.background = "rgba(0, 0, 0, .095)"; putReleaseYoutTubeShortRelese .style.borderRadius = "25px"; putReleaseYoutTubeShortRelese .style.width = "50px"; putReleaseYoutTubeShortRelese .style.height = "50px"; putReleaseYoutTubeShortRelese .style.paddingTop = "12px"; putReleaseYoutTubeShortRelese .style.boxSizing = "border-box"; putReleaseYoutTubeShortRelese .style.fontSize = "9pt"; /* Give id to remove if duplicates */ putReleaseYoutTubeShortRelese .id = "putReleaseYoutTubeShortRelese"; /* Insert release date at top of widget. */ actionsIDYoutTubeShortRelese .insertAdjacentElement("beforebegin", putReleaseYoutTubeShortRelese); /* Select again */ putReleaseYoutTubeShortRelese = document.getElementById("putReleaseYoutTubeShortRelese"); /* Make text easier to read. */ let relYear = releaseDateYoutTubeShortRelese .substr(releaseDateYoutTubeShortRelese.length-4, 4); releaseDateYoutTubeShortRelese = releaseDateYoutTubeShortRelese.replace( relYear, ", " + relYear); /* Put in text of short release date. */ putReleaseYoutTubeShortRelese.innerText = releaseDateYoutTubeShortRelese; }, 1000); }); /* SHow instructions if turned on. */ if (alertInstructionsYoutTubeShortRelese == 1) { alert(` INSTRUCTIONS - YOUTUBE SHOW SHORT RELEASE DATE\n **********************************************\n\n Click any white space on page to get release date.\n NOTE - after first short has loaded, scroll down to next\n short and back up, then click white space to get current\n short's release date. `); } })(); 
+```
+</details>
+</dd></dl></dd></dl>
+
 YouTube - Stack User Playlist Feed: 
 ----
 <dl><dd><dl><dd>
@@ -1225,3 +1282,7 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
+
+
+  
+    
