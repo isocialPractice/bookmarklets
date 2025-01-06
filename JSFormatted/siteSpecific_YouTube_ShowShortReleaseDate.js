@@ -85,7 +85,7 @@ javascript:(function() {
    /* Put in text of short release date. */
    putReleaseYoutTubeShortRelese.innerText = 
     releaseDateYoutTubeShortRelese;
-  }, 1000);
+  }, 500);
  });
  /* SHow instructions if turned on. */
  if (alertInstructionsYoutTubeShortRelese == 1) {
