@@ -1,30 +1,39 @@
 javascript:(function() {  
-/* OPTIONAL - alert with instructions. */
-var alertInstructionsYoutTubeShortRelese = 1;
+ /* OPTIONAL - alert with instructions. */
+ var alertInstructionsYoutTubeShortRelese = 1;
 
  var factoidsYoutTubeShortRelese, releaseDateYoutTubeShortRelese, 
      actionsIDYoutTubeShortRelese, putReleaseYoutTubeShortRelese;
   
-document.body.addEventListener("click", function() {
- /* Have to delay a bit - using one second cause - seems right. */
+ document.body.addEventListener("click", function() {
+  /* Have to delay a bit - using one second cause - seems right. */
   setTimeout(function() {
-   /* Remove if already placed. */
-   putReleaseYoutTubeShortRelese = document.getElementById("putReleaseYoutTubeShortRelese"); 
-   if (putReleaseYoutTubeShortRelese) {putReleaseYoutTubeShortRelese.remove();}
-   
-   /* Parsed id of side widgets. "
+   /* remove if already placed. */
+   putReleaseYoutTubeShortRelese = 
+    document.getElementById("putReleaseYoutTubeShortRelese"); 
+
+   /* if already placed remove */
+   if (putReleaseYoutTubeShortRelese) {
+    putReleaseYoutTubeShortRelese.remove();
+   }
+
+   /* select parent containing short description */  
    factoidsYoutTubeShortRelese = 
     document.getElementById("factoids");
-   
-   /* Get release date. */
+
+   /* placing before this item*/
+   actionsIDYoutTubeShortRelese = 
+    document.getElementById("actions");       
+
+   /* get release date */
    releaseDateYoutTubeShortRelese = 
-    factoids.children[2].innerText;
+    factoidsYoutTubeShortRelese.children[2].innerText;
    
-   /* Placing before this item. */
-   actionsIDYoutTubeShortRelese = document.getElementById("actions");
-   
-   /* Make presentable */
-   putReleaseYoutTubeShortRelese = document.createElement("p");
+   /* create element to store release date */
+   putReleaseYoutTubeShortRelese = 
+    document.createElement("p");
+
+   /* make presentable */
    putReleaseYoutTubeShortRelese
    .style.fontFamily = "Roboto";
    putReleaseYoutTubeShortRelese
@@ -47,27 +56,32 @@ document.body.addEventListener("click", function() {
    .style.boxSizing = "border-box";
    putReleaseYoutTubeShortRelese
    .style.fontSize = "9pt";
-   
+
    /* Give id to remove if duplicates */
    putReleaseYoutTubeShortRelese
    .id = "putReleaseYoutTubeShortRelese";
-   
-   /* Insert release date at top of widget. */
+
+   /* insert short release date */
    actionsIDYoutTubeShortRelese
    .insertAdjacentElement("beforebegin", putReleaseYoutTubeShortRelese);
-   
+    
    /* Select again */
    putReleaseYoutTubeShortRelese = 
     document.getElementById("putReleaseYoutTubeShortRelese"); 
    
-   /* Make text easier to read. */
-   let relYear = releaseDateYoutTubeShortRelese 
-    .substr(releaseDateYoutTubeShortRelese.length-4, 4);
-    
-   releaseDateYoutTubeShortRelese = 
-    releaseDateYoutTubeShortRelese.replace(
-    relYear, ", " + relYear);
+   /* check if year is at end or beginning */
+   let atEndYear = /^[a-zA-Z]+ \d{5,}$/;
+   let atStartYear = /^\d{4}.*$/;
    
+   /* make easier to read */ 
+   if (atEndYear.test(releaseDateYoutTubeShortRelese)) {
+    releaseDateYoutTubeShortRelese = /* year is at end */
+     releaseDateYoutTubeShortRelese.replace(/([0-9]{1,})([0-9]{4})$/g, "$1, $2");
+   } else if (atStartYear.test(releaseDateYoutTubeShortRelese)) {
+    releaseDateYoutTubeShortRelese = /* year is at start */
+     releaseDateYoutTubeShortRelese.replace(/([0-9]{4})/g, "$1, ");       
+   }
+
    /* Put in text of short release date. */
    putReleaseYoutTubeShortRelese.innerText = 
     releaseDateYoutTubeShortRelese;
