@@ -228,9 +228,18 @@ javascript:(function(){
 var titlePar = document.getElementsByClassName("style-scope ytd-watch-metadata");
 var videoTitle = titlePar[0].innerText.replace(/\n.*/g,"");
 
-/* Get the user name. */
-var username = document.getElementsByClassName("yt-simple-endpoint style-scope yt-formatted-string");
-var usernameVal = username[0].innerText;
+ /* Get the id holding the username.            */
+ var username = 
+  document.getElementById("top-row");
+ 
+ /* Extract all text from id holding user name. */
+ var extractUserNameText = username.textContent;
+  
+ /* Clean text to only get username only.       */
+ var usernameVal =   extractUserNameText.replace(/\n/g,"")
+  .replace(/^ {2,}(.*) {2,}(.*)subscribers(.*)$/g,"$1")
+  .replace(/^(.*) {2,}.*$/g, "$1")
+  .replace(/ {2,}/g,"");
 
 /* Generate name for localStorage variable. */
 var storageVar = usernameVal + "--" + videoTitle;
