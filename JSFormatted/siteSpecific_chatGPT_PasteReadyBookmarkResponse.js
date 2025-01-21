@@ -2,12 +2,13 @@ javascript:(function(){
  var pageTitle = "ChatGPT Bookmark"; /* <-- OPTIONAL - change title */
  var pageHead  = "ChatGPT Response"; /* <-- OPTIONAL - change head  */
  
- /* NOTE - 'HOT-GLUE' comments for fast patched */ 
- /* Class names to identify button row in each answer. */
- var ButtonClassNameIdentifier = "rounded-lg text-token-text-secondary";    /* HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
- 
+ /* NOTE - 'HOT-GLUE' comments for fast patched */  
  /* Class names to identify div that is parent of button row. */
- var DivClassNameIdentifierII = "mb-2 flex gap-3"; /*  This checks class on signed out guest page */
+ var copyButtonSelector = /* select copy button by attribute */
+  "[aria-label=\"Copy\"]";
+  
+ var DivClassNameIdentifierII = /*  This checks class on signed out guest page */
+  "mb-2 flex gap-3"; 
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier = "mb-2 flex gap-3";  /******************** HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
@@ -32,42 +33,10 @@ javascript:(function(){
       )) {
    /* start process to select the copy button */   
    let selectCopyButton = function() {
-    currentButtonsPath = allDivElements[i].getElementsByTagName("path");
-    currentButtonsPathArr = [];
-    for (j = 0; j < currentButtonsPath.length; j++) {
-     currentSelection = currentButtonsPath[j];
-     pathPar = currentSelection.parentElement; /* select svg */
-     pathGrandPar = pathPar.parentElement;     /* select/check if span */     
-     if (pathGrandPar.tagName == "SPAN" ||     /* HOT-GLUE - check if parent span */
-         pathGrandPar.tagName == "BUTTON") {   /* HOT-GLUE - logged out was button */
-      currentButtonsPathArr.push(currentSelection.getAttribute("d"));
-     }
-    }
-    if (currentButtonsPathArr.length == 1) {
-     copyButtonIndex = 0; 
-    } else {
-     for (j = 0; j < currentButtonsPathArr.length; j++) {
-      currentSelection = currentButtonsPathArr[j];
-      if (j == 0) {
-       priorSelection = currentSelection;
-       priorSelectionIndex = 0;
-      } else {
-       priorSelection = priorSelection;
-       priorSelectionIndex = priorSelectionIndex;
-      }
-      if (priorSelection.length < currentSelection.length) {
-       /* none of the other variables need to change */
-       copyButtonIndex = priorSelectionIndex;
-      } else {
-       /* other variables need to change */
-       copyButtonIndex = j;
-       priorSelectionIndex = j;
-       priorSelection = currentSelection;
-      }
-     }    
-    }
-
-    copyButton = allDivElements[i].getElementsByTagName("button")[copyButtonIndex];
+    currentButtonsPath = allDivElements[i].querySelectorAll(copyButtonSelector);
+    
+    /* select first element nested in div element as copy button */    
+    copyButton = currentButtonsPath[0];
    };
    selectCopyButton();
    copyButton.addEventListener("click", function () {
@@ -332,6 +301,10 @@ javascript:(function(){
      
      /* HOT-GLUE - remove unwanted escaped double quotes - HOT-GLUE */
      bookmarklet = bookmarklet.replace(/&#92;&quot;/g, "&quot;");
+     /* HOT-GLUE - remove unwanted escaped single quotes - HOT-GLUE */
+     bookmarklet = bookmarklet.replace(/&#92;&apos;/g, "");
+     /* HOT-GLUE - remove bactic as probably md styling - HOT-GLUE */
+     bookmarklet = bookmarklet.replace(/`/g, "");
 
      /* set timeout so bookmarklet content is copied after answers' text */
      setTimeout(function () {
