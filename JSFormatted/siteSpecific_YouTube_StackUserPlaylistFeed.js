@@ -1,23 +1,38 @@
 javascript:(function(){
- /* Used to ensure that the page is the user playlist feed. */
- var checkPage = location.href;
- 
- /* Put class names in variables for easier updating. */
- /* Class of parent holding major elements. */
- var stackUserPlaylistFeedParClass = 
-  "yt-lockup-view-model-wiz yt-lockup-view-model-wiz--vertical yt-lockup-view-model-wiz--collection-stack-2 yt-lockup-view-model-wiz--compact";
-  
- /* Class of parent holding title elements. */
- var stackUserPlaylistFeedTitleClass = 
-  "yt-lockup-view-model-wiz__metadata";
- 
- /* Class of parent holding the image elements. */
- var stackUserPlaylistFeedImageClass =
-  "yt-lockup-view-model-wiz__content-image";
- 
- /* Used to reset duplicated title class as to not break loop. */
- var resetMarker = 
-  "reset--to--title--class"; 
+ /* Declare global variables. */
+ var checkPage, docBodyStackUserPlaylist, stackUserPlaylistFeed,
+ stackUserPlaylistFeedParClass, stackUserPlaylistFeedTitleClass,
+ stackUserPlaylistFeedImageClass, resetMarker;
+ /* SUPPORT - DEFINE GLOBALS */
+ function defineVarStackUserPlaylist() {
+  /* Used to ensure that the page is the user playlist feed. */
+  checkPage = location.href;
+
+  /* Used later to add event listener. */
+  docBodyStackUserPlaylist = 
+   document.getElementsByTagName("body");
+
+  /* To check, insert, remove, or do nothing if alread inserted */
+  stackUserPlaylistFeed = 
+   document.getElementById("stackUserPlaylistFeed");
+
+  /* Put class names in variables for easier updating. */
+  /* Class of parent holding major elements. */
+  stackUserPlaylistFeedParClass = 
+   "yt-lockup-view-model-wiz yt-lockup-view-model-wiz--vertical yt-lockup-view-model-wiz--collection-stack-2 yt-lockup-view-model-wiz--compact";
+
+  /* Class of parent holding title elements. */
+  stackUserPlaylistFeedTitleClass = 
+   "yt-lockup-view-model-wiz__metadata";
+
+  /* Class of parent holding the image elements. */
+  stackUserPlaylistFeedImageClass =
+   "yt-lockup-view-model-wiz__content-image";
+
+  /* Used to reset duplicated title class as to not break loop. */
+  resetMarker = 
+   "reset--to--title--class"; 
+ }
  
  /*****************************************************************
  MAIN FUNCTION
@@ -177,21 +192,76 @@ a.yt-lockup-metadata-view-model-wiz__title {
 `;
 }
  
- /* If user playlist feed. */
- if (checkPage.indexOf("youtube.com/feed/playlists") > -1) { 
-  /* Insert style element in HTML head if on the right page. */
-  let docHead = document.getElementsByTagName("head"); 
+ /****** SUPPORT FUNCTION ******/
+ /* Check if page is not playlist. */
+ function checkForRemoveStackUserPlaylist() {
+  if (location.href.indexOf("youtube.com/feed/playlists") == -1) {
+   stackUserPlaylistFeed = /* redefine to remove */
+    document.getElementById("stackUserPlaylistFeed");
+   if (stackUserPlaylistFeed) {
+    stackUserPlaylistFeed.remove();
+    docBodyStackUserPlaylist[0]
+    .removeEventListener("mouseover", removeStackUserPlaylistFeed);
+   } else {
+    let skip;
+   }  
+  }
+ }
+
+/* Add element to style. */
+ function addStackUserPlaylistFeed() {
+  /* if user playlist feed */ 
+  if (checkPage.indexOf("youtube.com/feed/playlists") > -1) { 
+   if (!stackUserPlaylistFeed) {
+    /* Insert style element in HTML head if on the right page. */
+    let docHead = document.getElementsByTagName("head"); 
  
-  /* Creat style element to insert. */
-  let styleElement = document.createElement("style");
-  
-  /* Fill style element with contents form pageStyle variable. */
-  styleElement.innerText = pageStyle;
-  
-  /* Insert the style needed to stack playlist. */
-  docHead[0].insertAdjacentElement("beforeend", styleElement); 
-  
-  /* Lastly call function to rearrange elements. */
-  titleToTopStackUserPlaylistFeed();
- } 
+    /* Creat style element to insert. */
+    let styleElement = document.createElement("style");
+ 
+    /* Give id to not duplicate */
+    styleElement.id = "stackUserPlaylistFeed";
+ 
+    /* Fill style element with contents form pageStyle variable. */
+    styleElement.innerText = pageStyle;  
+
+   
+    /* Insert the style needed to stack playlist. */
+    docHead[0].insertAdjacentElement("beforeend", styleElement); 
+
+    /* Lastly call function to rearrange elements. */
+    titleToTopStackUserPlaylistFeed();
+   } else {
+    /* Do nothing if alread inserted */
+    let skip;
+   }
+  } else {
+   checkForRemoveStackUserPlaylist();
+  } 
+ }
+ /* Call function functions to initiate bookmarklet. */
+ defineVarStackUserPlaylist();
+ addStackUserPlaylistFeed();
+ 
+ /* Remove on mouseover */
+ function removeStackUserPlaylistFeed() {
+  defineVarStackUserPlaylist();
+  setTimeout(function() { 
+   if (location.href.indexOf("youtube.com/feed/playlists") > -1) {
+    stackUserPlaylistFeed = /* redefine to remove */
+     document.getElementById("stackUserPlaylistFeed");
+    if (stackUserPlaylistFeed) {
+     let skip;
+    } else {
+     addStackUserPlaylistFeed();
+    }
+   } else {
+    checkForRemoveStackUserPlaylist();
+   }
+  }, 100);
+ }
+ 
+ /* Add event to remove if not on playlist page. */
+ docBodyStackUserPlaylist[0]
+ .addEventListener("mouseover", removeStackUserPlaylistFeed);
 })();
