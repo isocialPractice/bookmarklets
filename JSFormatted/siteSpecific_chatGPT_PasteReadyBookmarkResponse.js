@@ -12,33 +12,26 @@ javascript:(function(){
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier = "mb-2 flex gap-3";  /******************** HOT-GLUE -- THIS IS HIGHLY LIKELY TO CHANGE */
- 
- /* Select all divs and use in loop. */
- var allDivElements = document.getElementsByTagName("div");
- var allDivElementsLen = allDivElements.length;
- 
+
  /* Define variables for later use. */  
  var answerRow, buttonRow, copyButton, cancelWhile = 0, 
      answerArea, answerDIV, answerDIVLen, answerText,
-     currentButtonsPath, currentButton, currentButtonsPathArr,
-     currentSelection, priorSelection, copyButtonIndex, priorSelectionIndex,
-     pathPar, pathGrandPar, pathGreatGrandPar;
- 
- for (i = 0; i < allDivElementsLen; i++) {
+     currentButtonsPath, currentButtonsPathLen, currentButton, 
+     currentButtonsPathArr, currentSelection, priorSelection, 
+     copyButtonIndex, priorSelectionIndex, pathPar, 
+     pathGrandPar, pathGreatGrandPar;
+     
+ /* Select all copy buttons and use in loop. */
+ currentButtonsPath = document.querySelectorAll(copyButtonSelector);
+ currentButtonsPathLen = currentButtonsPath.length;
+
+ for (i = 0; i < currentButtonsPathLen; i++) {
   /* get the copy button <- ASSUMES HTML SEMATICS */  
-  if (( /* condition for logged out or guest chatgpt.com page */
-      allDivElements[i].className.indexOf(DivClassNameIdentifierII) > -1 && 
-      /* HOT-GLUE - if a conversation has question edits - HOT-GLUE */
-      allDivElements[i].getElementsByTagName("path").length >= 1
-      )) {
-   /* start process to select the copy button */   
-   let selectCopyButton = function() {
-    currentButtonsPath = allDivElements[i].querySelectorAll(copyButtonSelector);
-    
-    /* select first element nested in div element as copy button */    
-    copyButton = currentButtonsPath[0];
-   };
-   selectCopyButton();
+  if (currentButtonsPath[i]) { /* if ture         */
+   /* select each copy button using the attribute aria-label */
+   copyButton = currentButtonsPath[i];
+   
+   /* when click format markdown from clipboard to html */
    copyButton.addEventListener("click", function () {
     buttonRow = this.parentElement;    
     /* start process to select answer ares */        
@@ -78,11 +71,11 @@ javascript:(function(){
 
      /* clean up a bit */                          /* so new lines can be inserted at end */
      copiedContent = copiedContent.replace(/\n/g, "<br>");
-     copiedContent = copiedContent.replace(/\"/g, '&#92;&quot;');    /* use html encoding for escaped double quotes */
-     copiedContent = copiedContent.replace(/"/g, '\"');              /* keep double quotes as needed for inline html */
-     copiedContent = copiedContent.replace(/\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes */
-     copiedContent = copiedContent.replace(/'/g, "'");              /* keep single quotes as needed for inline html */
-     copiedContent = copiedContent.replace(/([ ]{2,})/g, "<br>$1"); /* replace 2 or momre spaces with <br> tag */
+     copiedContent = copiedContent.replace(/\"/g, '&#92;&quot;');    /* use html encoding for escaped double quotes       */
+     copiedContent = copiedContent.replace(/"/g, '\"');              /* keep double quotes as needed for inline html      */
+     copiedContent = copiedContent.replace(/\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes       */
+     copiedContent = copiedContent.replace(/'/g, "'");               /* keep single quotes as needed for inline html      */
+     copiedContent = copiedContent.replace(/([ ]{2,})/g, "<br>$1");  /* replace 2 or momre spaces with <br> tag           */
      copiedContent = copiedContent.replace(/class=&#92;&quot;/g, "class='"); /* HOT-GLUE - correct open class  - HOT-GLUE */
      copiedContent = copiedContent.replace(/&#92;&quot;>/g, "'>");           /* HOT-GLUE - correct close class - HOT-GLUE */
 
@@ -110,12 +103,18 @@ javascript:(function(){
     line-height: 16pt;
    } 
    pre {
-     max-width: 800px;
-     overflow-x: scroll;
-     padding: 20px;
-     border-radius: 5px;
-     background: black;
-     color: white;
+    max-width: 800px;
+    overflow-x: scroll;
+    padding: 20px;
+    border-radius: 30px;
+    border: 1px solid #d6d6d6;
+    background: #d3d3d342;
+    color: black;
+   }
+   code, pre {
+    line-height: 10pt;
+    font-family: monospace !important;
+    background-color: #f0f0f4;
    }
    pre div.dark.bg-gray-950 div.flex.items-center.relative span {
     background: rgb(55 55 55);
@@ -264,17 +263,28 @@ javascript:(function(){
    button {
     display: none;
    }
-   ul li {
+   ul li,
+   ol li {
     margin-top: 12px;    
    }
-   ul li code {
+   ul li code,
+   ol li code {
     color: black;
-    font-weight: bold;
-    font-size: larger;
+    background: #ececec;
+    border-radius: .25rem;    
+    font-size: 1.115em;
+    font-weight: 500;
+    padding: .15rem .3rem;
    }
    ul li code::before,
-   ul li code::after {
+   ul li code::after,
+   ol li code::before,
+   ol li code::after    {
     content: '\`';
+   }
+   code[class*='hljs language-'] {
+    background: none !important;
+    font-size: 12pt;
    }
   </style>
      `;
