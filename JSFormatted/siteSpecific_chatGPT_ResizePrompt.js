@@ -1,8 +1,9 @@
 javascript: (function () {
- var composerBackground = "composer-background"; /* HOT-GLUE - select the parent holding prompt and UI elements. */
- var promptTextarea = "prompt-textarea"; /* HOT-GLUE - select id of text prompt.                            */
- var selectFormChildIndex = 0; /*           HOT-GLUE - select nested form element child index - see bottom. */
- var selectedFormElement;      /*           HOT-GLUED - see bottom function selectFormParent.               */
+ var composerBackground;    /* ELMERS-GLUE - defined later - select the parent holding prompt and UI elements.      */
+ var composerBackgroundPar; /* ELMERS-GLUE - defined later - parent of above.                                       */
+ var promptTextarea = "prompt-textarea"; /* HOT-GLUE - select id of text prompt.                                    */
+ var selectFormChildIndex = 0; /*           HOT-GLUE - select nested form element child index - see bottom.         */
+ var selectedFormElement;      /*           HOT-GLUED - see bottom function selectFormParent.                       */
  var startingFormWidth, curState = 1; /* Switch to run different conditions in selectFormParent function at bottom. */
  /* The 2 variables below will set a general value for resizing.                */
  /******************** SET CUSTOM RESIZE VALUES *********************************/
@@ -27,8 +28,7 @@ javascript: (function () {
  var parElement = promptPar.parentElement; 
  var grandParElement = parElement.parentElement; 
  var greatGrandParElement = grandParElement.parentElement;
- var textareaParent = parElement.children[0];
- var composerBackgroundPar = composerBackground.parentElement; 
+ var textareaParent = parElement.children[0]; 
  var formParent;
  /*************************************SUPPORT FUNCTIONS*************************************/ 
  /* Add style element to mark important overrides. */
@@ -53,6 +53,24 @@ javascript: (function () {
    } 
  `;
   document.body.appendChild(neededStyling);
+ };
+ 
+ /* Set UI parent and elements within reasonable range with timeout. */
+ var uiParAndAdjacentElements = 0;
+ const setUIParAndAdjacentElements = () => {
+  setTimeout(function() {
+   /* ELMERS-GLUE - declared at top - select the parent holding prompt and UI elements. */
+   composerBackground = document.getElementById("composer-background"); 
+   if (composerBackground) {
+    /* ELMERS-GLUE - declared at top - parent of above                                   */
+    composerBackgroundPar = composerBackground.parentElement; 
+    /* style parent of ui elements and its' parents within reasonable range */
+    uiParAndAdjacentElements = 1; /* turn of threepeatLoop() run in main function  */
+    composerBackground.style.display = "inline-block";
+    composerBackgroundPar.style.display = "inline-block";
+    composerBackgroundPar.style.width = "100%";  
+   }
+  }, 100);
  };
  
  /* Recurse function to get top-most form element of prompt. */
@@ -126,16 +144,31 @@ javascript: (function () {
   promptTextarea.style.paddingLeft = "30px";  
   textareaParent.style.minHeight = "100%";
   
-  /* style parent of ui elements and its' parents within reasonable range */
-  composerBackground.style.display = "inline-block";
-  composerBackgroundPar.style.display = "inline-block";
-  composerBackgroundPar.style.width = "100%";  
-  
   /* call support functions */
+  let tunrOffThreepeatLoop = 0; /* safe switch */
+  let threepeatLoop = function() {
+   while (tunrOffThreepeatLoop < 10) {
+    if (uiParAndAdjacentElements == 1) {
+     tunrOffThreepeatLoop = 10; /* styles applied - turn off loop */
+    } else {
+     tunrOffThreepeatLoop++;    /* increment safe switch  */
+     setUIParAndAdjacentElements(); /* call ui styling    */
+    }
+   }
+  };
+  /* call threepeatLoop */
+  threepeatLoop();
+  
+  /* add inserted style element with important overrides */
   importantOverrideChatGPTResizePrompt();
+  
+  /* select form element parent and style */  
   selectFormParent(parElement);
+  
+  /* ensure that the resizeable element rotates correctly */
   ensureRotate();
  }  
+ 
  /* Run bookmarklet functions. */
  setTimeout(function() {
   styleElementsForResizeChatGPTResizePrompt();
