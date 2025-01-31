@@ -1,4 +1,5 @@
 javascript: (function () {
+ var composerBackground = "composer-background"; /* HOT-GLUE - select the parent holding prompt and UI elements. */
  var promptTextarea = "prompt-textarea"; /* HOT-GLUE - select id of text prompt.                            */
  var selectFormChildIndex = 0; /*           HOT-GLUE - select nested form element child index - see bottom. */
  var selectedFormElement;      /*           HOT-GLUED - see bottom function selectFormParent.               */
@@ -27,52 +28,33 @@ javascript: (function () {
  var grandParElement = parElement.parentElement; 
  var greatGrandParElement = grandParElement.parentElement;
  var textareaParent = parElement.children[0];
+ var composerBackgroundPar = composerBackground.parentElement; 
  var formParent;
- grandParElement.style.transform = "rotateX(180deg)";
- grandParElement.style.overflow = "auto";
- grandParElement.style.resize = "both";  
- grandParElement.style.minHeight = "100px";
- grandParElement.style.maxHeight = "800px";
- grandParElement.style.minWidth = "20px"; 
- grandParElement.style.maxWidth = "1000px"; 
- grandParElement.style.padding = "10px";
- grandParElement.style.background ="rgb(244, 244, 244)";
- grandParElement.style.borderRadius = "25px";
- grandParElement.children[0].style.paddingLeft = "10px";
- greatGrandParElement.style.minWidth = "100%";
- greatGrandParElement.style.maxWidth = "100%";
- greatGrandParElement.style.background = "none";
- parElement.style.display = "inline-block";
- parElement.style.transform = "rotateX(180deg)"; 
- parElement.style.maxWidth = "100%";
- parElement.style.height = "inherit";
- parElement.style.minHeight = "95%";
- promptPar.style.paddingLeft = "30px";
- promptPar.style.height = "inherit"; 
- promptTextarea.style.paddingRight = "100px";
- promptTextarea.style.paddingLeft = "30px";
- /*promptTextarea.style.width = "100%";*/
- textareaParent.style.minHeight = "100%";
+ /*************************************SUPPORT FUNCTIONS*************************************/ 
  /* Add style element to mark important overrides. */
- var neededStyling = document.createElement("style");
- neededStyling.innerHTML = `
-form.w-full {
- width: 100% !important;
-}
-textarea#prompt-textarea {   
- max-height: 800px !important;   
- min-height: 100% !important;   
- height: inherit !important;
- overflow: scroll !important;  
-}  
-form div.relative.flex.h-full.flex-1 div + div.flex.w-full.items-center {   
- min-height: ${setMinHeight} !important;   
- max-height: ${setMaxHeight} !important;   
- min-width:  ${setMinWidth} !important;   
- max-width:  ${setMaxWidth} !important;  
-} 
-`;
- document.body.appendChild(neededStyling);
+ var neededStyling;
+ const importantOverrideChatGPTResizePrompt = () => {
+  neededStyling = document.createElement("style");
+  neededStyling.innerHTML = `
+   form.w-full {
+    width: 100% !important;
+   }
+   textarea#prompt-textarea {   
+    max-height: 800px !important;   
+    min-height: 100% !important;   
+    height: inherit !important;
+    overflow: scroll !important;  
+   }  
+   form div.relative.flex.h-full.flex-1 div + div.flex.w-full.items-center {   
+    min-height: ${setMinHeight} !important;   
+    max-height: ${setMaxHeight} !important;   
+    min-width:  ${setMinWidth} !important;   
+    max-width:  ${setMaxWidth} !important;  
+   } 
+ `;
+  document.body.appendChild(neededStyling);
+ };
+ 
  /* Recurse function to get top-most form element of prompt. */
  const selectFormParent = (cur) => { /* HOT GLUE - depends on nesting of elements */  
   let curElement = cur;
@@ -104,13 +86,58 @@ form div.relative.flex.h-full.flex-1 div + div.flex.w-full.items-center {
    selectFormParent(formParent);
   }
  }; 
- selectFormParent(parElement);
- /* Lastly ensure transform box was rotated. */
+ 
+ /* Ensure transform box was rotated. */
  const ensureRotate = () => {  
   if (parElement.style.transform == "none") {
    ensureRotate();
   } 
   parElement.style.transform = "rotateX(180deg)";
  }; 
- ensureRotate();
-})();  
+ 
+ /*******************************************************************************************
+  MAIN FUNCTION - STYLE ELEMENTS FOR RESIZE
+ ********************************************************************************************/
+ function styleElementsForResizeChatGPTResizePrompt() {
+  /* style parents within reasonable range of textarea */
+  grandParElement.style.transform = "rotateX(180deg)";
+  grandParElement.style.overflow = "auto";
+  grandParElement.style.resize = "both";  
+  grandParElement.style.minHeight = "100px";
+  grandParElement.style.maxHeight = "100%";
+  grandParElement.style.minWidth = "20px"; 
+  grandParElement.style.maxWidth = "1000px"; 
+  grandParElement.style.padding = "10px";
+  grandParElement.style.background ="rgb(244, 244, 244)";
+  grandParElement.style.borderRadius = "25px";
+  grandParElement.children[0].style.paddingLeft = "10px";
+  greatGrandParElement.style.minWidth = "100%";
+  greatGrandParElement.style.maxWidth = "100%";
+  greatGrandParElement.style.background = "none";
+  greatGrandParElement.style.display = "inline-block";
+  parElement.style.display = "inline-block";
+  parElement.style.transform = "rotateX(180deg)"; 
+  parElement.style.maxWidth = "100%";
+  parElement.style.height = "inherit";
+  parElement.style.minHeight = "95%";
+  promptPar.style.paddingLeft = "30px";
+  promptPar.style.height = "inherit"; 
+  promptTextarea.style.paddingRight = "100px";
+  promptTextarea.style.paddingLeft = "30px";  
+  textareaParent.style.minHeight = "100%";
+  
+  /* style parent of ui elements and its' parents within reasonable range */
+  composerBackground.style.display = "inline-block";
+  composerBackgroundPar.style.display = "inline-block";
+  composerBackgroundPar.style.width = "100%";  
+  
+  /* call support functions */
+  importantOverrideChatGPTResizePrompt();
+  selectFormParent(parElement);
+  ensureRotate();
+ }  
+ /* Run bookmarklet functions. */
+ setTimeout(function() {
+  styleElementsForResizeChatGPTResizePrompt();
+ }, 100);
+})();   
