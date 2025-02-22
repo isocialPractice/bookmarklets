@@ -29,11 +29,12 @@
   - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use 
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use 
-  - [You Tube- Show Short Release Date](#you-tube--show-short-release-date) - ready to use 
+  - [YouTube - Show Short Release Date](#you-tube--show-short-release-date) - ready to use 
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use 
+  - [YouTube - Sync Audio](#you-tube---sync-audio) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
   - [YouTube - Take Video Notes](#youtube---take-video-notes) - ready to use 
-  - [You Tube - Watch Random Video](#you-tube--watch-random-video) - ready to use 
+  - [YouTube - Watch Random Video](#you-tube--watch-random-video) - ready to use 
 - [Window Bookmarklets](#window-bookmarklets)
   - [Page Offset - Custom Page Down](#page-offset---custom-page-down) - ready to use
   - [Style - Bold Selected Text](#style---bold-selected-text) - ready to use 
@@ -867,7 +868,7 @@ javascript:(function(){ /* Global DOM variables */ var noteAreaSavedPageNotesIDS
 </details>
 </dd></dl></dd></dl>
 
-You Tube- Show Short Release Date: 
+YouTube - Show Short Release Date: 
 ----
 <dl><dd><dl><dd>
 
@@ -947,6 +948,58 @@ javascript:(function(){ /* Declare global variables. */ var checkPage, docBodySt
 </details>
 </dd></dl></dd></dl>
 
+You Tube - Sync Audio: 
+----
+<dl><dd><dl><dd>
+
+Quickly resync video and audio are out of sync to resynchronize audio to video <br><br>
+
+<!------------------------------------------
+video and audio are out of sync to resynchronize audio to video. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>siteSpecific_YouTube_SyncAudio.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [siteSpecific_YouTube_SyncAudio.js](https://gist.github.com/jhauga/4e4b1e29e97aa5dd4383cac435331bcf)
+
+```markdown
+javascript:(function() { /* Configuration Variable - set final quality of video. */ var finalQualityYouTubeSyncAudio = "720p"; /* Select video settings by class name. */ var settingsYouTubeSyncAudio = document.getElementsByClassName("ytp-button ytp-settings-button"); /* Select menu for quality using class name. */ var menuItemYouTubeSyncAudio = document.getElementsByClassName("ytp-menuitem"); /************************************************ MAIN FUNCTION ************************************************/ /* Click by argument being found in loop. */ function changeQualityYouTubeSyncAudio(clickWhat) { /* loop all menu items found by class name */ for (i = 0; i < menuItemYouTubeSyncAudio.length; i++) { /* if text in menu item found matching argument, click */ if ( menuItemYouTubeSyncAudio[i] .textContent .indexOf(clickWhat) > -1 ) { /* menu item matches argument, click and end loop */ menuItemYouTubeSyncAudio[i].click(); break; } } } /* Start process to sync video to audio. */ const syncVideoToAudioYouTubeSyncAudio = (step) => { /* conditional steps for process */ if (step == "Quality") { /* allow a bit of delay for menu dynamics */ setTimeout(function() { /* click video settings gear icon */ settingsYouTubeSyncAudio[0].click(); }, 100); } /* run main function to sync audio, resetting video quality, */ /* allowing a bit of delay for menu dynamics */ setTimeout(function() { changeQualityYouTubeSyncAudio(step); }, 300); }; /* Select video settings icon at bottom of video. **/ syncVideoToAudioYouTubeSyncAudio("Quality"); /* Set video to 144p. **/ syncVideoToAudioYouTubeSyncAudio("144p"); /* Additional delay to ensure menu dynamics. **/ setTimeout(function() { /* Again select video settings icon at bottom of video. **/ syncVideoToAudioYouTubeSyncAudio("Quality"); /* Set final video to config var. finalQualityYouTubeSyncAudio. */ syncVideoToAudioYouTubeSyncAudio(finalQualityYouTubeSyncAudio); }, 1000);})(); 
+```
+</details>
+</dd></dl></dd></dl>
+
 YouTube - Take Notes and Add Removable Time Marks: 
 ----
 <dl><dd><dl><dd>
@@ -1001,7 +1054,7 @@ javascript:(function(){ /* Global DOM variables */ var noteAreaTakeNotesIDTakeNo
 </details>
 </dd></dl></dd></dl>
 
-You Tube- Watch Random Video: 
+YouTube- Watch Random Video: 
 ----
 <dl><dd><dl><dd>
 
@@ -1307,5 +1360,4 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
-
-      
+    
