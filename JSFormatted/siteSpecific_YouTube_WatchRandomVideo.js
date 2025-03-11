@@ -1,10 +1,10 @@
 javascript:(function() {
- /* Config variable - 1 to oepn in new tab, 0 to not. */
+ /* Config variable - 1 to oepn in new tab, 0 to not.     */
  var openInNewTabWatchRandomVideo = 1;
 
- /* Class name of element holding link for video. */
- var videoFeedWatchRandomVideo = 
-  document.getElementsByClassName("yt-lockup-view-model-wiz__content-image");
+ /* Class name of element holding link for video.         */
+ var videoFeedWatchRandomVideo = /* HOT-GLUE - may change */
+  document.getElementsByClassName("yt-simple-endpoint inline-block style-scope ytd-thumbnail");
 
  /* Length of all videos in home feed. */
  var videoFeedWatchRandomVideoLen = videoFeedWatchRandomVideo.length;
@@ -17,28 +17,28 @@ javascript:(function() {
   MAIN FUNCTION
   ******************************************************************************************/
  function watchRandomVideo(target) {
-  /* Make sure video links are loaded. */
+  /* Make sure video links are loaded.                                               */
   if (videoFeedWatchRandomVideo.length >= 1 && /* at least one loaded                */
       videoFeedWatchRandomVideo[0].hasAttribute("href") /* good guess load correctly */
      ) {
-   /* get video link */
+   /* get video link                                                                 */
    let videoURL = 
      videoFeedWatchRandomVideo[randomValWatchRandomVideo].href;
 
-   /* watch random video */
+   /* watch random video                                                             */
    window.open(videoURL, target);
   } else {
-   /* do nothing */
+   /* do nothing                                                                     */
    let skip;
   }
  }
 
- /* Check if configured to open in new tab. */
+ /* Check if configured to open in new tab.                                          */
  if (openInNewTabWatchRandomVideo == 1) {
-  /* if so, open in new tab                 */
+  /* if so, open in new tab                                                          */
   watchRandomVideo("_blank");
  } else {
-  /* if not, open in current window         */
+  /* if not, open in current window                                                  */
   watchRandomVideo("_self");
  }
 })(); 

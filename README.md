@@ -34,7 +34,7 @@
   - [YouTube - Sync Audio](#you-tube---sync-audio) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
   - [YouTube - Take Video Notes](#youtube---take-video-notes) - ready to use 
-  - [YouTube - Watch Random Video](#you-tube--watch-random-video) - ready to use 
+  - [YouTube - Watch Random Video](#you-tube---watch-random-video) - ready to use 
 - [Window Bookmarklets](#window-bookmarklets)
   - [Page Offset - Custom Page Down](#page-offset---custom-page-down) - ready to use
   - [Style - Bold Selected Text](#style---bold-selected-text) - ready to use 
@@ -1054,7 +1054,7 @@ javascript:(function(){ /* Global DOM variables */ var noteAreaTakeNotesIDTakeNo
 </details>
 </dd></dl></dd></dl>
 
-YouTube- Watch Random Video: 
+YouTube - Watch Random Video: 
 ----
 <dl><dd><dl><dd>
 
@@ -1101,7 +1101,7 @@ when you want to watch all videos in home feed at once, and can't pick one to wa
 Gist page for [siteSpecific_YouTube_WatchRandomVideo.js](https://gist.github.com/jhauga/c21475673dee3816b6ce3f9ed7fe35ec)
 
 ```markdown
-javascript:(function() { /* Config variable - 1 to oepn in new tab, 0 to not. */ var openInNewTabWatchRandomVideo = 1; /* Class name of element holding link for video. */ var videoFeedWatchRandomVideo = document.getElementsByClassName("yt-lockup-view-model-wiz__content-image"); /* Length of all videos in home feed. */ var videoFeedWatchRandomVideoLen = videoFeedWatchRandomVideo.length; /* Generate random value using length. */ var randomValWatchRandomVideo = Math.floor(Math.random() * videoFeedWatchRandomVideoLen); /****************************************************************************************** MAIN FUNCTION ******************************************************************************************/ function watchRandomVideo(target) { /* Make sure video links are loaded. */ if (videoFeedWatchRandomVideo.length >= 1 && /* at least one loaded */ videoFeedWatchRandomVideo[0].hasAttribute("href") /* good guess load correctly */ ) { /* get video link */ let videoURL = videoFeedWatchRandomVideo[randomValWatchRandomVideo].href; /* watch random video */ window.open(videoURL, target); } else { /* do nothing */ let skip; } } /* Check if configured to open in new tab. */ if (openInNewTabWatchRandomVideo == 1) { /* if so, open in new tab */ watchRandomVideo("_blank"); } else { /* if not, open in current window */ watchRandomVideo("_self"); }})(); 
+javascript:(function() { /* Config variable - 1 to oepn in new tab, 0 to not. */ var openInNewTabWatchRandomVideo = 1; /* Class name of element holding link for video. */ var videoFeedWatchRandomVideo = /* HOT-GLUE - may change */ document.getElementsByClassName("yt-simple-endpoint inline-block style-scope ytd-thumbnail"); /* Length of all videos in home feed. */ var videoFeedWatchRandomVideoLen = videoFeedWatchRandomVideo.length; /* Generate random value using length. */ var randomValWatchRandomVideo = Math.floor(Math.random() * videoFeedWatchRandomVideoLen); /****************************************************************************************** MAIN FUNCTION ******************************************************************************************/ function watchRandomVideo(target) { /* Make sure video links are loaded. */ if (videoFeedWatchRandomVideo.length >= 1 && /* at least one loaded */ videoFeedWatchRandomVideo[0].hasAttribute("href") /* good guess load correctly */ ) { /* get video link */ let videoURL = videoFeedWatchRandomVideo[randomValWatchRandomVideo].href; /* watch random video */ window.open(videoURL, target); } else { /* do nothing */ let skip; } } /* Check if configured to open in new tab. */ if (openInNewTabWatchRandomVideo == 1) { /* if so, open in new tab */ watchRandomVideo("_blank"); } else { /* if not, open in current window */ watchRandomVideo("_self"); }})();
 ```
 </details>
 </dd></dl></dd></dl>
