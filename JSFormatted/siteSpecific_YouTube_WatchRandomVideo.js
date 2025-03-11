@@ -38,7 +38,7 @@ javascript:(function() {
   /* if so, open in new tab                                                          */
   watchRandomVideo("_blank");
  } else {
-  /* if not, open in current window                                                  */
+  /* if not, open in current window                                                  */ 
   watchRandomVideo("_self");
  }
 })(); 

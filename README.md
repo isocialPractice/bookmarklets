@@ -34,7 +34,7 @@
   - [YouTube - Sync Audio](#you-tube---sync-audio) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
   - [YouTube - Take Video Notes](#youtube---take-video-notes) - ready to use 
-  - [YouTube - Watch Random Video](#you-tube---watch-random-video) - ready to use 
+  - [YouTube - Watch Random Video](#youtube---watch-random-video) - ready to use 
 - [Window Bookmarklets](#window-bookmarklets)
   - [Page Offset - Custom Page Down](#page-offset---custom-page-down) - ready to use
   - [Style - Bold Selected Text](#style---bold-selected-text) - ready to use 
