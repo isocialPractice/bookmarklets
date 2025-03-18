@@ -2,6 +2,7 @@ javascript:(function(){
  /* Configuration variables. */
  var instructionAlert = 1; /* <-- CONFIGURATION - 1 is on (alert), 0 is off (no alert) */
  var useRunningFix    = 1; /* <-- CONFIGURATION - 1 is on (find and replace), 0 is off */
+ var replaceAllRunFix = 1; /* <-- CONFIGURATION - 1 is on (replace all), 0 is off      */
  
  /* Optional variables. */
  var pageTitle = "ChatGPT Bookmark"; /* <-- OPTIONAL - change title */
@@ -14,7 +15,7 @@ javascript:(function(){
  
   RUNNING_FIX ILLUSTRATION:
   *************************
-  NOTE - this only applies to code examples given by chatGPT.
+  NOTE - this is mainly intended for code examples given by chatGPT.
   NOTE - if config is 1 (on), and no value or object undefined, bookmarklet still works.
   For items that transcripted unexpectedly in code boxes.  
   TO USE - Follow pattern:
@@ -28,9 +29,13 @@ javascript:(function(){
  /*********** 
   RUNNING_FIX EXAMPLE:
   ********************
+  Best to keep a running object of this. 
+
   Based upon answer where code for C++ was written as
   ` #include <iostream>using namespace std;int main() { `
   after being bookmarked using bookmarklet.
+  Here a question was asked were several code examples in several
+  languages were given, but for some reason C++ did not transpose correctly, 
  ***********/
  var RUNNING_FIX = {
   "1": {
@@ -42,8 +47,8 @@ javascript:(function(){
    two: " std;<br>"
   },
   "3": {
-   one: ";}",
-   two: ";}<br>"
+   one: ";\n}",
+   two: ";<br>}"
   }
  };
  
@@ -337,19 +342,50 @@ javascript:(function(){
                      /* and is defined        */
       (RUNNING_FIX != undefined) || (RUNNING_FIX != null)
      ) {
-   for (i in RUNNING_FIX) {
-    /* check if first nested object follows syntax */
-    if (i == 1) {
-     followingSyntax = 1;
-    }
-    /* if syntax passed, continue; assuming remaining nested objects pass */
-    if (followingSyntax == 1) {
-     for (j in RUNNING_FIX[i]) {
-      curContent = curContent.replace(RUNNING_FIX[i].one, RUNNING_FIX[i].two);
-     }
-    }
+  for (i in RUNNING_FIX) {
+   /* check if first nested object follows syntax */
+   if (i == 1) {
+    followingSyntax = 1;
+    break;
+   } else { /* end after one */
+    break;
    }
-   return curContent;
+  }
+   /* if syntax passed, continue; assuming remaining nested objects pass */
+   if (followingSyntax == 1) {     
+    for (i in RUNNING_FIX) {
+    /* use a marking value with an unlikely string for an answer */
+    let unlikelyValue =  
+     "unlikely_v_a_l_u_e_for_a_random_book_m-a-r-k-l-e-t_RUNNING_FIX_un_like_ly";
+    
+    /* check if replace all is turned on */
+    if (replaceAllRunFix == 1) {       
+     let gotAll = 0; /* variable 0 until all marked for replacement */
+     while (gotAll == 0) {
+      /* while items found to be replace, mark with unlikely value */
+      if (curContent.indexOf(RUNNING_FIX[i].one) > -1) {
+       curContent = curContent.replace(RUNNING_FIX[i].one, unlikelyValue); 
+      } else {
+       /* marked all to be replaced */
+       gotAll = 1;
+      }
+     }
+     gotAll = 0; /* variable 0 until all marked for replacement */
+     while (gotAll == 0) {
+      /* while items marked with unlikely value, replace them   */
+      if (curContent.indexOf(unlikelyValue) > -1) {
+       curContent = curContent.replace(unlikelyValue, RUNNING_FIX[i].two); 
+      } else {
+       /* replaced all marked values */
+       gotAll = 1;
+      }
+     }
+    } else { /* replace first occurence */
+     curContent = curContent.replace(RUNNING_FIX[i].one, RUNNING_FIX[i].two);
+    }          
+   }
+  }
+  return curContent;
   }
  };
  
