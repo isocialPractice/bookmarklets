@@ -1,6 +1,7 @@
 javascript:(function(){ 
  /* Configuration variables. */
  var instructionAlert = 1; /* <-- CONFIGURATION - 1 is on (alert), 0 is off (no alert) */
+ var useRunningFix    = 1; /* <-- CONFIGURATION - 1 is on (find and replace), 0 is off */
  
  /* Optional variables. */
  var pageTitle = "ChatGPT Bookmark"; /* <-- OPTIONAL - change title */
@@ -9,8 +10,42 @@ javascript:(function(){
  /********************************************************************************** 
   NOTE - 'HOT-GLUE' comments for fast; ok this works, and/or good enough patch, 
           or DOM element that changes frequently.  
-  NOTE - any items marked 'RUNNING FIX' will have to be updated by user as needed.
+  NOTE - use embedded object 'RUNNING_FIX', following syntax as illustrated below.
+ 
+  RUNNING_FIX ILLUSTRATION:
+  *************************
+  NOTE - this only applies to code examples given by chatGPT.
+  NOTE - if config is 1 (on), and no value or object undefined, bookmarklet still works.
+  For items that transcripted unexpectedly in code boxes.  
+  TO USE - Follow pattern:
+    "1": {one: "replace what", two: "with this"},
+    "2": {one: "replace what", two: "with this"},
+    etc...  
+  For each numeric nested object; property one is replaced with property two.
+  Object is utilized in support funciton "runningFixChatGPTPasteReadyBookmark()". 
  ***********************************************************************************/  
+ 
+ /*********** 
+  RUNNING_FIX EXAMPLE:
+  ********************
+  Based upon answer where code for C++ was written as
+  ` #include <iostream>using namespace std;int main() { `
+  after being bookmarked using bookmarklet.
+ ***********/
+ var RUNNING_FIX = {
+  "1": {
+   one: "&lt;iostream&gt;",
+   two: "&lt;iostream&gt;<br>"
+  },
+  "2": {
+   one: " std;",
+   two: " std;<br>"
+  },
+  "3": {
+   one: ";}",
+   two: ";}<br>"
+  }
+ };
  
  /* Class names to identify div that is parent of button row.                  */
  var copyButtonSelector =       /* select copy button by attribute             */
@@ -19,10 +54,6 @@ javascript:(function(){
  /* This checks class on signed out guest page.                                */ 
  var DivClassNameIdentifierII = /* HOT-GLUE - likely to change */
   "mb-2 flex gap-3"; 
-  
- /* Class name for row displaying buttons on mouseover.                        */ 
- var hideRowClassNameIdentifier = /* HOT-GLUE - likely to change               */
-  "flex items-center justify-start rounded-xl p-1 z-10 -mt-1 bg-token-main-surface-primary md:absolute";
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier =  /* HOT-GLUE - likely to change                */
@@ -38,11 +69,7 @@ javascript:(function(){
      
  /* Select all copy buttons and use in loop. */
  currentButtonsPath = document.querySelectorAll(copyButtonSelector);
- currentButtonsPathLen = currentButtonsPath.length;
- 
- /* Variables to check if more than one answer. */
- var hideRow = document.getElementsByClassName(hideRowClassNameIdentifier);
- var hideRowLen = hideRow.length;
+ currentButtonsPathLen = currentButtonsPath.length; 
  
  /* Style the bookmarked page. */
  {
@@ -258,6 +285,74 @@ javascript:(function(){
 `;
  }
  
+ /******************************** SUPPORT FUNCTIONS ********************************/
+ /* Increments so no duplicate ids for marker ids, */
+ var numID = 0;  
+ 
+ /* Add click event to document and check elements, running bookmark accordingly. */
+ const docEventChatGPTPasteReadyBookmark = () => {
+  /* add a click event listener to the document */
+  document.addEventListener('click', function(event) {
+   /* check if the clicked element or any of its parents has the attribute */
+   let clickedItem = event.target;
+   let curID;
+
+   /* check if id has been assigned */
+   if (clickedItem.hasAttribute("id") && 
+       clickedItem.id.indexOf(
+        "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark"
+       ) > -1) {
+    /* define current id */
+    curID = clickedItem.id;
+   } else {
+    /* define current id */
+    curID = /* use current value of incrementing number */
+     "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID;
+
+    clickedItem.setAttribute(
+     "id", 
+     "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID
+    );
+
+    /* increment number id for unique id value */
+    numID++;
+   }
+   /* select current item with unique id */
+   let curItem = document.getElementById(curID);     
+
+   /* check if the copy button was clicked */
+   if (curItem.parentElement.hasAttribute("aria-label") && 
+       curItem.parentElement.getAttribute("aria-label") == "Copy") {
+    pasteReadyBookmarkResponse(curItem.parentElement);
+   }
+  });
+ };
+ 
+ /* Find and replace items in object "RUNNING_FIX". */
+ const runningFixChatGPTPasteReadyBookmark = (curContent) => {     
+  /* ensure that syntax  of object is followed */
+  let followingSyntax = 0; /* turns on if first is good, assumes remaining syntax */
+  
+  if (RUNNING_FIX && /* if object is declared */
+                     /* and is defined        */
+      (RUNNING_FIX != undefined) || (RUNNING_FIX != null)
+     ) {
+   for (i in RUNNING_FIX) {
+    /* check if first nested object follows syntax */
+    if (i == 1) {
+     followingSyntax = 1;
+    }
+    /* if syntax passed, continue; assuming remaining nested objects pass */
+    if (followingSyntax == 1) {
+     for (j in RUNNING_FIX[i]) {
+      curContent = curContent.replace(RUNNING_FIX[i].one, RUNNING_FIX[i].two);
+     }
+    }
+   }
+   return curContent;
+  }
+ };
+ 
  /*********************************************************************************** 
   MAIN FUNCTION
   ***********************************************************************************/
@@ -312,9 +407,8 @@ javascript:(function(){
   copiedContent = copiedContent.replace(/class=&#92;&quot;/g, "class='"); /* HOT-GLUE - correct open class  - HOT-GLUE */
   copiedContent = copiedContent.replace(/&#92;&quot;>/g, "'>");           /* HOT-GLUE - correct close class - HOT-GLUE */
   
-  /* HOT-GLUE - fix the running list of - what happened */
-  /* RUNNING FIX - per user on as needed basis */
-  copiedContent = copiedContent.replace("&lt;iostream&gt;", "&lt;iostream&gt;<br>"); 
+  /* utilize "RUNNING_FIX" to correctly write unexpected outputs */
+  copiedContent = runningFixChatGPTPasteReadyBookmark(copiedContent);
 
   /* alert to wait - if pasted immediately = does not work */
   alert("Wait 2 seconds for content to generate as bookmarklet on clipboard. \nThen open bookmark manager and make new bookmark by pasting into url field");
@@ -370,78 +464,8 @@ if (preTagLen >= 1) {
    }, 2000);   
  }
  
- /* Condition on how to handle and prep for main function. */
- var numID = 0;
- if (hideRowLen >= 1) {
-  /* 
-   One or more answers. Add to event to last answer, and listen for click and apply
-   according to aria-label.   
-  */
-  /* get the copy button <- ASSUMES HTML SEMATICS */  
-  if (currentButtonsPath[0]) { /* if true         */
-   /* select each copy button using the attribute aria-label */
-   copyButton = currentButtonsPath[0];
-   
-   /* check for marker */
-   if (copyButton.hasAttribute("data-markevent")) {
-    /* do nothing */
-    let skip;
-   } else {
-    /* add event marker */
-    copyButton.setAttribute("data-markevent", 1);
-    
-    /* add event - when click format markdown from clipboard to html */
-    copyButton.addEventListener("click", function () {
-     pasteReadyBookmarkResponse(this);
-    });
-   }   
-   
-   /* if more than one answer - listen for click */
-   if (hideRowLen > 1) {
-    /* add a click event listener to the document*/
-    document.addEventListener('click', function(event) {
-     /* check if the clicked element or any of its parents has the attribute */
-     let clickedItem = event.target;
-     let curID;
-
-     /* check if id has been assigned */
-     if (clickedItem.hasAttribute("id") && 
-         clickedItem.id.indexOf(
-          "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark"
-         ) > -1) {
-      /* define current id */
-      curID = clickedItem.id;
-     } else {
-      /* define current id */
-      curID = /* use current value of incrementing number */
-       "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID;
-
-      clickedItem.setAttribute(
-       "id", 
-       "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID
-      );
-
-      /* increment number id for unique id value */
-      numID++;
-     }
-     /* select current item with unique id */
-     let curItem = document.getElementById(curID);     
-
-     /* check if the copy button was clicked */
-     if (curItem.parentElement.hasAttribute("aria-label") && 
-         curItem.parentElement.getAttribute("aria-label") == "Copy") {
-      pasteReadyBookmarkResponse(curItem.parentElement);
-     }
-    });
-   } else {
-    /* do nothing */
-    let skip;
-   }   
-  }  
- } else {
-  /* Do nothing. */
-  let skip;
- }
+ /* Run function that checks whenever a click event fires on page. */
+ docEventChatGPTPasteReadyBookmark();
 
  /* If instruction alert is on. */
  if (instructionAlert == 1) {
