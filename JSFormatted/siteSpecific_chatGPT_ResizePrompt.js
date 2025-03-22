@@ -5,36 +5,30 @@ javascript: (function () {
  var selectFormChildIndex = 0; /*           HOT-GLUE - select nested form element child index - see bottom.         */
  var selectedFormElement;      /*           HOT-GLUED - see bottom function selectFormParent.                       */
  var startingFormWidth, curState = 1; /* Switch to run different conditions in selectFormParent function at bottom. */
+ 
  /* The 2 variables below will set a general value for resizing.                */
  /******************** SET CUSTOM RESIZE VALUES *********************************/
  var setMaxHeight = "600px"; /* specify max height for resizing.                */
  var setMaxWidth =  "95%";   /* Specify max width for resizing.                 */
  var setMinHeight = "40px";  /* specify min height for resizing.                */
  var setMinWidth =  "280px"; /* Specify min width for resizing.                 */ 
+ 
+ /* DOM element variables. */
  var promptTextarea = document.getElementById(promptTextarea);
- var promptPar = promptTextarea.parentElement;
- var subButton;
- const styleSubButton = () => {
-  subButton.style.position = "absolute";
-  subButton.style.bottom = "10px"; 
- };
- if (promptPar.nextElementSibling) {
-  subButton = promptPar.nextElementSibling;
-  styleSubButton();
- } else if (promptPar.previousElementSibling) {
-  subButton = promptPar.previousElementSibling;
-  styleSubButton();
- }
+ var promptPar = promptTextarea.parentElement; 
  var parElement = promptPar.parentElement; 
  var grandParElement = parElement.parentElement; 
  var greatGrandParElement = grandParElement.parentElement;
  var textareaParent = parElement.children[0]; 
- var formParent;
+ var formParent; /* defined later */
+ 
  /*************************************SUPPORT FUNCTIONS*************************************/ 
  /* Add style element to mark important overrides. */
- var neededStyling;
+ var neededStyling; /* created HTML element in function */
  const importantOverrideChatGPTResizePrompt = () => {
-  neededStyling = document.createElement("style");
+  neededStyling = document.createElement("style"); /* create style element */
+  
+  /* insert styling for resizeablility */
   neededStyling.innerHTML = `
    form.w-full {
     width: 100% !important;
@@ -52,20 +46,25 @@ javascript: (function () {
     max-width:  ${setMaxWidth} !important;  
    } 
  `;
+ 
+  /* add to page */
   document.body.appendChild(neededStyling);
  };
  
  /* Set UI parent and elements within reasonable range with timeout. */
- var uiParAndAdjacentElements = 0;
+ var uiParAndAdjacentElements = 0; /* switch variable */
  const setUIParAndAdjacentElements = () => {
   setTimeout(function() {
-   /* ELMERS-GLUE - declared at top - select the parent holding prompt and UI elements. */
+   /* ELMERS-GLUE - declared at top - select the parent holding prompt and UI elements.  */
    composerBackground = document.getElementById("composer-background"); 
    if (composerBackground) {
     /* ELMERS-GLUE - declared at top - parent of above                                   */
     composerBackgroundPar = composerBackground.parentElement; 
-    /* style parent of ui elements and its' parents within reasonable range */
-    uiParAndAdjacentElements = 1; /* turn of threepeatLoop() run in main function  */
+    
+    /* style parent of ui elements and its' parents within reasonable range              */
+    uiParAndAdjacentElements = 1; /* turn of threepeatLoop() run in main function        */
+    
+    /* style element                                                                     */
     composerBackground.style.display = "inline-block";
     composerBackgroundPar.style.display = "inline-block";
     composerBackgroundPar.style.width = "100%";  
@@ -75,27 +74,41 @@ javascript: (function () {
  
  /* Recurse function to get top-most form element of prompt. */
  const selectFormParent = (cur) => { /* HOT GLUE - depends on nesting of elements */  
-  let curElement = cur;
-  formParent = curElement.parentElement;  
+  let curElement = cur; /* the current element in recurse */
+  formParent = curElement.parentElement; /* goal is form  */
   if (formParent.tagName == "FORM") {
    /* found it */
-   if (curState == 1) {
-    curState = 2;
+   if (curState == 1) { /* if not toggled */
+    curState = 2; /* toggle current state */
+    
+    /* get orginal width of prompt */
     startingFormWidth = formParent.scrollWidth;
-    if (formParent.innerText == "") {
+    if (formParent.innerText == "") { /* style per innerText */
      grandParElement.style.width = "868px";
     } else {
      grandParElement.style.width = Number(startingFormWidth+100) + "px";
     }
+    /* HOT-GLUE - unset max-width of form grandparent */
+    let formPar = formParent.parentElement;
+    formPar.style.maxWidth = "unset"; 
+    
+    /* call with state toggled for phase 2 */
     selectFormParent(formParent.children[0]);
-   } else {
+   } else { /* phase 2 */
+    /* selectFormChildIndex declared at top */
     curElement = formParent.children[selectFormChildIndex].children;
+    
+    /* get element for resizing */
     for (i = 0; i < curElement.length; i++) {
      if (curElement[i].children.length >= 1) {
-      selectedFormElement = curElement[i]; /* need this element to fit box to contents pn resize */
+      /* need this element to fit box to contents on resize */
+      selectedFormElement = curElement[i]; 
+      
+      /* got it - end loop */
       break;
      }
     }
+    /* style element from above loop */
     selectedFormElement.style.width = "auto";   
     selectedFormElement.children[0].style.width = "auto";          
    }
@@ -121,10 +134,10 @@ javascript: (function () {
   grandParElement.style.transform = "rotateX(180deg)";
   grandParElement.style.overflow = "auto";
   grandParElement.style.resize = "both";  
-  grandParElement.style.minHeight = "100px";
+  grandParElement.style.minHeight = "50px";
   grandParElement.style.maxHeight = "100%";
   grandParElement.style.minWidth = "20px"; 
-  grandParElement.style.maxWidth = "1000px"; 
+  grandParElement.style.maxWidth = "100%"; 
   grandParElement.style.padding = "10px";
   grandParElement.style.background ="rgb(244, 244, 244)";
   grandParElement.style.borderRadius = "25px";
