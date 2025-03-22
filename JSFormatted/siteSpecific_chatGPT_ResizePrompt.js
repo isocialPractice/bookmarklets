@@ -88,7 +88,7 @@ javascript: (function () {
     } else {
      grandParElement.style.width = Number(startingFormWidth+100) + "px";
     }
-    /* HOT-GLUE - unset max-width of form grandparent */
+    /* HOT-GLUE - unset max-width of form parent */
     let formPar = formParent.parentElement;
     formPar.style.maxWidth = "unset"; 
     
