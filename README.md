@@ -9,8 +9,9 @@
   - [Parse - Dom Stop Page Parsed Height](#parse---dom-stop-page-parsed-height) - ready to use   
   - [Video - Dom Take Video Notes](#video---dom-take-video-notes) - ready to use 
 - [Navigation Bookmarklets](#navigation-bookmarklets)
-  - [Highlight Current Page](#sidebar---highlight-current-page) - ready to use
-  - [Underline Anchor Linke](#sidebar---underline-anchor-link) - ready to use
+  - [Sidebar - Fix And Scroll Side Menu](#sidebar---fix-and-scroll-side-menu) - ready to use 
+  - [Sidebar - Highlight Current Page](#sidebar---highlight-current-page) - ready to use
+  - [Sidebar - Underline Anchor Linke](#sidebar---underline-anchor-link) - ready to use  
 - [Style Bookmarklets](#style-bookmarklets)
   - [Favicon - Change or Add Favicon](#favicon---change-or-add-favicon) - requires 1 change(s)
 - [Site Specific Bookmarklets](#site-specific-bookmarklets)
@@ -270,6 +271,58 @@ javascript:(function() { /* OPTIONAL FUNCTIONALITY VARIABLES ///////////////////
 <div>
 The below bookmarklets are for pages with a side nav with many links.
 Copy and paste (<em>making any needed adjustments</em>) to use.
+
+Sidebar - Fix And Scroll Side Menu: 
+----
+<dl><dd><dl><dd>
+
+Fix side navigation and aside to position of page, and make it scrollable. <br><br>
+
+<!------------------------------------------
+fix side navigation and aside to position of page, and make it scrollable. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>nav_Sidebar_FixAndScrollSideMenu.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [nav_Sidebar_FixAndScrollSideMenu.js](https://gist.github.com/jhauga/68d76f72d3adfebfb99cc34b459e2cc6)
+
+```markdown
+javascript:(function() { /* HTML DOM variables. */ var headSidebarFixAndScrollSideMenu = /* select head element */ document.getElementsByTagName("head"); /* Create HTML variables. */ var styleSidebarFixAndScrollSideMenu = /* create style tag */ document.createElement("style"); /* CSS to be inserted in created style element. */ var cssSidebarFixAndScrollSideMenu = /* side nav css style */` nav, aside:first-of-type { height: 80%; position: sticky !important; top: 0 !important; overflow-y: auto; max-height: 800px !important; left: 10px !important; margin-left: 0 !important; z-index: 1 } nav a.active, aside:first-of-type a.active { top: 0 !important } /* Designing for scroll-bar thanks to: https://www.geeksforgeeks.org/how-to-change-the-position-of-scrollbar-using-css/ */ ::-webkit-scrollbar { width: 5px; } /* Track */ ::-webkit-scrollbar-track { border-radius: 5px; } /* Handle */ ::-webkit-scrollbar-thumb { background: white; border-radius: 5px; } /* Handle on hover */ ::-webkit-scrollbar-thumb:hover { background: #555; } `; /* Add CSS to style tag to be inserted. */ styleSidebarFixAndScrollSideMenu.innerText = /* use css from above */ cssSidebarFixAndScrollSideMenu; /* Insert the style tag to end of head element. */ headSidebarFixAndScrollSideMenu[0].appendChild(styleSidebarFixAndScrollSideMenu);})();
+```
+</details>
+</dd></dl></dd></dl>
 
 Sidebar - Highlight Current Page:
 ----
@@ -1360,4 +1413,3 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
-    
