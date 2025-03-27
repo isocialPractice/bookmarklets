@@ -55,14 +55,10 @@ javascript:(function(){
  /* Class names to identify div that is parent of button row.                  */
  var copyButtonSelector =       /* select copy button by attribute             */
   "[aria-label=\"Copy\"]";  
-  
- /* This checks class on signed out guest page.                                */ 
- var DivClassNameIdentifierII = /* HOT-GLUE - likely to change */
-  "mb-2 flex gap-3"; 
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier =  /* HOT-GLUE - likely to change                */
-  "mb-2 flex gap-3"; 
+  "flex absolute left-0 right-0 flex justify-start"; 
 
  /* Define variables for later use. */  
  var answerRow, buttonRow, copyButton, cancelWhile = 0, 
