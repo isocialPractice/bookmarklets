@@ -385,6 +385,28 @@ javascript:(function(){
   }
  };
  
+ /* sort the class name that is used to identify answer area. */
+ const sortClassIdentityChatGPTPasteReadyBookmark = (arr) => {
+  let splitArr = arr.split(" "); /* make argument an array */
+  splitArr.sort();               /* sort the array         */
+  let stringArr = "";            /* define empty variable for final output */
+  /* fill empty variable with sorted array */
+  for (i = 0; i < splitArr.length; i++) {
+   /* add each item in array to empty variable with appending space */
+   if (i == Number(splitArr.length-1)) { /* don't add space for last item */
+    stringArr += splitArr[i];
+   } else { /* append item and a space */
+    stringArr += splitArr[i] + " ";
+   }
+  }
+  /* return te final sorted string variable */
+  return stringArr;
+ };
+ 
+ /* Redefine variable used to identify answer ares, sorting it. */
+ answerAreaClassNameIdentifier = /* use output from support function */
+  sortClassIdentityChatGPTPasteReadyBookmark(answerAreaClassNameIdentifier);
+  
  /*********************************************************************************** 
   MAIN FUNCTION
   ***********************************************************************************/
@@ -392,12 +414,25 @@ javascript:(function(){
   buttonRow = aWhat.parentElement;    
   /* start process to select answer ares */        
   let checkForAnswerArea = function() {
-   if (buttonRow.className.indexOf(answerAreaClassNameIdentifier) == -1 && cancelWhile < 20) {
-    cancelWhile+=1;
-    buttonRow = buttonRow.parentElement;
-    checkForAnswerArea();
+   /* variable to hold each sorted class value */
+   let sortClass = "no";
+   if (buttonRow.hasAttribute("class")) {
+    sortClass = /* reset to sorted value of elements class attribute */
+     sortClassIdentityChatGPTPasteReadyBookmark(buttonRow.className);
+   } 
+   if (sortClass != "no" &&  /* has been redefined witn sorted class              */
+       sortClass.indexOf(answerAreaClassNameIdentifier) > -1 /* class names match */
+      ) {
+    /* found it, define global declared at top */
+    answerRow = buttonRow.previousElementSibling;    
    } else {
-    answerRow = buttonRow.previousElementSibling;
+    cancelWhile+=1; /********************** increment safety linit      */
+    buttonRow = buttonRow.parentElement; /* check nxt top-level element */
+    if (cancelWhile < 20) { /* recurs are below safety limit            */
+     checkForAnswerArea();
+    } else {                /* do nothing ********************************/
+     let skip;
+    }    
    }
   };
   checkForAnswerArea();    
