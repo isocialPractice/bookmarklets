@@ -30,7 +30,6 @@ javascript:(function(){
   RUNNING_FIX EXAMPLE:
   ********************
   Best to keep a running object of this. 
-
   Based upon answer where code for C++ was written as
   ` #include <iostream>using namespace std;int main() { `
   after being bookmarked using bookmarklet.
@@ -62,8 +61,7 @@ javascript:(function(){
 
  /* Define variables for later use. */  
  var answerRow, buttonRow, copyButton, cancelWhile = 0, 
-     answerArea, answerDIV, answerDIVLen, answerText,
-     currentButtonsPath, currentButtonsPathLen, currentButton, 
+     answerArea, currentButtonsPath, currentButtonsPathLen, currentButton, 
      currentButtonsPathArr, currentSelection, priorSelection, 
      copyButtonIndex, priorSelectionIndex, pathPar, 
      pathGrandPar, pathGreatGrandPar;
@@ -437,31 +435,9 @@ javascript:(function(){
   };
   checkForAnswerArea();    
 
-  answerArea = answerRow;
-  answerDIV = answerArea.getElementsByTagName("div");
-  answerDIVLen = answerDIV.length;       
-
-  /* start process to get div holding answer <-- ASSUMES HTML SEMATICS*/
-  let j = 0; /* <-- switch to turn off loop */
-  let l = 0; /* increase nested div tag */    
-  let errOut = 0;
-
-  /* extract div holding answer */
-  while (j != 1) {
-   let isItAnswer = answerDIV[l].children[0].tagName;
-   if (isItAnswer != "div" || isItAnswer != "DIV") {
-    answerText = answerDIV[l];
-    j = 1;
-   } else {
-    /* increment and continue loop */
-    l+=1; errOut+=1;
-   }     
-   if (errOut >= 20) { break; }
-  }    
-
   /* now the answer's div element should be extracted */
   let copiedContent = /* get the content being copied */
-   answerText.innerHTML;
+   answerRow.innerHTML;
 
   /* clean up a bit */       
   copiedContent = copiedContent.replace(/<code /g, "<pre ");      /* change opening code HTML tags to pre tags         */
@@ -488,7 +464,7 @@ if (preTagLen >= 1) {
  for (i = 0; i < preTagLen; i++) {
   setTimeout(function() {
    let curInnerHTML = preTag[i].innerHTML;
-   curInnerHTML = curInnerHTML.replace(/\\\\n/g, '<br>');      
+   curInnerHTML = curInnerHTML.replace(/\\n/g, '<br>');      
    
    /* update code blocks with HOT-GLUE fix */
    preTag[i].innerHTML = curInnerHTML;
