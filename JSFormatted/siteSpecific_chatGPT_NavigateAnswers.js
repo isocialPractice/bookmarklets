@@ -117,8 +117,9 @@ javascript: (function () {
        keyPress == decrementCountNavigateAnswers) {
     /* set intialize variable on after first keypress of pagup or pagedown */
     if (initialToggleNavigateAnswers == 0) {
-     initialToggleNavigateAnswers = 1;         /* bookmarklet initiated      */
-     currentBookmarkToggleNavigateAnswers = 1; /* allow toggle functionality */
+     initialToggleNavigateAnswers = 1;          /* bookmarklet initiated              */
+     currentBookmarkToggleNavigateAnswers = 1;  /* allow toggle functionality         */
+     normalPageNavigateAnswers.innerHTML = "X"; /* innerHTML change                   */
     } else { /* do nothing */ 
      let skip;
     }
@@ -214,7 +215,8 @@ javascript: (function () {
         "*************     \n"   +
         "Press '" + incrementCountNavigateAnswers + "' to go to the " +
         "next answer in conversation.\n" +
-        "Press '" + decrementCountNavigateAnswers + "' to go to prior answer.";      
+        "Press '" + decrementCountNavigateAnswers + "' to go to prior answer.\n\n" +
+        "NOTE - use the button near the top left of page to toggle normal and nav mode.";      
   alert(alertText);
  } 
 })();
