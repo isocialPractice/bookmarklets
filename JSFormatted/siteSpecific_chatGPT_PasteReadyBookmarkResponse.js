@@ -57,7 +57,7 @@ javascript:(function(){
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier =  /* HOT-GLUE - likely to change                */
-  "flex absolute left-0 right-0 flex justify-start"; 
+  "flex absolute justify-start"; 
 
  /* Define variables for later use. */  
  var answerRow, buttonRow, copyButton, cancelWhile = 0, 
@@ -328,7 +328,7 @@ javascript:(function(){
  };
  
  /* Find and replace items in object "RUNNING_FIX". */
- const runningFixChatGPTPasteReadyBookmark = (curContent) => {     
+ const runningFixChatGPTPasteReadyBookmark = (curContent) => {
   /* ensure that syntax  of object is followed */
   let followingSyntax = 0; /* turns on if first is good, assumes remaining syntax */
   
@@ -383,27 +383,29 @@ javascript:(function(){
   }
  };
  
- /* sort the class name that is used to identify answer area. */
- const sortClassIdentityChatGPTPasteReadyBookmark = (arr) => {
-  let splitArr = arr.split(" "); /* make argument an array */
-  splitArr.sort();               /* sort the array         */
-  let stringArr = "";            /* define empty variable for final output */
-  /* fill empty variable with sorted array */
-  for (i = 0; i < splitArr.length; i++) {
-   /* add each item in array to empty variable with appending space */
-   if (i == Number(splitArr.length-1)) { /* don't add space for last item */
-    stringArr += splitArr[i];
-   } else { /* append item and a space */
-    stringArr += splitArr[i] + " ";
+ /* check class name that is used to identify answer area. */
+ const checkClassIdentityChatGPTPasteReadyBookmark = (curClass) => {
+  let checkClass = 0; /* reset                              */
+  /* check string against common values of class names used */
+  for (i = 0; i < answerAreaClassNameIdentifierLen; i++) {
+   if (curClass.indexOf(answerAreaClassNameIdentifier[i]) > -1) {
+    /* match - increment checkClass */
+    checkClass++;
+   } else { /* do nothing */
+    let skip;
    }
   }
-  /* return te final sorted string variable */
-  return stringArr;
+  /* return the final true false value */
+  return checkClass;
  };
  
- /* Redefine variable used to identify answer ares, sorting it. */
- answerAreaClassNameIdentifier = /* use output from support function */
-  sortClassIdentityChatGPTPasteReadyBookmark(answerAreaClassNameIdentifier);
+ /* Redefine variable used to identify answer ares, making array. */
+ answerAreaClassNameIdentifier = /* make array using space as divider */
+  answerAreaClassNameIdentifier.split(" ");
+  
+ /* Get length for future use. */
+ var answerAreaClassNameIdentifierLen = /* length of array */
+  answerAreaClassNameIdentifier.length;
   
  /*********************************************************************************** 
   MAIN FUNCTION
@@ -412,16 +414,16 @@ javascript:(function(){
   buttonRow = aWhat.parentElement;    
   /* start process to select answer ares */        
   let checkForAnswerArea = function() {
-   /* variable to hold each sorted class value */
-   let sortClass = "no";
+   /* variable to hold count of matching identifiers in class name */
+   let checkClass = "no"; /* inially no - so if no class           */
    if (buttonRow.hasAttribute("class")) {
-    sortClass = /* reset to sorted value of elements class attribute */
-     sortClassIdentityChatGPTPasteReadyBookmark(buttonRow.className);
+    checkClass = /* pass to support function to count matches      */
+     checkClassIdentityChatGPTPasteReadyBookmark(buttonRow.className);
    } 
-   if (sortClass != "no" &&  /* has been redefined witn sorted class              */
-       sortClass.indexOf(answerAreaClassNameIdentifier) > -1 /* class names match */
+   if (checkClass != "no" &&  /* has been redefined witn sorted class              */
+       checkClass >= answerAreaClassNameIdentifierLen /* likely matches            */
       ) {
-    /* found it, define global declared at top */
+    /* probably found it (hey - this is a bookmarklet), define global variable     */
     answerRow = buttonRow.previousElementSibling;    
    } else {
     cancelWhile+=1; /********************** increment safety linit      */
@@ -433,7 +435,7 @@ javascript:(function(){
     }    
    }
   };
-  checkForAnswerArea();    
+  checkForAnswerArea();
 
   /* now the answer's div element should be extracted */
   let copiedContent = /* get the content being copied */
