@@ -28,9 +28,12 @@ javascript:(function(){
  var ignoredDOMElementsSavedPageNotes =   /* stop function if one of these is active */
   ["comments", "search", "contenteditable-root", "player"]; 
  
+ /* Switch variables. */
+ var savedNotesTimeAdded = 0; /* if time mark array saved with prior notes */
+ 
  /* Declare global variables that will be defined later. */
  var curTimeElementSavedPageNotes, curTimeElementTextSavedPageNotes,
-     timePreCalSavedPageNotes, timeSecCalSavedPageNotes;
+     timePreCalSavedPageNotes, timeSecCalSavedPageNotes, storedNotesArrSavedPageNotes;
  
  /* CSS style sheet */
  {
@@ -225,6 +228,200 @@ javascript:(function(){
   timePreCalSavedPageNotes = curTimeElementTextSavedPageNotes.split(":");    
  }; 
  
+ /* Add time mark button to the right of textarea. */
+ const markTime = () => {  
+  /* func functions */
+  /* extract current time from video on ctrl + m */
+  let extracTCurTime = (ct) => {
+   if (savedNotesTimeAdded == 1) {
+    noteBoxTakNotes.blur(); /* quickly deactivate note box */
+    noteBoxTakNotes.setAttribute("disabled", true);
+   }
+
+   if (ct.length == 3) { /* not handling videos over 24 hours - no */
+    timeSecCalSavedPageNotes = 
+     Number(Number(ct[0]*60) * 60) + /* hours to seconds   */
+     Number(ct[1]*60) +              /* minutes to seconds */
+     Number(ct[2]);                  /* seconds */
+   } 
+   else if (ct.length == 2) {
+    timeSecCalSavedPageNotes = 
+     Number(ct[0]*60) +    /* minutes to seconds */
+     Number(ct[1]);        /* seconds */
+   } 
+   else if (ct.length == 1) {
+    timeSecCalSavedPageNotes =      
+     Number(ct[0]); /* seconds */
+   }
+  };
+  
+  /* add main area for time marks */
+  let addTimeMarkArea = () => {
+   /* create time mark area and elements */
+   let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
+   let timeMarkButtonArea;
+
+   /* don't duplicate parent container */
+   if (!timeMarkButtonAreaID) { /* create area for time mark buttons */
+    let timeMarkDiv =    /* parent for time mark box */
+     document.createElement("div");
+    timeMarkButtonArea = /* time mark box - parent for timemarks */
+     document.createElement("span"); 
+    timeMarkButtonArea.id = "timeMarkButtonArea"; 
+
+    /* insert time mark box parent div */
+    noteBoxTakNotesDiv.insertAdjacentElement("afterend", timeMarkDiv);   
+
+    /* insert time mark box */
+    timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
+   }
+  };
+  
+  /* give new time marks unique id and add time */
+  let normalCall = 0; /* switch variable - 1 if called via ctrl + m */
+  let addTimeMarkItem = (ct) => {
+   if (ct == undefined) { normalCall = 1; } /* run using ctrl + m */
+   
+   /* check if mark already there */ 
+   let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCalSavedPageNotes);
+   let curTimeMarkCloseBtn, curTimeMarkBtn;
+
+   /* don't duplicate time marks */
+   if (!curTimeMarkBtnID) { /* create time mark buttons */
+    let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
+
+    /* CREATE AND ADD CLOSE TIME MARK BUTTONS ***************************************/
+    /* parent of close and time mark button */
+    let timeMarkBtn = document.createElement("div");
+
+    /* insert parent of close and time mark button */
+    timeMarkButtonAreaID.insertAdjacentElement("beforeend", timeMarkBtn);
+
+    curTimeMarkCloseBtn = /* enable time marks to be removed    */
+     document.createElement("span");    
+
+   curTimeMarkCloseBtn   /* give each a unique data attribute */
+    .id = "closeTimeMarkBtn" + timeSecCalSavedPageNotes;
+
+    curTimeMarkCloseBtn  /* style close btn - give pointers hover effect */
+    .style.cursor = "pointer";
+
+    curTimeMarkCloseBtn   /* style close btn - give font-size */
+    .style.fontSize = "small";
+
+    curTimeMarkCloseBtn   /* add mouse event - mouse over to style text */
+    .addEventListener(
+     "mouseover", function() {
+      this.style.fontWeight = "bold";
+      this.style.fontSize = "medium";
+     });
+
+    curTimeMarkCloseBtn   /* add mouse event - mouse out to style text */
+    .addEventListener(
+     "mouseout", function() {
+      this.style.fontWeight = "initial"; 
+      this.style.fontSize = "small";
+     });    
+
+    curTimeMarkCloseBtn   /* add click event - remove time mark and this */
+    .addEventListener(
+     "click", function() {
+      this.parentElement.remove(); /* removes all elements of time mark button */
+     });
+
+    curTimeMarkCloseBtn   /* give close symbol as string - x */
+    .innerText = "x";
+
+    /* insert close time mark button */
+    timeMarkBtn.insertAdjacentElement("afterbegin", curTimeMarkCloseBtn);
+
+    /* CREATE AND ADD TIME MARK BUTTONS ********************************************/
+    let closeTimeBtn =    /* get id of close button to insert time mark after it */
+     document.getElementById("closeTimeMarkBtn" + timeSecCalSavedPageNotes);
+
+    curTimeMarkBtn =      /* time mark linking tom marked times */
+     document.createElement("a");
+
+    curTimeMarkBtn.id =   /* give each a unique id */
+     "timeMarkBtn" + timeSecCalSavedPageNotes;
+
+    /* open link in new tab - _blank */
+    curTimeMarkBtn.target =  "_blank";   
+    let vidURL = location.href; /* extract current url */
+
+    /* conditions if url did not already have time value */
+    if (vidURL.indexOf("&t=") > -1) { /* had time value   */
+     vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCalSavedPageNotes);
+    } else {                         /* no time value    */
+     vidURL = vidURL + "&t=" + timeSecCalSavedPageNotes + "s";
+    }      
+    curTimeMarkBtn.href = vidURL;
+
+    if (normalCall == 1) { /* called via ctrl + m */ 
+     /* use calculation for current video time */
+     /* use hour : minutes: seconds */
+     for (i in timePreCalSavedPageNotes) {
+      if (i == Number(timePreCalSavedPageNotes.length-1)) {
+       if (Number(timePreCalSavedPageNotes.length-1) == 0) {
+        curTimeMarkBtn.innerText = "0:" + timePreCalSavedPageNotes[i];
+       } else {
+        curTimeMarkBtn.innerText += timePreCalSavedPageNotes[i];
+       }     
+      } else {
+       curTimeMarkBtn.innerText += timePreCalSavedPageNotes[i] + ":";
+      }
+     }
+    } else {
+     curTimeMarkBtn.innerText = ct; /* using time from prior note session */
+    }
+    /* insert time marked at key combo "Ctrl + m" */
+    timeMarkBtn.insertAdjacentElement("beforeend", curTimeMarkBtn);
+
+    /* add click event to pause video if clicked and video is playing */
+    curTimeMarkBtn.addEventListener("click", function() {
+     let playButtonData = playButtonSavedPageNotes[0].dataset.titleNoTooltip;
+     if (playButtonData != "Play") {
+      playButtonSavedPageNotes[0].click();
+     }
+    });     
+   }    
+
+   /* focus back on note box */
+   noteBoxTakNotes.removeAttribute("disabled");
+   noteBoxTakNotes.focus();
+  };
+  
+  /* 0 => adding time markks from prior notes, 1 => add with crtl + m */
+  if (savedNotesTimeAdded == 0) {
+   let priorTimeArr = /* array from prior time mark make-shift array */
+    storedNotesArrSavedPageNotes[2].split(",");
+   let priorTimeArrLen = /* prep for loop */
+    priorTimeArr.length; 
+    
+   /* sort time values */
+   priorTimeArr.sort();
+   
+   /* add time marks from last note session */
+   for (i = 0; i < priorTimeArrLen; i++) {
+    extracTCurTime(priorTimeArr[i].split(":"));
+    if ( i == 0) { /* add time area on first iteration */
+     addTimeMarkArea();
+    }
+    /* give each mark id with time appended, adding prior time  */
+    addTimeMarkItem(priorTimeArr[i]);    
+   }
+  } else {
+   /* get current time spot of video */
+   extracTCurTime(timePreCalSavedPageNotes);
+
+   /* check if time mark area needs to be added */
+   addTimeMarkArea();
+
+   /* give each mark id with time appended, adding current time */
+   addTimeMarkItem();
+  }
+ };
+ 
  /* Focus on textarea whenever keydown occurs. */
  const keypressToNoteSavedPageNotes = () => {
   let activeID = document.activeElement.id;
@@ -293,149 +490,6 @@ javascript:(function(){
   sessionStorage.setItem("lastKeyPressSavedPageNotes", event.key);
  };
  
- /* Add time mark button to the right of textarea. */
- const markTime = () => {  
-  noteBoxTakNotes.blur(); /* quickly deactivate note box */
-  noteBoxTakNotes.setAttribute("disabled", true);
-  
-  if (timePreCalSavedPageNotes.length == 3) { /* not handling videos over 24 hours - no */
-   timeSecCalSavedPageNotes = 
-    Number(Number(timePreCalSavedPageNotes[0]*60) * 60) + /* hours to seconds   */
-    Number(timePreCalSavedPageNotes[1]*60) +              /* minutes to seconds */
-    Number(timePreCalSavedPageNotes[2]);                  /* seconds */
-  } 
-  else if (timePreCalSavedPageNotes.length == 2) {
-   timeSecCalSavedPageNotes = 
-    Number(timePreCalSavedPageNotes[0]*60) +    /* minutes to seconds */
-    Number(timePreCalSavedPageNotes[1]);        /* seconds */
-  } 
-  else if (timePreCalSavedPageNotes.length == 1) {
-   timeSecCalSavedPageNotes =      
-    Number(timePreCalSavedPageNotes[0]); /* seconds */
-  }
-  /* create time mark area and elements */
-  let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
-  let timeMarkButtonArea;
-  
-  /* don't duplicate parent container */
-  if (!timeMarkButtonAreaID) { /* create area for time mark buttons */
-   let timeMarkDiv =    /* parent for time mark box */
-    document.createElement("div");
-   timeMarkButtonArea = /* time mark box - parent for timemarks */
-    document.createElement("span"); 
-   timeMarkButtonArea.id = "timeMarkButtonArea"; 
-   
-   /* insert time mark box parent div */
-   noteBoxTakNotesDiv.insertAdjacentElement("afterend", timeMarkDiv);   
-   
-   /* insert time mark box */
-   timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
-  }
-  
-  /* give each mark id with time appended */
-  let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCalSavedPageNotes);
-  let curTimeMarkCloseBtn, curTimeMarkBtn;
-  
-  /* don't duplicate time marks */
-  if (!curTimeMarkBtnID) { /* create time mark buttons */
-   let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
-   
-   /* CREATE AND ADD CLOSE TIME MARK BUTTONS ***************************************/
-   /* parent of close and time mark button */
-   let timeMarkBtn = document.createElement("div");
-   
-   /* insert parent of close and time mark button */
-   timeMarkButtonAreaID.insertAdjacentElement("beforeend", timeMarkBtn);
-   
-   curTimeMarkCloseBtn = /* enable time marks to be removed    */
-    document.createElement("span");    
-    
-  curTimeMarkCloseBtn   /* give each a unique data attribute */
-   .id = "closeTimeMarkBtn" + timeSecCalSavedPageNotes;
-   
-   curTimeMarkCloseBtn  /* style close btn - give pointers hover effect */
-   .style.cursor = "pointer";
-   
-   curTimeMarkCloseBtn   /* style close btn - give font-size */
-   .style.fontSize = "small";
-   
-   curTimeMarkCloseBtn   /* add mouse event - mouse over to style text */
-   .addEventListener(
-    "mouseover", function() {
-     this.style.fontWeight = "bold";
-     this.style.fontSize = "medium";
-    });
-    
-   curTimeMarkCloseBtn   /* add mouse event - mouse out to style text */
-   .addEventListener(
-    "mouseout", function() {
-     this.style.fontWeight = "initial"; 
-     this.style.fontSize = "small";
-    });    
-    
-   curTimeMarkCloseBtn   /* add click event - remove time mark and this */
-   .addEventListener(
-    "click", function() {
-     this.parentElement.remove(); /* removes all elements of time mark button */
-    });
-   
-   curTimeMarkCloseBtn   /* give close symbol as string - x */
-   .innerText = "x";
-   
-   /* insert close time mark button */
-   timeMarkBtn.insertAdjacentElement("afterbegin", curTimeMarkCloseBtn);
-      
-   /* CREATE AND ADD TIME MARK BUTTONS ********************************************/
-   let closeTimeBtn =    /* get id of close button to insert time mark after it */
-    document.getElementById("closeTimeMarkBtn" + timeSecCalSavedPageNotes);
-    
-   curTimeMarkBtn =      /* time mark linking tom marked times */
-    document.createElement("a");
-   
-   curTimeMarkBtn.id =   /* give each a unique id */
-    "timeMarkBtn" + timeSecCalSavedPageNotes;
-   
-   /* open link in new tab - _blank */
-   curTimeMarkBtn.target =  "_blank";   
-   let vidURL = location.href; /* extract current url */
-   
-   /* conditions if url did not already have time value */
-   if (vidURL.indexOf("&t=") > -1) { /* had time value   */
-    vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCalSavedPageNotes);
-   } else {                         /* no time value    */
-    vidURL = vidURL + "&t=" + timeSecCalSavedPageNotes + "s";
-   }      
-   curTimeMarkBtn.href = vidURL;
-   
-   /* use hour : minutes: seconds */
-   for (i in timePreCalSavedPageNotes) {
-    if (i == Number(timePreCalSavedPageNotes.length-1)) {
-     if (Number(timePreCalSavedPageNotes.length-1) == 0) {
-      curTimeMarkBtn.innerText = "0:" + timePreCalSavedPageNotes[i];
-     } else {
-      curTimeMarkBtn.innerText += timePreCalSavedPageNotes[i];
-     }     
-    } else {
-     curTimeMarkBtn.innerText += timePreCalSavedPageNotes[i] + ":";
-    }
-   }
-   /* insert time marked at key combo "Ctrl + m" */
-   timeMarkBtn.insertAdjacentElement("beforeend", curTimeMarkBtn);
-   
-   /* add click event to pause video if clicked and video is playing */
-   curTimeMarkBtn.addEventListener("click", function() {
-    let playButtonData = playButtonSavedPageNotes[0].dataset.titleNoTooltip;
-    if (playButtonData != "Play") {
-     playButtonSavedPageNotes[0].click();
-    }
-   });     
-  }    
-  
-  /* focus back on note box */
-  noteBoxTakNotes.removeAttribute("disabled");
-  noteBoxTakNotes.focus();
- };
- 
  /* Begin taking notes. */
  noteBoxTakNotes.focus();
  
@@ -486,8 +540,41 @@ javascript:(function(){
   if (storedNotes == null ||
       storedNotes == undefined) {
    alert("There are no saved notes for the current page.");
+   savedNotesTimeAdded = 1; /* run mark time as normal */
   } else {
-   noteBoxTakNotes.textContent = storedNotes.replace(/<br>/g, "\n");
+   storedNotesArrSavedPageNotes = storedNotes.split("--:--"); /* make saved notes array */
+   
+   /* store previos notes */
+   let priorNotesTaken = storedNotesArrSavedPageNotes[1];
+   
+   noteBoxTakNotes.textContent = /* add prior notes to box */
+    storedNotesArrSavedPageNotes[0] + "\n" +  /* add heading for title and date         */
+    storedNotesArrSavedPageNotes[1].replace(/<br>/g, "\n");   /* replace with new lines */
+    
+   /* check if time marks were saved */
+   if (storedNotesArrSavedPageNotes[2] == "empty") { /* no time marks from prior notes  */
+    savedNotesTimeAdded = 1; /* run mark time as normal */
+   } else {
+    /* add time marks from prior notes */
+    markTime();
+    savedNotesTimeAdded = 1; /* run mark time as normal */
+   }   
+   alert("PRIOR NOTE SESSION LOADED: \n\n" +
+    "NOTE - type \"clear\" or \"delete\", then save to alter log " +
+    "accordingly, else all saves will be stored in running log of " +
+    "note sessions.\n" + 
+    "NOTE - it is safe to remove these notes if saving this session " +
+    "as they will remain in local storage for notes saved for video.\n" +
+    "NOTE - to avoid clutter it is suggested that the notes from prior " + 
+    "sessions be cleaned or cleared before saving this session.\n" +
+    "NOTE - To clear running log of notes, save page notes with only: \n" +
+    "\"clear\" \n" + "typed into the note box.\n" + "and run bookmarklet " +
+    "siteSpecific_YouTube_SavePageNotesToLocalStorage.\n" +
+    "NOTE - To delete notes for this video, save page notes with only: \n" +
+    "\"delete\" \n" + "typed into the note box." + "and run bookmarklet " +
+    "siteSpecific_YouTube_SavePageNotesToLocalStorage."
+   );
+   noteBoxTakNotes.select();
   }
  }
  addSavedPageNotesToNotebox();
