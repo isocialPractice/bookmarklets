@@ -104,6 +104,7 @@ javascript:(function(){
     border-radius: 10px;
     margin-left: 10px;   
     padding: 5px;
+    padding-bottom: 40px;
     background: rgba(0, 0, 0, .025);      
    }
    /* style close and time mark button parent */
@@ -143,6 +144,22 @@ javascript:(function(){
     border-left: 1px solid black;
     border-bottom: 1px solid black;    
     border-width: medium;  
+   }
+   /* style clear all time mark button at bottom right */
+   div#noteAreaSavedPageNotes div div#clearAllTimeMarks {
+    display: inline-block;
+    position: absolute;
+    cursor: pointer;
+    bottom: 10px !important;
+    right: 10px;
+    background: rgba(255, 0, 0, .7);
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+   }
+   div#noteAreaSavedPageNotes div div#clearAllTimeMarks:hover {
+    background: rgba(255, 0, 0, 1);
+    padding: 6px;
    }
  `;
  }
@@ -259,21 +276,50 @@ javascript:(function(){
   let addTimeMarkArea = () => {
    /* create time mark area and elements */
    let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
-   let timeMarkButtonArea;
+   let timeMarkButtonArea, clearAllTimeMarks; /* hold time marks and add clear button */
 
    /* don't duplicate parent container */
    if (!timeMarkButtonAreaID) { /* create area for time mark buttons */
     let timeMarkDiv =    /* parent for time mark box */
      document.createElement("div");
+    
     timeMarkButtonArea = /* time mark box - parent for timemarks */
      document.createElement("span"); 
     timeMarkButtonArea.id = "timeMarkButtonArea"; 
+    
+    clearAllTimeMarks = /* button to clear time marks from prior sessions */
+     document.createElement("div");
+    clearAllTimeMarks.id = /* class for style */
+     "clearAllTimeMarks";
+    clearAllTimeMarks.title = /* title for instructional hint */
+     "clear session time marks";
+    clearAllTimeMarks.innerText = "Clear"; /* button rendered text */
 
     /* insert time mark box parent div */
     noteBoxTakNotesDiv.insertAdjacentElement("afterend", timeMarkDiv);   
 
     /* insert time mark box */
     timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
+    
+    /* insert clear button */
+    timeMarkButtonArea.insertAdjacentElement("afterend", clearAllTimeMarks);
+    
+    /* redefine clearAllTimeMarks */
+    clearAllTimeMarks = document.getElementById("clearAllTimeMarks");
+    clearAllTimeMarks   /* function to clear all when clicked */
+    .addEventListener(
+     "click", function() {
+      let tmArea = this.previousElementSibling;
+      let tmMark = tmArea.children;
+      let tmMarkLen = tmMark.length;
+      if (tmMarkLen > 0) {
+       while (tmMarkLen > 0) {
+        tmMark[0].remove();
+        tmMarkLen = tmMark.length;
+       }
+       this.style.display = "none"; /* hide until time marks are added */
+      }
+     });
    }
   };
   
@@ -281,11 +327,24 @@ javascript:(function(){
   let normalCall = 0; /* switch variable - 1 if called via ctrl + m */
   let addTimeMarkItem = (ct) => {
    if (ct == undefined) { normalCall = 1; } /* run using ctrl + m */
-   
+   if (ct == "empty") { return; } /* end function if saved session had empty marks */
    /* check if mark already there */ 
    let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCalSavedPageNotes);
-   let curTimeMarkCloseBtn, curTimeMarkBtn;
+   let curTimeMarkCloseBtn, curTimeMarkBtn, clearAllTimeMarks; /* variables for time and clear time */
 
+   /* show clear all time mark button */
+   clearAllTimeMarks = document.getElementById("clearAllTimeMarks");
+   
+   /* ensure part of dom */
+   if (clearAllTimeMarks) {
+    /* change display if all marks were previously cleared */
+    if (clearAllTimeMarks.style.display == "none") {
+     /* set to value from inserted style tag */
+     clearAllTimeMarks.style.display = "inline-block";
+    } else { /* do nothing */
+     let skip;
+    }
+   }
    /* don't duplicate time marks */
    if (!curTimeMarkBtnID) { /* create time mark buttons */
     let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
@@ -552,7 +611,8 @@ javascript:(function(){
     storedNotesArrSavedPageNotes[1].replace(/<br>/g, "\n");   /* replace with new lines */
     
    /* check if time marks were saved */
-   if (storedNotesArrSavedPageNotes[2] == "empty") { /* no time marks from prior notes  */
+   if (!storedNotesArrSavedPageNotes[2] ||           /* was saved using prior bookmarklet */
+       storedNotesArrSavedPageNotes[2] == "empty") { /* no time marks from prior notes  */
     savedNotesTimeAdded = 1; /* run mark time as normal */
    } else {
     /* add time marks from prior notes */
