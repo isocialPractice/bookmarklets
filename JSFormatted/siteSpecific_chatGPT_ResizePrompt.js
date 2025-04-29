@@ -5,6 +5,11 @@ javascript: (function () {
  var selectFormChildIndex = 0; /*           HOT-GLUE - select nested form element child index - see bottom.         */
  var selectedFormElement;      /*           HOT-GLUED - see bottom function selectFormParent.                       */
  var startingFormWidth, curState = 1; /* Switch to run different conditions in selectFormParent function at bottom. */
+ var htmlTag = document.getElementsByTagName("html"); /* To check current color theme; light, dark.                 */
+ var formTag = document.getElementsByTagName("form"); /* To resize last aesthetic styled parent of prompt box.      */
+ /* Select styled parent of prompt box.*/
+ var formChild           = formTag[0].children;  /* First child of form element is rounded box holding prompt tools. */
+ var resizeLastPromptBox = formChild[0];         /* HOT-GLUE -Select first child of html form element (currently 1). */
  
  /* The 2 variables below will set a general value for resizing.                */
  /******************** SET CUSTOM RESIZE VALUES *********************************/
@@ -126,6 +131,16 @@ javascript: (function () {
   parElement.style.transform = "rotateX(180deg)";
  }; 
  
+ /* Resize all prompt box by current resized width. */
+ const resizesLastPromptBox = new ResizeObserver(curEl => {  
+  /* get current width of resizable prompt box */
+  let width = promptTextarea.getBoundingClientRect().width;
+  /* add 130 - safe estimate */
+  let newWidth = width + 130;
+  /* resize last aethetically visible styled element of prompt box html */
+  resizeLastPromptBox.style.width = `${newWidth}px`;  
+ });
+ 
  /*******************************************************************************************
   MAIN FUNCTION - STYLE ELEMENTS FOR RESIZE
  ********************************************************************************************/
@@ -135,11 +150,13 @@ javascript: (function () {
   grandParElement.style.overflow = "auto";
   grandParElement.style.resize = "both";  
   grandParElement.style.minHeight = "50px";
-  grandParElement.style.maxHeight = "100%";
+  grandParElement.style.maxHeight = "1200px";
   grandParElement.style.minWidth = "20px"; 
   grandParElement.style.maxWidth = "100%"; 
   grandParElement.style.padding = "10px";
-  grandParElement.style.background ="rgb(244, 244, 244)";
+  grandParElement.style.background = (htmlTag[0].className == "dark") 
+                                     ? "rgba(33, 33, 33, 0.75)"
+                                     : "rgb(244, 244, 244)";
   grandParElement.style.borderRadius = "25px";
   grandParElement.children[0].style.paddingLeft = "10px";
   greatGrandParElement.style.minWidth = "100%";
@@ -153,8 +170,8 @@ javascript: (function () {
   parElement.style.minHeight = "95%";
   promptPar.style.paddingLeft = "30px";
   promptPar.style.height = "inherit"; 
-  promptTextarea.style.paddingRight = "100px";
-  promptTextarea.style.paddingLeft = "30px";  
+  promptTextarea.style.paddingRight = "10px";
+  promptTextarea.style.paddingLeft = "10px";  
   textareaParent.style.minHeight = "100%";
   
   /* call support functions */
@@ -182,8 +199,25 @@ javascript: (function () {
   ensureRotate();
  }  
  
- /* Run bookmarklet functions. */
+ /* Run bookmarklet functions: 1 = add style, 2 = resize entire prompt */
+ var currentStep = 1; /* switch variable for 1 and 2 noted above       */
  setTimeout(function() {
-  styleElementsForResizeChatGPTResizePrompt();
+  styleElementsForResizeChatGPTResizePrompt(); /* add styling for resizability */
+  currentStep = 2; /* set nest step switch variable to 2                       */
  }, 100);
+ 
+ /* Wait for step 1 to finish then run 2. */
+ setTimeout(function() {
+  let checkStep = () => {
+   if (currentStep == 2) {
+    /* add resizability to entire aesthetically styled prompt box */
+    resizesLastPromptBox.observe(promptTextarea);
+   } else {
+    /* recheck status */
+    currentStep = currentStep;  
+    checkStep();
+   }
+  };
+  checkStep();
+ }, 200);
 })();   
