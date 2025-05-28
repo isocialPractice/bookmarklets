@@ -30,7 +30,7 @@
   - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use 
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use 
-  - [YouTube - Show Short Release Date](#youtube--show-short-release-date) - ready to use 
+  - [YouTube - Show Short Release Date](#youtube---show-short-release-date) - ready to use 
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use 
   - [YouTube - Sync Audio](#youtube---sync-audio) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
