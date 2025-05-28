@@ -1,147 +1,205 @@
 javascript:(function() {  
- /* OPTIONAL - alert with instructions. */
- var alertInstructionsYoutTubeShortRelese = 1;
 
- /* 
-  Check if being run for first time, reloading if not as to 
-  compensate for initialization bug.
- */
- var checkPageInitYoutTubeShortRelese = 
-  sessionStorage.getItem("initYoutTubeShortRelese");
- 
- /* See if page session initialized. */
- if (checkPageInitYoutTubeShortRelese == null ||
-     checkPageInitYoutTubeShortRelese == undefined) {
-  alert(
-  "BOOKMARKLET HAS NOT BEEN INITIALIZED:\n\n" +
-  "Run bookmarklet again if release date is not displayed.\n" +
-  "NOTE - page down and back up to short for consistent results."
-  );
-  sessionStorage.setItem("initYoutTubeShortRelese", "1");
-  window.location.reload();    
-  return;
- }
+ /* OPTIONAL - alert with instructions. */
+ var alertInstructionsYoutTubeShortRelease = 1;
  
  /* Declare global variables. */
- var factoidsYoutTubeShortRelese, releaseDateYoutTubeShortRelese, 
-     actionsIDYoutTubeShortRelese, putReleaseYoutTubeShortRelese;
+ var checkPageInitYoutTubeShortRelease, youTubeShortReleaseURINotice,
+     factoidsYoutTubeShortRelease, releaseDateYoutTubeShortRelease, 
+     actionsIDYoutTubeShortRelease, putReleaseYoutTubeShortRelease,
+     youTubeShortPath, youTubeShortURI, reloadYouTubeShortRelease;
+
+ /* Define ready global variables. */
+ youTubeShortPath = "https://www.youtube.com/shorts";
+ youTubeShortURI  = location.href;
+ youTubeShortReleaseURINotice = /* not on shorts page */
+ `
+  You must be watching "Shorts" for bookmarklet to start.
+ `;
  
  /***********************SUPPORT FUNCTIONS***********************/     
+ /* 
+  Check if being run for first time, setting storage if not as to 
+  compensate for initialization bug.
+ */
+ const runInitYoutTubeShortRelease = () => {
+  if (reloadYouTubeShortRelease == undefined) { /* don't repeat alerts */
+    if (sessionStorage.getItem("initYoutTubeShortRelease") != true) {  
+      if (location.href.indexOf(youTubeShortPath) > -1) {
+        alert(
+        "BOOKMARKLET HAS NOT BEEN INITIALIZED:\n\n" +
+        "Run bookmarklet again if release date is not displayed.\n"
+        ); 
+        /* on shorts set storage */
+        sessionStorage.setItem("initYoutTubeShortRelease", "1");
+        /* only reload if on shorts page */
+        window.location.reload();    
+      } else {
+        alert(youTubeShortReleaseURINotice);
+      }
+      return 1;
+    } else {
+      checkPageInitYoutTubeShortRelease = /* define */
+        sessionStorage.getItem("initYoutTubeShortRelease");  
+      return 0;
+    }
+  }
+ };
+ 
+ /* End if bookmarklet has not been initialised.  */
+ reloadYouTubeShortRelease = runInitYoutTubeShortRelease();
+
+  runInitYoutTubeShortRelease();
  /* Define DOM global variables.         *****/
- const defineVarYoutTubeShortRelese = () => {
+ const defineVarYoutTubeShortRelease = () => {
   /* select parent containing short description */  
-  factoidsYoutTubeShortRelese = 
+  factoidsYoutTubeShortRelease = 
    document.getElementsByClassName("ytwFactoidRendererHost");
 
   /* placing before this item*/
-  actionsIDYoutTubeShortRelese = 
+  actionsIDYoutTubeShortRelease = 
    document.getElementById("actions");       
 
   /* get release date */
-  releaseDateYoutTubeShortRelese = 
-   factoidsYoutTubeShortRelese[2].textContent;
+  releaseDateYoutTubeShortRelease = 
+   factoidsYoutTubeShortRelease[2].textContent;
  };
  
  /* Create and style HTML to hold date. *****/
- const makeDateElementYoutTubeShortRelese = () => {
+ const makeDateElementYoutTubeShortRelease = () => {
   /* create element to store release date */
-  putReleaseYoutTubeShortRelese = 
+  putReleaseYoutTubeShortRelease = 
    document.createElement("p");
 
   /* make presentable */
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.fontFamily = "Roboto";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.fontWeight = "bold";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.marginLeft = "10px";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
+  .style.marginBottom = "10px";
+  putReleaseYoutTubeShortRelease
   .style.textAlign = "center";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.background = "rgba(0, 0, 0, .095)";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.borderRadius = "25px";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.width = "50px";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.height = "50px";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.paddingTop = "12px";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.boxSizing = "border-box";
-  putReleaseYoutTubeShortRelese
+  putReleaseYoutTubeShortRelease
   .style.fontSize = "9pt";
 
   /* Give id to remove if duplicates */
-  putReleaseYoutTubeShortRelese
-  .id = "putReleaseYoutTubeShortRelese";
+  putReleaseYoutTubeShortRelease
+  .id = "putReleaseYoutTubeShortRelease";
  };
  
  /* Add item to right of short. *************/
- const addRelDateYoutTubeShortRelese = () => {
-  actionsIDYoutTubeShortRelese
-  .insertAdjacentElement("beforebegin", putReleaseYoutTubeShortRelese);
+ const addRelDateYoutTubeShortRelease = () => {
+  actionsIDYoutTubeShortRelease
+  .insertAdjacentElement("beforebegin", putReleaseYoutTubeShortRelease);
 
   /* Select again */
-  putReleaseYoutTubeShortRelese = 
-   document.getElementById("putReleaseYoutTubeShortRelese"); 
+  putReleaseYoutTubeShortRelease = 
+   document.getElementById("putReleaseYoutTubeShortRelease"); 
 
   /* check if year is at end or beginning */
   let atEndYear = /^[a-zA-Z]+ \d{5,}$/;
   let atStartYear = /^\d{4}.*$/;
 
   /* make easier to read */ 
-  if (atEndYear.test(releaseDateYoutTubeShortRelese)) {
-   releaseDateYoutTubeShortRelese = /* year is at end */
-    releaseDateYoutTubeShortRelese.replace(/([0-9]{1,})([0-9]{4})$/g, "$1, $2");
-  } else if (atStartYear.test(releaseDateYoutTubeShortRelese)) {
-   releaseDateYoutTubeShortRelese = /* year is at start */
-    releaseDateYoutTubeShortRelese.replace(/([0-9]{4})/g, "$1, ");       
+  if (atEndYear.test(releaseDateYoutTubeShortRelease)) {
+   releaseDateYoutTubeShortRelease = /* year is at end */
+    releaseDateYoutTubeShortRelease.replace(/([0-9]{1,})([0-9]{4})$/g, "$1, $2");
+  } else if (atStartYear.test(releaseDateYoutTubeShortRelease)) {
+   releaseDateYoutTubeShortRelease = /* year is at start */
+    releaseDateYoutTubeShortRelease.replace(/([0-9]{4})/g, "$1, ");       
   }
 
   /* Put in text of short release date. */
-  putReleaseYoutTubeShortRelese.innerText = 
-   releaseDateYoutTubeShortRelese;
+  putReleaseYoutTubeShortRelease.innerText = 
+   releaseDateYoutTubeShortRelease;
+ };
+
+ /* Check if url for short changes. *************/
+ const checkCurrentShort = () => {
+  /* check url */
+  if (location.href.indexOf(youTubeShortPath) == -1) {
+   /* remove listeners */
+   document.body.removeEventListener("click", showShortReleaseDate);
+   /* end bookmarklet */
+   return;
+  } else {
+   /* get short release date */
+   let curShort = location.href; /* recheck uri */
+   if (curShort == youTubeShortURI) {
+    /* do nothing */
+    let skip;
+   } else {
+    /* change short release date */
+    showShortReleaseDate();
+    youTubeShortURI = location.href; /* redefine for next check */
+   }
+  }
  };
  
  /***************************************************************
                           MAIN FUNCTION
  ****************************************************************/
- document.body.addEventListener("click", function() {  
+ function showShortReleaseDate() {
   /* Have to delay a bit - using one second cause - seems right. */
   setTimeout(function() {
    /* Check id that is made to remove if already placed. */
-   putReleaseYoutTubeShortRelese = 
-    document.getElementById("putReleaseYoutTubeShortRelese"); 
+   putReleaseYoutTubeShortRelease = 
+    document.getElementById("putReleaseYoutTubeShortRelease"); 
 
    /* If already placed remove. */
-   if (putReleaseYoutTubeShortRelese) {
-    putReleaseYoutTubeShortRelese.remove();
-    defineVarYoutTubeShortRelese();
+   if (putReleaseYoutTubeShortRelease) {
+    putReleaseYoutTubeShortRelease.remove();
+    defineVarYoutTubeShortRelease();
    } else {
-    defineVarYoutTubeShortRelese();
+    defineVarYoutTubeShortRelease();
    }
    
    /* Prep element to be inserted. */
-   makeDateElementYoutTubeShortRelese();
+   makeDateElementYoutTubeShortRelease();
       
    /* insert short release date */
-   addRelDateYoutTubeShortRelese();     
+   addRelDateYoutTubeShortRelease();     
    
    /* Delay for half a second for content loading. */
   }, 500); 
- });
- 
- /* SHow instructions if turned on. */
- if (alertInstructionsYoutTubeShortRelese == 1) {
-  alert(`
-  INSTRUCTIONS - YOUTUBE SHOW SHORT RELEASE DATE\n
-  **********************************************\n\n
+ }
 
-  Click any white space on page to get release date.\n
-  NOTE - after first short has loaded, scroll down to next\n
-  short and back up, then click white space to get current\n
-  short's release date.
-  `);
- } 
+ /* Adds interval to check for uri change. */
+ var runShortReleaseURIInterval;
+
+ /* Check if page needs to be reloaded or if intialised.          */
+ if (reloadYouTubeShortRelease == 0) { /* does not need reloading */
+  /* add functionality */
+  /* Show instructions if turned on and on short path. */
+  if (alertInstructionsYoutTubeShortRelease == 1) {
+    if (location.href.indexOf(youTubeShortPath) == -1) {
+    alert(youTubeShortReleaseURINotice);
+    } else {
+    alert(`
+    INSTRUCTIONS - YOUTUBE SHOW SHORT RELEASE DATE \n
+    ********************************************** \n
+    After first short has loaded, remaining shorts \n
+    will be automatically updated with release date. \n
+    `);
+    showShortReleaseDate();
+    runShortReleaseURIInterval = /* interval to update when short changes */
+     setInterval(checkCurrentShort, 500);
+  }
+  }
+ }
 })(); 
