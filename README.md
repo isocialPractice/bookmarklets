@@ -30,9 +30,9 @@
   - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use 
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use 
-  - [YouTube - Show Short Release Date](#you-tube--show-short-release-date) - ready to use 
+  - [YouTube - Show Short Release Date](#youtube--show-short-release-date) - ready to use 
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use 
-  - [YouTube - Sync Audio](#you-tube---sync-audio) - ready to use 
+  - [YouTube - Sync Audio](#youtube---sync-audio) - ready to use 
   - [YouTube - Take Notes and Add Removable Time Marks](#youtube---take-notes-and-add-removable-time-marks) - ready to use
   - [YouTube - Take Video Notes](#youtube---take-video-notes) - ready to use 
   - [YouTube - Watch Random Video](#youtube---watch-random-video) - ready to use 
@@ -1001,7 +1001,7 @@ javascript:(function(){ /* Declare global variables. */ var checkPage, docBodySt
 </details>
 </dd></dl></dd></dl>
 
-You Tube - Sync Audio: 
+YouTube - Sync Audio: 
 ----
 <dl><dd><dl><dd>
 
