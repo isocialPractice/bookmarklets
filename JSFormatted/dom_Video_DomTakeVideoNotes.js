@@ -166,7 +166,7 @@ javascript:(function() {
   let fvPressed = false;
   let keyHistory = [];
 
-  /* helper: detect if a video or iframe is "running" */
+  /* helper: detect if a video or iframe is running */
   let isVideoOrIframePlaying = (el) => {
   if (el.tagName === "VIDEO") {
    return !el.paused && !el.ended;
@@ -218,7 +218,7 @@ javascript:(function() {
 
    /* run action */
    updateRunningStatus();
-   if (fvPressed && /* f+v within a second */
+   if (fvPressed && /* f and v within a second */
        videoRunningTakeVideoNotes === 1 && /* video is running */
        textareaDomTakeVideoNotes == 0      /* textarea not in focus */
       ) {
