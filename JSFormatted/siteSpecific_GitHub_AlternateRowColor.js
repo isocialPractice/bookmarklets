@@ -1,12 +1,30 @@
 javascript:(function(){
+ /* GLOBAL VARIABLES */
  var color = "aliceblue"; /*<-- CHANGE IS OPTIONAL */
  var tableRow, tableRowLen, thead, curPage, curExtract, curUser, curRepo;
  var onRoot=0,tablePage=1,recurseIndex,runCompleted=0;
+ var darkTheme = "no"; /* change row color if browser color theme is dark */
+ 
+ /*********************** SUPPORT FUNCTIONS *************************/
+ /* Add inline style tag. */
+ const addBodyStyle = () => {
+  let body = document.getElementsByTagName("body");
+  let style = `
+   .tableRowAlternatRowColor {
+    color: #1c1c1c !important;
+   }
+  `;
+ let alterStyle = document.createElement("style");
+ alterStyle.innerHTML = style;
+ body[0].insertAdjacentElement("afterbegin", alterStyle);
+ };
+ 
  /* Switches and elements to turn off. */
  var curDir = window.location.href, turnOff=0;
+ 
  /* Get current directory and uspe with api. */
- var setGlobals = function() {  
-   curPage = location.host + location.pathname;
+ const setGlobals = function() {  
+   curPage = location.host + location.pathname; /* current folder */
    if (curPage.indexOf("github.com") > -1) {
     let checkRoleRow = document.querySelectorAll('div[role="row"]');
     if (curPage.indexOf("tree") > -1) {
@@ -36,15 +54,29 @@ javascript:(function(){
     turnOff = 0;    
    }
  };  
+ 
+ /* Change text color if browser color theme is dark. */
+ const changeTextColor = (cur) => {
+  /* change font color if darTheme is yes */
+  if (darkTheme == "yes") {
+   let trChild = cur.getElementsByTagName("a");
+   for (i = 0; i < trChild.length; i++) {
+    trChild[i].className = "tableRowAlternatRowColor";       
+   }
+  }
+ };
+ 
  /* Function to run after json stored */
- var githubTableFunction = function() {
+ const githubTableFunction = function() {
   if (turnOff == 1) { return; }  
   recurseIndex=1;
-  /* function to chang row color */
+ 
+ /* function to chang row color */
   let alternateTableColor = function() {
    if (tableRow[recurseIndex]) {
     /* add color to row */
     tableRow[recurseIndex].style.backgroundColor = color;
+    changeTextColor(tableRow[recurseIndex]);
    }
   };
   let recurseTableColor = function() {
@@ -61,8 +93,9 @@ javascript:(function(){
   };
   recurseTableColor();
  };         
+
  /* Run bookmarklet according to current directory. */
- var runBookmarklet = function() {  
+ const runBookmarklet = function() {  
   console.log("Bookmarklet running:");
   setGlobals();
   if (turnOff == 0) {    
@@ -72,9 +105,9 @@ javascript:(function(){
    return;
   }
  };  
- runBookmarklet();
+
  /* Ensure all table rows alternated as not at 100%. */
- var checkIfRunCompleted = function() {
+ const checkIfRunCompleted = function() {
   let curColorCount = 0;
   let totalRows = tableRowLen-2;
   /* config by number of rows */
@@ -100,8 +133,9 @@ javascript:(function(){
    runCompleted = 1;
   }
  };
+
  /* Run bookmarklet with changing directories. */
- var checkForChangeDir = function() {
+ const checkForChangeDir = function() {
   if (curDir !== window.location.href && turnOff == 0) {
    /* directory has changed so re-run */
    curDir = window.location.href;
@@ -116,6 +150,31 @@ javascript:(function(){
    return;
   }  
  };
+ 
+ /*****************************************************************
+                         MAIN FUNCTION
+ *****************************************************************/
+ function runGitHubAlternateRowColor() {
+  /* Check browser colore theme. */
+  let head = document.getElementsByTagName("head"); /* used to check for dark.css */
+  let link = head[0].getElementsByTagName("link"); /* check href for dark.css     */
+  /* HOT-GLUE - check if more than one dark href in head */
+  let darkCnt = 0;
+  for (i = 0; i < link.length; i++) {
+   if (link[i].hasAttribute("href") && link[i].href.indexOf("dark") > -1) {
+    darkCnt += 1;
+   }
+  }
+  if (darkCnt > 1) {
+   /* looks like browser color theme is dark */
+   darkTheme = "yes";
+   console.log("Dark Browser Theme: " + darkTheme);
+  }
+  addBodyStyle();
+  runBookmarklet();
+ }
+ runGitHubAlternateRowColor();
+ 
  /* Listen for directory change, check if completed, recurse, and/or exit if error. */
  if (turnOff == 0) { 
   if (runCompleted == 0) {
