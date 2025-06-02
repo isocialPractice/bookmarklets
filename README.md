@@ -542,7 +542,7 @@ Alternate the row colors of repo directory. Activate in repo root and file viewi
 <strong>USE - ready to use</strong>
 <details>
 
-<summary>siteSpecific_GitHub_AlternateRowColor.js</summary><br>
+<summary>siteSpecific_GitHub_AlternateRowColor.js</summary><br> 
 
 Gist page for [siteSpecific_GitHub_AlternateRowColor.js](https://gist.github.com/jhauga/bb175713e395ac4135f21e7de11245a3)
 

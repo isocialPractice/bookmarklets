@@ -198,7 +198,7 @@ javascript:(function() {
       block: "center"
      });
      return;
-    }
+    } 
    }
   };
 
