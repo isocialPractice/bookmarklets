@@ -153,7 +153,7 @@ javascript:(function() {
   document.body.addEventListener("keydown", function() {
    keypressToNoteDomTakeVideoNotes();
   });
- }; 
+ };
  const addKeyUpDomTakeVideoNotes = () => {
   document.body.addEventListener("keyup", function() {
    keypressToNoteDomTakeVideoNotes();
