@@ -233,7 +233,7 @@ Take notes on a html page with video tag or iframe playing video or videos. Work
 [Loosely] [b]Based on [SITE_NAME](REF_LINK)
 -------------------------------------------->
 
-Page tested - **[ZAP in Ten](https://www.zaproxy.org/zap-in-ten/)**.
+Page tested - **[ZAP in Ten](https://www.zaproxy.org/zap-in-ten/)**. <br>
 Page tested - **[Chrome for Developers](https://developer.chrome.com/docs/devtools/overrides)**.
 
 <details>

@@ -363,4 +363,4 @@ javascript:(function() {
    - Press 'Save Notes' button adjacent to close\n
      button when notes are closed to save notes.
   **************************************************/
-})(); 
+})();
