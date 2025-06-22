@@ -25,6 +25,7 @@ javascript: (function () {
  var grandParElement = parElement.parentElement; 
  var greatGrandParElement = grandParElement.parentElement;
  var textareaParent = parElement.children[0]; 
+ var currentChat = location.href;
  var formParent; /* defined later */
  
  /*************************************SUPPORT FUNCTIONS*************************************/ 
@@ -131,6 +132,22 @@ javascript: (function () {
   parElement.style.transform = "rotateX(180deg)";
  }; 
  
+ /* Update prompt color according to theme */
+ const colorByTheme = (status) => {
+  if (status == undefined) { status = 0; } /* empty */
+  
+  /* set style by theme color, or clear on page change */
+  if (status == 1) {   /* no page change, set by theme */
+   grandParElement
+   .style.background = /* set by current color theme */
+     (htmlTag[0].className.replace(/.*(dark).*/, "$1") == "dark") 
+                                       ? "rgba(33, 33, 33, 0.75)"
+                                       : "rgb(244, 244, 244)"; 
+  } else { /* page change clear style     */
+   grandParElement.style.background = ""; /* empty on page change */
+  }
+ };
+ 
  /* Resize all prompt box by current resized width. */
  const resizesLastPromptBox = new ResizeObserver(curEl => {  
   /* get current width of resizable prompt box */
@@ -144,35 +161,41 @@ javascript: (function () {
  /*******************************************************************************************
   MAIN FUNCTION - STYLE ELEMENTS FOR RESIZE
  ********************************************************************************************/
- function styleElementsForResizeChatGPTResizePrompt() {
+ function styleElementsForResizeChatGPTResizePrompt() {  
   /* style parents within reasonable range of textarea */
   grandParElement.style.transform = "rotateX(180deg)";
-  grandParElement.style.overflow = "auto";
-  grandParElement.style.resize = "both";  
+  grandParElement.style.overflow  = "auto";
+  grandParElement.style.resize    = "both";
   grandParElement.style.minHeight = "50px";
   grandParElement.style.maxHeight = "1200px";
-  grandParElement.style.minWidth = "20px"; 
-  grandParElement.style.maxWidth = "100%"; 
-  grandParElement.style.padding = "10px";
-  grandParElement.style.background = (htmlTag[0].className == "dark") 
-                                     ? "rgba(33, 33, 33, 0.75)"
-                                     : "rgb(244, 244, 244)";
-  grandParElement.style.borderRadius = "25px";
-  grandParElement.children[0].style.paddingLeft = "10px";
-  greatGrandParElement.style.minWidth = "100%";
-  greatGrandParElement.style.maxWidth = "100%";
-  greatGrandParElement.style.background = "none";
-  greatGrandParElement.style.display = "inline-block";
-  parElement.style.display = "inline-block";
-  parElement.style.transform = "rotateX(180deg)"; 
-  parElement.style.maxWidth = "100%";
-  parElement.style.height = "inherit";
-  parElement.style.minHeight = "95%";
-  promptPar.style.paddingLeft = "30px";
-  promptPar.style.height = "inherit"; 
-  promptTextarea.style.paddingRight = "10px";
-  promptTextarea.style.paddingLeft = "10px";  
-  textareaParent.style.minHeight = "100%";
+  grandParElement.style.minWidth  = "20px";
+  grandParElement.style.maxWidth  = "100%";
+  grandParElement.style.padding   = "10px";
+  colorByTheme(1); /* grandParElement.style.background */
+  grandParElement /* border radius   */
+  .style.borderRadius             = "25px";
+  grandParElement /* padding left    */
+  .children[0].style.paddingLeft  = "10px";
+  greatGrandParElement  /* min width */
+  .style.minWidth                 = "100%";
+  greatGrandParElement /* max width  */
+  .style.maxWidth                 = "100%";
+  greatGrandParElement /* background */
+  .style.background               = "none";
+  greatGrandParElement /* display    */
+  .style.display                  = "inline-block";
+  parElement.style.display        = "inline-block";
+  parElement.style.transform      = "rotateX(180deg)";
+  parElement.style.maxWidth       = "100%";
+  parElement.style.height         = "inherit";
+  parElement.style.minHeight      = "95%";
+  promptPar.style.paddingLeft     = "30px";
+  promptPar.style.height          = "inherit";
+  promptTextarea.style /* padding right */
+  .paddingRight                   = "10px";
+  promptTextarea.style /* padding left  */
+  .paddingLeft                    = "10px";
+  textareaParent.style.minHeight  = "100%";
   
   /* call support functions */
   let tunrOffThreepeatLoop = 0; /* safe switch */
@@ -206,12 +229,28 @@ javascript: (function () {
   currentStep = 2; /* set nest step switch variable to 2                       */
  }, 100);
  
+ /* Defined at end of step two in next SetTimeout(). */
+ var checkPageChange;
  /* Wait for step 1 to finish then run 2. */
  setTimeout(function() {
   let checkStep = () => {
    if (currentStep == 2) {
     /* add resizability to entire aesthetically styled prompt box */
     resizesLastPromptBox.observe(promptTextarea);
+    
+    /* stop checking for color theme if page change           */
+    checkPageChange = /* enusre color matches theme changes   */
+     setInterval(function() {
+      if (currentChat != 
+          location.href.replace("#settings", "")) {
+       colorByTheme(0); /* ensure element changes with theme  */
+       /* stop resizeability to styled prompt box             */
+       resizesLastPromptBox.unobserve(promptTextarea); 
+       clearInterval(checkPageChange); /* stop checking theme */
+      } else {          /* still on chat page                  */
+       colorByTheme(1); /* ensure element changes with theme   */
+      }
+     }, 2000); /* check every 2 seconds                       */
    } else {
     /* recheck status */
     currentStep = currentStep;  
