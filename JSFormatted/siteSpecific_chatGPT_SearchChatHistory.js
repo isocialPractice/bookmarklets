@@ -6,12 +6,6 @@ javascript:(function() {
  var historyChatGPTSearchChatHistory =       /* chat history parent         */
   document.getElementById("history");
 
- var historyTagChatGPTSearchChatHistory =    /* separate chat history       */
-  historyChatGPTSearchChatHistory.getElementsByTagName("a");
-
- var historyTagChatGPTSearchChatHistoryLen = /* for loop use                */
-  historyTagChatGPTSearchChatHistory.length; 
-
  /* Create variables. */
  var searchParChatGPTSearchChatHistory =     /* parent for search           */
   document.createElement("div");
@@ -23,7 +17,8 @@ javascript:(function() {
   document.createElement("span");
 
  /* Global variables defined later. */
- var searchIDChatGPTSearchChatHistory, searchParIDChatGPTSearchChatHistory,
+ var historyTagChatGPTSearchChatHistory, historyTagChatGPTSearchChatHistoryLen,
+     searchIDChatGPTSearchChatHistory, searchParIDChatGPTSearchChatHistory,
      clearIDChatGPTSearchChatHistory;
      
  /* Create raw html to insert */
@@ -61,7 +56,17 @@ javascript:(function() {
  /* Debug variables. */
  var debugChatGPTSearchChatHistory = 0; /* 0 (default) 1 console.log()s     */
 
-/******************************** SUPPORT FUNCTIONS ********************************/
+ /******************************** SUPPORT FUNCTIONS ********************************/
+
+ /* Define variables for chat history, allowing updated list with search. */
+ const defineHistoryChatGPTSearchChatHistory = () => {
+  historyTagChatGPTSearchChatHistory =    /* separate chat history        */
+   historyChatGPTSearchChatHistory.getElementsByTagName("a");
+
+  historyTagChatGPTSearchChatHistoryLen = /* for loop use                 */
+   historyTagChatGPTSearchChatHistory.length; 
+ };
+ defineHistoryChatGPTSearchChatHistory(); /* call and intial define chats */
  
  /* Create the html elements of search above the chat history on left navbar. */
  const createHTMLChatGPTSearchChatHistory = () => {
@@ -114,6 +119,8 @@ javascript:(function() {
 
  /* Take search input and apply to history, hiding non-matching searches. */
  const runSearchChatGPTSearchChatHistory = () => {
+  defineHistoryChatGPTSearchChatHistory(); /* call and redefine chats     */
+
   /* check if current search value matches chat history */ 
   for (i = 0; i < historyTagChatGPTSearchChatHistoryLen; i++) {
    let val = /* current input for search */
