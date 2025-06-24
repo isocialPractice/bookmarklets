@@ -59,12 +59,39 @@ javascript:(function() {
  /******************************** SUPPORT FUNCTIONS ********************************/
 
  /* Define variables for chat history, allowing updated list with search. */
+ var initDefineChatGPTSearchChatHistory = 0; /* ensure elements are ready */
  const defineHistoryChatGPTSearchChatHistory = () => {
   historyTagChatGPTSearchChatHistory =    /* separate chat history        */
    historyChatGPTSearchChatHistory.getElementsByTagName("a");
 
   historyTagChatGPTSearchChatHistoryLen = /* for loop use                 */
    historyTagChatGPTSearchChatHistory.length; 
+
+  /* ensure text color remains constant */
+  if (initDefineChatGPTSearchChatHistory >= 1) {
+   if (!searchIDChatGPTSearchChatHistory) { /*  define if by change not    */
+    /* define forward declared global */
+    searchIDChatGPTSearchChatHistory = /* variable for search input */
+     document.getElementById("searchHistoryChatGPTSearchChatHistory");
+    }
+   if (!clearIDChatGPTSearchChatHistory) { /*  define if by change not    */
+    /* define forward declared global */
+    clearIDChatGPTSearchChatHistory = /* varaible for clearing search */
+     document.getElementById("clearChatGPTSearchChatHistory");
+   }
+   /* ensure text color to black */
+   if (
+    searchIDChatGPTSearchChatHistory.style.color != "black"
+   ) searchIDChatGPTSearchChatHistory.style.color = "black";
+
+   /* ensure border is set */
+   if (
+    clearIDChatGPTSearchChatHistory.style.border != "1px solid white"
+   ) clearIDChatGPTSearchChatHistory.style.border = "1px solid white";
+  } else {
+    initDefineChatGPTSearchChatHistory++;
+   }
+  
  };
  defineHistoryChatGPTSearchChatHistory(); /* call and intial define chats */
  
