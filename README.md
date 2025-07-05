@@ -29,6 +29,7 @@
   - [Stackoverflow - Copy Answer Anchor Links](#stackoverflow---copy-answer-anchor-links) - ready to use
   - [YouTube - Add Time Marks](#youtube---add-time-marks) - ready to use
   - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
+  - [YouTube - Dynamic History Search](#youtube---dynamic-history-search) - ready to use 
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use 
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use 
   - [YouTube - Show Short Release Date](#youtube---show-short-release-date) - ready to use 
@@ -869,6 +870,58 @@ javascript:(function() { /* Simple process; select body, make style element, add
 </details>
 </dd></dl></dd></dl>
 
+YouTube - Dynamic History Search: 
+----
+<dl><dd><dl><dd>
+
+search YouTube video watch history dynamically <br><br>
+
+<!------------------------------------------
+search video watch history dynamically. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>siteSpecific_YouTube_dynamicHistorySearch.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [siteSpecific_YouTube_dynamicHistorySearch.js](https://gist.github.com/jhauga/e88d4b75abc28d0d10dfa065e970a775)
+
+```markdown
+javascript:(function() { /* Config variables. */ var hideShorts = 1; /* 1 = hides short slide history */ var hideDates = 1; /* 1 = hide watch date headers */ /* DOM variables. */ var searchInputPar = /* seach input tag parent */ document.getElementById("input-1"); var dateHeader = /* class for date headers */ document.getElementsByClassName( "style-scope ytd-item-section-header-renderer" ); var searchInputTag = /* search bar tag name */ searchInputPar.getElementsByTagName("input"); var searchInput = /* HOT-GLUE - select first input tag in searchInputPar */ searchInputTag[0]; var ytdVideoRenderer = /* tag for video watch history */ document.getElementsByTagName("ytd-video-renderer"); var shortSlide = /* tag holding short slide history */ document.getElementsByTagName("ytd-reel-shelf-renderer"); var dateHeaderLen = /* ready for loop */ dateHeader.length; var ytdVideoRendererLen = /* ready for loop */ ytdVideoRenderer.length; var shortSlideLen = /* ready for loop */ shortSlide.length; /* Search value variable. */ var currentSearchVal; /* forward declaration */ /******************************** SUPPORT FUNCTIONS ********************************/ /* Redefine global DOM variables to account for all history. */ const updateDOMYouTubeDynamicHistorySearch = () => { dateHeader = /* class for date headers */ document.getElementsByClassName( "style-scope ytd-item-section-header-renderer" ); ytdVideoRenderer = /* tag for video watch history */ document.getElementsByTagName("ytd-video-renderer"); shortSlide = /* tag holding short slide history */ document.getElementsByTagName("ytd-reel-shelf-renderer"); dateHeaderLen = /* ready for loop */ dateHeader.length; ytdVideoRendererLen = /* ready for loop */ ytdVideoRenderer.length; shortSlideLen = /* ready for loop */ shortSlide.length; }; /* Check and hide short slide history according to config. */ const hideShortsYouTubeDynamicHistorySearch = (showShort) => { if (showShort == undefined) showShort = 0; /* switch parameter => 1 shows */ /* loop and hide short slide elements */ for (i = 0; i < shortSlideLen; i++) { /* if configurred to hide short slide history */ if (showShort == 0) { shortSlide[i].style.display = "none"; /* hide while searching */ } else { if (showShort == 1) { shortSlide[i].style.display = ""; /* show while not searching */ } else { /* do nothing */ let skip; } } } }; /* Show date hearders according to config variable. */ const hideDatesYouTubeDynamicHistorySearch = (showDate) => { if (showDate == undefined) showDate = 0; /* switch parameter => 1 shows */ /* loop and hide date elements */ for (i = 0; i < dateHeaderLen; i++) { /* if hideDates is configurred to hide date header */ if (showDate == 0) { dateHeader[i].style.display = "none"; /* hide dates */ } else { dateHeader[i].style.display = ""; /* show dates */ } } }; /* Perform display change according to config variables, and search. */ const showHideYouTubeDynamicHistorySearch = () => { /* if search is empty show short slide history */ if (currentSearchVal == "") { /* show histroy slide element */ if (hideShorts == 1) hideShortsYouTubeDynamicHistorySearch(1); /* show date heading element */ if (hideDates == 1) hideDatesYouTubeDynamicHistorySearch(1); } else { /* hide shorts according to config variable */ if (hideShorts == 1) hideShortsYouTubeDynamicHistorySearch(); /* hide dates according to config variable */ if (hideDates == 1) hideDatesYouTubeDynamicHistorySearch(); } }; /* Show and hide watch history dynamically inputting to search field. */ const dynamicYouTubeDynamicHistorySearch = () => { for (i = 0; i < ytdVideoRendererLen; i++) { /* get all text in each video slot of history */ let curCheck = ytdVideoRenderer[i].innerText; /* allow for more reliable search */ curCheck = curCheck.toLowerCase(); /* history */ currentSearchVal = currentSearchVal.toLowerCase(); /* search */ /* if text in history info matches search, show */ if ( curCheck.indexOf(currentSearchVal) > -1 || /* any text */ currentSearchVal == "" /* or empty search */ ) { /* show videos from history */ ytdVideoRenderer[i].style.display = ""; } else { /* hide videos if not matching search */ ytdVideoRenderer[i].style.display = "none"; } } }; /*********************************************************************************** MAIN FUNCTION ***********************************************************************************/ /* Run support functions to dynamically search watch history. */ function searchYouTubeDynamicHistorySearch() { currentSearchVal = searchInput.value; /* current search text */ /* get updated videos parsed to page for each input */ updateDOMYouTubeDynamicHistorySearch(); /* show and hide shorts and date elements accordingly */ showHideYouTubeDynamicHistorySearch(); /* use updated elements to perform dynamic search */ dynamicYouTubeDynamicHistorySearch(); } /* Add main function to search box, and now dynamically search watch history. */ searchInput.addEventListener( "input", searchYouTubeDynamicHistorySearch ); })(); 
+```
+</details>
+</dd></dl></dd></dl>
+
 YouTube - Save Page Notes to Local Storage: 
 ----
 <dl><dd><dl><dd>
@@ -1466,3 +1519,4 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
+    
