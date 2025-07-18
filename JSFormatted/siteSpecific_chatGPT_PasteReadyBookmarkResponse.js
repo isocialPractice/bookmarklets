@@ -15,7 +15,7 @@ javascript:(function(){
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier =  /* HOT-GLUE - likely to change                */
-  "flex justify-start"; 
+  "mx-[var(--mini-thread-content-inset)]"; 
 
  /* Switch variables. */
  var onOffPasteReadyBookmarkResponse = 1; /* 1 (default) on, 0 is off */
@@ -412,8 +412,8 @@ javascript:(function(){
   /* check string against common values of class names used */
   for (i = 0; i < answerAreaClassNameIdentifierLen; i++) {
    if (curClass.indexOf(answerAreaClassNameIdentifier[i]) > -1) {
-    /* match - increment checkClass */
-    checkClass++;
+     /* match - increment checkClass */
+     checkClass++;    
    } else { /* do nothing */
     let skip;
    }
@@ -476,6 +476,8 @@ javascript:(function(){
   let copiedContent;  
   /* ensure that answerRow has been defined */
   if (cancelWhile >= 20 && answerRow == undefined) { /* answerRow not defined */
+   console.log(answerRow);
+   console.log(cancelWhile);
    /* alert repair is needed        */
    dryAlert();
    /* exit function */
