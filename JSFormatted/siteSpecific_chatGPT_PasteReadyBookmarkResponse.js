@@ -311,41 +311,56 @@ javascript:(function(){
   document.addEventListener('click', function(event) {
    /* ensure bookmarklet is on and a errpr was not found */
    if (onOffPasteReadyBookmarkResponse  == 1) { /* defined at top            */
-   /* check if the clicked e/*lement or any of its parents has the attribute */
-   let clickedItem = event.target;
-   let curID;
+    /* check if the clicked e/*lement or any of its parents has the attribute */
+    let clickedItem = event.target;
+    let curID;
 
-   /* check if id has been assigned */
-   if (clickedItem.hasAttribute("id") && 
-       clickedItem.id.indexOf(
-        "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark"
-       ) > -1) {
-    /* define current id */
-    curID = clickedItem.id;
-   } else {
-    /* define current id */
-    curID = /* use current value of incrementing number */
-     "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID;
+    /* check if id has been assigned */
+    if (clickedItem.hasAttribute("id") && 
+        clickedItem.id.indexOf(
+         "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark"
+        ) > -1) {
+     /* define current id */
+     curID = clickedItem.id;
+    } else {
+     /* define current id */
+     curID = /* use current value of incrementing number */
+      "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID;
 
-    clickedItem.setAttribute(
-     "id", 
-     "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID
-    );
+     if (clickedItem.hasAttribute("id")) {
+      let curElID = /* include current id */
+       clickedItem.getAttribute("id");
+      clickedItem.setAttribute(
+       "id",  /* append to current id */
+       curElID + " unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID
+      );
 
-    /* increment number id for unique id value */
-    numID++;
-   }
-   /* select current item with unique id */
-   let curItem = document.getElementById(curID);     
+      /* reset curID */
+      curID = clickedItem.getAttribute("id");
+     } else {
+      clickedItem.setAttribute(
+       "id", 
+       "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID
+      );
+     }
 
-   /* check if the copy button was clicked */
-   if (curItem.parentElement.hasAttribute("aria-label") && 
-       curItem.parentElement.getAttribute("aria-label") == "Copy") {
-    /* call main function */
-    pasteReadyBookmarkResponse(curItem.parentElement);
-   }
+     /* increment number id for unique id value */
+     numID++;
+    }
+    /* select current item with unique id */
+    let curItem = document.getElementById(curID);     
+
+    /* check if the copy button was clicked */
+    if (curItem.parentElement && 
+        curItem.parentElement.hasAttribute("aria-label") && 
+        curItem.parentElement.getAttribute("aria-label") == "Copy") {
+     /* call main function */
+     pasteReadyBookmarkResponse(curItem.parentElement);
+    } else {
+     let skip; /* do nothing */
+    }
    } else { /* do nothing */
-    let skip
+    let skip;
    }
   });
  };

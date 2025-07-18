@@ -25,19 +25,19 @@ javascript:(function() {
  var styleChatGPTSearchChatHistory = `
  <style>
   /* search style */
-  input#searchHistoryChatGPTSearchChatHistory {
+  input.searchHistoryChatGPTSearchChatHistory {
    color: black; 
    margin-left: 8px; 
    margin-top: 15px;
   }
   
   /* hover search */
-  input#searchHistoryChatGPTSearchChatHistory:hover {
+  input.searchHistoryChatGPTSearchChatHistory:hover {
    border: 1px solid darkslategrey;
   }
   
   /* clear style */
-  span#clearChatGPTSearchChatHistory {
+  span.clearChatGPTSearchChatHistory {
    cursor: pointer;
    margin-left: 5px; 
    padding: 3px 3px 7px; 
@@ -46,7 +46,7 @@ javascript:(function() {
   }
   
   /* hover clear */
-  span#clearChatGPTSearchChatHistory:hover {
+  span.clearChatGPTSearchChatHistory:hover {
    border: 3px solid white; 
    font-weight: bold;
   }
@@ -116,6 +116,7 @@ javascript:(function() {
  
    /* add attributes to seach element */
    searchChatGPTSearchChatHistory.id = "searchHistoryChatGPTSearchChatHistory";
+   searchChatGPTSearchChatHistory.className = "searchHistoryChatGPTSearchChatHistory";
    searchChatGPTSearchChatHistory.type = "text";   
    searchChatGPTSearchChatHistory.placeholder = "Search Chat History";
    
@@ -129,6 +130,7 @@ javascript:(function() {
    
    /* id to allow variable storage */
    clearChatGPTSearchChatHistory.id = "clearChatGPTSearchChatHistory";
+   clearChatGPTSearchChatHistory.className = "clearChatGPTSearchChatHistory";
    clearChatGPTSearchChatHistory.innerText = "x";
    
    /* insert clear element */
