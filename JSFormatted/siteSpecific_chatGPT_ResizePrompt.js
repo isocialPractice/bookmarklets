@@ -2,7 +2,7 @@ javascript: (function () {
  var composerBackground;    /* ELMERS-GLUE - defined later - select the parent holding prompt and UI elements.      */
  var composerBackgroundPar; /* ELMERS-GLUE - defined later - parent of above.                                       */
  var promptTextarea = "prompt-textarea"; /* HOT-GLUE - select id of text prompt.                                    */
- var selectFormChildIndex = 0; /*           HOT-GLUE - select nested form element child index - see bottom.         */
+ var selectFormChildIndex = 1; /*           HOT-GLUE - select nested form element child index - see bottom.         */
  var selectedFormElement;      /*           HOT-GLUED - see bottom function selectFormParent.                       */
  var startingFormWidth, curState = 1; /* Switch to run different conditions in selectFormParent function at bottom. */
  var htmlTag = document.getElementsByTagName("html"); /* To check current color theme; light, dark.                 */
@@ -23,7 +23,7 @@ javascript: (function () {
  var promptPar = promptTextarea.parentElement; 
  var parElement = promptPar.parentElement; 
  var grandParElement = parElement.parentElement; 
- var greatGrandParElement = grandParElement.parentElement;
+ var greatGrandParElement = grandParElement.parentElement; 
  var textareaParent = parElement.children[0]; 
  var currentChat = location.href;
  var formParent; /* defined later */
@@ -51,10 +51,13 @@ javascript: (function () {
     min-width:  ${setMinWidth} !important;   
     max-width:  ${setMaxWidth} !important;  
    } 
+   [data-rotate] {
+    transform: rotateX(180deg) !important;
+   }
  `;
  
   /* add to page */
-  document.body.appendChild(neededStyling);
+  document.body.insertAdjacentElement("afterbegin", neededStyling);
  };
  
  /* Set UI parent and elements within reasonable range with timeout. */
@@ -125,8 +128,11 @@ javascript: (function () {
  }; 
  
  /* Ensure transform box was rotated. */
+ var dataRotate = 0;
  const ensureRotate = () => {  
-  if (parElement.style.transform == "none") {
+  parElement.setAttribute("data-rotate", "1");
+  if (parElement.style.transform == "none" && dataRotate == 0) {
+   dataRotate = 1;
    ensureRotate();
   } 
   parElement.style.transform = "rotateX(180deg)";
@@ -157,6 +163,12 @@ javascript: (function () {
   /* resize last aethetically visible styled element of prompt box html */
   resizeLastPromptBox.style.width = `${newWidth}px`;  
  });
+
+ /* Resize prompt background when box is resized. */
+ const resizePromptBackground = () => {
+  let curWidth = grandParElement.offsetWidth;
+  return curWidth + "px";
+ };
  
  /*******************************************************************************************
   MAIN FUNCTION - STYLE ELEMENTS FOR RESIZE
@@ -189,6 +201,7 @@ javascript: (function () {
   parElement.style.maxWidth       = "100%";
   parElement.style.height         = "inherit";
   parElement.style.minHeight      = "95%";
+  parElement.style.paddingBottom  = "30px";
   promptPar.style.paddingLeft     = "30px";
   promptPar.style.height          = "inherit";
   promptTextarea.style /* padding right */
@@ -238,19 +251,28 @@ javascript: (function () {
     /* add resizability to entire aesthetically styled prompt box */
     resizesLastPromptBox.observe(promptTextarea);
     
-    /* stop checking for color theme if page change           */
-    checkPageChange = /* enusre color matches theme changes   */
+    /* stop checking for color theme if page change            */
+    checkPageChange = /* enusre color matches theme changes    */
      setInterval(function() {
       if (currentChat != 
           location.href.replace("#settings", "")) {
-       colorByTheme(0); /* ensure element changes with theme  */
-       /* stop resizeability to styled prompt box             */
+       colorByTheme(0); /* ensure element changes with theme   */
+       /* stop resizeability to styled prompt box              */
        resizesLastPromptBox.unobserve(promptTextarea); 
-       clearInterval(checkPageChange); /* stop checking theme */
+       clearInterval(checkPageChange); /* stop checking theme  */
       } else {          /* still on chat page                  */
        colorByTheme(1); /* ensure element changes with theme   */
       }
-     }, 2000); /* check every 2 seconds                       */
+     }, 2000); /* check every 2 seconds                        */
+     /* resize background of prompt area when resized */
+     let sizeAll = setInterval(function() {
+       let gGreatGrandPar =  /* select element behind prompt   */
+        greatGrandParElement.parentElement;
+       /* reset - remove current style and using current width */
+       gGreatGrandPar.removeAttribute("style");       
+       gGreatGrandPar.style.width = /* return current width */
+        resizePromptBackground();
+     }, 1);
    } else {
     /* recheck status */
     currentStep = currentStep;  
