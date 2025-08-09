@@ -15,7 +15,7 @@ javascript:(function(){
  
  /* Class names to identify the answer area sibling so answer area can be selected. */
  var answerAreaClassNameIdentifier =  /* HOT-GLUE - likely to change                */
-  "mx-[var(--mini-thread-content-inset)]"; 
+  "flex min-h-[46px] justify-start"; 
 
  /* Switch variables. */
  var onOffPasteReadyBookmarkResponse = 1; /* 1 (default) on, 0 is off */
