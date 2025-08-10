@@ -305,7 +305,8 @@ javascript:(function(){
  /* Increments so no duplicate ids for marker ids, */
  var numID = 0;  
  
- /* Add click event to document and check elements, running bookmark accordingly. */
+ /* Add click event to document and check elements, running bookmark accordingly.  */
+ var mouseMoved = 0; /* call mouse move function on first click if click reads svg */
  const docEventChatGPTPasteReadyBookmark = () => {
   /* add a click event listener to the document */
   document.addEventListener('click', function(event) {
@@ -313,6 +314,38 @@ javascript:(function(){
    if (onOffPasteReadyBookmarkResponse  == 1) { /* defined at top            */
     /* check if the clicked e/*lement or any of its parents has the attribute */
     let clickedItem = event.target;
+    
+    /* redefine clickedItem to allow entire element area to be clicked */
+    let safeOutredefineClickedItem = 0; /* prevent below from running over 5 times */
+    let redefineClickedItem = (cur) => {
+     /* 
+     needed to allow element click anywhere, without edge of element would have
+     to be clicked 
+     */
+     let mouseX = event.clientX;
+     let mouseY = event.clientY;
+     let elOver = document.elementFromPoint(mouseX, mouseY);
+     /* will continue to run until svg is found */
+     if (elOver.tagName == "svg") {
+      clickedItem = elOver.parentElement;
+     } else {
+      if (safeOutredefineClickedItem >= 5) {
+       return;
+      } else {
+       safeOutredefineClickedItem++;
+      }      
+     }
+    };
+
+    /* Check if svg or path element detected (probably) by click */
+    if ((clickedItem.getAttribute("class") == "icon" && clickedItem.hasAttribute("width") && 
+        clickedItem.hasAttribute("height")) || clickedItem.hasAttribute("d")) {
+     document.addEventListener('mousemove', redefineClickedItem(event));
+     if (mouseMoved == 0) {
+      redefineClickedItem(event);
+      mouseMoved = 1;
+     }
+    } 
     let curID;
 
     /* check if id has been assigned */
@@ -348,7 +381,7 @@ javascript:(function(){
      numID++;
     }
     /* select current item with unique id */
-    let curItem = document.getElementById(curID);     
+    let curItem = document.getElementById(curID);
 
     /* check if the copy button was clicked */
     if (curItem.parentElement && 
