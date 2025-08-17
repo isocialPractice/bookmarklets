@@ -1,7 +1,9 @@
 javascript: (function () {
  /* Config variables. */
- var autoSelectSearchPage = 1; /* 1=default selection, 0=specify element */
- 
+ var autoSelectSearchPage = 1;  /* 1=default selection, 0=specify element */
+ var searchHeadingsSearchPage = /* specify items to search against in query selector */
+  "h1,h2,h3,h4"; 
+
  /* DOM Custom Selector variables. */
  var customSelectorSearchPage = /* loop and check if page has querySelectors */
   ["CHANGE"];
@@ -52,40 +54,68 @@ javascript: (function () {
 
  /* Allow user to selecct the area to search. */ 
  const selectParSearchPage = () => {
-  let selectedElement = null;
-  let lastHover = null;
+  let selectedElement, lastHover;
+  /* temp store last style to restore */
+  let resLastOutline = "", resLastCursor = "", resLastBorder = "";
   
   /* add temp event */
   let highlight = (el) => {
-    if (lastHover) lastHover.style.outline = "";  /* remove old highlight */
-    lastHover = el;
-    el.style.outline = "2px solid dodgerblue";   /*  stylish highlight */
-    el.style.cursor = "pointer";
+   /* remove old highlight */
+   if (lastHover) {
+    lastHover.style.cursor = resLastCursor;
+    lastHover.style.border = resLastBorder;
+   }
+   
+   /* store prior styles */
+   if (el.style.border && el.style.border != "10px solid dodgerblue") 
+     resLastOutline = el.style.border;
+   if (el.style.cursor && el.style.cursor != "pointer")  
+    resLastCursor = el.style.cursor;
+   
+   lastHover = el; /* redefine */
+
+   /* stylish highlight */   
+   el.style.border = "10px solid dodgerblue";
+   el.style.cursor = "pointer";
   };
 
   /* mouse over possible search area */
-  let handleMouseOver = (e) => {
-    e.stopPropagation();
-    highlight(e.target);
+  let handleMouseOver = (el) => {
+   el.stopPropagation();
+   highlight(el.target);
   };
 
   /* use clicked element as search element */
-  let handleClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    selectedElement = e.target;
-    selectedElement.style.cursor = "";
-    parSearchPage = selectedElement;
-    hasParSearchPage = 1;
-    parSelectedSearchPage = 1;
-    cleanup(); /* stop listening once selected */
+  let handleClick = (el) => {
+   /* dont' do any predefined behavior */   
+   el.preventDefault();
+
+   /* no action other than clicked element */
+   el.stopPropagation();
+
+   /* define and clean selection */
+   selectedElement = el.target;
+   selectedElement.style.cursor = resLastCursor;
+
+   /* define global for search */
+   parSearchPage = selectedElement;
+
+   /* continue main function */
+   hasParSearchPage = 1;
+   parSelectedSearchPage = 1;
+   cleanup(); /* stop listening once selected */
   };
 
   /* remove temp events */
   let cleanup = () => {
-    document.removeEventListener("mouseover", handleMouseOver, true);
-    document.removeEventListener("click", handleClick, true);
-    if (lastHover) lastHover.style.outline = "";
+   document.removeEventListener("mouseover", handleMouseOver, true);
+   document.removeEventListener("click", handleClick, true);
+
+   /* remove mouse effect */
+   if (lastHover) {
+    lastHover.style.border = resLastBorder;
+    lastHover.style.cursor = resLastCursor;
+   }
   };
 
   /* Activate selection mode */
@@ -95,67 +125,159 @@ javascript: (function () {
 
  /* Check if parSearchPage, else start manual selection process. */
  var hasParSearchPage = 0; /* 1 if parSearchPage is found */
+ var initAlertSearchPage = 0; /* prevent alert from repeating */
  const checkParSearchPage = () => {
   if (parSearchPage) {
    hasParSearchPage = 1; /* query found element */
    parSelectedSearchPage = 1; /* continue main function */
   } else {
+   if (initAlertSearchPage == 0) {
+    alert(`
+     SELECT MANUALLY:
+     \n\n
+     The default or custom selectors were not found on page.
+     \n
+     Hover, and select the area to be searched manually.
+    `);
+    initAlertSearchPage = 1; /* turn off alert */
+    }
    /* user select search parent */
    selectParSearchPage();
   }
  };
 
  /* Add search input box to top of page. */
- const addSearchPage = () => {
+ const addSearchPage = () => {   
   if (hasParSearchPage == 1) { /* ensure par was found */
-   let inp = document.createElement("input"); /* search */
-   let sh = document.createElement("span"); /* show hide search */
+   /* prevent duplicate search boxes */
+   let prevDup = /* use class name added on first run */
+    document.getElementsByClassName("bookmarkletDOMSearchSearchPage");
+   if (!prevDup[0]) {
+    let par  = document.createElement("div");   /* hold all search elements */
+    let sPar = document.createElement("div");   /* hold searc and clear     */
+    let inp  = document.createElement("input"); /* search                   */
+    let sh   = document.createElement("span");  /* show hide search         */
+    let clr  = document.createElement("span");  /* clear search field       */
 
-   /* set input attributes and style */
-   inp.type = "text";
-   inp.placeholder = "Search Page";
-   inp.style.marginBottom = "10px";
-   inp.style.marginLeft = "20px";
-   inp.style.display = "block";
-   inp.style.position = "fixed";
+    /* set parent of search style */
+    par.style.zIndex = "100"; /* topmost - can be hidden, not too intrusive */
+    par.style.background = "white";
+    par.style.position = "fixed";
+    par.style.top = "90px";
+    par.style.padding = "10px";
+    par.style.width = "200px";
+    par.style.height = "50px";
+    par.style.border = "1px solid #9b9b9b";
+    par.style.borderRadius = "6px";
 
-   /* set close button attributes and style */
-   sh.style.border = "1px solid black";
-   sh.style.padding = "3px";
-   sh.style.position = "fixed";
-   sh.style.cursor = "pointer";
-   sh.innerText = " x "; 
-   /* mouseover effect */
-   sh.addEventListener("mouseover", () => {
+    /* allow par top position to be adjusted. */    
+    par.addEventListener("mousedown", (el) => {
+     let startY, startTop;
+     startY = el.clientY; /* current y position */
+     startTop = /* current style */
+      parseInt(window.getComputedStyle(par).top, 10);
+
+     let onMouseMove = (el) => {
+       let newTop = startTop + (el.clientY - startY);
+       /*  between 40 and 150 */
+       newTop = Math.max(40, Math.min(150, newTop));
+       par.style.top = newTop + "px";
+     };
+
+     /* remove events */
+     let onMouseUp = () => {
+       document.removeEventListener("mousemove", onMouseMove);
+       document.removeEventListener("mouseup", onMouseUp);
+     };
+
+     /* add temp events */
+     document.addEventListener("mousemove", onMouseMove);
+     document.addEventListener("mouseup", onMouseUp);
+    });
+    
+    /* prevent duplicate search boxes */
+    par.setAttribute("class", "bookmarkletDOMSearchSearchPage");
+
+    /* set input attributes and style */
+    inp.type = "text";
+    inp.placeholder = "Search Page";
+    inp.style.display = "block";
+    inp.style.position = "fixed";
+    inp.style.width = "160px";
+    inp.style.marginBottom = "10px";
+    inp.style.marginLeft = "20px";
+    /* data-id to select if parent needs to be reselected */
+    inp.setAttribute("data-id", "bookmarkletDOMSearchSearchPage");
+
+    /* style clear button */
+    clr.style.zIndex = "1";
+    clr.style.position = "fixed";
+    clr.style.cursor = "pointer";
+    clr.style.marginLeft = "164px";
+    clr.style.marginTop = "1px";
+    clr.style.padding = "4px";
+    clr.style.background = "#d3d3d350";
+    clr.innerText = "-";
+
+    /* clear mouse effects */
+    clr.addEventListener("mouseover", () => {
+     clr.style.background = "#d3d3d3";
+    });
+    clr.addEventListener("mouseout", () => {
+     clr.style.background = "#d3d3d350";
+    });
+    /* clear search */
+    clr.addEventListener("click", ()=> {
+     clr.previousElementSibling.value = "";
+     performSearchPage(); /* manual show all */
+    });
+
+    /* set close button attributes and style */
+    sh.style.position = "fixed";
+    sh.style.cursor = "pointer";
+    sh.style.border = "1px solid black";
+    sh.style.padding = "3px";
+    sh.innerText = " x "; 
+
+    /* show/hide effects */
+    sh.addEventListener("mouseover", () => {
      sh.style.backgroundColor = "dodgerblue";
      sh.style.color = "white";
-   });
-   sh.addEventListener("mouseout", () => {
+    });
+    sh.addEventListener("mouseout", () => {
      sh.style.backgroundColor = "";
      sh.style.color = "";
-   });
+    });
 
-   /*  click event */
-   sh.addEventListener("click", () => {
-     let next = sh.nextElementSibling;
-     if (!next) return; /*  something unexpected */
-     if (next.style.display === "none") {
-       next.style.display = "";
-     } else {
-       next.style.display = "none";
-     }
-   });
+    /*  click event */
+    sh.addEventListener("click", () => {
+      if (!sPar) return; /*  something unexpected */
+      if (sPar.style.display === "none") {
+       sh.innerText = " x "; /* indicate click will hide */
+       par.style.width = "200px"; /* parent width */
+       sPar.style.display = ""; /* show search */
+      } else {
+       sh.innerText = " o "; /* indicate click will show */
+       par.style.width = "37px"; /* parent width */
+       sPar.style.display = "none"; /* hide search */
+      }
+    });
 
-   /* insert search before parSearchPage */
-   parSearchPage.prepend(inp);
-   inp.insertAdjacentElement("beforebegin", sh);
+    /* insert search before area to be searched */
+    parSearchPage.prepend(par); /* parent for search elements */
+    par.prepend(sh); /* show hide button */
+    sh.insertAdjacentElement("afterend", sPar); /* search and clear search parent */
+    sPar.prepend(inp);  /* search input element */
+    inp.insertAdjacentElement("afterend", clr);/* clear search */
+   }
 
   /* define heading elemnets from parSearchPage */   
   markersSearchPage = 
-   Array.from(parSearchPage.querySelectorAll("h1,h2,h3,h4"));
+   Array.from(parSearchPage.querySelectorAll(searchHeadingsSearchPage));
  
   /* define search box from created input */
-  inputSearchPage = inp;
+  inputSearchPage = /* use data-id attribute added */
+   document.querySelector("[data-id='bookmarkletDOMSearchSearchPage'");
 
   /* turn on condition to continue in main function */
   addedSearchPage = 1;
@@ -185,22 +307,21 @@ javascript: (function () {
     return;
    }
    let defHRank = () => {
-    if (e.tagName.toLowerCase() == "h1") hRank = 1;
-    if (e.tagName.toLowerCase() == "h2") hRank = 2;
-    if (e.tagName.toLowerCase() == "h3") hRank = 3;
-    if (e.tagName.toLowerCase() == "h4") hRank = 4;
+    let tH; /* temp heading variable */
+    if (e.tagName.toLowerCase() == "h1") tH = 1;
+    if (e.tagName.toLowerCase() == "h2") tH = 2;
+    if (e.tagName.toLowerCase() == "h3") tH = 3;
+    if (e.tagName.toLowerCase() == "h4") tH = 4;
+    return tH;
    };
    
    /* rank current h tags */
-   if (e.tagName.toLowerCase() == "h1") cRank = 1;
-   if (e.tagName.toLowerCase() == "h2") cRank = 2;
-   if (e.tagName.toLowerCase() == "h3") cRank = 3;
-   if (e.tagName.toLowerCase() == "h4") cRank = 4;    
+   cRank = defHRank(); /* use inline function to get current heading */
 
    /* ensure last h tag is ranked */
    if (hFirstIter == 0) {
     hFirstIter = 1;
-    defHRank();
+    hRank = defHRank(); /* store heading to check against next */
    }
 
    /* define whether value matches search */
@@ -223,11 +344,11 @@ javascript: (function () {
 
    /* check if next element has id, skip if so */    
    if (cRank < hRank) {
-    defHRank();
+    hRank = defHRank(); /* store heading to check against next */
     sibID = 1;
    } else { 
     if (cRank == hRank) {      
-     defHRank();
+     hRank = defHRank(); /* store heading to check against next */
      sibID = 1;
     } else {
      sibID = 0;
