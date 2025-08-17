@@ -1,0 +1,292 @@
+javascript: (function () {
+ /* Config variables. */
+ var autoSelectSearchPage = 1; /* 1=default selection, 0=specify element */
+ 
+ /* DOM Custom Selector variables. */
+ var customSelectorSearchPage = /* loop and check if page has querySelectors */
+  ["CHANGE"];
+
+ /* Default DOM Selector variables */
+ var querySelectorsSearchPage = /* loop and check if page has querySelectors */
+  [".container", ".container-fluid", "#main", "main", ".main"];
+
+ /* Global variables -defined later. */ 
+ var markersSearchPage; /* select all elements with head tag in parSearchPage */
+ var parSearchPage;     /* parent to recurse over */
+ var inputSearchPage;   /* search input element   */
+ var addedSearchPage;   /* switch variable */
+ var parSelectedSearchPage = 0; /* swithch if user selects */
+
+ /************************************* SUPPORT FUNCTIONS *************************************/
+ /* Loop and check if page has query selector. */ 
+ const checkSelectorSearchPage = () => {
+  let qArr; /* use query selectors pending autoSelectSearchPage value */
+
+  /* select which query selector array */
+  if (autoSelectSearchPage == 1) {
+   qArr = querySelectorsSearchPage;
+  } else {
+   qArr = customSelectorSearchPage;
+  }
+  let qArrLen = qArr.length;
+
+  /* used to compare length of found elements */
+  let compLen = 0;
+  /* check if page has element and use first */
+  for (i = 0; i < qArrLen; i++) {
+   let curCheck = document.querySelectorAll(qArr[i]);
+   if (curCheck[0]) {
+    /* use element with most children */
+    for (l = 0; l < curCheck.length; l++) {
+     if (curCheck[l].querySelectorAll("*").length > compLen) {
+      compLen = curCheck[l].querySelectorAll("*").length;
+      parSearchPage = curCheck[l];
+     }
+    }
+    break;
+   } else {
+    continue;
+   }
+  }
+ };
+
+ /* Allow user to selecct the area to search. */ 
+ const selectParSearchPage = () => {
+  let selectedElement = null;
+  let lastHover = null;
+  
+  /* add temp event */
+  let highlight = (el) => {
+    if (lastHover) lastHover.style.outline = "";  /* remove old highlight */
+    lastHover = el;
+    el.style.outline = "2px solid dodgerblue";   /*  stylish highlight */
+    el.style.cursor = "pointer";
+  };
+
+  /* mouse over possible search area */
+  let handleMouseOver = (e) => {
+    e.stopPropagation();
+    highlight(e.target);
+  };
+
+  /* use clicked element as search element */
+  let handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectedElement = e.target;
+    selectedElement.style.cursor = "";
+    parSearchPage = selectedElement;
+    hasParSearchPage = 1;
+    parSelectedSearchPage = 1;
+    cleanup(); /* stop listening once selected */
+  };
+
+  /* remove temp events */
+  let cleanup = () => {
+    document.removeEventListener("mouseover", handleMouseOver, true);
+    document.removeEventListener("click", handleClick, true);
+    if (lastHover) lastHover.style.outline = "";
+  };
+
+  /* Activate selection mode */
+  document.addEventListener("mouseover", handleMouseOver, true);
+  document.addEventListener("click", handleClick, true);
+ };
+
+ /* Check if parSearchPage, else start manual selection process. */
+ var hasParSearchPage = 0; /* 1 if parSearchPage is found */
+ const checkParSearchPage = () => {
+  if (parSearchPage) {
+   hasParSearchPage = 1; /* query found element */
+   parSelectedSearchPage = 1; /* continue main function */
+  } else {
+   /* user select search parent */
+   selectParSearchPage();
+  }
+ };
+
+ /* Add search input box to top of page. */
+ const addSearchPage = () => {
+  if (hasParSearchPage == 1) { /* ensure par was found */
+   let inp = document.createElement("input"); /* search */
+   let sh = document.createElement("span"); /* show hide search */
+
+   /* set input attributes and style */
+   inp.type = "text";
+   inp.placeholder = "Search Page";
+   inp.style.marginBottom = "10px";
+   inp.style.marginLeft = "20px";
+   inp.style.display = "block";
+   inp.style.position = "fixed";
+
+   /* set close button attributes and style */
+   sh.style.border = "1px solid black";
+   sh.style.padding = "3px";
+   sh.style.position = "fixed";
+   sh.style.cursor = "pointer";
+   sh.innerText = " x "; 
+   /* mouseover effect */
+   sh.addEventListener("mouseover", () => {
+     sh.style.backgroundColor = "dodgerblue";
+     sh.style.color = "white";
+   });
+   sh.addEventListener("mouseout", () => {
+     sh.style.backgroundColor = "";
+     sh.style.color = "";
+   });
+
+   /*  click event */
+   sh.addEventListener("click", () => {
+     let next = sh.nextElementSibling;
+     if (!next) return; /*  something unexpected */
+     if (next.style.display === "none") {
+       next.style.display = "";
+     } else {
+       next.style.display = "none";
+     }
+   });
+
+   /* insert search before parSearchPage */
+   parSearchPage.prepend(inp);
+   inp.insertAdjacentElement("beforebegin", sh);
+
+  /* define heading elemnets from parSearchPage */   
+  markersSearchPage = 
+   Array.from(parSearchPage.querySelectorAll("h1,h2,h3,h4"));
+ 
+  /* define search box from created input */
+  inputSearchPage = inp;
+
+  /* turn on condition to continue in main function */
+  addedSearchPage = 1;
+  } else {
+  addedSearchPage = 0;
+  }
+ };
+
+ /* Perform search on page. */
+ const performSearchPage = () => {
+  let curVal = /* current search value formatted */
+   inputSearchPage.value.trim().toLowerCase();
+  
+  /* loop over ids and see if siblings match */
+  let j = 0; /* increments heading markers        */
+  
+  let sibID = 0; /* switch - if sibling has less heading */
+  let firstIter  = 0; /* ensure hVal gets defined */
+  let hFirstIter = 0; /* ensure hRank gets defined */
+  let hVal;  /* declare variable to check heading values */
+  let lVal;   /* store last h tag value */
+  let hRank; /* compare hiarchy of h tags */
+  let cRank;       /* current h tag */
+  markersSearchPage.forEach((e, n) => {
+   if (e.nextElementSibling && 
+       e.nextElementSibling.tagName.toLowerCase() == "nav") {
+    return;
+   }
+   let defHRank = () => {
+    if (e.tagName.toLowerCase() == "h1") hRank = 1;
+    if (e.tagName.toLowerCase() == "h2") hRank = 2;
+    if (e.tagName.toLowerCase() == "h3") hRank = 3;
+    if (e.tagName.toLowerCase() == "h4") hRank = 4;
+   };
+   
+   /* rank current h tags */
+   if (e.tagName.toLowerCase() == "h1") cRank = 1;
+   if (e.tagName.toLowerCase() == "h2") cRank = 2;
+   if (e.tagName.toLowerCase() == "h3") cRank = 3;
+   if (e.tagName.toLowerCase() == "h4") cRank = 4;    
+
+   /* ensure last h tag is ranked */
+   if (hFirstIter == 0) {
+    hFirstIter = 1;
+    defHRank();
+   }
+
+   /* define whether value matches search */
+   if (firstIter == 0 || sibID == 0) {
+    if (firstIter == 1) {
+     lVal = hVal;
+    }
+    hVal = /* get value formatted of heading and check search */
+     e.innerText.toLowerCase().includes(curVal);     
+    if (firstIter == 0) {
+     firstIter = 1;
+     lVal = hVal;
+    }
+   }
+   j = /* next element with heading tag name attribute */
+    markersSearchPage[n + 1] || null;
+    
+   /* get the elements following heading */
+   let el = e.nextElementSibling;
+
+   /* check if next element has id, skip if so */    
+   if (cRank < hRank) {
+    defHRank();
+    sibID = 1;
+   } else { 
+    if (cRank == hRank) {      
+     defHRank();
+     sibID = 1;
+    } else {
+     sibID = 0;
+    }
+
+   /* show or hide pending search */
+   e.style.display = hVal ? "" : "none";
+    
+   /* loop following elements and show/hide according to search */
+   while (el && el != j) { /* exists and not next heading */
+    el.style.display = hVal ? "" : "none";
+    el = el.nextElementSibling;
+    }
+   }
+  });
+ };
+
+ /* Run time out with function as parameter. */
+ const runSupportSearchPage = (cur) => {
+  setTimeout(function() {
+   cur();
+  }, 100);
+ };
+
+ /*********************************************************************************************
+                                          MAIN FUNCTION
+ *********************************************************************************************/
+ /* Run each support function and add event listener. */
+ var stopRecurSearchPage = 0; /* stop recursing after 20-ish seconds */
+ function domSearchPage() {
+  if (parSelectedSearchPage == 0) {
+   /* check parent with elements for search */
+   runSupportSearchPage(checkSelectorSearchPage);
+  }
+  
+  /* if parent for search continue, manual select */
+  runSupportSearchPage(checkParSearchPage);
+
+  /* create search input box above parent */
+  runSupportSearchPage(addSearchPage);
+  
+  setTimeout(
+   function() {
+    /* Check if found and input field, then continue */
+    if (addedSearchPage == 1) {
+     /* add event to search page */
+     inputSearchPage
+     .addEventListener("input", performSearchPage);    
+    } else {
+     stopRecurSearchPage++;
+     if (stopRecurSearchPage < 20) {
+      domSearchPage(); /* recurse - probably selecting */
+     } else {
+      let skip; /* do nothing */
+     }
+   }
+  }, 1000);  
+ }
+
+ /* Call main function. */
+ domSearchPage();
+})();
