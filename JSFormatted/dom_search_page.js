@@ -1,22 +1,63 @@
 javascript: (function () {
  /* Config variables. */
- var autoSelectSearchPage = 1;  /* 1=default selection, 0=specify element */
- var searchHeadingsSearchPage = /* specify items to search against in query selector */
-  "h1,h2,h3,h4"; 
+ /* Set search area, where 1 = use default selection, 0 = custom element. */
+ var autoSelectSearchPage = 1; 
+ 
+ /* For switch condition defines searchElementsSearchPage (0 = default).  */
+ var searchTagsSearchPage = 0; /* 0 = default */
+ /*******************************
+  var searchTagsSearchPage = 
+  1  = h1 to h4                  ||*loop siblings and show hide accordingly 
+  2  = all elements with class   ||
+  3  = all p elements            ||
+  4  = all div with p elements   ||
+  5 >= ADD PER HTML SEMANTICS    || 
+  default = all p, ul, ol          *loop siblings and show hide accordingly 
+ ********************************/
 
- /* DOM Custom Selector variables. */
- var customSelectorSearchPage = /* loop and check if page has querySelectors */
-  ["CHANGE"];
+/* Specify where to insert search elements relative to search area, using 
+   insertAdjacentElements first property. */
+var insertWhereSearchPage = "beforebegin";
 
- /* Default DOM Selector variables */
+ /* Config DOM Selector variables */
  var querySelectorsSearchPage = /* loop and check if page has querySelectors */
   [".container", ".container-fluid", "#main", "main", ".main"];
+
+  /* Config DOM Custom Selector variables. */
+ var customSelectorSearchPage = /* loop and check if page has querySelectors */
+  ["CHANGE"];
+ 
+ /* Auto-configuration variables. */
+ /* use switch below and var searchTagsSearchPage to specify nested items to search in.   */
+ var searchElementsSearchPage; 
+
+ /* Define nested elements to search based on searchTagsSearchPage above. */
+ switch(searchTagsSearchPage) {
+  case 1:
+   searchElementsSearchPage = "h1,h2,h3,h4"; /* use nested headings */
+   break;
+  case 2:
+   searchElementsSearchPage = "*[class]";    /* all elements class  */
+   break;
+  case 3:
+   searchElementsSearchPage = "p"; /* all p elements nested in area */
+   break;
+  case 4:
+   searchElementsSearchPage = "div p"; /* div nested in search area */
+   break;
+  default:
+   searchElementsSearchPage = /* all p or span in area              */
+    "p, ul, ol"; 
+ }
+ 
+ var selectHierarchySearchPage =  /* config based on config variables */
+  (searchElementsSearchPage.search(/h[1-9]/g) > -1) ? 1 : 0; /* hierarchy or all elements */
 
  /* Global variables -defined later. */ 
  var markersSearchPage; /* select all elements with head tag in parSearchPage */
  var parSearchPage;     /* parent to recurse over */
  var inputSearchPage;   /* search input element   */
- var addedSearchPage;   /* switch variable */
+ var addedSearchPage;   /* switch variable        */
  var parSelectedSearchPage = 0; /* swithch if user selects */
 
  /************************************* SUPPORT FUNCTIONS *************************************/
@@ -124,11 +165,11 @@ javascript: (function () {
  };
 
  /* Check if parSearchPage, else start manual selection process. */
- var hasParSearchPage = 0; /* 1 if parSearchPage is found */
- var initAlertSearchPage = 0; /* prevent alert from repeating */
+ var hasParSearchPage = 0;    /* 1 if parSearchPage is found     */
+ var initAlertSearchPage = 0; /* prevent alert from repeating    */
  const checkParSearchPage = () => {
   if (parSearchPage) {
-   hasParSearchPage = 1; /* query found element */
+   hasParSearchPage = 1;      /* query found element    */
    parSelectedSearchPage = 1; /* continue main function */
   } else {
    if (initAlertSearchPage == 0) {
@@ -229,7 +270,9 @@ javascript: (function () {
     /* clear search */
     clr.addEventListener("click", ()=> {
      clr.previousElementSibling.value = "";
-     performSearchPage(); /* manual show all */
+     setTimeout(function() { /* delay a bit   */
+      performSearchPage(); /* manual show all */
+     }, 100);
     });
 
     /* set close button attributes and style */
@@ -251,29 +294,33 @@ javascript: (function () {
 
     /*  click event */
     sh.addEventListener("click", () => {
-      if (!sPar) return; /*  something unexpected */
+      if (!sPar) return; /* something unexpected */
       if (sPar.style.display === "none") {
        sh.innerText = " x "; /* indicate click will hide */
-       par.style.width = "200px"; /* parent width */
-       sPar.style.display = ""; /* show search */
+       par.style.width = "200px"; /* parent width        */
+       sPar.style.display = "";   /* show search         */
       } else {
        sh.innerText = " o "; /* indicate click will show */
-       par.style.width = "37px"; /* parent width */
-       sPar.style.display = "none"; /* hide search */
+       par.style.width = "37px";    /* parent width      */
+       sPar.style.display = "none"; /* hide search       */
       }
     });
 
     /* insert search before area to be searched */
-    parSearchPage.prepend(par); /* parent for search elements */
+                                     /* config var,            par created */
+    parSearchPage.insertAdjacentElement(insertWhereSearchPage, par);
     par.prepend(sh); /* show hide button */
-    sh.insertAdjacentElement("afterend", sPar); /* search and clear search parent */
+    sh.insertAdjacentElement("afterend", sPar); /* search and clear search parent  */
     sPar.prepend(inp);  /* search input element */
-    inp.insertAdjacentElement("afterend", clr);/* clear search */
+    inp.insertAdjacentElement("afterend", clr);/* clears search */
+
+    /* set focus on search box */
+    inp.focus();
    }
 
   /* define heading elemnets from parSearchPage */   
   markersSearchPage = 
-   Array.from(parSearchPage.querySelectorAll(searchHeadingsSearchPage));
+   Array.from(parSearchPage.querySelectorAll(searchElementsSearchPage));
  
   /* define search box from created input */
   inputSearchPage = /* use data-id attribute added */
@@ -292,36 +339,42 @@ javascript: (function () {
    inputSearchPage.value.trim().toLowerCase();
   
   /* loop over ids and see if siblings match */
-  let j = 0; /* increments heading markers        */
-  
+  let j = 0; /* increments heading markers               */
   let sibID = 0; /* switch - if sibling has less heading */
-  let firstIter  = 0; /* ensure hVal gets defined */
-  let hFirstIter = 0; /* ensure hRank gets defined */
+  let firstIter  = 0; /* ensure hVal gets defined        */
+  let hFirstIter = 0; /* ensure hRank gets defined       */
   let hVal;  /* declare variable to check heading values */
-  let lVal;   /* store last h tag value */
-  let hRank; /* compare hiarchy of h tags */
-  let cRank;       /* current h tag */
+  let lVal;  /* store last h tag value                   */
+  let hRank; /* compare hiarchy of h tags                */
+  let cRank; /* current h tag                            */
   markersSearchPage.forEach((e, n) => {
    if (e.nextElementSibling && 
        e.nextElementSibling.tagName.toLowerCase() == "nav") {
     return;
    }
    let defHRank = () => {
-    let tH; /* temp heading variable */
-    if (e.tagName.toLowerCase() == "h1") tH = 1;
-    if (e.tagName.toLowerCase() == "h2") tH = 2;
-    if (e.tagName.toLowerCase() == "h3") tH = 3;
-    if (e.tagName.toLowerCase() == "h4") tH = 4;
+    let tH = 0; /* temp heading variable */
+    if (e.tagName.toLowerCase().search(/h[1-9]/g) > -1) 
+      tH = Number(e.tagName.substr(1,));
     return tH;
    };
-   
-   /* rank current h tags */
-   cRank = defHRank(); /* use inline function to get current heading */
+   let curRank = () => {
+    let tRank = 0; /* temp rank */
+    
+    /* rank current h tags */
+    if  (selectHierarchySearchPage == 1) {
+     tRank = defHRank(); /* inline function for  heading # */
+    } 
+    /* final return for variable */
+    return tRank
+   };
 
-   /* ensure last h tag is ranked */
+   cRank = curRank(); /* set cRank  */
+
+   /* ensure last h tag is ranked   */
    if (hFirstIter == 0) {
     hFirstIter = 1;
-    hRank = defHRank(); /* store heading to check against next */
+    hRank = curRank(); /* store heading to check against next */
    }
 
    /* define whether value matches search */
@@ -344,23 +397,26 @@ javascript: (function () {
 
    /* check if next element has id, skip if so */    
    if (cRank < hRank) {
-    hRank = defHRank(); /* store heading to check against next */
+    hRank = curRank(); /* store heading to check against next */
     sibID = 1;
    } else { 
-    if (cRank == hRank) {      
-     hRank = defHRank(); /* store heading to check against next */
+    /* h tags equal and use h hierarchy */
+    if (cRank == hRank && selectHierarchySearchPage == 1) {
+     hRank = curRank(); /* store heading to check against next */
      sibID = 1;
     } else {
      sibID = 0;
     }
 
-   /* show or hide pending search */
-   e.style.display = hVal ? "" : "none";
+    /* show or hide pending search */
+    e.style.display = hVal ? "" : "none";
     
-   /* loop following elements and show/hide according to search */
-   while (el && el != j) { /* exists and not next heading */
-    el.style.display = hVal ? "" : "none";
-    el = el.nextElementSibling;
+    /* loop following elements and show/hide according to search */
+    if (selectHierarchySearchPage == 1 || searchTagsSearchPage == 0) {
+     while (el && el != j) { /* exists and not next heading */
+      el.style.display = hVal ? "" : "none";
+      el = el.nextElementSibling;
+     }
     }
    }
   });
