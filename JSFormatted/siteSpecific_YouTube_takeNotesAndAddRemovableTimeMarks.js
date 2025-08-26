@@ -50,6 +50,7 @@ javascript:(function(){
    }
    button#closeNoteBoxBtn:hover,
    button#closeNoteBoxBtn:hover ~ input#closeCheckbox:hover {
+    cursor: pointer;
     border: 3px solid gray;
    }
    input#closeCheckbox {
@@ -62,6 +63,7 @@ javascript:(function(){
     opacity: 0;
    }
    input#closeCheckbox:hover {
+    cursor: pointer;
     width: 20px;
     height: 20px; 
     border: 2px solid gray;
@@ -164,69 +166,72 @@ javascript:(function(){
  var noteTextArea, noteArea, noteBoxDiv, 
      closeNoteBoxBtn, closeCheckbox;
  
- /* don't duplicate */    
- if (!noteAreaID) {
-  /* area for notes */
-  noteArea = document.createElement("div");
-  noteArea.id = "noteArea";   
-  aboveTheFold.insertAdjacentElement("beforebegin", noteArea); 
-  
-  let noteStyle =         /* using noteCSS from above */
-   document.createElement("style"); 
-  
-  noteStyle.textContent = /* add css properties */
-   noteCSS;        
-  
-  noteArea.insertAdjacentElement("beforebegin", noteStyle);
-  noteAreaID = document.getElementById("noteArea");
-  
-  /* note box */
-  noteTextArea = document.createElement("textarea"); 
-  noteTextArea.id = "noteBox"; 
-  noteBoxDiv = document.createElement("div");
-  
-  /* insert div to hold textarea */
-  noteAreaID.insertAdjacentElement("afterbegin", noteBoxDiv);
-  
-  /* insert textare html elements to take notes */
-  noteBoxDiv.insertAdjacentElement("afterbegin", noteTextArea); 
-  
-  /* close buttnon */
-  closeNoteBoxBtn = document.createElement("button");
-  closeNoteBoxBtn.id = "closeNoteBoxBtn";
-  noteStyle.insertAdjacentElement("afterend", closeNoteBoxBtn);
-  closeNoteBoxBtn.textContent = "X";
-  
-  /* checkbox to show hide with css */
-  closeCheckbox = document.createElement("input");
-  closeCheckbox.type = "checkbox";
-  closeCheckbox.id = "closeCheckbox";  
-  closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
-  closeCheckbox = document.getElementById("closeCheckbox");
-  closeCheckbox.setAttribute("checked", true);
-  
-  /* alternate close button status */
-  closeCheckbox.addEventListener("click", function() {
-   if (this.previousElementSibling.textContent == "X") {
-    this.previousElementSibling.textContent = "O";
-   } else {
-    this.previousElementSibling.textContent = "X";
-   }
-  });
- }
- 
- /* Redefine noteBox */
- noteBox = document.getElementById("noteBox");
- 
- /***** SUPPORT FUNCTIONS *****/
+ /************************************* SUPPORT FUNCTIONS *************************************/
+ /* Create note box, ensuring not to duplicate. */
+ const addNoteBoxYouTubeTakeNotesAndAddTimeMarks = () => {
+  /* don't duplicate */    
+  if (!noteAreaID) {
+   /* area for notes */
+   noteArea = document.createElement("div");
+   noteArea.id = "noteArea";   
+   aboveTheFold.insertAdjacentElement("beforebegin", noteArea); 
+   
+   let noteStyle =         /* using noteCSS from above */
+    document.createElement("style"); 
+   
+   noteStyle.textContent = /* add css properties */
+    noteCSS;        
+   
+   noteArea.insertAdjacentElement("beforebegin", noteStyle);
+   noteAreaID = document.getElementById("noteArea");
+   
+   /* note box */
+   noteTextArea = document.createElement("textarea"); 
+   noteTextArea.id = "noteBox"; 
+   noteBoxDiv = document.createElement("div");
+   
+   /* insert div to hold textarea */
+   noteAreaID.insertAdjacentElement("afterbegin", noteBoxDiv);
+   
+   /* insert textarea html elements to take notes */
+   noteBoxDiv.insertAdjacentElement("afterbegin", noteTextArea); 
+   noteBoxDiv.id = "noteTextArea";
+   
+   /* close buttnon */
+   closeNoteBoxBtn = document.createElement("button");
+   closeNoteBoxBtn.id = "closeNoteBoxBtn";
+   noteStyle.insertAdjacentElement("afterend", closeNoteBoxBtn);
+   closeNoteBoxBtn.textContent = "X";
+   
+   /* checkbox to show hide with css */
+   closeCheckbox = document.createElement("input");
+   closeCheckbox.type = "checkbox";
+   closeCheckbox.id = "closeCheckbox";  
+   closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
+   closeCheckbox = document.getElementById("closeCheckbox");
+   closeCheckbox.setAttribute("checked", true);
+   
+   /* alternate close button status */
+   closeCheckbox.addEventListener("click", function() {
+    if (this.previousElementSibling.textContent == "X") {
+     this.previousElementSibling.textContent = "O";
+    } else {
+     this.previousElementSibling.textContent = "X";
+    }
+   });
+  }
+  /* redefine noteBox */
+  noteBox = document.getElementById("noteBox");
+ };
+
  /* Copy notes in textare to clipboard. */
- const copyNotes = () => {
+ const copyNotesYouTubeTakeNotesAndAddTimeMarks = () => {
   noteBox.select();
   navigator.clipboard.writeText(noteBox.value);
  };
- 
+  
  /* Focus on textarea whenever keydown occurs. */
- const updateCurrentTime = () => {
+ const updateCurrentTimeYouTubeTakeNotesAndAddTimeMarks = () => {
   /* update HTML element holding time value */
   let playButtonData = playButton[0].dataset.titleNoTooltip;
   
@@ -242,9 +247,9 @@ javascript:(function(){
   /* extract time and calculate in seconds */
   timePreCal = curTimeElementText.split(":");    
  };
- 
+  
  /* Apply key combos and handle actions accordingly. */
- const keypressToNote = () => {
+ const keypressToNoteYouTubeTakeNotesAndAddTimeMarks = () => {
   let activeID = document.activeElement.id;
   let lastKeyPress; /* used to check for key combos */
   lastKeyPress = sessionStorage.getItem("lastKeyPress");
@@ -278,12 +283,12 @@ javascript:(function(){
    } 
    /* add time marker adjacent to notes */
    else if (checkKeyCombo == "Control+m") {    
-    updateCurrentTime();
-    markTime();    
+    updateCurrentTimeYouTubeTakeNotesAndAddTimeMarks();
+    markTimeYouTubeTakeNotesAndAddTimeMarks();    
    }  
    /* select and copy notes to clipboard  */
    else if (checkKeyCombo == "Alt+a") {
-    copyNotes();
+    copyNotesYouTubeTakeNotesAndAddTimeMarks();
    } else {
     /* only if note box is not active element */
     if (activeID != "noteBox") {
@@ -311,9 +316,9 @@ javascript:(function(){
   /* store key press for next key combo check */
   sessionStorage.setItem("lastKeyPress", event.key);
  }; 
- 
+  
  /* Add time mark button to the right of textarea. */
- const markTime = () => {  
+ const markTimeYouTubeTakeNotesAndAddTimeMarks = () => {  
   noteBox.blur(); /* quickly deactivate note box */
   noteBox.setAttribute("disabled", true);
   
@@ -344,6 +349,7 @@ javascript:(function(){
     document.createElement("span"); 
    timeMarkButtonArea.id = "timeMarkButtonArea"; 
    /* insert time mark box parent div */
+   noteBoxDiv = document.getElementById("noteTextArea");
    noteBoxDiv.insertAdjacentElement("afterend", timeMarkDiv);   
    /* insert time mark box */
    timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
@@ -452,19 +458,30 @@ javascript:(function(){
   noteBox.removeAttribute("disabled");
   noteBox.focus();
  };
- 
- /* Begin taking notes. */
- noteBox.focus();
- 
+   
  /* Quickly get back to notes */
- const addKeyDown = () => { 
+ const addKeyDownYouTubeTakeNotesAndAddTimeMarks = () => { 
   document.body.addEventListener("keydown", 
-  function() {
-   keypressToNote();  
-  }); 
+   function() {
+    keypressToNoteYouTubeTakeNotesAndAddTimeMarks();  
+   }); 
  }; 
- 
- /* Listen for keydonw event. */ 
- addKeyDown();
- 
+   
+ /*********************************************************************************************
+                                          MAIN FUNCTION
+ *********************************************************************************************/
+ /* Call support, adding note box, focus on notes, and add keyDown listener. */
+ function YouTubeTakeNotesAndAddTimeMarks() {
+  /* add note box */
+  addNoteBoxYouTubeTakeNotesAndAddTimeMarks();
+
+  /* begin taking notes */
+  noteBox.focus();
+
+  /* listen for keydonw event */ 
+  addKeyDownYouTubeTakeNotesAndAddTimeMarks();
+ }
+
+ /* Run bookmarklet. */
+ YouTubeTakeNotesAndAddTimeMarks();
 })();

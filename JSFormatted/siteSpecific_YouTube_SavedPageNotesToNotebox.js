@@ -1,45 +1,42 @@
 javascript:(function(){ 
  /* Global DOM variables */
- var noteAreaSavedPageNotesIDSavedPageNotes =  /* parent for note elements */
-  document.getElementById("noteAreaSavedPageNotes");
+ var noteAreaYouTubeSavedNotesToNotebox = /* parent for note elements */
+  document.getElementById("noteArea");
  
- var noteBoxTakNotes =               /* textare element for taking notes */
-  document.getElementById("noteBoxTakNotes");
+ var noteBoxTakeNotesYouTubeSavedNotesToNotebox = /* textare element for taking notes */
+  document.getElementById("noteBox");
  
- var closeNoteBoxSavedPageNotes =         /* Close notebox element */
-  document.getElementById("closeNoteBoxSavedPageNotes");
- 
- var aboveTheFoldSavedPageNotes =         /* html after vidoe box */
+ var aboveTheFoldSavedPageNotesYouTubeSavedNotesToNotebox = /* html after vidoe box */
   document.getElementById("above-the-fold");
  
- var playerSavedPageNotes =               /* video playerSavedPageNotes topmost parent */
-  document.getElementById("player"); 
- 
- var playButtonSavedPageNotes =           /* play button - needed to update time mark */
+ var playButtonYouTubeSavedNotesToNotebox = /* play button - needed to update time mark */
   document.getElementsByClassName("ytp-play-button");
  
- var currentTimeClassNameSavedPageNotes = /* class element with current time */
+ var currentTimeClassYouTubeSavedNotesToNotebox = /* class element with current time */
   "ytp-time-current"; 
  
  /* Global configuration variables */
- var ignoredKeysSavedPageNotes =          /* keys pressed that do not active not box */
+ var ignoredKeysYouTubeSavedNotesToNotebox = /* keys pressed that do not active not box */
   "Home End PageUp PageDown"; 
  
- var ignoredDOMElementsSavedPageNotes =   /* stop function if one of these is active */
+ var ignoredDOMElementsYouTubeSavedNotesToNotebox = /* stop function if one of these is active */
   ["comments", "search", "contenteditable-root", "player"]; 
  
  /* Switch variables. */
- var savedNotesTimeAdded = 0; /* if time mark array saved with prior notes */
+ var savedNotesTimeAddedYouTubeSavedNotesToNotebox = 0; /* if time mark array saved with prior notes */
  
  /* Declare global variables that will be defined later. */
- var curTimeElementSavedPageNotes, curTimeElementTextSavedPageNotes,
-     timePreCalSavedPageNotes, timeSecCalSavedPageNotes, storedNotesArrSavedPageNotes;
+ var curTimeElementYouTubeSavedNotesToNotebox, 
+     curTimeElementTextYouTubeSavedNotesToNotebox,
+     timePreCalYouTubeSavedNotesToNotebox, 
+     timeSecCalYouTubeSavedNotesToNotebox, 
+     storedNotesArrYouTubeSavedNotesToNotebox;
  
  /* CSS style sheet */
  {
   var noteCSSSavedPageNotes = `
   /* style close elements with constant styles */
-   button#closeNoteBoxSavedPageNotesBtn {
+   button#closeNoteBoxBtn {
     display: inline;
     position: relative;
     left: -5px;
@@ -52,32 +49,32 @@ javascript:(function(){
     border-radius: 5px;
     z-index: 1;
    }
-   button#closeNoteBoxSavedPageNotesBtn:hover,
-   button#closeNoteBoxSavedPageNotesBtn:hover ~ input#closeCheckbox:hover {
+   button#closeNoteBoxBtn:hover {
+    cursor: pointer;
     border: 3px solid gray;
    }
-   button#closeNoteBoxSavedPageNotesBtn.hideNotesSavedPageNotes + div {
+   button#closeNoteBoxBtn.hideNotesSavedPageNotes + div {
     display: none !important;
    }
-   button#closeNoteBoxSavedPageNotesBtn.hideNotesSavedPageNotes + div + div {
+   button#closeNoteBoxBtn.hideNotesSavedPageNotes + div + div {
     margin-top: 20px;
    }
    /* style note area with constant styles */
-   div#noteAreaSavedPageNotes {
+   div#noteArea {
     display: inline-flex;
     flex-wrap: nowrap;
     position: relative;
     top: 0px;
     width: 100%;
    }
-   div #noteAreaSavedPageNotes div {
+   div #noteArea div {
     display: inline-block; 
     position: relative;
     margin: 0px 10px;
     max-width: 450px;
     width: min-content;
    }
-   div#noteAreaSavedPageNotes div+div {
+   div#noteArea div+div {
     display: inline-block;
     position: relative;
     max-width: 800px;
@@ -85,7 +82,7 @@ javascript:(function(){
     left: 0px; 
    }
    /* style note box with constant style */
-   textarea#noteBoxTakNotes {
+   textarea#noteBox {
     max-width: 450px;  
     width: 450px;
     height: 100px; 
@@ -146,7 +143,7 @@ javascript:(function(){
     border-width: medium;  
    }
    /* style clear all time mark button at bottom right */
-   div#noteAreaSavedPageNotes div div#clearAllTimeMarks {
+   div#noteArea div div#clearAllTimeMarks {
     display: inline-block;
     position: absolute;
     cursor: pointer;
@@ -157,7 +154,7 @@ javascript:(function(){
     padding: 5px;
     border-radius: 5px;
    }
-   div#noteAreaSavedPageNotes div div#clearAllTimeMarks:hover {
+   div#noteArea div div#clearAllTimeMarks:hover {
     background: rgba(255, 0, 0, 1);
     padding: 6px;
    }
@@ -165,14 +162,19 @@ javascript:(function(){
  }
  
  /* Note box setup. */
- {
-  var noteTextAreaSavedPageNotes, noteAreaSavedPageNotes, noteBoxTakNotesDiv, 
-      closeNoteBoxSavedPageNotesBtn, closeCheckbox;
-  if (!noteAreaSavedPageNotesIDSavedPageNotes) {
+ var noteTextAreaYouTubeSavedNotesToNotebox, 
+     noteAreaDivYouTubeSavedNotesToNotebox, 
+     noteBoxTakeNotesDivYouTubeSavedNotesToNotebox, 
+     closeNoteBoxBtnYouTubeSavedNotesToNotebox;
+ 
+ /************************************* SUPPORT FUNCTIONS *************************************/
+ /* Creeat note box. */
+ const addNoteBoxYouTubeSavedNotesToNotebox = () => {
+  if (!noteAreaYouTubeSavedNotesToNotebox) {
    /* are for notes */
-   noteAreaSavedPageNotes = document.createElement("div");
-   noteAreaSavedPageNotes.id = "noteAreaSavedPageNotes";   
-   aboveTheFoldSavedPageNotes.insertAdjacentElement("beforebegin", noteAreaSavedPageNotes); 
+   noteAreaDivYouTubeSavedNotesToNotebox = document.createElement("div");
+   noteAreaDivYouTubeSavedNotesToNotebox.id = "noteArea";   
+   aboveTheFoldSavedPageNotesYouTubeSavedNotesToNotebox.insertAdjacentElement("beforebegin", noteAreaDivYouTubeSavedNotesToNotebox); 
 
    let noteStyle =         /* using noteCSSSavedPageNotes from above */
     document.createElement("style"); 
@@ -180,28 +182,29 @@ javascript:(function(){
    noteStyle.textContent = /* add css properties */
     noteCSSSavedPageNotes;        
 
-   noteAreaSavedPageNotes.insertAdjacentElement("beforebegin", noteStyle);
-   noteAreaSavedPageNotesIDSavedPageNotes = document.getElementById("noteAreaSavedPageNotes");
+   noteAreaDivYouTubeSavedNotesToNotebox.insertAdjacentElement("beforebegin", noteStyle);
+   noteAreaYouTubeSavedNotesToNotebox = document.getElementById("noteArea");
 
    /* note box */
-   noteTextAreaSavedPageNotes = document.createElement("textarea"); 
-   noteTextAreaSavedPageNotes.id = "noteBoxTakNotes"; 
-   noteBoxTakNotesDiv = document.createElement("div");
+   noteTextAreaYouTubeSavedNotesToNotebox = document.createElement("textarea"); 
+   noteTextAreaYouTubeSavedNotesToNotebox.id = "noteBox"; 
+   noteBoxTakeNotesDivYouTubeSavedNotesToNotebox = document.createElement("div");
 
    /* insert div to hold textarea */
-   noteAreaSavedPageNotesIDSavedPageNotes.insertAdjacentElement("afterbegin", noteBoxTakNotesDiv);
+   noteAreaYouTubeSavedNotesToNotebox.insertAdjacentElement("afterbegin", noteBoxTakeNotesDivYouTubeSavedNotesToNotebox);
 
    /* insert textare html elements to take notes */
-   noteBoxTakNotesDiv.insertAdjacentElement("afterbegin", noteTextAreaSavedPageNotes); 
+   noteBoxTakeNotesDivYouTubeSavedNotesToNotebox.insertAdjacentElement("afterbegin", noteTextAreaYouTubeSavedNotesToNotebox); 
+   noteBoxTakeNotesDivYouTubeSavedNotesToNotebox.id = "noteTextArea"; /* used for adding time marks */
 
    /* close buttnon */
-   closeNoteBoxSavedPageNotesBtn = document.createElement("button");
-   closeNoteBoxSavedPageNotesBtn.id = "closeNoteBoxSavedPageNotesBtn";
-   noteStyle.insertAdjacentElement("afterend", closeNoteBoxSavedPageNotesBtn);
-   closeNoteBoxSavedPageNotesBtn.textContent = "X";
+   closeNoteBoxBtnYouTubeSavedNotesToNotebox = document.createElement("button");
+   closeNoteBoxBtnYouTubeSavedNotesToNotebox.id = "closeNoteBoxBtn";
+   noteStyle.insertAdjacentElement("afterend", closeNoteBoxBtnYouTubeSavedNotesToNotebox);
+   closeNoteBoxBtnYouTubeSavedNotesToNotebox.textContent = "X";
 
    /* get id of button to close note area - enables this to work with timemarks */
-   let closeBtnIDSavedPageNotes = document.getElementById("closeNoteBoxSavedPageNotesBtn");    
+   let closeBtnIDSavedPageNotes = document.getElementById("closeNoteBoxBtn");    
    /* alternate close button status */
    closeBtnIDSavedPageNotes.addEventListener("click", function() {
     if (this.textContent == "X") {
@@ -212,62 +215,70 @@ javascript:(function(){
      this.textContent = "X";                /* switch to show note area         */
     }
    });
+  } else { /* note box is on page, but apply bookmarklet style       */
+   let noteStyle =         /* using noteCSSSavedPageNotes from above */
+    document.createElement("style"); 
+
+   noteStyle.textContent = /* add css properties */
+    noteCSSSavedPageNotes;        
+   /* assuming on page and has id */
+   noteAreaDivYouTubeSavedNotesToNotebox = document.getElementById("noteArea");
+   noteAreaDivYouTubeSavedNotesToNotebox.insertAdjacentElement("beforebegin", noteStyle);
   }
- }
- /* Redefine noteBoxTakNotes */
- noteBoxTakNotes = document.getElementById("noteBoxTakNotes");
- 
- /***** SUPPORT FUNCTIONS *****/
+ };
+
  /* Copy notes in textare to clipboard. */
- const copyNotesSavedPageNotes = () => {
-  noteBoxTakNotes.select();
-  navigator.clipboard.writeText(noteBoxTakNotes.value);
+ const copyNotesYouTubeSavedNotesToNotebox = () => {
+  noteBoxTakeNotesYouTubeSavedNotesToNotebox.select();
+  navigator.clipboard.writeText(
+   noteBoxTakeNotesYouTubeSavedNotesToNotebox.value
+  );
  }; 
  
  /* Update current time - for time mark. */
- const updateCurrentTime = () => {
+ const updateCurrentTimeYouTubeSavedNotesToNotebox = () => {
   /* update HTML element holding time value */
   let playButtonData = 
-   playButtonSavedPageNotes[0].dataset.titleNoTooltip;
+   playButtonYouTubeSavedNotesToNotebox[0].dataset.titleNoTooltip;
   
   /* to keep video paused */
   if (playButtonData != "Play") {
-   playButtonSavedPageNotes[0].click(); 
-   playButtonSavedPageNotes[0].click();
+   playButtonYouTubeSavedNotesToNotebox[0].click(); 
+   playButtonYouTubeSavedNotesToNotebox[0].click();
   }
   
   /* update time value HTML element */
-  curTimeElementSavedPageNotes =   /* select element with current time */
-   document.getElementsByClassName(currentTimeClassNameSavedPageNotes); 
-  curTimeElementTextSavedPageNotes = curTimeElementSavedPageNotes[0].textContent;
+  curTimeElementYouTubeSavedNotesToNotebox =   /* select element with current time */
+   document.getElementsByClassName(currentTimeClassYouTubeSavedNotesToNotebox); 
+  curTimeElementTextYouTubeSavedNotesToNotebox = curTimeElementYouTubeSavedNotesToNotebox[0].textContent;
   
   /* extract time and calculate in seconds */
-  timePreCalSavedPageNotes = curTimeElementTextSavedPageNotes.split(":");    
+  timePreCalYouTubeSavedNotesToNotebox = curTimeElementTextYouTubeSavedNotesToNotebox.split(":");    
  }; 
  
  /* Add time mark button to the right of textarea. */
- const markTime = () => {  
+ const markTimeYouTubeSavedNotesToNotebox = () => {  
   /* func functions */
   /* extract current time from video on ctrl + m */
   let extracTCurTime = (ct) => {
-   if (savedNotesTimeAdded == 1) {
-    noteBoxTakNotes.blur(); /* quickly deactivate note box */
-    noteBoxTakNotes.setAttribute("disabled", true);
+   if (savedNotesTimeAddedYouTubeSavedNotesToNotebox == 1) {
+    noteBoxTakeNotesYouTubeSavedNotesToNotebox.blur(); /* quickly deactivate note box */
+    noteBoxTakeNotesYouTubeSavedNotesToNotebox.setAttribute("disabled", true);
    }
 
    if (ct.length == 3) { /* not handling videos over 24 hours - no */
-    timeSecCalSavedPageNotes = 
+    timeSecCalYouTubeSavedNotesToNotebox = 
      Number(Number(ct[0]*60) * 60) + /* hours to seconds   */
      Number(ct[1]*60) +              /* minutes to seconds */
      Number(ct[2]);                  /* seconds */
    } 
    else if (ct.length == 2) {
-    timeSecCalSavedPageNotes = 
+    timeSecCalYouTubeSavedNotesToNotebox = 
      Number(ct[0]*60) +    /* minutes to seconds */
      Number(ct[1]);        /* seconds */
    } 
    else if (ct.length == 1) {
-    timeSecCalSavedPageNotes =      
+    timeSecCalYouTubeSavedNotesToNotebox =      
      Number(ct[0]); /* seconds */
    }
   };
@@ -296,31 +307,33 @@ javascript:(function(){
     clearAllTimeMarks.innerText = "Clear"; /* button rendered text */
 
     /* insert time mark box parent div */
-    noteBoxTakNotesDiv.insertAdjacentElement("afterend", timeMarkDiv);   
+    noteBoxTakeNotesDivYouTubeSavedNotesToNotebox = /* if note aleady existed */
+     document.getElementById("noteTextArea");
+    noteBoxTakeNotesDivYouTubeSavedNotesToNotebox.insertAdjacentElement("afterend", timeMarkDiv);   
 
     /* insert time mark box */
     timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
     
     /* insert clear button */
     timeMarkButtonArea.insertAdjacentElement("afterend", clearAllTimeMarks);
-    
-    /* redefine clearAllTimeMarks */
-    clearAllTimeMarks = document.getElementById("clearAllTimeMarks");
-    clearAllTimeMarks   /* function to clear all when clicked */
-    .addEventListener(
-     "click", function() {
-      let tmArea = this.previousElementSibling;
-      let tmMark = tmArea.children;
-      let tmMarkLen = tmMark.length;
-      if (tmMarkLen > 0) {
-       while (tmMarkLen > 0) {
-        tmMark[0].remove();
-        tmMarkLen = tmMark.length;
-       }
-       this.style.display = "none"; /* hide until time marks are added */
-      }
-     });
    }
+
+   /* redefine clearAllTimeMarks */
+   clearAllTimeMarks = document.getElementById("clearAllTimeMarks");
+   clearAllTimeMarks   /* function to clear all when clicked */
+   .addEventListener(
+    "click", function() {
+     let tmArea = this.previousElementSibling;
+     let tmMark = tmArea.children;
+     let tmMarkLen = tmMark.length;
+     if (tmMarkLen > 0) {
+      while (tmMarkLen > 0) {
+       tmMark[0].remove();
+       tmMarkLen = tmMark.length;
+      }
+      this.style.display = "none"; /* hide until time marks are added */
+     }
+    });
   };
   
   /* give new time marks unique id and add time */
@@ -329,7 +342,7 @@ javascript:(function(){
    if (ct == undefined) { normalCall = 1; } /* run using ctrl + m */
    if (ct == "empty") { return; } /* end function if saved session had empty marks */
    /* check if mark already there */ 
-   let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCalSavedPageNotes);
+   let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCalYouTubeSavedNotesToNotebox);
    let curTimeMarkCloseBtn, curTimeMarkBtn, clearAllTimeMarks; /* variables for time and clear time */
 
    /* show clear all time mark button */
@@ -360,7 +373,7 @@ javascript:(function(){
      document.createElement("span");    
 
    curTimeMarkCloseBtn   /* give each a unique data attribute */
-    .id = "closeTimeMarkBtn" + timeSecCalSavedPageNotes;
+    .id = "closeTimeMarkBtn" + timeSecCalYouTubeSavedNotesToNotebox;
 
     curTimeMarkCloseBtn  /* style close btn - give pointers hover effect */
     .style.cursor = "pointer";
@@ -396,13 +409,13 @@ javascript:(function(){
 
     /* CREATE AND ADD TIME MARK BUTTONS ********************************************/
     let closeTimeBtn =    /* get id of close button to insert time mark after it */
-     document.getElementById("closeTimeMarkBtn" + timeSecCalSavedPageNotes);
+     document.getElementById("closeTimeMarkBtn" + timeSecCalYouTubeSavedNotesToNotebox);
 
     curTimeMarkBtn =      /* time mark linking tom marked times */
      document.createElement("a");
 
     curTimeMarkBtn.id =   /* give each a unique id */
-     "timeMarkBtn" + timeSecCalSavedPageNotes;
+     "timeMarkBtn" + timeSecCalYouTubeSavedNotesToNotebox;
 
     /* open link in new tab - _blank */
     curTimeMarkBtn.target =  "_blank";   
@@ -410,24 +423,24 @@ javascript:(function(){
 
     /* conditions if url did not already have time value */
     if (vidURL.indexOf("&t=") > -1) { /* had time value   */
-     vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCalSavedPageNotes);
+     vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCalYouTubeSavedNotesToNotebox);
     } else {                         /* no time value    */
-     vidURL = vidURL + "&t=" + timeSecCalSavedPageNotes + "s";
+     vidURL = vidURL + "&t=" + timeSecCalYouTubeSavedNotesToNotebox + "s";
     }      
     curTimeMarkBtn.href = vidURL;
 
     if (normalCall == 1) { /* called via ctrl + m */ 
      /* use calculation for current video time */
      /* use hour : minutes: seconds */
-     for (i in timePreCalSavedPageNotes) {
-      if (i == Number(timePreCalSavedPageNotes.length-1)) {
-       if (Number(timePreCalSavedPageNotes.length-1) == 0) {
-        curTimeMarkBtn.innerText = "0:" + timePreCalSavedPageNotes[i];
+     for (i in timePreCalYouTubeSavedNotesToNotebox) {
+      if (i == Number(timePreCalYouTubeSavedNotesToNotebox.length-1)) {
+       if (Number(timePreCalYouTubeSavedNotesToNotebox.length-1) == 0) {
+        curTimeMarkBtn.innerText = "0:" + timePreCalYouTubeSavedNotesToNotebox[i];
        } else {
-        curTimeMarkBtn.innerText += timePreCalSavedPageNotes[i];
+        curTimeMarkBtn.innerText += timePreCalYouTubeSavedNotesToNotebox[i];
        }     
       } else {
-       curTimeMarkBtn.innerText += timePreCalSavedPageNotes[i] + ":";
+       curTimeMarkBtn.innerText += timePreCalYouTubeSavedNotesToNotebox[i] + ":";
       }
      }
     } else {
@@ -438,22 +451,22 @@ javascript:(function(){
 
     /* add click event to pause video if clicked and video is playing */
     curTimeMarkBtn.addEventListener("click", function() {
-     let playButtonData = playButtonSavedPageNotes[0].dataset.titleNoTooltip;
+     let playButtonData = playButtonYouTubeSavedNotesToNotebox[0].dataset.titleNoTooltip;
      if (playButtonData != "Play") {
-      playButtonSavedPageNotes[0].click();
+      playButtonYouTubeSavedNotesToNotebox[0].click();
      }
     });     
    }    
 
    /* focus back on note box */
-   noteBoxTakNotes.removeAttribute("disabled");
-   noteBoxTakNotes.focus();
+   noteBoxTakeNotesYouTubeSavedNotesToNotebox.removeAttribute("disabled");
+   noteBoxTakeNotesYouTubeSavedNotesToNotebox.focus();
   };
   
   /* 0 => adding time markks from prior notes, 1 => add with crtl + m */
-  if (savedNotesTimeAdded == 0) {
+  if (savedNotesTimeAddedYouTubeSavedNotesToNotebox == 0) {
    let priorTimeArr = /* array from prior time mark make-shift array */
-    storedNotesArrSavedPageNotes[2].split(",");
+    storedNotesArrYouTubeSavedNotesToNotebox[2].split(",");
    let priorTimeArrLen = /* prep for loop */
     priorTimeArr.length; 
     
@@ -471,7 +484,7 @@ javascript:(function(){
    }
   } else {
    /* get current time spot of video */
-   extracTCurTime(timePreCalSavedPageNotes);
+   extracTCurTime(timePreCalYouTubeSavedNotesToNotebox);
 
    /* check if time mark area needs to be added */
    addTimeMarkArea();
@@ -482,7 +495,7 @@ javascript:(function(){
  };
  
  /* Focus on textarea whenever keydown occurs. */
- const keypressToNoteSavedPageNotes = () => {
+ const keypressToNoteYouTubeSavedNotesToNotebox = () => {
   let activeID = document.activeElement.id;
   let lastKeyPressSavedPageNotes; /* used to check for key combos */
   lastKeyPressSavedPageNotes = sessionStorage.getItem("lastKeyPressSavedPageNotes");
@@ -498,10 +511,10 @@ javascript:(function(){
 
   /* start conditions to activate note box or run function accordingly  */
   /* if any of these elements have focus */
-  /** ignoredDOMElementsSavedPageNotes = "comments search contenteditable-root playerSavedPageNotes"; **/
+  /** ignoredDOMElementsYouTubeSavedNotesToNotebox = "comments search contenteditable-root playerSavedPageNotes"; **/
   /* then don't take notes - note - variable defined at start */
-  for (i in ignoredDOMElementsSavedPageNotes) {
-   if (activeID == ignoredDOMElementsSavedPageNotes[i]) { 
+  for (i in ignoredDOMElementsYouTubeSavedNotesToNotebox) {
+   if (activeID == ignoredDOMElementsYouTubeSavedNotesToNotebox[i]) { 
     /* quit function  */
     return;
    } 
@@ -512,19 +525,19 @@ javascript:(function(){
     
    /* check key combos and run function accordingly */
    if (checkKeyCombo == "Control+Shift") {
-    noteBoxTakNotes.blur();    /* out of note box */
+    noteBoxTakeNotesYouTubeSavedNotesToNotebox.blur();    /* out of note box */
    } 
    /* add time marker adjacent to notes */
    else if (checkKeyCombo == "Control+m") {    
-    updateCurrentTime();
-    markTime();    
+    updateCurrentTimeYouTubeSavedNotesToNotebox();
+    markTimeYouTubeSavedNotesToNotebox();    
    } 
    /* select and copy notes to clipboard  */
    else if (checkKeyCombo == "Alt+a") {
-    copyNotesSavedPageNotes();
+    copyNotesYouTubeSavedNotesToNotebox();
    } else {
     /* only if note box is not active element */
-    if (activeID != "noteBoxTakNotes") {
+    if (activeID != "noteBox") {
      /* prevent fullscreen from occuring *//*
      **************************************
      NOTE - THIS DOES NOT WORK
@@ -535,11 +548,11 @@ javascript:(function(){
      **************************************
      ***************************************/
      /* USE VARIABLE FOR CONDITIONS */
-     let noIgnoredKeys = ignoredKeysSavedPageNotes.indexOf(event.key) == -1;
+     let noIgnoredKeys = ignoredKeysYouTubeSavedNotesToNotebox.indexOf(event.key) == -1;
      let notPauseShortcut = checkKeyCombo != "Shift+ ";
      if (noIgnoredKeys) {
       if (notPauseShortcut) {
-       noteBoxTakNotes.focus();
+       noteBoxTakeNotesYouTubeSavedNotesToNotebox.focus();
       }
      }
     }   
@@ -549,27 +562,14 @@ javascript:(function(){
   sessionStorage.setItem("lastKeyPressSavedPageNotes", event.key);
  };
  
- /* Begin taking notes. */
- noteBoxTakNotes.focus();
- 
  /* Quickly get back to notes */
- const addKeyDownSavedPageNotes = () => { 
+ const addKeyDownYouTubeSavedNotesToNotebox = () => { 
   document.body.addEventListener("keydown", 
-   function() { keypressToNoteSavedPageNotes(); }); 
+   function() { keypressToNoteYouTubeSavedNotesToNotebox(); }); 
  };
  
- const addKeyUpSavedPageNotes = () => { 
-  document.body.addEventListener("keyup", 
-   function() { keypressToNoteSavedPageNotes(); }); 
- };
- 
- /* Listen for keydonw event. */ 
- addKeyDownSavedPageNotes();
- 
- /**********************************************************************************
-  MAIN FUNCTION 
-  *********************************************************************************/
- function addSavedPageNotesToNotebox() {
+ /* Format and prior saved notes to note box. */
+ const addYouTubeSavedNotesToNotebox = () => {
   /* get the video title */
   let titlePar = document.getElementsByClassName("style-scope ytd-watch-metadata");
   let videoTitle = titlePar[0].innerText.replace(/\n.*/g,"");
@@ -599,25 +599,25 @@ javascript:(function(){
   if (storedNotes == null ||
       storedNotes == undefined) {
    alert("There are no saved notes for the current page.");
-   savedNotesTimeAdded = 1; /* run mark time as normal */
+   savedNotesTimeAddedYouTubeSavedNotesToNotebox = 1; /* run mark time as normal */
   } else {
-   storedNotesArrSavedPageNotes = storedNotes.split("--:--"); /* make saved notes array */
+   storedNotesArrYouTubeSavedNotesToNotebox = storedNotes.split("--:--"); /* make saved notes array */
    
    /* store previos notes */
-   let priorNotesTaken = storedNotesArrSavedPageNotes[1];
+   let priorNotesTaken = storedNotesArrYouTubeSavedNotesToNotebox[1];
    
-   noteBoxTakNotes.textContent = /* add prior notes to box */
-    storedNotesArrSavedPageNotes[0] + "\n" +  /* add heading for title and date         */
-    storedNotesArrSavedPageNotes[1].replace(/<br>/g, "\n");   /* replace with new lines */
+   noteBoxTakeNotesYouTubeSavedNotesToNotebox.textContent = /* add prior notes to box */
+    storedNotesArrYouTubeSavedNotesToNotebox[0] + "\n" +  /* add heading for title and date         */
+    storedNotesArrYouTubeSavedNotesToNotebox[1].replace(/<br>/g, "\n");   /* replace with new lines */
     
    /* check if time marks were saved */
-   if (!storedNotesArrSavedPageNotes[2] ||           /* was saved using prior bookmarklet */
-       storedNotesArrSavedPageNotes[2] == "empty") { /* no time marks from prior notes  */
-    savedNotesTimeAdded = 1; /* run mark time as normal */
+   if (!storedNotesArrYouTubeSavedNotesToNotebox[2] ||           /* was saved using prior bookmarklet */
+       storedNotesArrYouTubeSavedNotesToNotebox[2] == "empty") { /* no time marks from prior notes  */
+    savedNotesTimeAddedYouTubeSavedNotesToNotebox = 1; /* run mark time as normal */
    } else {
     /* add time marks from prior notes */
-    markTime();
-    savedNotesTimeAdded = 1; /* run mark time as normal */
+    markTimeYouTubeSavedNotesToNotebox();
+    savedNotesTimeAddedYouTubeSavedNotesToNotebox = 1; /* run mark time as normal */
    }   
    alert("PRIOR NOTE SESSION LOADED: \n\n" +
     "NOTE - type \"clear\" or \"delete\", then save to alter log " +
@@ -634,8 +634,48 @@ javascript:(function(){
     "\"delete\" \n" + "typed into the note box." + "and run bookmarklet " +
     "siteSpecific_YouTube_SavePageNotesToLocalStorage."
    );
-   noteBoxTakNotes.select();
+   noteBoxTakeNotesYouTubeSavedNotesToNotebox.select();
   }
+ }; 
+
+ /* Delay each function and ensure all runs correctly. */
+ const delayYouTubeSavedNotesToNotebox = (cur) => {
+  setTimeout(() => {
+   cur;
+  }, 50);
+ };
+ 
+ /*********************************************************************************************
+                                          MAIN FUNCTION
+ *********************************************************************************************/
+ function youTubeSavedNotesToNotebox() {
+  /* check and add note box if not present */
+  delayYouTubeSavedNotesToNotebox(
+   addNoteBoxYouTubeSavedNotesToNotebox()
+  );
+
+  /* redefine noteBoxTakeNotesYouTubeSavedNotesToNotebox */
+  delayYouTubeSavedNotesToNotebox(
+   noteBoxTakeNotesYouTubeSavedNotesToNotebox = document.getElementById("noteBox")
+  );
+  
+  /* begin taking notes */
+  delayYouTubeSavedNotesToNotebox(
+   noteBoxTakeNotesYouTubeSavedNotesToNotebox.focus()
+  );
+
+  /* listen for keydonw event */ 
+  delayYouTubeSavedNotesToNotebox(
+   addKeyDownYouTubeSavedNotesToNotebox()
+  );
+
+  /* add prior notes to created or current note box */
+  delayYouTubeSavedNotesToNotebox(
+   addYouTubeSavedNotesToNotebox()
+  );
  }
- addSavedPageNotesToNotebox();
+
+ /* Run bookmarklet. */
+ youTubeSavedNotesToNotebox();
+
 })();
