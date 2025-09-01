@@ -114,7 +114,9 @@ javascript:(function() {
  /* Get date of current notes. */
  var date = new Date(); 
  var theSaveDate = /* Append to video title when recalled */
-  date.getMonth() + "/" + date.getDate() + "/" + date.getFullYear();
+  Number(date.getMonth() + 1) + "/" + /* mind 0 indexing  */
+  date.getDate() + "/" + 
+  date.getFullYear();
   
  /* Start value of local storage with video url.      */
  var videoTitleAndSaveDate =   /* title and save date */ 
