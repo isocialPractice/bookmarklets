@@ -25,7 +25,7 @@ javascript:(function() {
  var noteBoxStyling = `
   div#noteBoxDomTakeVideoNotes {
    position: fixed;
-   z-index: 1;
+   z-index: 1000;
    left: 25%;
    bottom: 10px;
    max-width: 500px;
@@ -80,6 +80,21 @@ javascript:(function() {
  var textareaDomTakeVideoNotesID;   /* defined later */
  var textareaDomTakeVideoNotes = 0; /* when not taking notes allow fv to focus on video */
 
+ /* Instructions shown when run. */
+ var noteInstructionsDomTakeVideoNotes = `
+  TAKE VIDEO NOTES INSTRUCTIONS:\n\n
+   I. Taking Notes:\n
+    *************\n
+  - Start typing to take notes.\n
+  - Press 'Ctrl + Shift' to unfocus note box.\n
+  - Start typing again to take notes.\n
+  - When not taking notes, and video out of view \n
+    press f and v within 1 second of each other \n
+    to bring in view.
+  - Press 'Alt + a' to copy all in note box.\n
+  - To hide notes and have option to save click\n
+    the red button at top left of notes.\n\n`;
+
  /************************************* SUPPORT FUNCTIONS *************************************/
  /* Select and copy notes. */
  const copyNotesDomTakeVideoNotes = () => {
@@ -125,7 +140,7 @@ javascript:(function() {
    /* select and copy notes to clipboard  */
    else if (checkKeyCombo == "Alt+a") {
     copyNotesDomTakeVideoNotes();
-   } 
+   }
    else {
     /* only if note box is not active element */
     if (activeID != "textareaDomTakeVideoNotesID") {
@@ -198,7 +213,7 @@ javascript:(function() {
       block: "center"
      });
      return;
-    } 
+    }
    }
   };
 
@@ -280,7 +295,7 @@ javascript:(function() {
    /* insert and select newly inserted element */
    closeDomTakeVideoNotesID
    .insertAdjacentElement("afterend", showHideNoteBoxDomTakeVideoNotes);
-   
+
    let showHideNoteBoxDomTakeVideoNotesID =
     document.getElementById("showHideNoteBoxDomTakeVideoNotes");
 
@@ -305,7 +320,7 @@ javascript:(function() {
      this.dataset.showhide = "0";
      this.innerText = "x";
      this.nextElementSibling.style.display = "";
-     textareaDomTakeVideoNotesID.focus(); 
+     textareaDomTakeVideoNotesID.focus();
      textareaDomTakeVideoNotes = 1;
     }
    });
@@ -317,13 +332,13 @@ javascript:(function() {
 
     /* begin taking notes */
     textareaDomTakeVideoNotes.focus();
-    
+
     /* turn on text box focus indicator */
     textareaDomTakeVideoNotes = 1;
 
     /* allow video to be scrolled back into view */
     scrollToVideoTakeVideoNotes();
-    
+
     /* listen for keydonw event */
     addKeyDownDomTakeVideoNotes();
    }
@@ -339,23 +354,10 @@ javascript:(function() {
 
   /* Prompt with instructions if turned on - variable at top is 1. */
   if (promptInstructionsDomTakeVideoNotes == 1) {
-   alert(`TAKE VIDEO NOTES INSTRUCTIONS:\n\n
-   I. Taking Notes:\n
-    *************\n\n
-  - Start typing to take notes.\n
-  - Press 'Ctrl + Shift' to unfocus note box.\n
-  - Start typing again to take notes.\n
-  - When not taking notes, and video out of view \n
-    press f and v within 1 second of each other \n
-    to bring in view.
-  - Press 'Alt + a' to copy all in note box.\n
-  - To hide notes and have option to save click\n
-    the red button at top left of notes.\n\n
-   `
-   );
+   alert(noteInstructionsDomTakeVideoNotes);
   }
  }
- 
+
  /*************************************************
                      MAYBE LATER
   *************************************************
