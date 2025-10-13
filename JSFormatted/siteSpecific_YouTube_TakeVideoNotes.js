@@ -1,4 +1,8 @@
 javascript:(function(){ 
+ /* Config variables. */
+ var heightTakeVideoNotes = /* set initial height for notes */
+  "50px";
+  
  /* Global DOM variables */
  var noteAreaTakeNotesIDTakeNotes =  /* parent for note elements */
   document.getElementById("noteAreaTakeNotes");
@@ -81,7 +85,7 @@ javascript:(function(){
   textarea#noteBoxTakNotes {
    max-width: 450px;  
    width: 450px;
-   height: 100px; 
+   height: ${heightTakeVideoNotes}; 
    padding: 10px;
    border-radius: 10px;
   }
