@@ -1,4 +1,7 @@
 javascript:(function(){ 
+ /* Config variables. */
+ var heightSavedPageNotesToNotebox = /* set initial height for notes */
+  "50px";
  /* Global DOM variables */
  var noteAreaYouTubeSavedNotesToNotebox = /* parent for note elements */
   document.getElementById("noteArea");
@@ -85,7 +88,7 @@ javascript:(function(){
    textarea#noteBox {
     max-width: 450px;  
     width: 450px;
-    height: 100px; 
+    height: ${heightSavedPageNotesToNotebox}; 
     padding: 10px;
     border-radius: 10px;
    }
