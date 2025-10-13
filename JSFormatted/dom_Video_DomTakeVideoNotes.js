@@ -5,6 +5,8 @@ javascript:(function() {
  var allowKeyPressDomTakeVideoNotes = 1;      /* use key press events   */
 
  /* CONFIG VARIABLES */
+ var heightDomTakeVideoNotes = /* set initial height for notes */
+  "100px";
  var ignoredKeysDomTakeVideoNotes = /* keys pressed that do not active not box */
   "Home End PageUp PageDown ArrowUp ArrowRight ArrowDown ArrowLeft f v k";
 
@@ -58,7 +60,7 @@ javascript:(function() {
    resize: both !important;
    overflow: auto;
    transform: rotateX(180deg);
-   height: 200px;
+   height: ${heightDomTakeVideoNotes};
    width: 600px;
    padding: 0px;
   }
