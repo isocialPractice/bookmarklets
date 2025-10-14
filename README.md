@@ -31,6 +31,7 @@
   - [YouTube - Add Time Marks](#youtube---add-time-marks) - ready to use
   - [YouTube - Darken Bottom Controls](#youtube---darken-bottom-controls) - ready to use 
   - [YouTube - Dynamic History Search](#youtube---dynamic-history-search) - ready to use 
+  - [You Tube Hide Short History](#you-tube-hide-short-history) - ready to use
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use 
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use 
   - [YouTube - Show Short Release Date](#youtube---show-short-release-date) - ready to use 
@@ -977,6 +978,58 @@ javascript:(function() { /* Config variables. */ var hideShorts = 1; /* 1 = hide
 </details>
 </dd></dl></dd></dl>
 
+You Tube Hide Short History: 
+----
+<dl><dd><dl><dd>
+
+Hide short watch history on YouTube history feed. <br><br>
+
+<!------------------------------------------
+Hide short history on history feed. Works with:
+
+1. Focus - What it Does
+-------------------------------------------->
+
+<strong>USE - ready to use</strong>
+
+<!------------------------------------------
+<strong>USE - requires [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>USE - optional [x] change(s)</strong>
+-------------------------------------------->
+
+<!------------------------------------------
+[Loosely] [b]Based on [SITE_NAME](REF_LINK)
+-------------------------------------------->
+
+<details>
+
+<summary>siteSpecific_YouTube_HideShortHistory.js</summary><br>
+
+<!------------------------------------------
+<strong>Required Changes\(x1\)</strong>
+ 1. QUICK_DESCRIPTION
+-------------------------------------------->
+
+<!------------------------------------------
+<strong>Optional Changes\(x2\)</strong> 
+ 1. QUICK_DESCRIPTION            
+ 2. QUICK_DESCRIPTION            
+-------------------------------------------->
+
+<!-- PASTE VIDEO HERE -->
+
+
+Gist page for [siteSpecific_YouTube_HideShortHistory.js](https://gist.github.com/jhauga/f7be2360de10033c2bccfc8cec76b23c)
+
+```markdown
+javascript:(function() { /* Global variables. */ var shortParentHideShortHistroy = /* select parent tag of short history */ "ytd-reel-shelf-renderer"; var docBodyHideShortHistory = /* select the documen body tag */ document.getElementsByTagName("body"); var styleHideShortHistory = /* style to add to page */ ` ${shortParentHideShortHistroy} { display: none; } `; /* To ensure current page in browse is youtube history */ var currentPageHideShortHistory = location.href.toLowerCase(); var historyHideShortHistory = /* ensure on history page */ "youtube.com/feed/history"; /************************************* SUPPORT FUNCTIONS *************************************/ /* Ensure current page is youtube history. */ const checkIfYouTubeHistoryHideShortHistory = () => { if (currentPageHideShortHistory.indexOf(historyHideShortHistory) > -1) { return true; } else { return false; } }; /* Add style element to page. */ const addStyleTagHideShortHistory = () => { let doc = docBodyHideShortHistory[0]; /* body element */ let sTag = document.createElement("style"); /* create sytle tag */ sTag.innerText = styleHideShortHistory; /* use data from variable */ /* insert into page */ doc.insertAdjacentElement("afterbegin", sTag); }; /********************************************************************************************* MAIN FUNCTION *********************************************************************************************/ function hideShortHistory() { /* check if current page is history feed */ if (checkIfYouTubeHistoryHideShortHistory() == true) { /* on history continue bookmarklet */ setTimeout(addStyleTagHideShortHistory, 100); /* delay a bit */ } else { /* do nothing */ let skip; } } /* Call main function. */ hideShortHistory();})();
+```
+</details>
+</dd></dl></dd></dl>
+
 YouTube - Save Page Notes to Local Storage: 
 ----
 <dl><dd><dl><dd>
@@ -1573,5 +1626,5 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 
 <hr><br>
 
-
 <!---------------------------------------- END OF FILE ----------------------------------------->
+    
