@@ -143,15 +143,24 @@ javascript:(function(){
  /* Redefine noteBoxTakNotes */
  noteBoxTakNotes = document.getElementById("noteBoxTakNotes");
  
- /***** SUPPORT FUNCTIONS *****/
+ /************************************* SUPPORT FUNCTIONS *************************************/ 
  /* Copy notes in textare to clipboard. */
- function copyNotesTakeNotes() {
+ const copyNotesTakeNotes = () => {
   noteBoxTakNotes.select();
   navigator.clipboard.writeText(noteBoxTakNotes.value);
- }
+ };
  
+ /* Check that another key is not pressed down before moving cursor outside of notebox. */
+ const checkKeydownYouTubeTakeVideoNotes = () => {
+  if (event.key == "Shift" || event.key == "Control") {
+   return true;
+  } else {
+   return false;
+  }
+ };
+
  /* Focus on textarea whenever keydown occurs. */
- function keypressToNoteTakeNotes() {
+ const keypressToNoteTakeNotes = () => {
   let activeID = document.activeElement.id;
   let lastKeyPressTakeNotes; /* used to check for key combos */
   lastKeyPressTakeNotes = sessionStorage.getItem("lastKeyPressTakeNotes");
@@ -180,7 +189,8 @@ javascript:(function(){
     lastKeyPressTakeNotes + "+" + currentKeyPress;
     
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift") {
+   if (checkKeyCombo == "Control+Shift" && 
+       checkKeydownYouTubeTakeVideoNotes() == true) {
     noteBoxTakNotes.blur();    /* out of note box */
    }
    /* select and copy notes to clipboard  */
@@ -211,20 +221,34 @@ javascript:(function(){
   }
   /* store key press for next key combo check */
   sessionStorage.setItem("lastKeyPressTakeNotes", event.key);
- } 
- 
- /* Begin taking notes. */
- noteBoxTakNotes.focus();
- 
+ };
+
  /* Quickly get back to notes */
- const addKeyDownTakeNotes = () => { document.body.addEventListener("keydown", function() {
-  keypressToNoteTakeNotes();  
+ const addKeyDownTakeNotes = () => { 
+  document.body.addEventListener("keydown", function() {
+   keypressToNoteTakeNotes();  
   }); 
  }; 
- const addKeyUpTakeNotes = () => { document.body.addEventListener("keyup", function() {
-  keypressToNoteTakeNotes();
+ const addKeyUpTakeNotes = () => { 
+  document.body.addEventListener("keyup", function() {
+   checkKeydownYouTubeTakeVideoNotes();
   }); 
  };
- /* Listen for keydonw event. */ 
- addKeyDownTakeNotes();
+ 
+ /*********************************************************************************************
+                                          MAIN FUNCTION
+ *********************************************************************************************/
+ function takeVideoNotes() {
+  /* begin taking notes */
+  noteBoxTakNotes.focus();
+
+  /* listen for keydown event */ 
+  addKeyDownTakeNotes();
+
+  /* listen for keyup event   */
+  addKeyUpTakeNotes();
+ }
+
+ /* Call main function. */
+ takeVideoNotes();
 })();

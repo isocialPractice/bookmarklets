@@ -8,7 +8,7 @@ javascript:(function() {
  var heightDomTakeVideoNotes = /* set initial height for notes */
   "100px";
  var ignoredKeysDomTakeVideoNotes = /* keys pressed that do not active not box */
-  "Home End PageUp PageDown ArrowUp ArrowRight ArrowDown ArrowLeft f v k";
+  "Home End PageUp PageDown ArrowUp ArrowDown f v k";
 
  /* Set max height and width that note box can be sest to. */
  var maxWidthDomTakeVideoNotes = "1000px";
@@ -86,12 +86,12 @@ javascript:(function() {
  var noteInstructionsDomTakeVideoNotes = `
   TAKE VIDEO NOTES INSTRUCTIONS:\n\n
    I. Taking Notes:\n
-    *************\n
+    ***************\n
   - Start typing to take notes.\n
   - Press 'Ctrl + Shift' to unfocus note box.\n
   - Start typing again to take notes.\n
   - When not taking notes, and video out of view \n
-    press f and v within 1 second of each other \n
+    press ' f ' and ' v ' within 1 second of each other \n
     to bring in view.
   - Press 'Alt + a' to copy all in note box.\n
   - To hide notes and have option to save click\n
@@ -102,6 +102,15 @@ javascript:(function() {
  const copyNotesDomTakeVideoNotes = () => {
   textareaDomTakeVideoNotesID.select();
   navigator.clipboard.writeText(textareaDomTakeVideoNotesID.value);
+ };
+
+ /* Check that another key is not pressed down before moving cursor outside of notebox. */
+ const checkKeydownDOMTakeVideoNotes = () => {
+  if (event.key == "Shift" || event.key == "Control") {
+   return true;
+  } else {
+   return false;
+  }
  };
 
  /* Focus on textarea whenever keydown occurs. */
@@ -135,7 +144,8 @@ javascript:(function() {
    lastKeyPressDomTakeVideoNotes + "+" + currentKeyPress;
 
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift") {
+   if (checkKeyCombo == "Control+Shift" && 
+       checkKeydownDOMTakeVideoNotes() == true) {
     textareaDomTakeVideoNotesID.blur();  /* out of note box */
     textareaDomTakeVideoNotes = 0;   /* allow video focus combo */
    }
@@ -167,14 +177,14 @@ javascript:(function() {
 
  /* Quickly get back to notes */
  const addKeyDownDomTakeVideoNotes = () => {
-  document.body.addEventListener("keydown", function() {
-   keypressToNoteDomTakeVideoNotes();
+  document.body.addEventListener("keydown", 
+   function() {
+    keypressToNoteDomTakeVideoNotes();
   });
- };
- const addKeyUpDomTakeVideoNotes = () => {
-  document.body.addEventListener("keyup", function() {
-   keypressToNoteDomTakeVideoNotes();
-  });
+  document.body.addEventListener("keyup",
+   function() {
+    checkKeydownDOMTakeVideoNotes();  
+   });
  };
 
  /* Put video into focus if scrolling and not in view. */

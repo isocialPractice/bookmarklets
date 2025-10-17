@@ -228,7 +228,7 @@ javascript:(function(){
   noteBox = document.getElementById("noteBox");
  };
 
- /* Copy notes in textare to clipboard. */
+ /* Copy notes in textarea to clipboard. */
  const copyNotesYouTubeTakeNotesAndAddTimeMarks = () => {
   noteBox.select();
   navigator.clipboard.writeText(noteBox.value);
@@ -259,7 +259,7 @@ javascript:(function(){
   lastKeyPress = sessionStorage.getItem("lastKeyPress");
   
   /* for first key press */
-  if (lastKeyPress == null) { 
+  if (lastKeyPress == null) {
    sessionStorage.setItem("lastKeyPress", event.key);
    lastKeyPress = sessionStorage.getItem("lastKeyPress");
   }
@@ -282,7 +282,8 @@ javascript:(function(){
     lastKeyPress + "+" + currentKeyPress;
     
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift") {
+   if (checkKeyCombo == "Control+Shift" && 
+       checkKeydownYouTubeTakeNotesAndAddTimeMarks() == true) {
     noteBox.blur();    /* out of note box */
    } 
    /* add time marker adjacent to notes */
@@ -321,6 +322,15 @@ javascript:(function(){
   sessionStorage.setItem("lastKeyPress", event.key);
  }; 
   
+ /* Check that another key is not pressed down before moving cursor outside of notebox. */
+ const checkKeydownYouTubeTakeNotesAndAddTimeMarks = () => {
+  if (event.key == "Shift" || event.key == "Control") {
+   return true;
+  } else {
+   return false;
+  }
+ };
+
  /* Add time mark button to the right of textarea. */
  const markTimeYouTubeTakeNotesAndAddTimeMarks = () => {  
   noteBox.blur(); /* quickly deactivate note box */
@@ -465,10 +475,16 @@ javascript:(function(){
    
  /* Quickly get back to notes */
  const addKeyDownYouTubeTakeNotesAndAddTimeMarks = () => { 
+  /* check the key combo and handle action accordingly */
   document.body.addEventListener("keydown", 
    function() {
     keypressToNoteYouTubeTakeNotesAndAddTimeMarks();  
-   }); 
+   });
+  /* ensures that key combo is not keyboard shorcut like `Shift + Ctrl + <- | ->` */
+  document.body.addEventListener("keyup", 
+   function() {
+    checkKeydownYouTubeTakeNotesAndAddTimeMarks();  
+   });
  }; 
    
  /*********************************************************************************************

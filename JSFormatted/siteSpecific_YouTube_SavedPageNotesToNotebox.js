@@ -497,6 +497,15 @@ javascript:(function(){
   }
  };
  
+ /* Check that another key is not pressed down before moving cursor outside of notebox. */
+ const checkKeydownYouTubeNotesToNotebox = () => {
+  if (event.key == "Shift" || event.key == "Control") {
+   return true;
+  } else {
+   return false;
+  }
+ };
+
  /* Focus on textarea whenever keydown occurs. */
  const keypressToNoteYouTubeSavedNotesToNotebox = () => {
   let activeID = document.activeElement.id;
@@ -527,7 +536,8 @@ javascript:(function(){
     lastKeyPressSavedPageNotes + "+" + currentKeyPress;
     
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift") {
+   if (checkKeyCombo == "Control+Shift" && 
+       checkKeydownYouTubeNotesToNotebox() == true) {
     noteBoxTakeNotesYouTubeSavedNotesToNotebox.blur();    /* out of note box */
    } 
    /* add time marker adjacent to notes */
@@ -568,7 +578,13 @@ javascript:(function(){
  /* Quickly get back to notes */
  const addKeyDownYouTubeSavedNotesToNotebox = () => { 
   document.body.addEventListener("keydown", 
-   function() { keypressToNoteYouTubeSavedNotesToNotebox(); }); 
+   function() { 
+    keypressToNoteYouTubeSavedNotesToNotebox(); 
+  }); 
+  document.body.addEventListener("keyup", 
+   function() {
+    checkKeydownYouTubeNotesToNotebox();  
+   });
  };
  
  /* Format and prior saved notes to note box. */
