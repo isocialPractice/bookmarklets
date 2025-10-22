@@ -251,7 +251,96 @@ javascript:(function(){
   /* extract time and calculate in seconds */
   timePreCal = curTimeElementText.split(":");    
  };
-  
+ 
+ /* Check if Control and Shift are sequentially keyup and keydown under 1 second. */
+ const checkCtrlShiftYouTubeTakeNotesTimeMarks = (ms = 750) => {
+  return new Promise(resolve => {
+   let ctrlPressed = false;
+   let ctrlReleased = false;
+   let shiftPressed = false;
+   let shiftReleased = false;
+   let deadline = 0;
+   let timeoutId = null;
+
+   function cleanup(result) {
+    document.removeEventListener('keydown', onKeyDown, true);
+    document.removeEventListener('keyup', onKeyUp, true);
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    resolve(!!result);
+   }
+
+   function startTimeout() {
+    /* start or restart the timeout for the shift window */
+    if (timeoutId) clearTimeout(timeoutId);
+    deadline = Date.now() + ms;
+    timeoutId = setTimeout(() => {
+     /* timed out waiting for shift sequence */
+     cleanup(false);
+    }, ms);
+   }
+
+   function onKeyDown(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* ctrl pressed */
+     ctrlPressed = true;
+    } else if (k === 'Shift') {
+     /* only pay attention to shift if ctrl has already been released */
+     if (ctrlReleased && !shiftPressed) {
+      shiftPressed = true;
+     }
+    }
+   }
+
+   function onKeyUp(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* only consider a ctrl "release" if it was pressed first */
+     if (ctrlPressed) {
+      ctrlPressed = false;
+      ctrlReleased = true;
+      startTimeout();
+     }
+    } else if (k === 'Shift') {
+     /* only consider shift release if we saw a shift press after ctrl release */
+     if (shiftPressed) {
+      shiftPressed = false;
+      shiftReleased = true;
+
+      /* check timing and that neither key is currently held down */
+      const withinTime = Date.now() <= deadline;
+      const ctrlStillHeld = ctrlPressed;  /* should be false */
+      const shiftStillHeld = shiftPressed; /* should be false */
+
+      if (withinTime && !ctrlStillHeld && !shiftStillHeld) {
+       cleanup(true);
+      } else {
+       cleanup(false);
+      }
+     }
+    }
+   }
+
+   /* attach capturing listeners so they catch keys even if elements stop propagation */
+   document.addEventListener('keydown', onKeyDown, true);
+   document.addEventListener('keyup', onKeyUp, true);
+
+   /* safety: if nothing happens for (ms + 1000) ms, give up */
+   const globalTimeout = setTimeout(() => {
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    cleanup(false);
+   }, ms + 1000);
+
+   /* ensure the safety timeout cleared on final cleanup */
+   const origCleanup = cleanup;
+   cleanup = function(result) {
+    clearTimeout(globalTimeout);
+    origCleanup(result);
+   };
+  });
+ };
+
+
  /* Apply key combos and handle actions accordingly. */
  const keypressToNoteYouTubeTakeNotesAndAddTimeMarks = () => {
   let activeID = document.activeElement.id;
@@ -282,12 +371,20 @@ javascript:(function(){
     lastKeyPress + "+" + currentKeyPress;
     
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift" && 
-       checkKeydownYouTubeTakeNotesAndAddTimeMarks() == true) {
-    noteBox.blur();    /* out of note box */
-   } 
+   checkCtrlShiftYouTubeTakeNotesTimeMarks(750).then((ok) => {
+    /* checkKeyCombo = "Control Shift" */
+    if (ok) {
+     noteBox.blur(); 
+    } else {
+     let skip;
+    }
+  });
+
+   /* if (checkKeyCombo == "Control Shift") {
+    noteBox.blur(); 
+   }  */
    /* add time marker adjacent to notes */
-   else if (checkKeyCombo == "Control+m") {    
+   if (checkKeyCombo == "Control+m") {    
     updateCurrentTimeYouTubeTakeNotesAndAddTimeMarks();
     markTimeYouTubeTakeNotesAndAddTimeMarks();    
    }  
