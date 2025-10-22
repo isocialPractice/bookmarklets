@@ -497,13 +497,92 @@ javascript:(function(){
   }
  };
  
- /* Check that another key is not pressed down before moving cursor outside of notebox. */
- const checkKeydownYouTubeNotesToNotebox = () => {
-  if (event.key == "Shift" || event.key == "Control") {
-   return true;
-  } else {
-   return false;
-  }
+ /* Check if Control and Shift are sequentially keyup and keydown under 1 second. */
+ const checkCtrlShiftYouTubeSavedNotesToNotebox = (ms = 750) => {
+  return new Promise(resolve => {
+   let ctrlPressed = false;
+   let ctrlReleased = false;
+   let shiftPressed = false;
+   let shiftReleased = false;
+   let deadline = 0;
+   let timeoutId = null;
+
+   function cleanup(result) {
+    document.removeEventListener('keydown', onKeyDown, true);
+    document.removeEventListener('keyup', onKeyUp, true);
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    resolve(!!result);
+   }
+
+   function startTimeout() {
+    /* start or restart the timeout for the shift window */
+    if (timeoutId) clearTimeout(timeoutId);
+    deadline = Date.now() + ms;
+    timeoutId = setTimeout(() => {
+     /* timed out waiting for shift sequence */
+     cleanup(false);
+    }, ms);
+   }
+
+   function onKeyDown(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* ctrl pressed */
+     ctrlPressed = true;
+    } else if (k === 'Shift') {
+     /* only pay attention to shift if ctrl has already been released */
+     if (ctrlReleased && !shiftPressed) {
+      shiftPressed = true;
+     }
+    }
+   }
+
+   function onKeyUp(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* only consider a ctrl "release" if it was pressed first */
+     if (ctrlPressed) {
+      ctrlPressed = false;
+      ctrlReleased = true;
+      startTimeout();
+     }
+    } else if (k === 'Shift') {
+     /* only consider shift release if we saw a shift press after ctrl release */
+     if (shiftPressed) {
+      shiftPressed = false;
+      shiftReleased = true;
+
+      /* check timing and that neither key is currently held down */
+      const withinTime = Date.now() <= deadline;
+      const ctrlStillHeld = ctrlPressed;  /* should be false */
+      const shiftStillHeld = shiftPressed; /* should be false */
+
+      if (withinTime && !ctrlStillHeld && !shiftStillHeld) {
+       cleanup(true);
+      } else {
+       cleanup(false);
+      }
+     }
+    }
+   }
+
+   /* attach capturing listeners so they catch keys even if elements stop propagation */
+   document.addEventListener('keydown', onKeyDown, true);
+   document.addEventListener('keyup', onKeyUp, true);
+
+   /* safety: if nothing happens for (ms + 1000) ms, give up */
+   const globalTimeout = setTimeout(() => {
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    cleanup(false);
+   }, ms + 1000);
+
+   /* ensure the safety timeout cleared on final cleanup */
+   const origCleanup = cleanup;
+   cleanup = function(result) {
+    clearTimeout(globalTimeout);
+    origCleanup(result);
+   };
+  });
  };
 
  /* Focus on textarea whenever keydown occurs. */
@@ -536,12 +615,17 @@ javascript:(function(){
     lastKeyPressSavedPageNotes + "+" + currentKeyPress;
     
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift" && 
-       checkKeydownYouTubeNotesToNotebox() == true) {
-    noteBoxTakeNotesYouTubeSavedNotesToNotebox.blur();    /* out of note box */
-   } 
+   checkCtrlShiftYouTubeSavedNotesToNotebox(750).then((ok) => {
+    /* checkKeyCombo = "Control Shift" */
+    if (ok) {
+     noteBox.blur(); 
+    } else {
+     let skip; /* do nothing */
+    }
+  });
+
    /* add time marker adjacent to notes */
-   else if (checkKeyCombo == "Control+m") {    
+   if (checkKeyCombo == "Control+m") {    
     updateCurrentTimeYouTubeSavedNotesToNotebox();
     markTimeYouTubeSavedNotesToNotebox();    
    } 
@@ -580,11 +664,7 @@ javascript:(function(){
   document.body.addEventListener("keydown", 
    function() { 
     keypressToNoteYouTubeSavedNotesToNotebox(); 
-  }); 
-  document.body.addEventListener("keyup", 
-   function() {
-    checkKeydownYouTubeNotesToNotebox();  
-   });
+  });
  };
  
  /* Format and prior saved notes to note box. */

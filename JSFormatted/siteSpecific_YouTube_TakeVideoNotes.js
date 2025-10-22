@@ -1,37 +1,37 @@
-javascript:(function(){ 
+javascript:(function(){
  /* Config variables. */
  var heightTakeVideoNotes = /* set initial height for notes */
   "50px";
-  
+
  /* Global DOM variables */
  var noteAreaTakeNotesIDTakeNotes =  /* parent for note elements */
   document.getElementById("noteAreaTakeNotes");
- 
+
  var noteBoxTakNotes =               /* textare element for taking notes */
   document.getElementById("noteBoxTakNotes");
- 
+
  var closeNoteBoxTakeNotes =         /* Close notebox element */
   document.getElementById("closeNoteBoxTakeNotes");
- 
+
  var aboveTheFoldTakeNotes =         /* html after vidoe box */
   document.getElementById("above-the-fold");
- 
+
  var playerTakeNotes =               /* video playerTakeNotes topmost parent */
-  document.getElementById("player"); 
- 
+  document.getElementById("player");
+
  var playButtonTakeNotes =           /* play button - needed to update time mark */
   document.getElementsByClassName("ytp-play-button");
- 
+
  var currentTimeClassNameTakeNotes = /* class element with current time */
-  "ytp-time-current"; 
- 
+  "ytp-time-current";
+
  /* Global configuration variables */
  var ignoredKeysTakeNotes =          /* keys pressed that do not active not box */
-  "Home End PageUp PageDown"; 
- 
+  "Home End PageUp PageDown";
+
  var ignoredDOMElementsTakeNotes =   /* stop function if one of these is active */
-  ["comments", "search", "contenteditable-root", "player"]; 
- 
+  ["comments", "search", "contenteditable-root", "player"];
+
  /* CSS style sheet */
  {
  var noteCSSTakeNotes = `
@@ -68,7 +68,7 @@ javascript:(function(){
    width: 100%;
   }
   div #noteAreaTakeNotes div {
-   display: inline-block; 
+   display: inline-block;
    position: relative;
    margin: 0px 10px;
    max-width: 450px;
@@ -79,59 +79,59 @@ javascript:(function(){
    position: relative;
    max-width: 800px;
    width: auto !important;
-   left: 0px; 
+   left: 0px;
   }
   /* style note box with constant style */
   textarea#noteBoxTakNotes {
-   max-width: 450px;  
+   max-width: 450px;
    width: 450px;
-   height: ${heightTakeVideoNotes}; 
+   height: ${heightTakeVideoNotes};
    padding: 10px;
    border-radius: 10px;
   }
 `;
   }
  /* Note box setup. */
- var noteTextAreaTakeNotes, noteAreaTakeNotes, noteBoxTakNotesDiv, 
+ var noteTextAreaTakeNotes, noteAreaTakeNotes, noteBoxTakNotesDiv,
      closeNoteBoxTakeNotesBtn, closeCheckbox;
  if (!noteAreaTakeNotesIDTakeNotes) {
   /* are for notes */
   noteAreaTakeNotes = document.createElement("div");
-  noteAreaTakeNotes.id = "noteAreaTakeNotes";   
-  aboveTheFoldTakeNotes.insertAdjacentElement("beforebegin", noteAreaTakeNotes); 
-  
+  noteAreaTakeNotes.id = "noteAreaTakeNotes";
+  aboveTheFoldTakeNotes.insertAdjacentElement("beforebegin", noteAreaTakeNotes);
+
   let noteStyle =         /* using noteCSSTakeNotes from above */
-   document.createElement("style"); 
-  
+   document.createElement("style");
+
   noteStyle.textContent = /* add css properties */
-   noteCSSTakeNotes;        
-  
+   noteCSSTakeNotes;
+
   noteAreaTakeNotes.insertAdjacentElement("beforebegin", noteStyle);
   noteAreaTakeNotesIDTakeNotes = document.getElementById("noteAreaTakeNotes");
-  
+
   /* note box */
-  noteTextAreaTakeNotes = document.createElement("textarea"); 
-  noteTextAreaTakeNotes.id = "noteBoxTakNotes"; 
+  noteTextAreaTakeNotes = document.createElement("textarea");
+  noteTextAreaTakeNotes.id = "noteBoxTakNotes";
   noteBoxTakNotesDiv = document.createElement("div");
-  
+
   /* insert div to hold textarea */
   noteAreaTakeNotesIDTakeNotes.insertAdjacentElement("afterbegin", noteBoxTakNotesDiv);
-  
+
   /* insert textare html elements to take notes */
-  noteBoxTakNotesDiv.insertAdjacentElement("afterbegin", noteTextAreaTakeNotes); 
-  
+  noteBoxTakNotesDiv.insertAdjacentElement("afterbegin", noteTextAreaTakeNotes);
+
   /* close buttnon */
   closeNoteBoxTakeNotesBtn = document.createElement("button");
   closeNoteBoxTakeNotesBtn.id = "closeNoteBoxTakeNotesBtn";
   noteStyle.insertAdjacentElement("afterend", closeNoteBoxTakeNotesBtn);
   closeNoteBoxTakeNotesBtn.textContent = "X";
-  
+
   /* get id of button to close note area - enables this to work with timemarks */
-  let closeBtnIDTakeNotes = document.getElementById("closeNoteBoxTakeNotesBtn");    
+  let closeBtnIDTakeNotes = document.getElementById("closeNoteBoxTakeNotesBtn");
   /* alternate close button status */
   closeBtnIDTakeNotes.addEventListener("click", function() {
    if (this.textContent == "X") {
-    this.className = "hideNotesTakeNotes"; /* hide note area with css rules    */     
+    this.className = "hideNotesTakeNotes"; /* hide note area with css rules    */
     this.textContent = "O";                /* switch hiding note area          */
    } else {
     this.className = "";                   /* show note area with css rules    */
@@ -139,17 +139,17 @@ javascript:(function(){
    }
   });
  }
- 
+
  /* Redefine noteBoxTakNotes */
  noteBoxTakNotes = document.getElementById("noteBoxTakNotes");
- 
- /************************************* SUPPORT FUNCTIONS *************************************/ 
+
+ /************************************* SUPPORT FUNCTIONS *************************************/
  /* Copy notes in textare to clipboard. */
  const copyNotesTakeNotes = () => {
   noteBoxTakNotes.select();
   navigator.clipboard.writeText(noteBoxTakNotes.value);
  };
- 
+
  /* Check that another key is not pressed down before moving cursor outside of notebox. */
  const checkKeydownYouTubeTakeVideoNotes = () => {
   if (event.key == "Shift" || event.key == "Control") {
@@ -159,18 +159,106 @@ javascript:(function(){
   }
  };
 
+ /* Check if Control and Shift are sequentially keyup and keydown under 1 second. */
+ const checkCtrlShiftYouTubeTakeVideoNotes = (ms = 750) => {
+  return new Promise(resolve => {
+   let ctrlPressed = false;
+   let ctrlReleased = false;
+   let shiftPressed = false;
+   let shiftReleased = false;
+   let deadline = 0;
+   let timeoutId = null;
+
+   function cleanup(result) {
+    document.removeEventListener('keydown', onKeyDown, true);
+    document.removeEventListener('keyup', onKeyUp, true);
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    resolve(!!result);
+   }
+
+   function startTimeout() {
+    /* start or restart the timeout for the shift window */
+    if (timeoutId) clearTimeout(timeoutId);
+    deadline = Date.now() + ms;
+    timeoutId = setTimeout(() => {
+     /* timed out waiting for shift sequence */
+     cleanup(false);
+    }, ms);
+   }
+
+   function onKeyDown(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* ctrl pressed */
+     ctrlPressed = true;
+    } else if (k === 'Shift') {
+     /* only pay attention to shift if ctrl has already been released */
+     if (ctrlReleased && !shiftPressed) {
+      shiftPressed = true;
+     }
+    }
+   }
+
+   function onKeyUp(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* only consider a ctrl "release" if it was pressed first */
+     if (ctrlPressed) {
+      ctrlPressed = false;
+      ctrlReleased = true;
+      startTimeout();
+     }
+    } else if (k === 'Shift') {
+     /* only consider shift release if we saw a shift press after ctrl release */
+     if (shiftPressed) {
+      shiftPressed = false;
+      shiftReleased = true;
+
+      /* check timing and that neither key is currently held down */
+      const withinTime = Date.now() <= deadline;
+      const ctrlStillHeld = ctrlPressed;  /* should be false */
+      const shiftStillHeld = shiftPressed; /* should be false */
+
+      if (withinTime && !ctrlStillHeld && !shiftStillHeld) {
+       cleanup(true);
+      } else {
+       cleanup(false);
+      }
+     }
+    }
+   }
+
+   /* attach capturing listeners so they catch keys even if elements stop propagation */
+   document.addEventListener('keydown', onKeyDown, true);
+   document.addEventListener('keyup', onKeyUp, true);
+
+   /* safety: if nothing happens for (ms + 1000) ms, give up */
+   const globalTimeout = setTimeout(() => {
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    cleanup(false);
+   }, ms + 1000);
+
+   /* ensure the safety timeout cleared on final cleanup */
+   const origCleanup = cleanup;
+   cleanup = function(result) {
+    clearTimeout(globalTimeout);
+    origCleanup(result);
+   };
+  });
+ };
+
  /* Focus on textarea whenever keydown occurs. */
  const keypressToNoteTakeNotes = () => {
   let activeID = document.activeElement.id;
   let lastKeyPressTakeNotes; /* used to check for key combos */
   lastKeyPressTakeNotes = sessionStorage.getItem("lastKeyPressTakeNotes");
-  
+
   /* for first key press */
-  if (lastKeyPressTakeNotes == null) { 
+  if (lastKeyPressTakeNotes == null) {
    sessionStorage.setItem("lastKeyPressTakeNotes", event.key);
    lastKeyPressTakeNotes = sessionStorage.getItem("lastKeyPressTakeNotes");
   }
-  
+
   /* store key press and check active element */
   let currentKeyPress = event.key;
 
@@ -179,22 +267,26 @@ javascript:(function(){
   /** ignoredDOMElementsTakeNotes = "comments search contenteditable-root playerTakeNotes"; **/
   /* then don't take notes - note - variable defined at start */
   for (i in ignoredDOMElementsTakeNotes) {
-   if (activeID == ignoredDOMElementsTakeNotes[i]) { 
+   if (activeID == ignoredDOMElementsTakeNotes[i]) {
     /* quit function  */
     return;
-   } 
+   }
   } /* else */
   { /* the active element is not in ignored list, run function */
    let checkKeyCombo = /* check for combos */
     lastKeyPressTakeNotes + "+" + currentKeyPress;
     
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift" && 
-       checkKeydownYouTubeTakeVideoNotes() == true) {
-    noteBoxTakNotes.blur();    /* out of note box */
-   }
+   checkCtrlShiftYouTubeTakeVideoNotes(750).then((ok) => {
+    /* checkKeyCombo = "Control Shift" */
+    if (ok) {
+     noteBoxTakNotes.blur(); 
+    } else {
+     let skip; /* do nothing */
+    }
+   });
    /* select and copy notes to clipboard  */
-   else if (checkKeyCombo == "Alt+a") {
+   if (checkKeyCombo == "Alt+a") {
     copyNotesTakeNotes();
    } else {
     /* only if note box is not active element */
@@ -216,7 +308,7 @@ javascript:(function(){
        noteBoxTakNotes.focus();
       }
      }
-    }   
+    }
    }
   }
   /* store key press for next key combo check */
@@ -224,17 +316,12 @@ javascript:(function(){
  };
 
  /* Quickly get back to notes */
- const addKeyDownTakeNotes = () => { 
+ const addKeyDownTakeNotes = () => {
   document.body.addEventListener("keydown", function() {
-   keypressToNoteTakeNotes();  
-  }); 
- }; 
- const addKeyUpTakeNotes = () => { 
-  document.body.addEventListener("keyup", function() {
-   checkKeydownYouTubeTakeVideoNotes();
-  }); 
+   keypressToNoteTakeNotes();
+  });
  };
- 
+
  /*********************************************************************************************
                                           MAIN FUNCTION
  *********************************************************************************************/
@@ -242,11 +329,8 @@ javascript:(function(){
   /* begin taking notes */
   noteBoxTakNotes.focus();
 
-  /* listen for keydown event */ 
+  /* listen for keydown event */
   addKeyDownTakeNotes();
-
-  /* listen for keyup event   */
-  addKeyUpTakeNotes();
  }
 
  /* Call main function. */

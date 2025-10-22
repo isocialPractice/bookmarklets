@@ -8,7 +8,7 @@ javascript:(function() {
  var heightDomTakeVideoNotes = /* set initial height for notes */
   "100px";
  var ignoredKeysDomTakeVideoNotes = /* keys pressed that do not active not box */
-  "Home End PageUp PageDown ArrowUp ArrowDown f v k";
+  "Home End PageUp PageDown ArrowUp ArrowDown f v k s";
 
  /* Set max height and width that note box can be sest to. */
  var maxWidthDomTakeVideoNotes = "1000px";
@@ -104,15 +104,172 @@ javascript:(function() {
   navigator.clipboard.writeText(textareaDomTakeVideoNotesID.value);
  };
 
- /* Check that another key is not pressed down before moving cursor outside of notebox. */
- const checkKeydownDOMTakeVideoNotes = () => {
-  if (event.key == "Shift" || event.key == "Control") {
-   return true;
+ /* Get the index of the video clicked. */
+ var lastVideoClickedIndexDomTakeVideoNotes = -1;
+ var lastVideoTagNameDomTakeVideoNotes;
+ const indexVideoClickedDomTakeVideoNotes = (el) => {
+  if (!el) return;
+
+  /* collect all video, iframe, or elements with action attr. on the page */  
+  if (lastVideoTagNameDomTakeVideoNotes == "a") {
+   if (useParDomTakeVideoNotes == 1) {
+    lastVideoClickedIndexDomTakeVideoNotes = el.parentElement;
+   } else {
+    lastVideoClickedIndexDomTakeVideoNotes = el;
+   }
   } else {
-   return false;
+   let t = el.tagName;
+   let unqId = String(t + countIdDomTakeVideoNotes);
+   if (el.hasAttribute("id")) {   
+    let curId = el.getAttribute("id");
+    if (curId.indexOf(t) == -1) {
+     let tId = curId + " ";
+     el.setAttribute("id", 
+                     String(tId + unqId));
+    }
+   } else {
+    el.setAttribute("id", String(unqId));
+   }
+
+   /* store id value in global variable */
+   lastVideoClickedIndexDomTakeVideoNotes = unqId;
   }
  };
 
+ /* Listen for click and call indexVidoeClickedDomTakeVideoNotes if iframe or video tag. */
+ var countIdDomTakeVideoNotes = 0;
+ var useParDomTakeVideoNotes = 0;
+ const setVideoClickListenerDomTakeVideoNotes = () => {
+  let clickOrOverVideo = (e) => {
+   const el = e.target;
+   if (!el) return;
+
+   /* only handle clicks on <video> or <iframe> elements */
+   if (el.tagName === "VIDEO"  || 
+       el.tagName === "IFRAME" || 
+       el.hasAttribute("action")
+      ) {        
+    countIdDomTakeVideoNotes += 1; /* to give unique id */
+    if (el.hasAttribute("action")) lastVideoTagNameDomTakeVideoNotes = "a";   /* action atr */
+    else if (el.tagName == "IFRAME") lastVideoTagNameDomTakeVideoNotes = "i"; /* iframe tag clicked */
+    else lastVideoTagNameDomTakeVideoNotes = "v";                             /* video tag clicked  */
+    /* HOT-GLUE */
+    if (el.tagName == "IFRAME") {
+     let elPar = el.parentElement;
+     if (elPar.hasAttribute("action")) {
+      useParDomTakeVideoNotes = 1;
+      lastVideoTagNameDomTakeVideoNotes = "a"; /* action atr */
+     } else {
+      useParDomTakeVideoNotes = 0;   /* reset use parent switch */
+     }
+    } else {
+     useParDomTakeVideoNotes = 0;   /* reset use parent switch */
+    }
+    indexVideoClickedDomTakeVideoNotes(el);
+   } else {
+    let skip; /* do nothing */
+   }
+  };
+  let outIfClick = () => {
+   return true;
+  };
+  document.addEventListener("click", () => {
+   outIfClick();
+  });
+  /* mouse over for when click is not registered */
+  document.addEventListener("mouseover", (e) => {
+   if (outIfClick() == true) clickOrOverVideo(e);
+  });
+ };
+
+ /* Check if Control and Shift are sequentially keyup and keydown under 1 second. */
+ const checkCtrlShiftDomTakeVideoNotes = (ms = 750) => {
+  return new Promise(resolve => {
+   let ctrlPressed = false;
+   let ctrlReleased = false;
+   let shiftPressed = false;
+   let shiftReleased = false;
+   let deadline = 0;
+   let timeoutId = null;
+
+   function cleanup(result) {
+    document.removeEventListener('keydown', onKeyDown, true);
+    document.removeEventListener('keyup', onKeyUp, true);
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    resolve(!!result);
+   }
+
+   function startTimeout() {
+    /* start or restart the timeout for the shift window */
+    if (timeoutId) clearTimeout(timeoutId);
+    deadline = Date.now() + ms;
+    timeoutId = setTimeout(() => {
+     /* timed out waiting for shift sequence */
+     cleanup(false);
+    }, ms);
+   }
+
+   function onKeyDown(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* ctrl pressed */
+     ctrlPressed = true;
+    } else if (k === 'Shift') {
+     /* only pay attention to shift if ctrl has already been released */
+     if (ctrlReleased && !shiftPressed) {
+      shiftPressed = true;
+     }
+    }
+   }
+
+   function onKeyUp(e) {
+    const k = e.key;
+    if (k === 'Control') {
+     /* only consider a ctrl "release" if it was pressed first */
+     if (ctrlPressed) {
+      ctrlPressed = false;
+      ctrlReleased = true;
+      startTimeout();
+     }
+    } else if (k === 'Shift') {
+     /* only consider shift release if we saw a shift press after ctrl release */
+     if (shiftPressed) {
+      shiftPressed = false;
+      shiftReleased = true;
+
+      /* check timing and that neither key is currently held down */
+      const withinTime = Date.now() <= deadline;
+      const ctrlStillHeld = ctrlPressed;  /* should be false */
+      const shiftStillHeld = shiftPressed; /* should be false */
+
+      if (withinTime && !ctrlStillHeld && !shiftStillHeld) {
+       cleanup(true);
+      } else {
+       cleanup(false);
+      }
+     }
+    }
+   }
+
+   /* attach capturing listeners so they catch keys even if elements stop propagation */
+   document.addEventListener('keydown', onKeyDown, true);
+   document.addEventListener('keyup', onKeyUp, true);
+
+   /* safety: if nothing happens for (ms + 1000) ms, give up */
+   const globalTimeout = setTimeout(() => {
+    if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+    cleanup(false);
+   }, ms + 1000);
+
+   /* ensure the safety timeout cleared on final cleanup */
+   const origCleanup = cleanup;
+   cleanup = function(result) {
+    clearTimeout(globalTimeout);
+    origCleanup(result);
+   };
+  });
+ };
+ 
  /* Focus on textarea whenever keydown occurs. */
  const keypressToNoteDomTakeVideoNotes = () => {
   let activeID = document.activeElement.id;
@@ -141,16 +298,37 @@ javascript:(function() {
   } /* else implied */
   { /* the active element is not in ignored list, run function */
    let checkKeyCombo = /* check for combos */
-   lastKeyPressDomTakeVideoNotes + "+" + currentKeyPress;
-
+    lastKeyPressDomTakeVideoNotes + "+" + currentKeyPress;
+    
    /* check key combos and run function accordingly */
-   if (checkKeyCombo == "Control+Shift" && 
-       checkKeydownDOMTakeVideoNotes() == true) {
-    textareaDomTakeVideoNotesID.blur();  /* out of note box */
-    textareaDomTakeVideoNotes = 0;   /* allow video focus combo */
-   }
+   checkCtrlShiftDomTakeVideoNotes(750).then((ok) => {
+    /* checkKeyCombo = "Control Shift" */
+    if (ok) {
+     textareaDomTakeVideoNotesID.blur();  /* out of note box            */
+     textareaDomTakeVideoNotes = 0;       /* allow video focus combo    */
+     if (lastVideoClickedIndexDomTakeVideoNotes != -1) { /* focus video */
+      if (lastVideoTagNameDomTakeVideoNotes == "a") {
+       let el = lastVideoClickedIndexDomTakeVideoNotes;
+       if (el.getAttribute("action") == "pause") el.setAttribute("action", "play");
+       else el.setAttribute("action", "pause");
+      } else {
+       let idx = 
+        document.getElementById(lastVideoClickedIndexDomTakeVideoNotes);
+       
+        /* play or pause video */
+       if (idx != null) {
+        if (idx.getAttribute("data-pause") == "1") idx.play();
+        else idx.pause();
+       }
+      }
+     }
+    } else {
+     let skip; /* do nothing */
+    }
+   });
+   
    /* select and copy notes to clipboard  */
-   else if (checkKeyCombo == "Alt+a") {
+   if (checkKeyCombo == "Alt+a") {
     copyNotesDomTakeVideoNotes();
    }
    else {
@@ -181,10 +359,6 @@ javascript:(function() {
    function() {
     keypressToNoteDomTakeVideoNotes();
   });
-  document.body.addEventListener("keyup",
-   function() {
-    checkKeydownDOMTakeVideoNotes();  
-   });
  };
 
  /* Put video into focus if scrolling and not in view. */
@@ -239,7 +413,8 @@ javascript:(function() {
    keyHistory = keyHistory.filter(entry => now - entry.time <= 1000);
 
    let keys = keyHistory.map(k => k.key);
-   if (keys.includes("f") && keys.includes("v")) {
+   if ((keys.includes("f") && keys.includes("v")) ||
+       (keys.includes("s") && keys.includes("v"))) {
     fvPressed = true;
    }
 
@@ -263,6 +438,23 @@ javascript:(function() {
   });
 
   console.log("Video focus listener initialized.");
+ };
+
+ /* Add listener for pause or play. */
+ const addPausePlayTakeVideoNotes = (cur) => {
+  let curLen = cur.length;
+  for (i = 0; i < curLen; i++) {
+   cur[i].setAttribute("data-play", "off");
+   cur[i].setAttribute("data-pause", "off");
+   cur[i].addEventListener("play", function() {
+    this.setAttribute("data-play", "1");
+    this.setAttribute("data-pause", "0");
+   });
+   cur[i].addEventListener("pause", function() {
+    this.setAttribute("data-play", "0");
+    this.setAttribute("data-pause", "1");
+   });
+  }
  };
 
  /*********************************************************************************************
@@ -339,6 +531,9 @@ javascript:(function() {
 
    /***** KEY PRESS FUNCTIONS *****/
    if (allowKeyPressDomTakeVideoNotes == 1) {
+    /* check last iframe or video tag clicked */
+    setVideoClickListenerDomTakeVideoNotes();
+
     /* copy notes in textare to clipboard */
     copyNotesDomTakeVideoNotes();
 
@@ -362,6 +557,14 @@ javascript:(function() {
    checkVideoTagDomTakeVideoNotes.length >= 1 ||
    checkIframeDomTakeVideoNotes.length >= 1
   ) {
+  if (checkIframeDomTakeVideoNotes.length >= 1) {
+   addPausePlayTakeVideoNotes(checkIframeDomTakeVideoNotes);
+  } 
+  if (checkVideoTagDomTakeVideoNotes.length >= 1) {
+   addPausePlayTakeVideoNotes(checkVideoTagDomTakeVideoNotes);
+  }
+  
+  /* run main function */
   runDOMTakeVideoNotes();
 
   /* Prompt with instructions if turned on - variable at top is 1. */

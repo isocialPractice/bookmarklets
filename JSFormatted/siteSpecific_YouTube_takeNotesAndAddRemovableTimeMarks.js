@@ -340,7 +340,6 @@ javascript:(function(){
   });
  };
 
-
  /* Apply key combos and handle actions accordingly. */
  const keypressToNoteYouTubeTakeNotesAndAddTimeMarks = () => {
   let activeID = document.activeElement.id;
@@ -376,7 +375,7 @@ javascript:(function(){
     if (ok) {
      noteBox.blur(); 
     } else {
-     let skip;
+     let skip; /* do nothing */
     }
   });
 
@@ -417,15 +416,6 @@ javascript:(function(){
   
   /* store key press for next key combo check */
   sessionStorage.setItem("lastKeyPress", event.key);
- }; 
-  
- /* Check that another key is not pressed down before moving cursor outside of notebox. */
- const checkKeydownYouTubeTakeNotesAndAddTimeMarks = () => {
-  if (event.key == "Shift" || event.key == "Control") {
-   return true;
-  } else {
-   return false;
-  }
  };
 
  /* Add time mark button to the right of textarea. */
@@ -576,11 +566,6 @@ javascript:(function(){
   document.body.addEventListener("keydown", 
    function() {
     keypressToNoteYouTubeTakeNotesAndAddTimeMarks();  
-   });
-  /* ensures that key combo is not keyboard shorcut like `Shift + Ctrl + <- | ->` */
-  document.body.addEventListener("keyup", 
-   function() {
-    checkKeydownYouTubeTakeNotesAndAddTimeMarks();  
    });
  }; 
    
