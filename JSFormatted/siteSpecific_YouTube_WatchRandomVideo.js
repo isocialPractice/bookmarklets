@@ -4,7 +4,7 @@ javascript:(function() {
 
  /* Class name of element holding link for video.         */
  var videoFeedWatchRandomVideo = /* HOT-GLUE - may change */
-  document.getElementsByClassName("yt-simple-endpoint inline-block style-scope ytd-thumbnail");
+  document.getElementsByClassName("yt-lockup-view-model__content-image");
 
  /* Length of all videos in home feed. */
  var videoFeedWatchRandomVideoLen = videoFeedWatchRandomVideo.length;
