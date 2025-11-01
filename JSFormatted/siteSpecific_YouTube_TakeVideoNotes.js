@@ -36,29 +36,49 @@ javascript:(function(){
  {
  var noteCSSTakeNotes = `
  /* style close elements with constant styles */
-  button#closeNoteBoxTakeNotesBtn {
-   display: inline;
-   position: relative;
-   left: -5px;
-   top: 5px;
-   width: 25px;
-   height: 25px;
-   background: red;
-   color: white;
-   border: none;
-   border-radius: 5px;
-   z-index: 1;
-  }
-  button#closeNoteBoxTakeNotesBtn:hover,
-  button#closeNoteBoxTakeNotesBtn:hover ~ input#closeCheckbox:hover {
-   border: 3px solid gray;
-  }
-  button#closeNoteBoxTakeNotesBtn.hideNotesTakeNotes + div {
-   display: none !important;
-  }
-  button#closeNoteBoxTakeNotesBtn.hideNotesTakeNotes + div + div {
-   margin-top: 20px;
-  }
+   button[id^="closeBMBtn"] {
+    display: inline;
+    position: relative;
+    left: -5px;
+    top: 5px;
+    width: 25px;
+    height: 25px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    z-index: 1;
+   }
+   button[id^="closeBMBtn"]:hover,
+   button[id^="closeBMBtn"]:hover ~ input[id^="closeBMBtn"]:hover {
+    cursor: pointer;
+    border: 3px solid gray;
+   }
+   input[id^="closeBMBtn"] {
+    box-sizing: content-box;
+    display: inline-block;
+    position: absolute;
+    left: -5px;
+    top: 5px;
+    z-index: 2;
+    opacity: 0;
+   }
+   input[id^="closeBMBtn"]:hover {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    border: 2px solid gray;
+    opacity: .25;
+   }
+
+   input[data-close-bm-el^="hide"] + div {
+    display: none !important;
+   }
+
+   input[data-close-bm-el^="show"] + div#noteArea {
+    display: inline-flex;
+   }
+
   /* style note area with constant styles */
   div#noteAreaTakeNotes {
    display: inline-flex;
@@ -92,58 +112,103 @@ javascript:(function(){
 `;
   }
  /* Note box setup. */
- var noteTextAreaTakeNotes, noteAreaTakeNotes, noteBoxTakNotesDiv,
-     closeNoteBoxTakeNotesBtn, closeCheckbox;
- if (!noteAreaTakeNotesIDTakeNotes) {
-  /* are for notes */
-  noteAreaTakeNotes = document.createElement("div");
-  noteAreaTakeNotes.id = "noteAreaTakeNotes";
-  aboveTheFoldTakeNotes.insertAdjacentElement("beforebegin", noteAreaTakeNotes);
-
-  let noteStyle =         /* using noteCSSTakeNotes from above */
-   document.createElement("style");
-
-  noteStyle.textContent = /* add css properties */
-   noteCSSTakeNotes;
-
-  noteAreaTakeNotes.insertAdjacentElement("beforebegin", noteStyle);
-  noteAreaTakeNotesIDTakeNotes = document.getElementById("noteAreaTakeNotes");
-
-  /* note box */
-  noteTextAreaTakeNotes = document.createElement("textarea");
-  noteTextAreaTakeNotes.id = "noteBoxTakNotes";
-  noteBoxTakNotesDiv = document.createElement("div");
-
-  /* insert div to hold textarea */
-  noteAreaTakeNotesIDTakeNotes.insertAdjacentElement("afterbegin", noteBoxTakNotesDiv);
-
-  /* insert textare html elements to take notes */
-  noteBoxTakNotesDiv.insertAdjacentElement("afterbegin", noteTextAreaTakeNotes);
-
-  /* close buttnon */
-  closeNoteBoxTakeNotesBtn = document.createElement("button");
-  closeNoteBoxTakeNotesBtn.id = "closeNoteBoxTakeNotesBtn";
-  noteStyle.insertAdjacentElement("afterend", closeNoteBoxTakeNotesBtn);
-  closeNoteBoxTakeNotesBtn.textContent = "X";
-
-  /* get id of button to close note area - enables this to work with timemarks */
-  let closeBtnIDTakeNotes = document.getElementById("closeNoteBoxTakeNotesBtn");
-  /* alternate close button status */
-  closeBtnIDTakeNotes.addEventListener("click", function() {
-   if (this.textContent == "X") {
-    this.className = "hideNotesTakeNotes"; /* hide note area with css rules    */
-    this.textContent = "O";                /* switch hiding note area          */
-   } else {
-    this.className = "";                   /* show note area with css rules    */
-    this.textContent = "X";                /* switch to show note area         */
-   }
-  });
- }
-
- /* Redefine noteBoxTakNotes */
- noteBoxTakNotes = document.getElementById("noteBoxTakNotes");
+ var noteTextAreaTakeNotes, noteAreaTakeNotes, noteBoxTakNotesDiv;
 
  /************************************* SUPPORT FUNCTIONS *************************************/
+ /* Create show, hide buttons for elements.  */
+ const insertShowHideBtnYouTubeTakeNotes = (el, curId, placeEl, placemnt) => {
+  let closeNoteBoxBtn = document.createElement(el);
+  closeNoteBoxBtn.id = "closeBMBtn" + curId;
+  placeEl.insertAdjacentElement(placemnt, closeNoteBoxBtn);
+  closeNoteBoxBtn.textContent = "X";
+
+  /* checkbox to show hide with css */
+  let closeCheckbox = document.createElement("input");
+  closeCheckbox.type = "checkbox";
+  closeCheckbox.id = "closeBMBtnCheckbox" + curId;
+  closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
+  closeCheckbox = document.getElementById("closeBMBtnCheckbox" + curId);
+  closeCheckbox.setAttribute("checked", true);
+  /* HOT-GLUE */
+  if (placeEl.hasAttribute("id") && 
+      placeEl.getAttribute("id") == "player") {
+   closeCheckbox.style.position = "relative";
+   closeCheckbox.style.left = "-30px";
+  }
+
+  /* alternate close button status */
+  closeCheckbox.addEventListener("mousedown", function() {
+   if (this.previousElementSibling.textContent == "X") {
+    this.previousElementSibling.textContent = "O";
+    /* HOT-GLUE */
+    if (placeEl.hasAttribute("id") && 
+        placeEl.getAttribute("id") == "player") {
+     player.style.display = "none";
+    } else {
+     this.setAttribute("data-close-bm-el", "hide");
+    }
+   } else {
+    this.previousElementSibling.textContent = "X";
+    /* HOT-GLUE */
+    if (placeEl.hasAttribute("id") && 
+        placeEl.getAttribute("id") == "player") {
+     player.style.display = "";
+    } else {
+     this.setAttribute("data-close-bm-el", "show");
+    }
+   }
+  });
+ };
+
+ /* Create note box, ensuring not to duplicate. */
+ const addNoteBoxYouTubeTakeNotes = () => {
+  if (!noteAreaTakeNotesIDTakeNotes) {
+   /* are for notes */
+   noteAreaTakeNotes = document.createElement("div");
+   noteAreaTakeNotes.id = "noteAreaTakeNotes";
+   aboveTheFoldTakeNotes.insertAdjacentElement("beforebegin", noteAreaTakeNotes);
+
+   let noteStyle =         /* using noteCSSTakeNotes from above */
+    document.createElement("style");
+
+   noteStyle.textContent = /* add css properties */
+    noteCSSTakeNotes;
+
+   noteAreaTakeNotes.insertAdjacentElement("beforebegin", noteStyle);
+   noteAreaTakeNotesIDTakeNotes = document.getElementById("noteAreaTakeNotes");
+
+   /* note box */
+   noteTextAreaTakeNotes = document.createElement("textarea");
+   noteTextAreaTakeNotes.id = "noteBoxTakNotes";
+   noteBoxTakNotesDiv = document.createElement("div");
+
+   /* insert div to hold textarea */
+   noteAreaTakeNotesIDTakeNotes.insertAdjacentElement("afterbegin", noteBoxTakNotesDiv);
+
+   /* insert textare html elements to take notes */
+   noteBoxTakNotesDiv.insertAdjacentElement("afterbegin", noteTextAreaTakeNotes);
+
+   /* close buttnon */
+   insertShowHideBtnYouTubeTakeNotes(
+     "button",     /* insert button                */
+     "NoteBoxBtn", /* set closeBMBtn += NoteBoxBtn */
+     noteStyle,    /* placement based on element   */
+     "afterend"    /* placement after element      */
+   );
+
+   /* close button for video */
+   insertShowHideBtnYouTubeTakeNotes(
+    "button",        /* insert button                */
+    "VideoPlayer",   /* set closeBMBtn += NoteBoxBtn */
+    playerTakeNotes, /* placement based on element   */
+    "beforebegin"    /* placement before element     */
+   );
+
+   /* Redefine noteBoxTakNotes */
+   noteBoxTakNotes = document.getElementById("noteBoxTakNotes");
+  }
+ };
+
  /* Copy notes in textare to clipboard. */
  const copyNotesTakeNotes = () => {
   noteBoxTakNotes.select();
@@ -326,6 +391,9 @@ javascript:(function(){
                                           MAIN FUNCTION
  *********************************************************************************************/
  function takeVideoNotes() {
+  /* add note box */
+  addNoteBoxYouTubeTakeNotes();
+
   /* begin taking notes */
   noteBoxTakNotes.focus();
 

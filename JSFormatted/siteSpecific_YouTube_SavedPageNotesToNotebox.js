@@ -39,7 +39,7 @@ javascript:(function(){
  {
   var noteCSSSavedPageNotes = `
   /* style close elements with constant styles */
-   button#closeNoteBoxBtn {
+   button[id^="closeBMBtn"] {
     display: inline;
     position: relative;
     left: -5px;
@@ -52,16 +52,34 @@ javascript:(function(){
     border-radius: 5px;
     z-index: 1;
    }
-   button#closeNoteBoxBtn:hover {
+   button[id^="closeBMBtn"]:hover,
+   button[id^="closeBMBtn"]:hover ~ input[id^="closeBMBtn"]:hover {
     cursor: pointer;
     border: 3px solid gray;
    }
-   button#closeNoteBoxBtn.hideNotesSavedPageNotes + div {
+   input[id^="closeBMBtn"] {
+    box-sizing: content-box;
+    display: inline-block;
+    position: absolute;
+    left: -5px;
+    top: 5px;
+    z-index: 2;
+    opacity: 0;
+   }
+   input[id^="closeBMBtn"]:hover {
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    border: 2px solid gray;
+    opacity: .25;
+   }
+   input[data-close-bm-el^="hide"] + div {
     display: none !important;
    }
-   button#closeNoteBoxBtn.hideNotesSavedPageNotes + div + div {
-    margin-top: 20px;
+   input[data-close-bm-el^="show"] + div#noteArea {
+    display: inline-flex;
    }
+
    /* style note area with constant styles */
    div#noteArea {
     display: inline-flex;
@@ -167,10 +185,54 @@ javascript:(function(){
  /* Note box setup. */
  var noteTextAreaYouTubeSavedNotesToNotebox, 
      noteAreaDivYouTubeSavedNotesToNotebox, 
-     noteBoxTakeNotesDivYouTubeSavedNotesToNotebox, 
-     closeNoteBoxBtnYouTubeSavedNotesToNotebox;
+     noteBoxTakeNotesDivYouTubeSavedNotesToNotebox;
  
  /************************************* SUPPORT FUNCTIONS *************************************/
+ /* Create show, hide buttons for elements.  */
+ const insertShowHideBtnYouTubeSavedNotesToNotebox = (el, curId, placeEl, placemnt) => {
+  let closeNoteBoxBtn = document.createElement(el);
+  closeNoteBoxBtn.id = "closeBMBtn" + curId;
+  placeEl.insertAdjacentElement(placemnt, closeNoteBoxBtn);
+  closeNoteBoxBtn.textContent = "X";
+
+  /* checkbox to show hide with css */
+  let closeCheckbox = document.createElement("input");
+  closeCheckbox.type = "checkbox";
+  closeCheckbox.id = "closeBMBtnCheckbox" + curId;
+  closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
+  closeCheckbox = document.getElementById("closeBMBtnCheckbox" + curId);
+  closeCheckbox.setAttribute("checked", true);
+  /* HOT-GLUE */
+  if (placeEl.hasAttribute("id") && 
+      placeEl.getAttribute("id") == "player") {
+   closeCheckbox.style.position = "relative";
+   closeCheckbox.style.left = "-30px";
+  }
+
+  /* alternate close button status */
+  closeCheckbox.addEventListener("mousedown", function() {
+   if (this.previousElementSibling.textContent == "X") {
+    this.previousElementSibling.textContent = "O";
+    /* HOT-GLUE */
+    if (placeEl.hasAttribute("id") && 
+        placeEl.getAttribute("id") == "player") {
+     player.style.display = "none";
+    } else {
+     this.setAttribute("data-close-bm-el", "hide");
+    }
+   } else {
+    this.previousElementSibling.textContent = "X";
+    /* HOT-GLUE */
+    if (placeEl.hasAttribute("id") && 
+        placeEl.getAttribute("id") == "player") {
+     player.style.display = "";
+    } else {
+     this.setAttribute("data-close-bm-el", "show");
+    }
+   }
+  });
+ };
+
  /* Creeat note box. */
  const addNoteBoxYouTubeSavedNotesToNotebox = () => {
   if (!noteAreaYouTubeSavedNotesToNotebox) {
@@ -201,23 +263,21 @@ javascript:(function(){
    noteBoxTakeNotesDivYouTubeSavedNotesToNotebox.id = "noteTextArea"; /* used for adding time marks */
 
    /* close buttnon */
-   closeNoteBoxBtnYouTubeSavedNotesToNotebox = document.createElement("button");
-   closeNoteBoxBtnYouTubeSavedNotesToNotebox.id = "closeNoteBoxBtn";
-   noteStyle.insertAdjacentElement("afterend", closeNoteBoxBtnYouTubeSavedNotesToNotebox);
-   closeNoteBoxBtnYouTubeSavedNotesToNotebox.textContent = "X";
-
-   /* get id of button to close note area - enables this to work with timemarks */
-   let closeBtnIDSavedPageNotes = document.getElementById("closeNoteBoxBtn");    
-   /* alternate close button status */
-   closeBtnIDSavedPageNotes.addEventListener("click", function() {
-    if (this.textContent == "X") {
-     this.className = "hideNotesSavedPageNotes"; /* hide note area with css rules    */     
-     this.textContent = "O";                /* switch hiding note area          */
-    } else {
-     this.className = "";                   /* show note area with css rules    */
-     this.textContent = "X";                /* switch to show note area         */
-    }
-   });
+   insertShowHideBtnYouTubeSavedNotesToNotebox(
+     "button",     /* insert button                */
+     "NoteBoxBtn", /* set closeBMBtn += NoteBoxBtn */
+     noteStyle,    /* placement based on element   */
+     "afterend"    /* placement after element      */
+   );
+   
+   /* close button for video */
+   let player = document.getElementById("player");
+   insertShowHideBtnYouTubeSavedNotesToNotebox(
+    "button",      /* insert button                */
+    "VideoPlayer", /* set closeBMBtn += NoteBoxBtn */
+    player,        /* placement based on element   */
+    "beforebegin"  /* placement before element     */
+   );
   } else { /* note box is on page, but apply bookmarklet style       */
    let noteStyle =         /* using noteCSSSavedPageNotes from above */
     document.createElement("style"); 

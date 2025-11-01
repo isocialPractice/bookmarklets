@@ -1,4 +1,4 @@
-javascript:(function(){ 
+javascript:(function(){
  /* Config variables. */
  var heightTakeNotesAddEmovableTimeMarks = /* set initial height for notes */
   "50px";
@@ -6,40 +6,40 @@ javascript:(function(){
  /* Global DOM variables */
  var noteAreaID =            /* parent for note elements */
   document.getElementById("noteArea");
- 
+
  var noteBox =               /* textare element for taking notes */
   document.getElementById("noteBox");
- 
+
  var closeNoteBox =          /* Close notebox element */
   document.getElementById("closeNoteBox");
- 
+
  var aboveTheFold =          /* html after vidoe box */
   document.getElementById("above-the-fold");
- 
+
  var player =                /* video player topmost parent */
-  document.getElementById("player"); 
- 
+  document.getElementById("player");
+
  var playButton =            /* play button - needed to update time mark */
   document.getElementsByClassName("ytp-play-button");
- 
+
  var currentTimeClassName =  /* class element with current time */
-  "ytp-time-current"; 
- 
+  "ytp-time-current";
+
  var curTimeElement;         /* redefined to get time mark  */
  var timePreCal, timeSecCal; /* redefined - time mark in seconds and time mark */
- 
+
  /* Global configuration variables */
  var ignoredKeys = /* keys pressed that do not active not box */
-  "Home End PageUp PageDown"; 
- 
+  "Home End PageUp PageDown";
+
  var ignoredDOMElements =  /* stop function if one of these is active */
-  ["comments", "search", "contenteditable-root", "player"]; 
- 
+  ["comments", "search", "contenteditable-root", "player"];
+
  /* CSS style sheet */
  {
   var noteCSS = `
   /* style close elements with constant styles */
-   button#closeNoteBoxBtn {
+   button[id^="closeBMBtn"] {
     display: inline;
     position: relative;
     left: -5px;
@@ -52,12 +52,12 @@ javascript:(function(){
     border-radius: 5px;
     z-index: 1;
    }
-   button#closeNoteBoxBtn:hover,
-   button#closeNoteBoxBtn:hover ~ input#closeCheckbox:hover {
+   button[id^="closeBMBtn"]:hover,
+   button[id^="closeBMBtn"]:hover ~ input[id^="closeBMBtn"]:hover {
     cursor: pointer;
     border: 3px solid gray;
    }
-   input#closeCheckbox {
+   input[id^="closeBMBtn"] {
     box-sizing: content-box;
     display: inline-block;
     position: absolute;
@@ -66,21 +66,20 @@ javascript:(function(){
     z-index: 2;
     opacity: 0;
    }
-   input#closeCheckbox:hover {
+   input[id^="closeBMBtn"]:hover {
     cursor: pointer;
     width: 20px;
-    height: 20px; 
+    height: 20px;
     border: 2px solid gray;
     opacity: .25;
    }
-
-   input#closeCheckbox:checked + div#noteArea {
+   input[data-close-bm-el^="hide"] + div {
+    display: none !important;
+   }
+   input[data-close-bm-el^="show"] + div#noteArea {
     display: inline-flex;
    }
 
-   input#closeCheckbox + div {
-    display: none;
-   }
    /* style note area with constant styles */
    div#noteArea {
     display: inline-flex;
@@ -90,7 +89,7 @@ javascript:(function(){
     width: 100%;
    }
    div #noteArea div {
-    display: inline-block; 
+    display: inline-block;
     position: relative;
     margin: 0px 10px;
     max-width: 450px;
@@ -101,19 +100,19 @@ javascript:(function(){
     position: relative;
     max-width: 800px;
     width: auto !important;
-    left: 0px; 
+    left: 0px;
    }
    /* style note box with constant style */
    textarea#noteBox {
-    max-width: 450px;  
+    max-width: 450px;
     width: 450px;
-    height: ${heightTakeNotesAddEmovableTimeMarks}; 
+    height: ${heightTakeNotesAddEmovableTimeMarks};
     padding: 10px;
     border-radius: 10px;
    }
    /* style time mark area */
    span#timeMarkButtonArea {
-    box-sizing: border-box;   
+    box-sizing: border-box;
     display: inline-block;
     position: relative;
     float: left;
@@ -121,9 +120,9 @@ javascript:(function(){
     width: auto;
     height: 100%;
     border-radius: 10px;
-    margin-left: 10px;   
+    margin-left: 10px;
     padding: 5px;
-    background: rgba(0, 0, 0, .025);      
+    background: rgba(0, 0, 0, .025);
    }
    /* style close and time mark button parent */
    span#timeMarkButtonArea div:first-of-type {
@@ -148,11 +147,11 @@ javascript:(function(){
      margin-top: 3px;
      padding: 5px 10px 10px;
      background: rgba(40, 40, 40, .85);
-     color: white;    
-     text-decoration: none;    
+     color: white;
+     text-decoration: none;
    }
-   span#timeMarkButtonArea a:hover { 
-     background: rgba(40, 40, 40, 1);  
+   span#timeMarkButtonArea a:hover {
+     background: rgba(40, 40, 40, 1);
    }
 
    /* style close time mark buttons with constant styles */
@@ -161,68 +160,105 @@ javascript:(function(){
      padding-right: 3px;
      margin-left: 20px;
      border-left: 1px solid black;
-     border-bottom: 1px solid black;    
-     border-width: medium;  
+     border-bottom: 1px solid black;
+     border-width: medium;
    }`;
   }
- 
+
  /* Note box setup. */
- var noteTextArea, noteArea, noteBoxDiv, 
-     closeNoteBoxBtn, closeCheckbox;
- 
+ var noteTextArea, noteArea, noteBoxDiv;
+
  /************************************* SUPPORT FUNCTIONS *************************************/
+ /* Create show, hide buttons for elements.  */
+ const insertShowHideBtnYouTubeTakeNotesAndAddTimemarks = (el, curId, placeEl, placemnt) => {
+  let closeNoteBoxBtn = document.createElement(el);
+  closeNoteBoxBtn.id = "closeBMBtn" + curId;
+  placeEl.insertAdjacentElement(placemnt, closeNoteBoxBtn);
+  closeNoteBoxBtn.textContent = "X";
+
+  /* checkbox to show hide with css */
+  let closeCheckbox = document.createElement("input");
+  closeCheckbox.type = "checkbox";
+  closeCheckbox.id = "closeBMBtnCheckbox" + curId;
+  closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
+  closeCheckbox = document.getElementById("closeBMBtnCheckbox" + curId);
+  closeCheckbox.setAttribute("checked", true);
+  /* HOT-GLUE */
+  if (placeEl.hasAttribute("id") && 
+      placeEl.getAttribute("id") == "player") {
+   closeCheckbox.style.position = "relative";
+   closeCheckbox.style.left = "-30px";
+  }
+
+  /* alternate close button status */
+  closeCheckbox.addEventListener("mousedown", function() {
+   if (this.previousElementSibling.textContent == "X") {
+    this.previousElementSibling.textContent = "O";
+    /* HOT-GLUE */
+    if (placeEl.hasAttribute("id") && 
+        placeEl.getAttribute("id") == "player") {
+     player.style.display = "none";
+    } else {
+     this.setAttribute("data-close-bm-el", "hide");
+    }
+   } else {
+    this.previousElementSibling.textContent = "X";
+    /* HOT-GLUE */
+    if (placeEl.hasAttribute("id") && 
+        placeEl.getAttribute("id") == "player") {
+     player.style.display = "";
+    } else {
+     this.setAttribute("data-close-bm-el", "show");
+    }
+   }
+  });
+ };
+
  /* Create note box, ensuring not to duplicate. */
  const addNoteBoxYouTubeTakeNotesAndAddTimeMarks = () => {
-  /* don't duplicate */    
+  /* don't duplicate */
   if (!noteAreaID) {
    /* area for notes */
    noteArea = document.createElement("div");
-   noteArea.id = "noteArea";   
-   aboveTheFold.insertAdjacentElement("beforebegin", noteArea); 
-   
+   noteArea.id = "noteArea";
+   aboveTheFold.insertAdjacentElement("beforebegin", noteArea);
+
    let noteStyle =         /* using noteCSS from above */
-    document.createElement("style"); 
-   
+    document.createElement("style");
+
    noteStyle.textContent = /* add css properties */
-    noteCSS;        
-   
+    noteCSS;
+
    noteArea.insertAdjacentElement("beforebegin", noteStyle);
    noteAreaID = document.getElementById("noteArea");
-   
+
    /* note box */
-   noteTextArea = document.createElement("textarea"); 
-   noteTextArea.id = "noteBox"; 
+   noteTextArea = document.createElement("textarea");
+   noteTextArea.id = "noteBox";
    noteBoxDiv = document.createElement("div");
-   
+
    /* insert div to hold textarea */
    noteAreaID.insertAdjacentElement("afterbegin", noteBoxDiv);
-   
+
    /* insert textarea html elements to take notes */
-   noteBoxDiv.insertAdjacentElement("afterbegin", noteTextArea); 
+   noteBoxDiv.insertAdjacentElement("afterbegin", noteTextArea);
    noteBoxDiv.id = "noteTextArea";
+
+   /* close button for notes */
+   insertShowHideBtnYouTubeTakeNotesAndAddTimemarks(
+    "button",     /* insert button                */
+    "NoteBoxBtn", /* set closeBMBtn += NoteBoxBtn */
+    noteStyle,    /* placement based on element   */
+    "afterend"    /* placement after element      */
+   );
    
-   /* close buttnon */
-   closeNoteBoxBtn = document.createElement("button");
-   closeNoteBoxBtn.id = "closeNoteBoxBtn";
-   noteStyle.insertAdjacentElement("afterend", closeNoteBoxBtn);
-   closeNoteBoxBtn.textContent = "X";
-   
-   /* checkbox to show hide with css */
-   closeCheckbox = document.createElement("input");
-   closeCheckbox.type = "checkbox";
-   closeCheckbox.id = "closeCheckbox";  
-   closeNoteBoxBtn.insertAdjacentElement("afterend", closeCheckbox);
-   closeCheckbox = document.getElementById("closeCheckbox");
-   closeCheckbox.setAttribute("checked", true);
-   
-   /* alternate close button status */
-   closeCheckbox.addEventListener("click", function() {
-    if (this.previousElementSibling.textContent == "X") {
-     this.previousElementSibling.textContent = "O";
-    } else {
-     this.previousElementSibling.textContent = "X";
-    }
-   });
+   /* close button for video */
+   insertShowHideBtnYouTubeTakeNotesAndAddTimemarks(
+    "button",      /* insert button                */
+    "VideoPlayer", /* set closeBMBtn += NoteBoxBtn */
+    player,        /* placement based on element   */
+    "beforebegin"  /* placement before element     */
+   );
   }
   /* redefine noteBox */
   noteBox = document.getElementById("noteBox");
@@ -233,25 +269,25 @@ javascript:(function(){
   noteBox.select();
   navigator.clipboard.writeText(noteBox.value);
  };
-  
+
  /* Focus on textarea whenever keydown occurs. */
  const updateCurrentTimeYouTubeTakeNotesAndAddTimeMarks = () => {
   /* update HTML element holding time value */
   let playButtonData = playButton[0].dataset.titleNoTooltip;
-  
+
   if (playButtonData != "Play") {
    playButton[0].click(); playButton[0].click();
   }
-  
+
   /* update time value HTML element */
   curTimeElement = /* select element with current time */
-   document.getElementsByClassName(currentTimeClassName); 
+   document.getElementsByClassName(currentTimeClassName);
   curTimeElementText = curTimeElement[0].textContent;
-  
+
   /* extract time and calculate in seconds */
-  timePreCal = curTimeElementText.split(":");    
+  timePreCal = curTimeElementText.split(":");
  };
- 
+
  /* Check if Control and Shift are sequentially keyup and keydown under 1 second. */
  const checkCtrlShiftYouTubeTakeNotesTimeMarks = (ms = 750) => {
   return new Promise(resolve => {
@@ -345,13 +381,13 @@ javascript:(function(){
   let activeID = document.activeElement.id;
   let lastKeyPress; /* used to check for key combos */
   lastKeyPress = sessionStorage.getItem("lastKeyPress");
-  
+
   /* for first key press */
   if (lastKeyPress == null) {
    sessionStorage.setItem("lastKeyPress", event.key);
    lastKeyPress = sessionStorage.getItem("lastKeyPress");
   }
-  
+
   /* store key press and check active element */
   let currentKeyPress = event.key;
 
@@ -360,33 +396,33 @@ javascript:(function(){
   /** ignoredDOMElements = "comments search contenteditable-root player"; **/
   /* then don't take notes - note - variable defined at start */
   for (i in ignoredDOMElements) {
-   if (activeID == ignoredDOMElements[i]) { 
+   if (activeID == ignoredDOMElements[i]) {
     /* quit function  */
     return;
-   } 
+   }
   }  /* else */
   { /* the active element is not in ignored list, run function */
    let checkKeyCombo = /* check for combos */
     lastKeyPress + "+" + currentKeyPress;
-    
+
    /* check key combos and run function accordingly */
    checkCtrlShiftYouTubeTakeNotesTimeMarks(750).then((ok) => {
     /* checkKeyCombo = "Control Shift" */
     if (ok) {
-     noteBox.blur(); 
+     noteBox.blur();
     } else {
      let skip; /* do nothing */
     }
   });
 
    /* if (checkKeyCombo == "Control Shift") {
-    noteBox.blur(); 
+    noteBox.blur();
    }  */
    /* add time marker adjacent to notes */
-   if (checkKeyCombo == "Control+m") {    
+   if (checkKeyCombo == "Control+m") {
     updateCurrentTimeYouTubeTakeNotesAndAddTimeMarks();
-    markTimeYouTubeTakeNotesAndAddTimeMarks();    
-   }  
+    markTimeYouTubeTakeNotesAndAddTimeMarks();
+   }
    /* select and copy notes to clipboard  */
    else if (checkKeyCombo == "Alt+a") {
     copyNotesYouTubeTakeNotesAndAddTimeMarks();
@@ -410,127 +446,127 @@ javascript:(function(){
        noteBox.focus();
       }
      }
-    }   
+    }
    }
   }
-  
+
   /* store key press for next key combo check */
   sessionStorage.setItem("lastKeyPress", event.key);
  };
 
  /* Add time mark button to the right of textarea. */
- const markTimeYouTubeTakeNotesAndAddTimeMarks = () => {  
+ const markTimeYouTubeTakeNotesAndAddTimeMarks = () => {
   noteBox.blur(); /* quickly deactivate note box */
   noteBox.setAttribute("disabled", true);
-  
+
   if (timePreCal.length == 3) { /* not handling videos over 24 hours - no */
-   timeSecCal = 
+   timeSecCal =
     Number(Number(timePreCal[0]*60) * 60) + /* hours to seconds   */
     Number(timePreCal[1]*60) +              /* minutes to seconds */
     Number(timePreCal[2]);                  /* seconds */
-  } 
+  }
   else if (timePreCal.length == 2) {
-   timeSecCal = 
+   timeSecCal =
     Number(timePreCal[0]*60) +    /* minutes to seconds */
     Number(timePreCal[1]);        /* seconds */
-  } 
+  }
   else if (timePreCal.length == 1) {
-   timeSecCal =      
+   timeSecCal =
     Number(timePreCal[0]); /* seconds */
   }
   /* create time mark area and elements */
   let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
   let timeMarkButtonArea;
-  
+
   /* don't duplicate parent container */
   if (!timeMarkButtonAreaID) { /* create area for time mark buttons */
    let timeMarkDiv =    /* parent for time mark box */
     document.createElement("div");
    timeMarkButtonArea = /* time mark box - parent for timemarks */
-    document.createElement("span"); 
-   timeMarkButtonArea.id = "timeMarkButtonArea"; 
+    document.createElement("span");
+   timeMarkButtonArea.id = "timeMarkButtonArea";
    /* insert time mark box parent div */
    noteBoxDiv = document.getElementById("noteTextArea");
-   noteBoxDiv.insertAdjacentElement("afterend", timeMarkDiv);   
+   noteBoxDiv.insertAdjacentElement("afterend", timeMarkDiv);
    /* insert time mark box */
    timeMarkDiv.insertAdjacentElement("afterbegin", timeMarkButtonArea);
   }
-  
+
   /* give each mark id with time appended */
   let curTimeMarkBtnID = document.getElementById("timeMarkBtn" + timeSecCal);
   let curTimeMarkCloseBtn, curTimeMarkBtn;
-  
+
   /* don't duplicate time marks */
   if (!curTimeMarkBtnID) { /* create time mark buttons */
    let timeMarkButtonAreaID = document.getElementById("timeMarkButtonArea");
-   
+
    /* CREATE AND ADD CLOSE TIME MARK BUTTONS ***************************************/
    /* parent of close and time mark button */
    let timeMarkBtn = document.createElement("div");
-   
+
    /* insert parent of close and time mark button */
    timeMarkButtonAreaID.insertAdjacentElement("beforeend", timeMarkBtn);
-   
+
    curTimeMarkCloseBtn = /* enable time marks to be removed    */
-    document.createElement("span");    
-    
+    document.createElement("span");
+
    curTimeMarkCloseBtn   /* give each a unique data attribute */
     .id = "closeTimeMarkBtn" + timeSecCal;
-   
+
    curTimeMarkCloseBtn  /* style close btn - give pointers hover effect */
    .style.cursor = "pointer";
-   
+
    curTimeMarkCloseBtn   /* style close btn - give font-size */
    .style.fontSize = "small";
-   
+
    curTimeMarkCloseBtn   /* add mouse event - mouse over to style text */
    .addEventListener(
     "mouseover", function() {
      this.style.fontWeight = "bold";
      this.style.fontSize = "medium";
     });
-    
+
    curTimeMarkCloseBtn   /* add mouse event - mouse out to style text */
    .addEventListener(
     "mouseout", function() {
-     this.style.fontWeight = "initial"; 
+     this.style.fontWeight = "initial";
      this.style.fontSize = "small";
-    });    
-    
+    });
+
    curTimeMarkCloseBtn   /* add click event - remove time mark and this */
    .addEventListener(
     "click", function() {
      this.parentElement.remove(); /* removes all elements of time mark button */
     });
-   
+
    curTimeMarkCloseBtn   /* give close symbol as string - x */
    .innerText = "x";
-   
+
    /* insert close time mark button */
    timeMarkBtn.insertAdjacentElement("afterbegin", curTimeMarkCloseBtn);
-      
+
    /* CREATE AND ADD TIME MARK BUTTONS ********************************************/
    let closeTimeBtn =    /* get id of close button to insert time mark after it */
     document.getElementById("closeTimeMarkBtn" + timeSecCal);
-    
+
    curTimeMarkBtn =      /* time mark linking tom marked times */
     document.createElement("a");
-   
+
    curTimeMarkBtn.id =   /* give each a unique id */
     "timeMarkBtn" + timeSecCal;
-   
+
    /* open link in new tab - _blank */
-   curTimeMarkBtn.target =  "_blank";   
+   curTimeMarkBtn.target =  "_blank";
    let vidURL = location.href; /* extract current url */
-   
+
    /* conditions if url did not already have time value */
    if (vidURL.indexOf("&t=") > -1) { /* had time value   */
     vidURL = vidURL.replace(/t=[0-9]+/, "t=" + timeSecCal);
    } else {                         /* no time value    */
     vidURL = vidURL + "&t=" + timeSecCal + "s";
-   }      
+   }
    curTimeMarkBtn.href = vidURL;
-   
+
    /* use hour : minutes: seconds */
    for (i in timePreCal) {
     if (i == Number(timePreCal.length-1)) {
@@ -538,37 +574,37 @@ javascript:(function(){
       curTimeMarkBtn.innerText = "0:" + timePreCal[i];
      } else {
       curTimeMarkBtn.innerText += timePreCal[i];
-     }     
+     }
     } else {
      curTimeMarkBtn.innerText += timePreCal[i] + ":";
     }
    }
    /* insert time marked at key combo "Ctrl + m" */
    timeMarkBtn.insertAdjacentElement("beforeend", curTimeMarkBtn);
-   
+
    /* add click event to pause video if clicked and video is playing */
    curTimeMarkBtn.addEventListener("click", function() {
     let playButtonData = playButton[0].dataset.titleNoTooltip;
     if (playButtonData != "Play") {
      playButton[0].click();
     }
-   });     
-  }    
-  
+   });
+  }
+
   /* focus back on note box */
   noteBox.removeAttribute("disabled");
   noteBox.focus();
  };
-   
+
  /* Quickly get back to notes */
- const addKeyDownYouTubeTakeNotesAndAddTimeMarks = () => { 
+ const addKeyDownYouTubeTakeNotesAndAddTimeMarks = () => {
   /* check the key combo and handle action accordingly */
-  document.body.addEventListener("keydown", 
+  document.body.addEventListener("keydown",
    function() {
-    keypressToNoteYouTubeTakeNotesAndAddTimeMarks();  
+    keypressToNoteYouTubeTakeNotesAndAddTimeMarks();
    });
- }; 
-   
+ };
+
  /*********************************************************************************************
                                           MAIN FUNCTION
  *********************************************************************************************/
@@ -580,7 +616,7 @@ javascript:(function(){
   /* begin taking notes */
   noteBox.focus();
 
-  /* listen for keydonw event */ 
+  /* listen for keydonw event */
   addKeyDownYouTubeTakeNotesAndAddTimeMarks();
  }
 
