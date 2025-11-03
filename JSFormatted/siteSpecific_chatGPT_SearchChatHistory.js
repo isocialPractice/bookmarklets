@@ -24,6 +24,16 @@ javascript:(function() {
  /* Create raw html to insert */
  var styleChatGPTSearchChatHistory = `
  <style>
+  /* fix search box */
+  div#searchParChatGPTSearchChatHistory {
+   position: fixed;
+   top: 195px;
+   z-index: 100;
+   padding-top: 5px;
+  }
+  div#searchParChatGPTSearchChatHistory + div {
+   margin-top: 20px;
+  }
   /* search style */
   input.searchHistoryChatGPTSearchChatHistory {
    color: black; 
