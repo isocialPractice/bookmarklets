@@ -584,6 +584,15 @@ setTimeout(function() {
  /* remove remaining new line markers */
  chatGPTPasteReadyBookmark.innerHTML = /* replace with empty string */
   chatGPTPasteReadyBookmark.innerHTML.replace(/--new-line_unlikely_line-new--/g, '');
+ /* HOT-GLUE dark-theme */  
+ var prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+if (prefersDarkScheme.matches) {
+ let pageStyle = document.getElementsByTagName('style');
+ pageStyle[0].innerHTML += 'p, h1, h2, h3, h4, h6, h7, ul *, ol *, table td, table th {' +
+ '    color: white;' +
+ '} pre[data-start] { color: black; }';
+ }
 }, 500);
 </script>
 `;

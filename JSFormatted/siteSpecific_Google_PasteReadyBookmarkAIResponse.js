@@ -1,9 +1,24 @@
 javascript:(function(){
 
  var pageTitle = "Google Generative AI Bookmark";            /* OPTIONAL - Change title.                 */
- var answerDiv = document.getElementsByClassName("UxeQfc");  /* HOT-GLUE - classname holding answer HTML */
+ /* HOT-GLUE - classname holding answer HTML */
+ var answerDiv = document.querySelectorAll(".UxeQfc, .mZJni.Dn7Fzd");
  var answerDivHTML = answerDiv[0].innerHTML;                 /* One element with class name "CAYQBw"     */ 
- 
+ var pageScript = `<script>
+setTimeout(function() {
+ /*  check if the user prefers a dark color scheme */
+ var prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+
+ /*  Access the current preference */
+ if (prefersDarkScheme.matches) {
+  let docStyle = document.getElementsByTagName('style');
+  docStyle[0].innerHTML += 'p, h1, h2, h3, h4, h6, h7, ul *, ol *, table td, table th, div, span {' +
+    '    color: white;'+
+ '} pre { background: darkslategray; }';
+ } 
+}, 500);
+</script>
+`; 
  var pageStyle = `
 <style>
  /*         USER EDITED        */
@@ -183,13 +198,17 @@ div div div div div span {
 </style>`;
  
  /************************************************************* Clean up contents a bit.                 */
- answerDivHTML = answerDivHTML.replace(/\n/g, "<br>");
- answerDivHTML = answerDivHTML.replace(/\"/g, '&#92;&quot;');    
- answerDivHTML = answerDivHTML.replace(/"/g, '\"');              
- answerDivHTML = answerDivHTML.replace(/\'/g, "&#92;&apos;'");   
- answerDivHTML = answerDivHTML.replace(/'/g, "'");              
- answerDivHTML = answerDivHTML.replace(/([ ]{2,})/g, "<br>$1"); 
- answerDivHTML = answerDivHTML.replace(/%/g, "\\%"); 
+ answerDivHTML = answerDivHTML.replaceAll(/\n/g, "<br>");
+ answerDivHTML = answerDivHTML.replaceAll(/\\"/g, '&#92;&quot;');    
+ answerDivHTML = answerDivHTML.replaceAll(/\"/g, '&quot;');    
+ answerDivHTML = answerDivHTML.replaceAll(/"/g, '\"');              
+ answerDivHTML = answerDivHTML.replaceAll(/\\'/g, "&#92;&apos;'");   
+ answerDivHTML = answerDivHTML.replaceAll(/'/g, "'");              
+ answerDivHTML = answerDivHTML.replaceAll(/([ ]{2,})/g, "<br>$1"); 
+ answerDivHTML = answerDivHTML.replaceAll(/%/g, "\\%"); 
+ answerDivHTML = answerDivHTML.replaceAll(/\(/g, "&#40;");   
+ answerDivHTML = answerDivHTML.replaceAll(/\)/g, "&#41;");   
+ answerDivHTML = answerDivHTML.replaceAll(/\&/g, "&amp;");   
  
  /************************************************************* Make bookmarklet with answer bookmarked. */
  var copiedAnswer = 'javascript:(function() {document.write("' + 
@@ -202,13 +221,16 @@ div div div div div span {
       /* sidebarlink to original answer */
       '<h3>Google Generative AI Bookmark</h3>' +
       /* output copied content */
-      answerDivHTML +
+      answerDivHTML + pageScript +
       /* close html */
       "</body></html>" +
       /* close bookmarklet */
       '");})()';
  /************************************************************* Remove unwanted escaped double quotes.   */
-  copiedAnswer = copiedAnswer.replace(/&#92;&quot;/g, '\\\"');  
+  copiedAnswer = copiedAnswer.replaceAll(/&#92;&quot;/g, '');  
+  copiedAnswer = copiedAnswer.replaceAll("&#40;", "(");   
+  copiedAnswer = copiedAnswer.replaceAll("&#41;", ")");   
+  copiedAnswer = copiedAnswer.replaceAll("&amp;", "&");   
 
  /************************************************************* Mind delay to ensure all is copied.      */
  alert("Wait 1 seconds to ensure all of the answer " +        
