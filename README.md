@@ -1,8 +1,6 @@
-# Archiving Repo - 2026
+# Deprecating Repo - 2026
 
 ## Status: **Low Maintenance**
-
-Some of these may become browser extensions.
 
 # Browser Bookmarklets ![repo icon](favicon.png)
 <!-- Navigation -->
@@ -1060,4 +1058,5 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 <hr><br>
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
+
     
