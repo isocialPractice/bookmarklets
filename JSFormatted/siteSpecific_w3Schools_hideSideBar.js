@@ -1,0 +1,102 @@
+javascript:(function() {
+/* Global variables. */
+var navIdW3HideSideBar = "sidenav"; /* id value for side vertical navigation       */
+var sideNavW3HideSideBar = document.getElementById(navIdW3HideSideBar);
+
+var styleTagW3HideSideBar = /* checks if style tag already created - no duplicates */
+ document.getElementById("styleTagW3HideSideBar");
+
+var w3HideSideBar = /* first value is to check if element exists - no duplicates   */
+ document.getElementById("w3HideSideBar");
+
+var styleW3HideSideBar = /* style inserted elements and show/hide using css        */
+`
+ button#w3HideSideBar {
+  z-index: 100;
+  display: inline-block;
+  position: fixed;
+  cursor: pointer;
+  top: 150px;
+  left: 150px;
+  width: 150px;
+  height: 50px;
+  border: none;
+  border-radius: 5px;
+  background: #04AA6D;
+  color: white;
+  text-align: center;
+ }
+ button#w3HideSideBar:hover {
+  border: 3px solid #060606;
+ }
+ /* show hide sidebar per button class name value */
+ button.Hide#w3HideSideBar + div#${navIdW3HideSideBar} {
+  display: none !important;
+ }
+`;
+
+/* ************************************* SUPPORT FUNCTIONS ************************************* */
+/* Create show/hide button. */
+const createBtnW3HideSideBar = () => {
+ let btn = document.createElement("button");
+ btn.setAttribute("id", "w3HideSideBar");
+ btn.setAttribute("class", "Show");
+ btn.innerHTML = "Hide Sidebar";
+ return btn;
+};
+
+/* Insert a show/hide button */
+const addShowHideBtnW3HideSideBar = () => {
+ if (!w3HideSideBar)
+  sideNavW3HideSideBar.insertAdjacentElement("beforebegin", createBtnW3HideSideBar());
+};
+
+/* Insert bookmarklet style tag. */
+var addClickW3HideSideBar = 0; /* 1 when btn added, 0 btn exist and not run nxt function */
+const addStyleTagBtnW3HideSideBar = () => {
+ if (!styleTagW3HideSideBar) {
+  let styleTag = document.createElement("style");
+  let doc = document.getElementsByTagName("body");
+  styleTag.innerHTML = styleW3HideSideBar;
+  styleTag.setAttribute("id", "styleTagW3HideSideBar");
+  doc[0].insertAdjacentElement("afterbegin", styleTag);
+  addClickW3HideSideBar = 1; /* indicates need to run btnOnClickW3HideSideBar */
+ }
+};
+
+/* Give button click functionality */
+const btnOnClickW3HideSideBar = () => {
+ if (addClickW3HideSideBar == 1) {
+  let w3HideSideBar = document.getElementById("w3HideSideBar");
+  w3HideSideBar.addEventListener("click", () => {
+   if (w3HideSideBar.getAttribute("class") == "Show") {
+    w3HideSideBar.setAttribute("class", "Hide");
+   } else {
+    w3HideSideBar.setAttribute("class", "Show");
+   }
+   w3HideSideBar.innerHTML = 
+    w3HideSideBar.innerText.replace(/.* /g, w3HideSideBar.getAttribute("class"));
+  });
+ }
+};
+
+/* Delay each call by increments of .1 second. */
+const delayCallW3HideSideBar = (cur, time) => {
+ timeW3HideSideBar += 100;
+ setTimeout(cur, time);
+};
+
+/*********************************************************************************************
+                                         MAIN FUNCTION
+*********************************************************************************************/
+var timeW3HideSideBar = 0;
+function runW3HideSideBar() {
+ delayCallW3HideSideBar(addShowHideBtnW3HideSideBar, timeW3HideSideBar);
+ delayCallW3HideSideBar(addStyleTagBtnW3HideSideBar, timeW3HideSideBar);
+ delayCallW3HideSideBar(btnOnClickW3HideSideBar, timeW3HideSideBar);
+}
+
+/* Call main function. */
+runW3HideSideBar();
+
+})(); 
