@@ -9,7 +9,7 @@
 <summary>Document Navigation: </summary>
 
 - [DOM Bookmarklets](#dom-bookmarklets)
-  - [Note Take Page Notes](#note-take-page-notes) - ready to use
+  - [Note - Take Page Notes](#note-take-page-notes) - ready to use
   - [Parse - Dom Stop Page Parsing](#parse---dom-stop-page-parsing) - ready to use
   - [Parse - Dom Stop Page Parsed Height](#parse---dom-stop-page-parsed-height) - ready to use
   - [Search - Search Page](#search---search-page) - ready to use
