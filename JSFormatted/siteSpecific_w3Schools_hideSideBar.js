@@ -74,7 +74,7 @@ const btnOnClickW3HideSideBar = () => {
    } else {
     w3HideSideBar.setAttribute("class", "Show");
    }
-   w3HideSideBar.innerHTML = 
+   w3HideSideBar.innerHTML =
     w3HideSideBar.innerText.replace(/.* /g, w3HideSideBar.getAttribute("class"));
   });
  }
@@ -99,4 +99,4 @@ function runW3HideSideBar() {
 /* Call main function. */
 runW3HideSideBar();
 
-})(); 
+})();
