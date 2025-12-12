@@ -20,7 +20,8 @@ javascript:(function() {
    position: fixed;
    top: 100px;
    left: 100px;
-   width: 350px;
+   width: auto !important;
+   height: auto !important;
    background: #ffffff;
    border: 2px solid #d3d3d3;
    border-radius: 10px;
@@ -54,7 +55,7 @@ javascript:(function() {
   }
   #noteBoxDomTakePageNotes {
    display: block;
-   width: 100%;
+   width: 350px;
    height: 200px;
    border: 1px solid #d3d3d3;
    border-radius: 5px;
