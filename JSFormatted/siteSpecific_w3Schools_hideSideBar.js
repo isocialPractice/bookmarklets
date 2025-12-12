@@ -69,13 +69,13 @@ const btnOnClickW3HideSideBar = () => {
  if (addClickW3HideSideBar == 1) {
   let w3HideSideBar = document.getElementById("w3HideSideBar");
   w3HideSideBar.addEventListener("click", () => {
+  w3HideSideBar.innerHTML =
+   w3HideSideBar.innerText.replace(/.* /g, `${w3HideSideBar.getAttribute("class")} `);
    if (w3HideSideBar.getAttribute("class") == "Show") {
     w3HideSideBar.setAttribute("class", "Hide");
    } else {
     w3HideSideBar.setAttribute("class", "Show");
    }
-   w3HideSideBar.innerHTML =
-    w3HideSideBar.innerText.replace(/.* /g, w3HideSideBar.getAttribute("class"));
   });
  }
 };
