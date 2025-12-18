@@ -71,10 +71,17 @@ javascript:(function() {
   #textareawrapper {
    display: flex !important;
   }
+  .CodeMirror.cm-s-default, #textareawrapper {
+   height: unset !important;
+  }
   
   #textareawrapper .CodeMirror-scroll {
    margin-left: 0 !important;
    top: 20px !important;
+  }
+
+  #textareawrapper div.CodeMirror-vscrollbar {
+   display: none !important;
   }
  `;
 
@@ -179,21 +186,71 @@ javascript:(function() {
   });
  };
 
+ /* Create one extra blank line at end so code is intially shown. */
+ const createBlankLineW3ExLnNum = () => {
+  let blnkLnEl = (tag, role, style, className, cmText) => {
+   let curEl = document.createElement(tag);
+   if (role != 0) curEl.setAttribute("role", role);
+   if (style != 0) curEl.setAttribute("style", style);
+   if (className != 0) curEl.setAttribute("class", className);
+   if (cmText != 0) {
+    curEl.setAttribute("cm-text", cmText);
+    curEl.innerHTML = "&ZeroWidthSpace;";
+   }
+   return curEl;
+  };
+  /*  add blank line at end of code example */
+  let addBlnkLnEl = () => {
+   let blankLine = blnkLnEl("pre", "presentation", 0, " CodeMirror-line ", 0);
+   let spanOne = blnkLnEl("span", "presentation", "padding-right: 0.1px", 0, 0);
+   let spanTwo = blnkLnEl("span", "presentation", 0, 0, "");
+   codeParentW3ExLnNum[0].insertAdjacentElement("beforeend", blankLine);
+   blankLine.insertAdjacentElement("afterbegin", spanOne);
+   spanOne.insertAdjacentElement("afterbegin", spanTwo);
+  };
+  addBlnkLnEl();
+  addBlnkLnEl();
+ };
+
+ /* Ensure extra blank line is not removed when code is activated. */
+ var clickOneW3ExLnNum = 0;
+ const codeExClickOneW3ExLnNum = () => {
+  let CodeMirror = document.getElementsByClassName("CodeMirror");
+  CodeMirror[0].click();
+  let clickHandler = () => {
+   if (clickOneW3ExLnNum == 0) {
+    createBlankLineW3ExLnNum();
+    clickOneW3ExLnNum = 1;
+   } else {
+    CodeMirror[0].removeEventListener("click", clickHandler);
+   }
+  };
+  codeParentW3ExLnNum[0].addEventListener("click", clickHandler);
+ };
+
  /*********************************************************************************************
                                           MAIN FUNCTION
  *********************************************************************************************/
  function runW3ExampleLineNumbers() {
-  /* add html line number column */
+  /* add html line number column                                */
   insertLineNumberColW3ExLnNum();
 
-  /* add style tag */
+  /* add style tag                                              */
   addStyleW3ExLnNum();
 
-  /* enable toggle functionality */
+  /* enable toggle functionality                                */
   toggleLineNumbersW3ExLnNum();
 
-  /* watch for code changes and update line numbers */
+  /* watch for code changes and update line numbers             */
   observeCodeChangesW3ExLnNum();
+
+  
+  /* add blank line at end of code example                      */
+  /* and ensure extra blank line persists after code activation */
+  setTimeout(function() {
+   createBlankLineW3ExLnNum();
+   codeExClickOneW3ExLnNum();
+  }, 500);
  }
  
  /* Run the main function. */
