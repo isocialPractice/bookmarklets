@@ -66,7 +66,7 @@
 <!-- Description -->
 <div>
 
-<br><br>
+<!-- ne need for <br><br> -->
 
 `Ctrl + click` to see example of some [bookmarklets](https://isocialpractice.github.io/bookmarklets/)
 
