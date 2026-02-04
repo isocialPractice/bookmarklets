@@ -79,7 +79,7 @@ javascript:(function(){
     isDrawingMode ? '#db4437' : '#4285f4';
 
    btn.innerText = /* button text */
-    isDrawingMode ? '🛑 Stop' : '📏 Draggable Measure';
+    isDrawingMode ? '🛑 Stop' : '📏 Custom Measure';
 
    svg.style.display = /* show or hide svg */
     isDrawingMode ? 'block' : 'none';
