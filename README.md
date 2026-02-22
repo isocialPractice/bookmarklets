@@ -41,6 +41,7 @@
   - [YouTube - Hide Short History](#youtube---hide-short-history) - ready to use
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use
+  - [YouTube - Short Hover Title](#youtube---short-hover-title) - ready to use 
   - [YouTube - Show Short Release Date](#youtube---show-short-release-date) - ready to use
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use
   - [YouTube - Sync Audio](#youtube---sync-audio) - ready to use
@@ -869,6 +870,26 @@ javascript:(function(){ /* Config variables. */ var heightSavedPageNotesToNotebo
 </details>
 </dd></dl></dd></dl>
 
+YouTube - Short Hover Title: 
+----
+<dl><dd><dl><dd>
+
+Show short full title on mouseover.<br><br>
+
+<strong>USE - ready to use</strong>
+
+<details>
+
+<summary>siteSpecific_YouTube_ShortHoverTitle.js</summary><br>
+
+Gist page for [siteSpecific_YouTube_ShortHoverTitle.js](https://gist.github.com/jhauga/CHANGE_ID)
+
+```markdown
+javascript:(function() { const metapanel = document.getElementById("metapanel"); if (!metapanel) { console.warn("Element with ID 'metapanel' not found."); return; } let hoverTimeout; let tooltipElement = null; /************************************* SUPPORT FUNCTIONS *************************************/ const showTooltip = (text, targetElement) => { if (tooltipElement) { document.body.removeChild(tooltipElement); tooltipElement = null; } tooltipElement = document.createElement("div"); tooltipElement.style.cssText = ` position: absolute; background-color: #333; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 14px; z-index: 9999; max-width: 300px; white-space: pre-wrap; pointer-events: none; opacity: 0; transition: opacity 0.2s ease-in-out; box-shadow: 0 2px 5px rgba(0,0,0,0.2); `; tooltipElement.textContent = text; document.body.appendChild(tooltipElement); const targetRect = targetElement.getBoundingClientRect(); tooltipElement.style.top = (window.scrollY + targetRect.bottom + 5) + "px"; tooltipElement.style.left = (window.scrollX + targetRect.left) + "px"; tooltipElement.style.opacity = "1"; }; const hideTooltip = () => { if (tooltipElement) { document.body.removeChild(tooltipElement); tooltipElement = null; } }; const handleDelegateMouseOver = (event) => { const target = event.target.closest('h2'); /* Find the closest h2 ancestor */ if (!target || !metapanel.contains(target)) return; /* Ensure it's an h2 within metapanel */ /* Check if event listener was already applied to avoid re-applying */ if (target.dataset.tooltipActive === 'true') { return; } target.dataset.tooltipActive = 'true'; /* Mark as active */ /* Store original title only if it exists and hasn't been stored */ if (target.hasAttribute('title') && !target.dataset.originalTitle) { target.dataset.originalTitle = target.getAttribute('title'); } target.setAttribute('title', ''); /* temporarily remove native tooltip */ const fullText = target.innerText; hoverTimeout = setTimeout(() => { showTooltip(fullText, target); }, 500); }; const handleDelegateMouseOut = (event) => { const target = event.target.closest('h2'); if (!target || !metapanel.contains(target)) return; clearTimeout(hoverTimeout); hideTooltip(); /* Restore original title if it was stored */ if (target.dataset.originalTitle !== undefined) { target.setAttribute('title', target.dataset.originalTitle); delete target.dataset.originalTitle; /* Clean up the dataset property */ } else { target.removeAttribute('title'); /* Ensure no empty title remains if it wasn't originally there */ } delete target.dataset.tooltipActive; /* Mark as inactive */ }; /********************************************************************************************* MAIN FUNCTION *********************************************************************************************/ /* Remove existing delegated listeners if they were previously added */ function mainYouTubeShortHoverTitle() { if (metapanel.dataset.tooltipListenersAdded === 'true') { metapanel.removeEventListener("mouseover", handleDelegateMouseOver); metapanel.removeEventListener("mouseout", handleDelegateMouseOut); } metapanel.addEventListener("mouseover", handleDelegateMouseOver); metapanel.addEventListener("mouseout", handleDelegateMouseOut); metapanel.dataset.tooltipListenersAdded = 'true'; /* Mark that listeners are added */ console.log("Bookmarklet for h2 title display activated!"); } /* Run bookmarklet. */ mainYouTubeShortHoverTitle();})();
+```
+</details>
+</dd></dl></dd></dl>
+
 YouTube - Show Short Release Date:
 ----
 <dl><dd><dl><dd>
@@ -1163,4 +1184,3 @@ javascript:(function() { /* Define global variables. */ var currentPage = locati
 <hr><br>
 
 <!---------------------------------------- END OF FILE ----------------------------------------->
-    
