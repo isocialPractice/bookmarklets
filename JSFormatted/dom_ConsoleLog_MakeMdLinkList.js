@@ -1,7 +1,8 @@
 javascript:(function() {
  /* ============================== CONFIG VARIABLES ============================== */
- var skipMenuMakeMdLinkList   = true; /* do not include menu links   */
- var skipFooterMakeMdLinkList = true; /* do not include footer links */
+ var skipMenuMakeMdLinkList   = true;  /* do not include menu links   */
+ var skipFooterMakeMdLinkList = true;  /* do not include footer links */
+ var skipHeaderMakeMdLinkList = false; /* do not include list header  */
  /*******************************************************************************
      Legacy templating Key
      INNER_TEXT  =  <a> tag inner text
@@ -42,7 +43,7 @@ javascript:(function() {
     document.body) whose tag name, className string, or id string contains any
     value from the identifiers array.  Case-insensitive comparison throughout.
     Used to filter out links that live inside nav/menu or footer zones.         */
- var isInZoneMakeMdLinkList = function(el, identifiers) {
+ const isInZoneMakeMdLinkList = (el, identifiers) => {
   var node = el;
   while (node && node !== document.body) {
    var tag = node.tagName ? node.tagName.toLowerCase() : "";
@@ -64,7 +65,7 @@ javascript:(function() {
     Walks up the DOM from el.parentElement and returns the first ancestor
     element whose tag is ul, ol, or dl.  Returns null if the walk reaches
     document.body without finding a list element.                               */
- var nearestListMakeMdLinkList = function(el) {
+ const nearestListMakeMdLinkList = (el) => {
   var node = el.parentElement;
   while (node && node !== document.body) {
    var tag = node.tagName ? node.tagName.toLowerCase() : "";
@@ -81,7 +82,7 @@ javascript:(function() {
       2. If none found, recurse upward through listEl.parentElement to check
          sibling headings at the parent level.
     Returns the heading element, or null if none can be found before body.      */
- var headingForListMakeMdLinkList = function(listEl) {
+ const headingForListMakeMdLinkList = (listEl) => {
   var sibling = listEl.previousElementSibling;
   while (sibling) {
    if (/^h[1-6]$/i.test(sibling.tagName)) return sibling;
@@ -98,7 +99,7 @@ javascript:(function() {
     Converts a potentially relative href string to a fully absolute URL using
     the page's baseURI so that output links remain valid outside this page.
     Falls back to the raw href string if URL construction throws.               */
- var resolveHrefMakeMdLinkList = function(href) {
+ const resolveHrefMakeMdLinkList = (href) => {
   try {
    return new URL(href, document.baseURI).href;
   } catch(e) {
@@ -121,7 +122,7 @@ javascript:(function() {
             headingForListMakeMdLinkList.
           * Push a nested String array entry for the group.
       - If a link is NOT inside any list, push a flat String entry.             */
- var linkDataMakeMdLinkList = function() {
+ const linkDataMakeMdLinkList = () => {
   var seenListsMakeMdLinkList = []; /* list elements already processed          */
   for (var i = 0; i < linksMakeMdLinkList.length; i++) {
    var link = linksMakeMdLinkList[i];
@@ -173,21 +174,34 @@ javascript:(function() {
   }
  };
 
+ /* Alert and console.log result, outputting data to console if clipboard fail. */
+ const outDataAndResultsMakeMdLinkList = (msg, data) => {
+  if (data == undefined) data = false;
+  alert(msg);
+  if (data !== false) {
+   console.log(data);
+  }
+  console.log("/* " + msg + " */");
+ };
+
  /* Prepare the final data to output markdown list of links.
     Iterates over the populated parallel arrays and builds mdDataMakeMdLinkList.
-    For each grouped entry (Array):
-      - If a heading was resolved, output "#"-repeated heading line matching
-        the original h-tag level (e.g. h4 → "####").
-      - Output each link using the mdOutputMakeMdLinkList template.
-    For each ungrouped entry (String):
-      - Output a generated "### Section N" heading.
-      - Output the single link using the mdOutputMakeMdLinkList template.        */
- var prepDataMakeMdLinkList = function() {
+    If skipHeaderMakeMdLinkList is true:
+      - Output all links as a flat list with no headers.
+    Otherwise (skipHeaderMakeMdLinkList is false):
+      - For each grouped entry (Array):
+          * If a heading was resolved, output "#"-repeated heading line matching
+            the original h-tag level (e.g. h4 → "####").
+          * Output each link using the mdOutputMakeMdLinkList template.
+      - For each ungrouped entry (String):
+          * Output a generated "### Section N" heading.
+          * Output the single link using the mdOutputMakeMdLinkList template.    */
+ const prepDataMakeMdLinkList = () => {
   for (var i = 0; i < aInnerTextMakeMdLinkList.length; i++) {
    var entry = aInnerTextMakeMdLinkList[i];
    if (Array.isArray(entry)) {
     var meta = hasHtagMakeMdLinkList[i];
-    if (meta && meta.text && meta.level) {
+    if (!skipHeaderMakeMdLinkList && meta && meta.text && meta.level) {
      var hashes = "";
      for (var h = 0; h < meta.level; h++) hashes += "#";
      mdDataMakeMdLinkList += hashes + " " + meta.text + "\n\n";
@@ -197,15 +211,47 @@ javascript:(function() {
       .replace("INNER_TEXT", entry[j])
       .replace("HREF_LINK",  aHrefMakeMdLinkList[i][j]) + "\n";
     }
-    mdDataMakeMdLinkList += "\n";
+    if (!skipHeaderMakeMdLinkList) mdDataMakeMdLinkList += "\n";
    } else { /* item was not nested in a list */
-    /* Add Section heading for unested items */
-    mdDataMakeMdLinkList += "### Section " + trackUnestMakeMdLinkList + "\n\n";
-    trackUnestMakeMdLinkList += 1; /* increment for next section */
+    if (!skipHeaderMakeMdLinkList) {
+     /* Add Section heading for unested items */
+     mdDataMakeMdLinkList += "### Section " + trackUnestMakeMdLinkList + "\n\n";
+     trackUnestMakeMdLinkList += 1; /* increment for next section */
+    }
     mdDataMakeMdLinkList += mdOutputMakeMdLinkList
      .replace("INNER_TEXT", entry)
-     .replace("HREF_LINK",  aHrefMakeMdLinkList[i]) + "\n\n";
+     .replace("HREF_LINK",  aHrefMakeMdLinkList[i]) + "\n";
+    if (!skipHeaderMakeMdLinkList) mdDataMakeMdLinkList += "\n";
    }
+  }
+ };
+
+ /* copyToClipboardMakeMdLinkList
+    Attempts to copy text to clipboard using a hidden textarea fallback.
+    Creates a temporary textarea, sets its value, selects, and executes copy.
+    Falls back to console output if clipboard copy fails.
+    Cleans up the textarea after attempting the copy operation.                 */
+ const copyToClipboardMakeMdLinkList = (text) => {
+  var textarea = document.createElement("textarea");
+  textarea.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;";
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, text.length); /* for mobile compatibility       */
+  var success = false;
+  try {
+   success = document.execCommand("copy");
+  } catch(e) {
+   success = false;
+  }
+  document.body.removeChild(textarea);
+  if (success) {
+   /* alert results that clipboard is ready and log results to console        */
+   outDataAndResultsMakeMdLinkList("Output copied to clipboard.", false);
+  } else {
+   /* alert results that clipboard failed and log data and results to console */
+   outDataAndResultsMakeMdLinkList(
+    "Clipboard unavailable — select and copy the console output.", text);
   }
  };
 
@@ -217,18 +263,12 @@ javascript:(function() {
     prepDataMakeMdLinkList runs after a 500ms delay to allow any lazy-rendered
     page content to settle before querying the DOM for list and heading data.
     Output is written to the browser console.  A clipboard copy is attempted
-    via the DevTools copy() helper so the result can be pasted immediately.     */
+    via a hidden textarea so copy works without DevTools open.                  */
  function runMakeMdLinkList() {
   linkDataMakeMdLinkList();
   setTimeout(function() {
    prepDataMakeMdLinkList();
-   console.log(mdDataMakeMdLinkList);
-   try {
-    copy(mdDataMakeMdLinkList);
-    console.log("/* Output copied to clipboard. */");
-   } catch(e) {
-    console.log("/* Clipboard unavailable — select and copy the output above. */");
-   }
+   copyToClipboardMakeMdLinkList(mdDataMakeMdLinkList);
   }, 500);
  }
 
