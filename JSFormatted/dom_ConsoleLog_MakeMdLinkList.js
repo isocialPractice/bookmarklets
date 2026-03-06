@@ -1,5 +1,5 @@
 javascript:(function() {
- /* ============================== CONFIG VARIABLES ============================== */
+ /* CONFIG VARIABLES */
  var skipMenuMakeMdLinkList   = true;  /* do not include menu links   */
  var skipFooterMakeMdLinkList = true;  /* do not include footer links */
  var skipHeaderMakeMdLinkList = false; /* do not include list header  */
@@ -9,9 +9,9 @@ javascript:(function() {
      HREF_LINK   =  href value of <a> tag
  ********************************************************************************/
  var mdOutputMakeMdLinkList   = /* format how markdown link is output            */
-  `- [INNER_TEXT](HREF_LINK)`;
+  "- [INNER_TEXT](HREF_LINK)";
 
- /* ============================= GLOBAL VARIABLES ============================= */
+ /* GLOBAL VARIABLES */
  var headingsMakeMdLinkList = /* all heading elements on the page               */
   document.querySelectorAll("h1, h2, h3, h4, h5, h6");
 
