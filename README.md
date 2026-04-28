@@ -20,6 +20,7 @@
 - [Style Bookmarklets](#style-bookmarklets)
   - [Favicon - Change or Add Favicon](#favicon---change-or-add-favicon) - requires 1 change(s)
 - [Site Specific Bookmarklets](#site-specific-bookmarklets)
+  - [Amazon Hide Video Pause Icon](#amazon-hide-video-pause-icon) - ready to use
   - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response) - requires 1 change
   - [ChatGPT - Navigate Answers](#chatgpt--navigate-answers) - ready to use
   - [ChatGPT - Paste Ready Bookmark Response](#chatgpt---paste-ready-bookmark-response) - ready to use
@@ -374,6 +375,26 @@ javascript:(function() {var faviconImageURL = "CHANGE"; /* CHANGE - url where im
 # Site Specific Bookmarklets:
 <div>
 The below bookmarklets will only work when used on the website specified.
+
+Amazon Hide Video Pause Icon:
+----
+<dl><dd><dl><dd>
+
+Hide Amazon product video pause icon when video is instructional, and you want to take screenshots; but pause icon obscures image <br><br>
+
+<strong>USE - ready to use</strong>
+
+<details>
+
+<summary>siteSpecific_Amazon_HideVideoPauseIcon.js</summary><br>
+
+Gist page for [siteSpecific_Amazon_HideVideoPauseIcon.js](https://gist.github.com/jhauga/CHANGE_ID)
+
+```js
+javascript:(function() { /* Global variables */ const playIconAmazonHideVideoPauseIcon = /* class name of pause icon */ document.getElementsByClassName("vjs-big-play-button"); /************************************* SUPPORT FUNCTIONS *************************************/ /* Apply `display: none` to the element if pass playIconAmazonHideVideoPauseIcon check. */ const addDisplayNoneAmazonHideVideoPauseIcon = (cur) => { cur.setAttribute("style", "display: none"); /* style element, hiding it */ }; /* Check all elements with class name `vjs-big-play-button` and if not styled, apply style. */ const hidePlayIconAmazonHideVideoPauseIcon = () => { let iconLen = playIconAmazonHideVideoPauseIcon.length; /* count all classes */ /* ensure there are elements with class name */ if (iconLen > 0) { /* loop each with class, and add style display none */ for (i = 0; i < iconLen; i++) { /* don't duplicate display none */ if (playIconAmazonHideVideoPauseIcon[i].hasAttribute("style")) { if (playIconAmazonHideVideoPauseIcon[i].getAttribute("style") .indexOf("display: none") > -1) { /* check not passed - style is applied */ let skip; } else { /* add style="display: none" */ addDisplayNoneAmazonHideVideoPauseIcon(playIconAmazonHideVideoPauseIcon[i]); } } else { /* add style="display: none" */ addDisplayNoneAmazonHideVideoPauseIcon(playIconAmazonHideVideoPauseIcon[i]); } } } else { /* log no elements with class found */ console.log("No play/pause icons with class `vjs-big-play-button` found."); } }; /********************************************************************************************* MAIN FUNCTION *********************************************************************************************/ /* Run support functions */ function mainAmazonHideVideoPauseIcon() { /* run hidePlayIconAmazonHideVideoPauseIcon which checks and applies display: none */ hidePlayIconAmazonHideVideoPauseIcon(); } /* Run bookmarklet. */ mainAmazonHideVideoPauseIcon();})();
+```
+</details>
+</dd></dl></dd></dl>
 
 ChatGPT - Bookmark a specific response
 ----
