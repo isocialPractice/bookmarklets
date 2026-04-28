@@ -156,6 +156,8 @@ When learning something new, and want to take notes on it. <br><br>
 
 <summary>dom_Note_TakePageNotes.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [dom_Note_TakePageNotes.js](https://gist.github.com/jhauga/52661cda4f5340a8023ffee94ece792b)
 
 ```js
@@ -178,6 +180,8 @@ Page tested - **[Featured News](https://www.taxnotes.com/featured-news)**.
 <details>
 
 <summary>dom_Parse_DomStopPageParsing.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Parse_DomStopPageParsing.js](https://gist.github.com/jhauga/bd8d1598d8731d242e0f18100b27edd9)
 
@@ -203,6 +207,8 @@ Page tested - **[Featured News](https://www.taxnotes.com/featured-news)**.
 
 <summary>dom_Parse_DomStopPageParsedHeight.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [dom_Parse_DomStopPageParsedHeight.js](https://gist.github.com/jhauga/e150dbfc1471cfd4d62367ea3084aa19)
 
 ```js
@@ -225,6 +231,8 @@ Click and drag to adjust top position (*range of 40px to 150px*).<br><br>
 <details>
 
 <summary>dom_search_page.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_search_page.js](https://gist.github.com/jhauga/7e3af6f91cc931f492d0615367612627)
 
@@ -256,6 +264,8 @@ Page tested - **[Chrome for Developers](https://developer.chrome.com/docs/devtoo
 
 <summary>dom_Video_DomTakeVideoNotes.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [dom_Video_DomTakeVideoNotes.js](https://gist.github.com/jhauga/5a246efafe3dd894c93d6725978651a1)
 
 ```js
@@ -285,6 +295,8 @@ Fix side navigation and aside to position of page, and make it scrollable. <br><
 
 <summary>nav_Sidebar_FixAndScrollSideMenu.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [nav_Sidebar_FixAndScrollSideMenu.js](https://gist.github.com/jhauga/68d76f72d3adfebfb99cc34b459e2cc6)
 
 ```js
@@ -306,6 +318,8 @@ then use this bookmarklet: <br><br>
 
 <summary>nav_Sidebar_HighlightCurrentPage.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [nav_Sidebar_HighlightCurrentPage.js](https://gist.github.com/jhauga/716cd39dc31ac9f607993f709cc48f60)
 
 ```js
@@ -326,6 +340,8 @@ when clicked use this bookmarklet: <br><br>
 <details>
 
 <summary>nav_Sidebar_UnderlineAnchorLink.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [nav_Sidebar_UnderlineAnchorLink.js](https://gist.github.com/jhauga/34b965a0e2a49fdf075fdf44d15306d0)
 
@@ -358,6 +374,8 @@ Change or add a website favicon. For fun or to help identify sites by tab or boo
 
 <summary>style_Favicon_ChangeOrAddFavicon.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 <strong>Required \(x1\)</strong>
  1. Change value of `faviconImageURL` variable to image's url.
 
@@ -388,7 +406,9 @@ Hide Amazon product video pause icon when video is instructional, and you want t
 
 <summary>siteSpecific_Amazon_HideVideoPauseIcon.js</summary><br>
 
-Gist page for [siteSpecific_Amazon_HideVideoPauseIcon.js](https://gist.github.com/jhauga/CHANGE_ID)
+<!-- PASTE VIDEO HERE -->
+
+Gist page for [siteSpecific_Amazon_HideVideoPauseIcon.js](https://gist.github.com/jhauga/298d732bea258a5948c984535895511d)
 
 ```js
 javascript:(function() { /* Global variables */ const playIconAmazonHideVideoPauseIcon = /* class name of pause icon */ document.getElementsByClassName("vjs-big-play-button"); /************************************* SUPPORT FUNCTIONS *************************************/ /* Apply `display: none` to the element if pass playIconAmazonHideVideoPauseIcon check. */ const addDisplayNoneAmazonHideVideoPauseIcon = (cur) => { cur.setAttribute("style", "display: none"); /* style element, hiding it */ }; /* Check all elements with class name `vjs-big-play-button` and if not styled, apply style. */ const hidePlayIconAmazonHideVideoPauseIcon = () => { let iconLen = playIconAmazonHideVideoPauseIcon.length; /* count all classes */ /* ensure there are elements with class name */ if (iconLen > 0) { /* loop each with class, and add style display none */ for (i = 0; i < iconLen; i++) { /* don't duplicate display none */ if (playIconAmazonHideVideoPauseIcon[i].hasAttribute("style")) { if (playIconAmazonHideVideoPauseIcon[i].getAttribute("style") .indexOf("display: none") > -1) { /* check not passed - style is applied */ let skip; } else { /* add style="display: none" */ addDisplayNoneAmazonHideVideoPauseIcon(playIconAmazonHideVideoPauseIcon[i]); } } else { /* add style="display: none" */ addDisplayNoneAmazonHideVideoPauseIcon(playIconAmazonHideVideoPauseIcon[i]); } } } else { /* log no elements with class found */ console.log("No play/pause icons with class `vjs-big-play-button` found."); } }; /********************************************************************************************* MAIN FUNCTION *********************************************************************************************/ /* Run support functions */ function mainAmazonHideVideoPauseIcon() { /* run hidePlayIconAmazonHideVideoPauseIcon which checks and applies display: none */ hidePlayIconAmazonHideVideoPauseIcon(); } /* Run bookmarklet. */ mainAmazonHideVideoPauseIcon();})();
@@ -407,6 +427,8 @@ If any error, escape quotes and special characters in text and repaste. <br><br>
 <details>
 
 <summary>siteSpecific_chatGPT_BookmarkResponse.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 <strong>Required \(x1\)</strong>
  1. Paste response from clipboard in lieu of "PASTE_RESPONSE".
@@ -438,6 +460,8 @@ Navigate through long chatGPT conversations one answer at a time. <br><br>
 
 <summary>siteSpecific_chatGPT_NavigateAnswers.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_chatGPT_NavigateAnswers.js](https://gist.github.com/jhauga/ada256a97a9725a7ba117de31909b4cd)
 
 ```js
@@ -464,7 +488,6 @@ Copy a ready bookmarklet to the clipboard. Once run all copied answers will be c
 
 `Ctrl + click` link to view demo on YouTube [ChatGPT - Paste Ready Bookmark Response](https://youtu.be/0aGQyrg7vo0)
 
-
 Gist page for [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2)
 
 ```js
@@ -487,6 +510,8 @@ Resize the ChatGPT text prompt. Works with:
 
 <summary>siteSpecific_chatGPT_ResizePrompt.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_chatGPT_ResizePrompt.js](https://gist.github.com/jhauga/edf8e8a842ebe8b00e1a5ff3ec24892c)
 
 ```js
@@ -507,6 +532,8 @@ Search titles of chat history when chat history gets long. <br><br>
 <details>
 
 <summary>siteSpecific_chatGPT_SearchChatHistory.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_chatGPT_SearchChatHistory.js](https://gist.github.com/jhauga/90ccd5e537c2bd08e5a9427c82d437ae)
 
@@ -529,6 +556,8 @@ Alternate the row colors of repo directory. Activate in repo root and file viewi
 <details>
 
 <summary>siteSpecific_GitHub_AlternateRowColor.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GitHub_AlternateRowColor.js](https://gist.github.com/jhauga/bb175713e395ac4135f21e7de11245a3)
 
@@ -554,6 +583,8 @@ Loosely based on [stackoverflow answer](https://stackoverflow.com/questions/3867
 
 <summary>siteSpecific_GitHub_ShowFileSize.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_GitHub_ShowFileSize.js](https://gist.github.com/jhauga/247e43f74af2f196309d5746710899ae)
 
 ```js
@@ -575,6 +606,8 @@ Resize the Gmail sidebar when labels have long and similar names <br><br>
 
 <summary>siteSpecific_Gmail_ResizeSideBar.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_Gmail_ResizeSideBar.js](https://gist.github.com/jhauga/6ed0d7b27e2214fb3444a0757129d9c6)
 
 ```js
@@ -594,6 +627,8 @@ Use this bookmarklet to get contrast between regular emails and sponsored emails
 <details>
 
 <summary>siteSpecific_Gmail_StyleSponsoredEmail.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_Gmail_StyleSponsoredEmail.js](https://gist.github.com/jhauga/98f86d2bab59a2a9618644cf598077ce)
 
@@ -615,6 +650,8 @@ Bookmark the contents of a Generative AI response from Google search. Run bookma
 
 <summary>siteSpecific_Google_PasteReadyBookmarkAIResponse.js</summary><br>		
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_Google_PasteReadyBookmarkAIResponse.js](https://gist.github.com/jhauga/0910c78eef852fc381464db7cfae49ab)
 
 ```js
@@ -635,6 +672,8 @@ Draw multiple measurements using scale of Google Maps.
 <details>
 
 <summary>siteSpecific_GoogleMaps_CustomMearsureDistance.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GoogleMaps_CustomMearsureDistance.js](https://gist.github.com/jhauga/c16243b10c2cd74e4dd7a2259109f575)
 
@@ -695,6 +734,8 @@ Add a button to extract an answers id and add to address bar as if clicking an a
 
 <summary>siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js](https://gist.github.com/jhauga/4cb77c8ca7966c63e23f6f13db316ea1)
 
 ```js
@@ -714,6 +755,8 @@ Add a button to extract an answers id, adding it to address bar as anchor link, 
 <details>
 
 <summary>siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 		
 Gist page for [siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js](https://gist.github.com/jhauga/80fa99670b2d27c373e11e485ba451bd)
 
@@ -736,6 +779,8 @@ Show the line numbers for code examples on w3schools.com. <br><br>
 
 <summary>siteSpecific_w3Schools_exampleLineNumbers.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_w3Schools_exampleLineNumbers.js](https://gist.github.com/jhauga/c16243b10c2cd74e4dd7a2259109f575)
 
 ```js
@@ -757,6 +802,8 @@ When reading a w3shcools.com tutorial, and sidebar is distracting. Works with:
 <details>
 
 <summary>siteSpecific_w3Schools_hideSideBar.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_w3Schools_hideSideBar.js](https://gist.github.com/jhauga/2a610c4b8b6a1e5116d69b87099376f4)
 
@@ -784,6 +831,8 @@ Add time marks to current video, creating links with value of marked time. When 
 
 <summary>siteSpecific_YouTube_AddTimeMarks.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_YouTube_AddTimeMarks.js](https://gist.github.com/jhauga/98fa9a1b56811c1d65751de76fce2f02)
 
 ```js
@@ -804,6 +853,8 @@ Darken the bottom controls of a YouTube video when the video has a constant ligh
 <details>
 
 <summary>siteSpecific_YouTube_DarkenBottomControls.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_DarkenBottomControls.js](https://gist.github.com/jhauga/b0405d62454e073d9512cbb20d1399ef)
 
@@ -826,6 +877,8 @@ search YouTube video watch history dynamically <br><br>
 
 <summary>siteSpecific_YouTube_dynamicHistorySearch.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_YouTube_dynamicHistorySearch.js](https://gist.github.com/jhauga/e88d4b75abc28d0d10dfa065e970a775)
 
 ```js
@@ -846,6 +899,8 @@ Hide short watch history on YouTube history feed. <br><br>
 <details>
 
 <summary>siteSpecific_YouTube_HideShortHistory.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_HideShortHistory.js](https://gist.github.com/jhauga/f7be2360de10033c2bccfc8cec76b23c)
 
@@ -872,6 +927,7 @@ Saving notes taken of a YouTube video for later referencing or to continue notes
 
 <summary>siteSpecific_YouTube_SavePageNotesToLocalStorage.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_SavePageNotesToLocalStorage.js](https://gist.github.com/jhauga/1a1ab0a105b5ba616de1f2c46816a0a4)
 
@@ -905,6 +961,8 @@ Extract saved notes taken of a YouTube video for later referencing or to continu
 
 <summary>siteSpecific_YouTube_SavedPageNotesToNotebox.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_YouTube_SavedPageNotesToNotebox.js](https://gist.github.com/jhauga/5dfca4820e20b57b9bf97647519c2dc6)
 
 ```js
@@ -914,7 +972,7 @@ javascript:(function(){ /* Config variables. */ var heightSavedPageNotesToNotebo
 </details>
 </dd></dl></dd></dl>
 
-YouTube - Short Hover Title: 
+YouTube - Short Hover Title:
 ----
 <dl><dd><dl><dd>
 
@@ -925,6 +983,8 @@ Show short full title on mouseover.<br><br>
 <details>
 
 <summary>siteSpecific_YouTube_ShortHoverTitle.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_ShortHoverTitle.js](https://gist.github.com/jhauga/ddb02303082c8912e208b30bd3bc0db9)
 
@@ -950,6 +1010,8 @@ Quickly getting the release of a YouTube short. NOTE - after 1st scroll down and
 
 <summary>siteSpecific_YouTube_ShowShortReleaseDate.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_YouTube_ShowShortReleaseDate.js](https://gist.github.com/jhauga/6924dfc7556ae2c9e2a9c6ea57231d45)
 
 ```js
@@ -969,6 +1031,8 @@ Stack the playlists in the user playlist feed as if dispaly were  block, increas
 <details>
 
 <summary>siteSpecific_YouTube_StackUserPlaylistFeed.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_StackUserPlaylistFeed.js](https://gist.github.com/jhauga/b2da5b4b5d639eb7d309231c4038a6a5)
 
@@ -990,6 +1054,8 @@ Quickly resync video and audio are out of sync to resynchronize audio to video <
 <details>
 
 <summary>siteSpecific_YouTube_SyncAudio.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_SyncAudio.js](https://gist.github.com/jhauga/4e4b1e29e97aa5dd4383cac435331bcf)
 
@@ -1020,6 +1086,8 @@ Add note box to YouTube video and take notes on it. Just start typing. Press `Ct
 <details>
 
 <summary>siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks](https://gist.github.com/jhauga/a2011b5dd50336546f8f91ee2d051de5)
 
@@ -1052,6 +1120,8 @@ Take notes on a YouTube video. Press ctrl+Shift to quickly move focus out of not
 
 <summary>siteSpecific_YouTube_TakeVideoNotes.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [siteSpecific_YouTube_TakeVideoNotes.js](https://gist.github.com/jhauga/d3b4f0442de3d1b72da26ae0c9cbe499)
 
 ```js
@@ -1067,45 +1137,15 @@ YouTube - Top Subscription Toggle Btn:
 
 When toggling subscription list, and tired of scrolling way up to show less <br><br>
 
-<!------------------------------------------
-When toggling subscription list, and tired of scrolling way up to show less. Works with:
-
-1. Focus - What it Does
--------------------------------------------->
-
 <strong>USE - ready to use</strong>
-
-<!------------------------------------------
-<strong>USE - requires [x] change(s)</strong>
--------------------------------------------->
-
-<!------------------------------------------
-<strong>USE - optional [x] change(s)</strong>
--------------------------------------------->
-
-<!------------------------------------------
-[Loosely] [b]Based on [SITE_NAME](REF_LINK)
--------------------------------------------->
 
 <details>
 
 <summary>siteSpecific_YouTube_TopSubscriptionToggleBtn.js</summary><br>
 
-<!------------------------------------------
-<strong>Required Changes\(x1\)</strong>
- 1. QUICK_DESCRIPTION
--------------------------------------------->
-
-<!------------------------------------------
-<strong>Optional Changes\(x2\)</strong> 
- 1. QUICK_DESCRIPTION            
- 2. QUICK_DESCRIPTION            
--------------------------------------------->
-
 <!-- PASTE VIDEO HERE -->
 
-
-Gist page for [siteSpecific_YouTube_TopSubscriptionToggleBtn.js](https://gist.github.com/jhauga/CHANGE_ID)
+Gist page for [siteSpecific_YouTube_TopSubscriptionToggleBtn.js](https://gist.github.com/jhauga/57f0fe041128b93c13e161587e94e19f)
 
 ```markdown
 javascript:(function() { /* Global variables. */ var expandButtonYouTubeTopSubscriptionToggleBtn = /* show more */ document.querySelector('ytd-guide-entry-renderer#expander-item[role="button"]'); var collapseButtonYouTubeTopSubscriptionToggleBtn = /* show less */ document.querySelector('ytd-guide-entry-renderer#collapser-item[role="button"]'); var idYouTubeTopSubscriptionToggleBtn = /* prevent duplicates */ document.getElementById("idYouTubeTopSubscriptionToggleBtn"); /********************************************************************************************* MAIN FUNCTION *********************************************************************************************/ function runYouTubeTopSubscriptionToggleBtn() { if (expandButtonYouTubeTopSubscriptionToggleBtn && !idYouTubeTopSubscriptionToggleBtn) { /* add button */ let clonedButton = document.createElement("button"); let clonedTextA = document.createElement("span"); let clonedTextB = document.createElement("span"); /* mimic current toggle button */ clonedButton.setAttribute("class", "title style-scope ytd-guide-entry-renderer"); clonedButton.setAttribute("style", "background: none; border: none; cursor: pointer"); clonedButton.setAttribute("data-toggle", "0"); clonedButton.setAttribute("id", "idYouTubeTopSubscriptionToggleBtn"); /* add text */ clonedTextA.innerText = "v "; clonedTextB.innerText = "Show More"; clonedTextA.setAttribute("style", "margin-left: 15px; font-family: monospace; " + "font-stretch: extra-expanded;font-weight: bold; font-size: larger;" ); clonedTextB.setAttribute("style", "margin-left: 20px; font-weight: 500"); clonedTextB.setAttribute("id", "idTextYouTubeTopSubscriptionToggleBtn"); clonedButton.insertAdjacentElement("afterbegin", clonedTextA); clonedButton.insertAdjacentElement("beforeend", clonedTextB); /* Attach event listener to the cloned button to trigger the original button's click */ clonedButton.addEventListener('click', () => { if (clonedButton.getAttribute("data-toggle") == "0") { expandButtonYouTubeTopSubscriptionToggleBtn.click(); /* update mimic data */ clonedButton.children[0].innerText = "^ "; clonedButton.children[1].innerText = "Show Less"; /* toggle switch attribute */ clonedButton.setAttribute("data-toggle", "1"); } else { collapseButtonYouTubeTopSubscriptionToggleBtn.click(); /* update mimic data */ clonedButton.children[0].innerText = "v "; clonedButton.children[1].innerText = "Show More"; /* toggle switch attribute */ clonedButton.setAttribute("data-toggle", "0"); } }); /* find the container where you want to insert the new button */ let subscriptions = /* HOT-GLUE - assumes index 0 */ document.getElementsByTagName("ytd-guide-collapsible-section-entry-renderer"); if (subscriptions[0]) { /* insert the cloned button as the first child of ytd-app */ subscriptions[0].insertAdjacentElement("afterbegin", clonedButton); console.log('Duplicated "Show More" button added successfully!'); } else { console.error('Could not find ytd-app element to insert the cloned button.'); } } else { console.error('Original "Show More" button not found.'); } } /* Run bookmarklet. */ runYouTubeTopSubscriptionToggleBtn();})();
@@ -1124,6 +1164,8 @@ Bookmarklet for when you want to watch all videos in home feed at once, and can'
 <details>
 
 <summary>siteSpecific_YouTube_WatchRandomVideo.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_WatchRandomVideo.js](https://gist.github.com/jhauga/c21475673dee3816b6ce3f9ed7fe35ec)
 
@@ -1153,6 +1195,8 @@ Click anywhere on a webpage with a customized page down value. Good for reading 
 
 <summary>window_PageOffset_CustomPageDown.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [window_PageOffset_CustomPageDown.js](https://gist.github.com/jhauga/5b5bf9e7ae170f1f412085b1005114d8)
 
 ```js
@@ -1177,6 +1221,8 @@ Run this bookmarklet when you want to bold selected text on a webpage. Press `ct
 
 <summary>window_style_boldSelectedText.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [window_style_boldSelectedText.js](https://gist.github.com/jhauga/b8e11ddaf7f0fdf9e5c31dddc23b6794)
 
 ```js
@@ -1199,6 +1245,8 @@ Run this bookmarklet when you want to highlight selected text on a webpage. Pres
 <details>
 
 <summary>window_style_highlightSelectedText.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [window_style_highlightSelectedText.js](https://gist.github.com/jhauga/3bd193b98a84a0ac048c607d6d2a804d)
 
@@ -1223,6 +1271,8 @@ Run this bookmarklet when you want to italicize selected text on a webpage. Pres
 
 <summary>window_style_italicSelectedText.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [window_style_italicSelectedText.js](https://gist.github.com/jhauga/f5dbf303496f6db838794c4464591afb)
 
 ```js
@@ -1246,6 +1296,8 @@ Run this bookmarklet when you want to underline selected text on a webpage. Pres
 
 <summary>window_style_underlineSelectedText.js</summary><br>
 
+<!-- PASTE VIDEO HERE -->
+
 Gist page for [window_style_underlineSelectedText.js](https://gist.github.com/jhauga/645e97a7af14a14965d040d3bb2aa45f)
 
 ```js
@@ -1265,6 +1317,8 @@ Select text and add it to URI as anchor link. NOTE - for best results limit sele
 <details>
 
 <summary>window_URI_AnchorHighlightedText.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
 
 Gist page for [window_URI_AnchorHighlightedText.js](https://gist.github.com/jhauga/861f74e65191714ecbd2d0eee7712754)
 
