@@ -8,7 +8,7 @@
 
 - [DOM Bookmarklets](#dom-bookmarklets)
   - [Clipboard - Convert Page To Markdown](#clipboard-convert-page-to-markdown) - ready to use 
-  - [Clipboard - Log Make Md Link List](#clipboard-log-make-md-link-list) - ready to use
+  - [Clipboard - Log Make Md Link List](#clipboard-make-md-link-list) - ready to use
   - [Note - Take Page Notes](#note-take-page-notes) - ready to use
   - [Parse - Dom Stop Page Parsing](#parse---dom-stop-page-parsing) - ready to use
   - [Parse - Dom Stop Page Parsed Height](#parse---dom-stop-page-parsed-height) - ready to use
