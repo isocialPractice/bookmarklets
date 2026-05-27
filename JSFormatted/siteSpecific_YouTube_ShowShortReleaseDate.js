@@ -1,11 +1,11 @@
-javascript:(function() {  
+javascript:(function() {
 
  /* OPTIONAL - alert with instructions. */
  var alertInstructionsYoutTubeShortRelease = 1;
- 
+
  /* Declare global variables. */
  var checkPageInitYoutTubeShortRelease, youTubeShortReleaseURINotice,
-     factoidsYoutTubeShortRelease, releaseDateYoutTubeShortRelease, 
+     factoidsYoutTubeShortRelease, releaseDateYoutTubeShortRelease,
      actionsIDYoutTubeShortRelease, putReleaseYoutTubeShortRelease,
      youTubeShortPath, youTubeShortURI, reloadYouTubeShortRelease;
 
@@ -16,59 +16,70 @@ javascript:(function() {
  `
   You must be watching "Shorts" for bookmarklet to start.
  `;
- 
- /***********************SUPPORT FUNCTIONS***********************/     
- /* 
-  Check if being run for first time, setting storage if not as to 
+
+ /* HOT-GLUE variable values used for globals defined in support functions. */
+ var hotGlueDescrClassYouTubeShortRelease = /* CLASS parent of description  */
+  "ytwFactoidRendererFactoid";
+ var hotGlueplaceDateYouTubeShortRelease = () => {
+  /* DEPRECATED:
+  actionsIDYoutTubeShortRelease = 
+   document.getElementById("actions");
+  */
+  return document.getElementsByTagName("reel-action-bar-view-model");
+ };
+
+ /***********************SUPPORT FUNCTIONS***********************/
+ /*
+  Check if being run for first time, setting storage if not as to
   compensate for initialization bug.
  */
  const runInitYoutTubeShortRelease = () => {
   if (reloadYouTubeShortRelease == undefined) { /* don't repeat alerts */
-    if (sessionStorage.getItem("initYoutTubeShortRelease") != true) {  
+    if (sessionStorage.getItem("initYoutTubeShortRelease") != true) {
       if (location.href.indexOf(youTubeShortPath) > -1) {
         alert(
         "BOOKMARKLET HAS NOT BEEN INITIALIZED:\n\n" +
         "Run bookmarklet again if release date is not displayed.\n"
-        ); 
+        );
         /* on shorts set storage */
         sessionStorage.setItem("initYoutTubeShortRelease", "1");
         /* only reload if on shorts page */
-        window.location.reload();    
+        window.location.reload();
       } else {
         alert(youTubeShortReleaseURINotice);
       }
       return 1;
     } else {
       checkPageInitYoutTubeShortRelease = /* define */
-        sessionStorage.getItem("initYoutTubeShortRelease");  
+        sessionStorage.getItem("initYoutTubeShortRelease");
       return 0;
     }
   }
  };
- 
+
  /* End if bookmarklet has not been initialised.  */
  reloadYouTubeShortRelease = runInitYoutTubeShortRelease();
 
   runInitYoutTubeShortRelease();
  /* Define DOM global variables.         *****/
  const defineVarYoutTubeShortRelease = () => {
-  /* select parent containing short description */  
-  factoidsYoutTubeShortRelease = 
-   document.getElementsByClassName("ytwFactoidRendererHost");
+  /* select parent containing short description */
+  factoidsYoutTubeShortRelease =
+   document.getElementsByClassName(hotGlueDescrClassYouTubeShortRelease);
 
   /* placing before this item*/
-  actionsIDYoutTubeShortRelease = 
-   document.getElementById("actions");       
+  actionsIDYoutTubeShortRelease =
+   hotGlueplaceDateYouTubeShortRelease();
 
   /* get release date */
-  releaseDateYoutTubeShortRelease = 
+  releaseDateYoutTubeShortRelease =
    factoidsYoutTubeShortRelease[2].textContent;
  };
- 
+
  /* Create and style HTML to hold date. *****/
  const makeDateElementYoutTubeShortRelease = () => {
   /* create element to store release date */
-  putReleaseYoutTubeShortRelease = 
+  putReleaseYoutTubeShortRelease =
    document.createElement("p");
 
   /* make presentable */
@@ -96,36 +107,40 @@ javascript:(function() {
   .style.boxSizing = "border-box";
   putReleaseYoutTubeShortRelease
   .style.fontSize = "9pt";
+  putReleaseYoutTubeShortRelease
+  .style.position = "absolute";
+  putReleaseYoutTubeShortRelease
+  .style.top = "0px";
 
   /* Give id to remove if duplicates */
   putReleaseYoutTubeShortRelease
   .id = "putReleaseYoutTubeShortRelease";
  };
- 
+
  /* Add item to right of short. *************/
  const addRelDateYoutTubeShortRelease = () => {
-  actionsIDYoutTubeShortRelease
+  actionsIDYoutTubeShortRelease[0]
   .insertAdjacentElement("beforebegin", putReleaseYoutTubeShortRelease);
 
   /* Select again */
-  putReleaseYoutTubeShortRelease = 
-   document.getElementById("putReleaseYoutTubeShortRelease"); 
+  putReleaseYoutTubeShortRelease =
+   document.getElementById("putReleaseYoutTubeShortRelease");
 
   /* check if year is at end or beginning */
   let atEndYear = /^[a-zA-Z]+ \d{5,}$/;
   let atStartYear = /^\d{4}.*$/;
 
-  /* make easier to read */ 
+  /* make easier to read */
   if (atEndYear.test(releaseDateYoutTubeShortRelease)) {
    releaseDateYoutTubeShortRelease = /* year is at end */
     releaseDateYoutTubeShortRelease.replace(/([0-9]{1,})([0-9]{4})$/g, "$1, $2");
   } else if (atStartYear.test(releaseDateYoutTubeShortRelease)) {
    releaseDateYoutTubeShortRelease = /* year is at start */
-    releaseDateYoutTubeShortRelease.replace(/([0-9]{4})/g, "$1, ");       
+    releaseDateYoutTubeShortRelease.replace(/([0-9]{4})/g, "$1, ");
   }
 
   /* Put in text of short release date. */
-  putReleaseYoutTubeShortRelease.innerText = 
+  putReleaseYoutTubeShortRelease.innerText =
    releaseDateYoutTubeShortRelease;
  };
 
@@ -150,7 +165,7 @@ javascript:(function() {
    }
   }
  };
- 
+
  /***************************************************************
                           MAIN FUNCTION
  ****************************************************************/
@@ -158,8 +173,8 @@ javascript:(function() {
   /* Have to delay a bit - using one second cause - seems right. */
   setTimeout(function() {
    /* Check id that is made to remove if already placed. */
-   putReleaseYoutTubeShortRelease = 
-    document.getElementById("putReleaseYoutTubeShortRelease"); 
+   putReleaseYoutTubeShortRelease =
+    document.getElementById("putReleaseYoutTubeShortRelease");
 
    /* If already placed remove. */
    if (putReleaseYoutTubeShortRelease) {
@@ -168,15 +183,15 @@ javascript:(function() {
    } else {
     defineVarYoutTubeShortRelease();
    }
-   
+
    /* Prep element to be inserted. */
    makeDateElementYoutTubeShortRelease();
-      
+
    /* insert short release date */
-   addRelDateYoutTubeShortRelease();     
-   
+   addRelDateYoutTubeShortRelease();
+
    /* Delay for half a second for content loading. */
-  }, 500); 
+  }, 500);
  }
 
  /* Adds interval to check for uri change. */
@@ -202,4 +217,4 @@ javascript:(function() {
   }
   }
  }
-})(); 
+})();
