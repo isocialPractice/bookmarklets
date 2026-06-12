@@ -1,22 +1,24 @@
 javascript:(function() {
- const metapanel = document.getElementById("metapanel");
- if (!metapanel) {
-  console.warn("Element with ID 'metapanel' not found.");
+ const metapanelYoutubeShortHover = 
+  document.getElementById("experiment-overlay");
+ if (!metapanelYoutubeShortHover) {
+  console.warn("Element with ID 'metapanelYoutubeShortHover' not found.");
   return;
  }
 
- let hoverTimeout;
- let tooltipElement = null;
+ /* Globa variables */
+ var hoverTimeoutYoutubeShortHover;
+ var tooltipElementYoutubeShortHover = null;
  
  /************************************* SUPPORT FUNCTIONS *************************************/
- const showTooltip = (text, targetElement) => {
-  if (tooltipElement) {
-   document.body.removeChild(tooltipElement);
-   tooltipElement = null;
+ const showTooltipYoutubeShortHover = (text, targetElement) => {
+  if (tooltipElementYoutubeShortHover) {
+   document.body.removeChild(tooltipElementYoutubeShortHover);
+   tooltipElementYoutubeShortHover = null;
   }
 
-  tooltipElement = document.createElement("div");
-  tooltipElement.style.cssText = `
+  tooltipElementYoutubeShortHover = document.createElement("div");
+  tooltipElementYoutubeShortHover.style.cssText = `
    position: absolute;
    background-color: #333;
    color: #fff;
@@ -31,25 +33,25 @@ javascript:(function() {
    transition: opacity 0.2s ease-in-out;
    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
   `;
-  tooltipElement.textContent = text;
-  document.body.appendChild(tooltipElement);
+  tooltipElementYoutubeShortHover.textContent = text;
+  document.body.appendChild(tooltipElementYoutubeShortHover);
 
   const targetRect = targetElement.getBoundingClientRect();
-  tooltipElement.style.top = (window.scrollY + targetRect.bottom + 5) + "px";
-  tooltipElement.style.left = (window.scrollX + targetRect.left) + "px";
-  tooltipElement.style.opacity = "1";
+  tooltipElementYoutubeShortHover.style.top = (window.scrollY + targetRect.bottom + 5) + "px";
+  tooltipElementYoutubeShortHover.style.left = (window.scrollX + targetRect.left) + "px";
+  tooltipElementYoutubeShortHover.style.opacity = "1";
  };
 
- const hideTooltip = () => {
-  if (tooltipElement) {
-   document.body.removeChild(tooltipElement);
-   tooltipElement = null;
+ const hideTooltipYoutubeShortHover = () => {
+  if (tooltipElementYoutubeShortHover) {
+   document.body.removeChild(tooltipElementYoutubeShortHover);
+   tooltipElementYoutubeShortHover = null;
   }
  };
 
- const handleDelegateMouseOver = (event) => {
-  const target = event.target.closest('h2'); /* Find the closest h2 ancestor */
-  if (!target || !metapanel.contains(target)) return; /* Ensure it's an h2 within metapanel */
+ const handleDelegateMouseOverYoutubeShortHover = (event) => {
+  let target = event.target.closest('h2'); /* Find the closest h2 ancestor */
+  if (!target || !metapanelYoutubeShortHover.contains(target)) return; /* Ensure it's an h2 within metapanelYoutubeShortHover */
 
   /* Check if event listener was already applied to avoid re-applying */
   if (target.dataset.tooltipActive === 'true') {
@@ -64,17 +66,17 @@ javascript:(function() {
   target.setAttribute('title', ''); /* temporarily remove native tooltip */
 
   const fullText = target.innerText;
-  hoverTimeout = setTimeout(() => {
-   showTooltip(fullText, target);
+  hoverTimeoutYoutubeShortHover = setTimeout(() => {
+   showTooltipYoutubeShortHover(fullText, target);
   }, 500);
  };
 
- const handleDelegateMouseOut = (event) => {
-  const target = event.target.closest('h2');
-  if (!target || !metapanel.contains(target)) return;
+ const handleDelegateMouseOutYoutubeShortHover = (event) => {
+  let target = event.target.closest('h2');
+  if (!target || !metapanelYoutubeShortHover.contains(target)) return;
 
-  clearTimeout(hoverTimeout);
-  hideTooltip();
+  clearTimeout(hoverTimeoutYoutubeShortHover);
+  hideTooltipYoutubeShortHover();
 
   /* Restore original title if it was stored */
   if (target.dataset.originalTitle !== undefined) {
@@ -91,14 +93,14 @@ javascript:(function() {
  *********************************************************************************************/
  /* Remove existing delegated listeners if they were previously added */
  function mainYouTubeShortHoverTitle() {
-  if (metapanel.dataset.tooltipListenersAdded === 'true') {
-   metapanel.removeEventListener("mouseover", handleDelegateMouseOver);
-   metapanel.removeEventListener("mouseout", handleDelegateMouseOut);
+  if (metapanelYoutubeShortHover.dataset.tooltipListenersAdded === 'true') {
+   metapanelYoutubeShortHover.removeEventListener("mouseover", handleDelegateMouseOverYoutubeShortHover);
+   metapanelYoutubeShortHover.removeEventListener("mouseout", handleDelegateMouseOutYoutubeShortHover);
   }
 
-  metapanel.addEventListener("mouseover", handleDelegateMouseOver);
-  metapanel.addEventListener("mouseout", handleDelegateMouseOut);
-  metapanel.dataset.tooltipListenersAdded = 'true'; /* Mark that listeners are added */
+  metapanelYoutubeShortHover.addEventListener("mouseover", handleDelegateMouseOverYoutubeShortHover);
+  metapanelYoutubeShortHover.addEventListener("mouseout", handleDelegateMouseOutYoutubeShortHover);
+  metapanelYoutubeShortHover.dataset.tooltipListenersAdded = 'true'; /* Mark that listeners are added */
 
   console.log("Bookmarklet for h2 title display activated!");
  }
