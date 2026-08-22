@@ -7,7 +7,7 @@
 <summary>Document Navigation: </summary>
 
 - [DOM Bookmarklets](#dom-bookmarklets)
-  - [Clipboard - Convert Page To Markdown](#clipboard-convert-page-to-markdown) - ready to use 
+  - [Clipboard - Convert Page To Markdown](#clipboard-convert-page-to-markdown) - ready to use
   - [Clipboard - Log Make Md Link List](#clipboard-make-md-link-list) - ready to use
   - [Note - Take Page Notes](#note-take-page-notes) - ready to use
   - [Parse - Dom Stop Page Parsing](#parse---dom-stop-page-parsing) - ready to use
@@ -28,11 +28,12 @@
   - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - ready to use
   - [ChatGPT - Search Chat History](#chatgpt---search-chat-history) - ready to use
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
+  - [GitHub - Commit Date Timestamp](#github---commit-date-timestamp) - ready to use
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
-  - [Gmail - Resize Side Bar](#gmail---resize-side-bar) - ready to use 
+  - [Gmail - Resize Side Bar](#gmail---resize-side-bar) - ready to use
   - [Gmail - Style Sponsored Email](#gmail---style-sponsored-email) - ready to use
   - [Google - Paste Ready Bookmark AI Response](#google---paste-ready-bookmark-ai-response) - ready to use
-  - [Google Maps Custom Mearsure Distance](#google-maps---custom-mearsure-distance) - ready to use 
+  - [Google Maps Custom Mearsure Distance](#google-maps---custom-mearsure-distance) - ready to use
   - [OctoPrint - Change Graph Image](#octoprint---change-graph-image) - ready to use - <em>1 optional change</em>
   - [Stackoverflow - Add Answer Anchor Links](#stackoverflow---add-answer-anchor-links) - ready to use
   - [Stackoverflow - Copy Answer Anchor Links](#stackoverflow---copy-answer-anchor-links) - ready to use
@@ -44,7 +45,7 @@
   - [YouTube - Hide Short History](#youtube---hide-short-history) - ready to use
   - [YouTube - Save Page Notes to Local Storage](#youtube---save-page-notes-to-local-storage) - ready to use
   - [YouTube - Saved Page Notes to Notebox](#youtube---saved-page-notes-to-notebox) - ready to use
-  - [YouTube - Short Hover Title](#youtube---short-hover-title) - ready to use 
+  - [YouTube - Short Hover Title](#youtube---short-hover-title) - ready to use
   - [YouTube - Show Short Release Date](#youtube---show-short-release-date) - ready to use
   - [YouTube - Stack User Playlist Feed](#youtube---stack-user-playlist-feed) - ready to use
   - [YouTube - Sync Audio](#youtube---sync-audio) - ready to use
@@ -121,7 +122,7 @@ javascript:(function() {  })();
 The below bookmarklets are for pages with parsed DOM content,
 or when editing the structure and/or adjusting HTML DOM.
 
-Clipboard Convert Page To Markdown: 
+Clipboard Convert Page To Markdown:
 ----
 <dl><dd><dl><dd>
 
@@ -143,7 +144,7 @@ javascript:(function() { /* CONFIG VARIABLES */ var resolveRelativeLinksConvertP
 </details>
 </dd></dl></dd></dl>
 
-Clipboard Make Md Link List: 
+Clipboard Make Md Link List:
 ----
 <dl><dd><dl><dd>
 
@@ -572,6 +573,7 @@ GitHub - Alternate Row Color:
 Alternate the row colors of repo directory. Activate in repo root and file viewing. Works with:
 
 1. GitHub - Show File Size
+2. GitHub - Commit Date Timestamp
 
 <strong>USE - ready to use</strong>
 <details>
@@ -589,6 +591,35 @@ javascript:(function(){ /* GLOBAL VARIABLES */ var color = "aliceblue"; /*<-- CH
 </details>
 </dd></dl></dd></dl>
 
+GitHub - Commit Date Timestamp:
+----
+<dl><dd><dl><dd>
+
+Show the last commit using the time stamp and not a relative date calculation. Works with: <br><br>
+
+1. GitHub - Alternate Row Color
+2. GitHub - Show File Size
+
+<strong>USE - ready to use</strong>
+<details>
+
+<summary>siteSpecific_GitHub_CommitDateTimestamp.js</summary><br>
+
+<!--
+<strong>Video Demonstration for Use:</strong>
+
+`Ctrl + click` link to view demo on YouTube [TEXT_NAME_MATCHING_FILE](YOU_TUBE_LINK)
+-->
+
+Gist page for [siteSpecific_GitHub_CommitDateTimestamp.js](https://gist.github.com/jhauga/042103e01e2c89e400a9b416b480801c)
+
+```js
+javascript:(function(){ /* Rewrite the last commit date column in place: "3 months ago" -> "May 14, 2026 5:34 PM" The exact stamp is the datetime attribute GitHub already puts on every <relative-time> element, which is the same value its hover tooltip shows, so no API call and no rate limit is involved. The relative wording is not thrown away, it becomes the tooltip on that same element. */ var turnOffGitTimestamp = 0, sweepTimerGitTimestamp; var firstRunGitTimestamp = 1; var sessionKeyGitTimestamp = "showLastCommit-,._.,-|__--_unlikely-_-name_--__|-,._.,-showLastCommit"; if (sessionStorage.getItem(sessionKeyGitTimestamp) == null) { sessionStorage.setItem(sessionKeyGitTimestamp, "1"); } else { firstRunGitTimestamp = 0; } var checkHostGitTimestamp = function() { turnOffGitTimestamp = (location.host.indexOf("github.com") > -1) ? 0 : 1; }; /* "May 14, 2026 5:34 PM" built from the two parts so no comma lands before the time */ var formatStampGitTimestamp = function(iso) { if (!iso || typeof iso !== "string") { return ""; } let d = new Date(iso); if (isNaN(d.getTime())) { return ""; } let datePart = d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }); let timePart = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); return datePart + " " + timePart; }; /* Newer builds of GitHub's relative-time element render an absolute date on their own once these attributes are set, which survives its internal ticks. Older builds ignore them, so the sweep below still overwrites the text. */ var askForAbsoluteGitTimestamp = function(el) { el.setAttribute("format", "datetime"); el.setAttribute("month", "short"); el.setAttribute("day", "numeric"); el.setAttribute("year", "numeric"); el.setAttribute("hour", "numeric"); el.setAttribute("minute", "2-digit"); }; /* does this row, or anything it scrolls inside of, run wider than its box */ var overflowsGitTimestamp = function(row) { let node = row; for (var up = 0; up < 6 && node; up++) { if (node.scrollWidth > node.clientWidth + 1) { return 1; } node = node.parentElement; } return (document.documentElement.scrollWidth > document.documentElement.clientWidth + 1) ? 1 : 0; }; /* The absolute stamp is wider than "3 months ago" and its cell clips the tail. Only two elements are touched: the date cell itself, which loses its left padding and its clipping so the text starts further left, and the commit message cell beside it, which is allowed to shrink and give up that space. Nothing above the cell is touched, because widening an ancestor is what stretches the whole row and forces the page to scroll sideways. If the change makes the row overflow anyway, both cells are put straight back the way GitHub had them. */ var makeRoomGitTimestamp = function(el) { let cell = el.parentElement, found = 0; for (var up = 0; up < 3 && cell; up++) { let role = cell.getAttribute ? (cell.getAttribute("role") || "") : ""; if (cell.tagName == "TD" || cell.tagName == "TH" || role == "gridcell" || role == "cell") { found = 1; break; } cell = cell.parentElement; } if (found == 0 || !cell || !cell.dataset) { return; } if (cell.dataset.stampRoomGitTimestamp == "1") { return; } /* only file listing rows, so commit banners and issue pages are left alone */ let row = cell.parentElement; let rowRole = (row && row.getAttribute) ? (row.getAttribute("role") || "") : ""; if (!row || (row.tagName != "TR" && rowRole != "row")) { return; } cell.dataset.stampRoomGitTimestamp = "1"; let prev = cell.previousElementSibling; let savedCell = cell.getAttribute("style"), savedPrev = prev ? prev.getAttribute("style") : null; let overflowedBefore = overflowsGitTimestamp(row); cell.style.setProperty("display", "inline-block", "important"); cell.style.setProperty("position", "relative", "important"); cell.style.setProperty("right", "50px", "important"); if (prev) { prev.style.setProperty("min-width", "0", "important"); prev.style.setProperty("flex-shrink", "1", "important"); } if (overflowedBefore == 0 && overflowsGitTimestamp(row) == 1) { if (savedCell) { cell.setAttribute("style", savedCell); } else { cell.removeAttribute("style"); } if (prev) { if (savedPrev) { prev.setAttribute("style", savedPrev); } else { prev.removeAttribute("style"); } } } }; var applyStampsGitTimestamp = function() { if (turnOffGitTimestamp == 1) { return; } let stamps = document.querySelectorAll("relative-time, time-ago, local-time, time[datetime]"); let stampsLen = stamps.length; for (var i = 0; i < stampsLen; i++) { let el = stamps[i]; let iso = el.getAttribute("datetime"); if (!iso) { continue; } let exact = formatStampGitTimestamp(iso); if (!exact) { continue; } /* remember the wording GitHub had before the first overwrite */ if (!el.dataset.lastStampRelativeGitTimestamp) { let original = (el.textContent || "").trim(); if (original && original !== exact) { el.dataset.lastStampRelativeGitTimestamp = original; } askForAbsoluteGitTimestamp(el); } makeRoomGitTimestamp(el); /* the element retimes itself, so re-assert on every pass */ if ((el.textContent || "").trim() !== exact) { el.textContent = exact; } if (el.dataset.lastStampRelativeGitTimestamp && el.title !== el.dataset.lastStampRelativeGitTimestamp) { el.title = el.dataset.lastStampRelativeGitTimestamp; } } }; /* GitHub swaps rows in without a page load, so keep sweeping */ var keepSweepingGitTimestamp = function() { checkHostGitTimestamp(); if (turnOffGitTimestamp == 1) { console.log("Last commit timestamp bookmarklet is not running:"); return; } applyStampsGitTimestamp(); sweepTimerGitTimestamp = setTimeout(keepSweepingGitTimestamp, 1000); }; checkHostGitTimestamp(); if (turnOffGitTimestamp == 0) { if (firstRunGitTimestamp == 1) { console.log("Last commit timestamp bookmarklet running:"); } keepSweepingGitTimestamp(); } else { console.log("Last commit timestamp bookmarklet did not run:"); return; }})();
+```
+
+</details>
+</dd></dl></dd></dl>
+
 GitHub - Show File Size:
 ----
 <dl><dd><dl><dd>
@@ -596,6 +627,7 @@ GitHub - Show File Size:
 When viewing files in repo add a column showing file size. Activate in repo root and file viewing. Works with:
 
 1. GitHub - Alternate Row Color
+2. GitHub - Commit Date Timestamp
 
 Loosely based on [stackoverflow answer](https://stackoverflow.com/questions/38675428/list-file-sizes-in-github#answer-75526865)
 
@@ -615,7 +647,7 @@ javascript:(function(){var tableRow,tableRowLen,thead,curPage,curExtract,curUser
 </details>
 </dd></dl></dd></dl>
 
-Gmail - Resize Side Bar: 
+Gmail - Resize Side Bar:
 ----
 <dl><dd><dl><dd>
 
@@ -682,7 +714,7 @@ javascript:(function(){ var pageTitle = "Google Generative AI Bookmark"; /* OPTI
 </details>
 </dd></dl></dd></dl>
 
-Google Maps - Custom Mearsure Distance: 
+Google Maps - Custom Mearsure Distance:
 ----
 <dl><dd><dl><dd>
 
@@ -1009,7 +1041,7 @@ Show short full title on mouseover.<br><br>
 
 Gist page for [siteSpecific_YouTube_ShortHoverTitle.js](https://gist.github.com/jhauga/ddb02303082c8912e208b30bd3bc0db9)
 
-```markdown
+```js
 javascript:(function() { /* The container for the Shorts overlay elements */ const metapanelYoutubeShortHover = document.getElementById("experiment-overlay"); if (!metapanelYoutubeShortHover) { console.warn("Element with ID 'experiment-overlay' not found."); return; } /* Global variables */ var hoverTimeoutYoutubeShortHover; var tooltipElementYoutubeShortHover = null; /************************************* SUPPORT FUNCTIONS *************************************/ const showTooltipYoutubeShortHover = (text, targetElement) => { if (tooltipElementYoutubeShortHover) { document.body.removeChild(tooltipElementYoutubeShortHover); tooltipElementYoutubeShortHover = null; } tooltipElementYoutubeShortHover = document.createElement("div"); tooltipElementYoutubeShortHover.style.cssText = ` position: fixed; background-color: rgba(33, 33, 33, 0.95); color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 14px; z-index: 10000; max-width: 300px; white-space: pre-wrap; pointer-events: none; opacity: 0; transition: opacity 0.2s ease-in-out; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);`; tooltipElementYoutubeShortHover.textContent = text; document.body.appendChild(tooltipElementYoutubeShortHover); const targetRect = targetElement.getBoundingClientRect(); /* Position tooltip above or below based on space */ let topPos = targetRect.bottom + 10; if (topPos + tooltipElementYoutubeShortHover.offsetHeight > window.innerHeight) { topPos = targetRect.top - tooltipElementYoutubeShortHover.offsetHeight - 10; } tooltipElementYoutubeShortHover.style.top = topPos + "px"; tooltipElementYoutubeShortHover.style.left = Math.max(10, targetRect.left) + "px"; tooltipElementYoutubeShortHover.style.opacity = "1"; }; const hideTooltipYoutubeShortHover = () => { if (tooltipElementYoutubeShortHover) { document.body.removeChild(tooltipElementYoutubeShortHover); tooltipElementYoutubeShortHover = null; } }; const handleDelegateMouseOverYoutubeShortHover = (event) => { /* YouTube Shorts titles are now H1 elements */ let target = event.target.closest('h1'); if (!target || !metapanelYoutubeShortHover.contains(target)) return; if (target.dataset.tooltipActive === 'true') { return; } target.dataset.tooltipActive = 'true'; if (target.hasAttribute('title') && !target.dataset.originalTitle) { target.dataset.originalTitle = target.getAttribute('title'); } target.setAttribute('title', ''); const fullText = target.innerText; hoverTimeoutYoutubeShortHover = setTimeout(() => { showTooltipYoutubeShortHover(fullText, target); }, 400); }; const handleDelegateMouseOutYoutubeShortHover = (event) => { let target = event.target.closest('h1'); if (!target || !metapanelYoutubeShortHover.contains(target)) return; clearTimeout(hoverTimeoutYoutubeShortHover); hideTooltipYoutubeShortHover(); if (target.dataset.originalTitle !== undefined) { target.setAttribute('title', target.dataset.originalTitle); delete target.dataset.originalTitle; } else { target.removeAttribute('title'); } delete target.dataset.tooltipActive; }; /********************************************************************************************* MAIN FUNCTION *********************************************************************************************/ function mainYouTubeShortHoverTitle() { /* Cleanup previous listeners if re-running */ metapanelYoutubeShortHover.removeEventListener("mouseover", handleDelegateMouseOverYoutubeShortHover); metapanelYoutubeShortHover.removeEventListener("mouseout", handleDelegateMouseOutYoutubeShortHover); metapanelYoutubeShortHover.addEventListener("mouseover", handleDelegateMouseOverYoutubeShortHover); metapanelYoutubeShortHover.addEventListener("mouseout", handleDelegateMouseOutYoutubeShortHover); console.log("YouTube Shorts Title Hover bookmarklet updated and active!"); } mainYouTubeShortHoverTitle();})();
 ```
 </details>
@@ -1152,7 +1184,7 @@ javascript:(function(){ /* Config variables. */ var heightTakeVideoNotes = /* se
 </details>
 </dd></dl></dd></dl>
 
-YouTube - Top Subscription Toggle Btn: 
+YouTube - Top Subscription Toggle Btn:
 ----
 <dl><dd><dl><dd>
 
@@ -1168,7 +1200,7 @@ When toggling subscription list, and tired of scrolling way up to show less <br>
 
 Gist page for [siteSpecific_YouTube_TopSubscriptionToggleBtn.js](https://gist.github.com/jhauga/57f0fe041128b93c13e161587e94e19f)
 
-```markdown
+```js
 javascript:(function() { /* Global variables. */ var expandButtonYouTubeTopSubscriptionToggleBtn = /* show more */ document.querySelector('ytd-guide-entry-renderer#expander-item[role="button"]'); var collapseButtonYouTubeTopSubscriptionToggleBtn = /* show less */ document.querySelector('ytd-guide-entry-renderer#collapser-item[role="button"]'); var idYouTubeTopSubscriptionToggleBtn = /* prevent duplicates */ document.getElementById("idYouTubeTopSubscriptionToggleBtn"); /********************************************************************************************* MAIN FUNCTION *********************************************************************************************/ function runYouTubeTopSubscriptionToggleBtn() { if (expandButtonYouTubeTopSubscriptionToggleBtn && !idYouTubeTopSubscriptionToggleBtn) { /* add button */ let clonedButton = document.createElement("button"); let clonedTextA = document.createElement("span"); let clonedTextB = document.createElement("span"); /* mimic current toggle button */ clonedButton.setAttribute("class", "title style-scope ytd-guide-entry-renderer"); clonedButton.setAttribute("style", "background: none; border: none; cursor: pointer"); clonedButton.setAttribute("data-toggle", "0"); clonedButton.setAttribute("id", "idYouTubeTopSubscriptionToggleBtn"); /* add text */ clonedTextA.innerText = "v "; clonedTextB.innerText = "Show More"; clonedTextA.setAttribute("style", "margin-left: 15px; font-family: monospace; " + "font-stretch: extra-expanded;font-weight: bold; font-size: larger;" ); clonedTextB.setAttribute("style", "margin-left: 20px; font-weight: 500"); clonedTextB.setAttribute("id", "idTextYouTubeTopSubscriptionToggleBtn"); clonedButton.insertAdjacentElement("afterbegin", clonedTextA); clonedButton.insertAdjacentElement("beforeend", clonedTextB); /* Attach event listener to the cloned button to trigger the original button's click */ clonedButton.addEventListener('click', () => { if (clonedButton.getAttribute("data-toggle") == "0") { expandButtonYouTubeTopSubscriptionToggleBtn.click(); /* update mimic data */ clonedButton.children[0].innerText = "^ "; clonedButton.children[1].innerText = "Show Less"; /* toggle switch attribute */ clonedButton.setAttribute("data-toggle", "1"); } else { collapseButtonYouTubeTopSubscriptionToggleBtn.click(); /* update mimic data */ clonedButton.children[0].innerText = "v "; clonedButton.children[1].innerText = "Show More"; /* toggle switch attribute */ clonedButton.setAttribute("data-toggle", "0"); } }); /* find the container where you want to insert the new button */ let subscriptions = /* HOT-GLUE - assumes index 0 */ document.getElementsByTagName("ytd-guide-collapsible-section-entry-renderer"); if (subscriptions[0]) { /* insert the cloned button as the first child of ytd-app */ subscriptions[0].insertAdjacentElement("afterbegin", clonedButton); console.log('Duplicated "Show More" button added successfully!'); } else { console.error('Could not find ytd-app element to insert the cloned button.'); } } else { console.error('Original "Show More" button not found.'); } } /* Run bookmarklet. */ runYouTubeTopSubscriptionToggleBtn();})();
 ```
 </details>

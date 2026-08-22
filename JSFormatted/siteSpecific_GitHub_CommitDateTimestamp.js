@@ -1,0 +1,136 @@
+javascript:(function(){
+ /*
+  Rewrite the last commit date column in place:
+  "3 months ago"  ->  "May 14, 2026 5:34 PM"
+  The exact stamp is the datetime attribute GitHub already puts on every
+  <relative-time> element, which is the same value its hover tooltip shows,
+  so no API call and no rate limit is involved. The relative wording is not
+  thrown away, it becomes the tooltip on that same element.
+ */
+ var turnOffGitTimestamp = 0, sweepTimerGitTimestamp;
+ var firstRunGitTimestamp = 1;
+ var sessionKeyGitTimestamp = "showLastCommit-,._.,-|__--_unlikely-_-name_--__|-,._.,-showLastCommit";
+ if (sessionStorage.getItem(sessionKeyGitTimestamp) == null) {
+  sessionStorage.setItem(sessionKeyGitTimestamp, "1");
+ } else {
+  firstRunGitTimestamp = 0;
+ }
+ var checkHostGitTimestamp = function() {
+  turnOffGitTimestamp = (location.host.indexOf("github.com") > -1) ? 0 : 1;
+ };
+ /* "May 14, 2026 5:34 PM" built from the two parts so no comma lands before the time */
+ var formatStampGitTimestamp = function(iso) {
+  if (!iso || typeof iso !== "string") { return ""; }
+  let d = new Date(iso);
+  if (isNaN(d.getTime())) { return ""; }
+  let datePart = d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  let timePart = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return datePart + " " + timePart;
+ };
+ /*
+  Newer builds of GitHub's relative-time element render an absolute date on
+  their own once these attributes are set, which survives its internal ticks.
+  Older builds ignore them, so the sweep below still overwrites the text.
+ */
+ var askForAbsoluteGitTimestamp = function(el) {
+  el.setAttribute("format", "datetime");
+  el.setAttribute("month", "short");
+  el.setAttribute("day", "numeric");
+  el.setAttribute("year", "numeric");
+  el.setAttribute("hour", "numeric");
+  el.setAttribute("minute", "2-digit");
+ };
+ /* does this row, or anything it scrolls inside of, run wider than its box */
+ var overflowsGitTimestamp = function(row) {
+  let node = row;
+  for (var up = 0; up < 6 && node; up++) {
+   if (node.scrollWidth > node.clientWidth + 1) { return 1; }
+   node = node.parentElement;
+  }
+  return (document.documentElement.scrollWidth > document.documentElement.clientWidth + 1) ? 1 : 0;
+ };
+ /*
+  The absolute stamp is wider than "3 months ago" and its cell clips the tail.
+  Only two elements are touched: the date cell itself, which loses its left
+  padding and its clipping so the text starts further left, and the commit
+  message cell beside it, which is allowed to shrink and give up that space.
+  Nothing above the cell is touched, because widening an ancestor is what
+  stretches the whole row and forces the page to scroll sideways.
+  If the change makes the row overflow anyway, both cells are put straight
+  back the way GitHub had them.
+ */
+ var makeRoomGitTimestamp = function(el) {
+  let cell = el.parentElement, found = 0;
+  for (var up = 0; up < 3 && cell; up++) {
+   let role = cell.getAttribute ? (cell.getAttribute("role") || "") : "";
+   if (cell.tagName == "TD" || cell.tagName == "TH" || role == "gridcell" || role == "cell") { found = 1; break; }
+   cell = cell.parentElement;
+  }
+  if (found == 0 || !cell || !cell.dataset) { return; }
+  if (cell.dataset.stampRoomGitTimestamp == "1") { return; }
+  /* only file listing rows, so commit banners and issue pages are left alone */
+  let row = cell.parentElement;
+  let rowRole = (row && row.getAttribute) ? (row.getAttribute("role") || "") : "";
+  if (!row || (row.tagName != "TR" && rowRole != "row")) { return; }
+  cell.dataset.stampRoomGitTimestamp = "1";
+  let prev = cell.previousElementSibling;
+  let savedCell = cell.getAttribute("style"), savedPrev = prev ? prev.getAttribute("style") : null;
+  let overflowedBefore = overflowsGitTimestamp(row);
+  cell.style.setProperty("display", "inline-block", "important");
+  cell.style.setProperty("position", "relative", "important");
+  cell.style.setProperty("right", "50px", "important");
+  if (prev) {
+   prev.style.setProperty("min-width", "0", "important");
+   prev.style.setProperty("flex-shrink", "1", "important");
+  }
+  if (overflowedBefore == 0 && overflowsGitTimestamp(row) == 1) {
+   if (savedCell) { cell.setAttribute("style", savedCell); } else { cell.removeAttribute("style"); }
+   if (prev) {
+    if (savedPrev) { prev.setAttribute("style", savedPrev); } else { prev.removeAttribute("style"); }
+   }
+  }
+ };
+ var applyStampsGitTimestamp = function() {
+  if (turnOffGitTimestamp == 1) { return; }
+  let stamps = document.querySelectorAll("relative-time, time-ago, local-time, time[datetime]");
+  let stampsLen = stamps.length;
+  for (var i = 0; i < stampsLen; i++) {
+   let el = stamps[i];
+   let iso = el.getAttribute("datetime");
+   if (!iso) { continue; }
+   let exact = formatStampGitTimestamp(iso);
+   if (!exact) { continue; }
+   /* remember the wording GitHub had before the first overwrite */
+   if (!el.dataset.lastStampRelativeGitTimestamp) {
+    let original = (el.textContent || "").trim();
+    if (original && original !== exact) { el.dataset.lastStampRelativeGitTimestamp = original; }
+    askForAbsoluteGitTimestamp(el);
+   }
+   makeRoomGitTimestamp(el);
+   /* the element retimes itself, so re-assert on every pass */
+   if ((el.textContent || "").trim() !== exact) { el.textContent = exact; }
+   if (el.dataset.lastStampRelativeGitTimestamp && el.title !== el.dataset.lastStampRelativeGitTimestamp) {
+    el.title = el.dataset.lastStampRelativeGitTimestamp;
+   }
+  }
+ };
+ /* GitHub swaps rows in without a page load, so keep sweeping */
+ var keepSweepingGitTimestamp = function() {
+  checkHostGitTimestamp();
+  if (turnOffGitTimestamp == 1) {
+   console.log("Last commit timestamp bookmarklet is not running:");
+   return;
+  }
+  applyStampsGitTimestamp();
+  sweepTimerGitTimestamp = setTimeout(keepSweepingGitTimestamp, 1000);
+ };
+ checkHostGitTimestamp();
+ if (turnOffGitTimestamp == 0) {
+  if (firstRunGitTimestamp == 1) { console.log("Last commit timestamp bookmarklet running:"); }
+  keepSweepingGitTimestamp();
+ } else {
+  console.log("Last commit timestamp bookmarklet did not run:");
+  return;
+ }
+})();
+
