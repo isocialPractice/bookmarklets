@@ -1,0 +1,287 @@
+javascript:(function(){
+ var tableRowResizeRepoTableColumns, tableRowLenResizeRepoTableColumns, fileTableResizeRepoTableColumns, curPageResizeRepoTableColumns, tablePageResizeRepoTableColumns = 1;
+ /* Switches and elements to turn off. */
+ var curDirResizeRepoTableColumns = window.location.href, turnOffResizeRepoTableColumns, firstRunResizeRepoTableColumns, sessionNeedsResettingResizeRepoTableColumns = 0;
+ /* Resize behavior settings. */
+ var minColumnWidthResizeRepoTableColumns = 60;
+ var handleClassResizeRepoTableColumns = "resizeHandle-__-unlikely-name-__-resizeHandle";
+ var tableFlagResizeRepoTableColumns = "data-resize-repo-table-columns";
+ if (sessionStorage.getItem("resizeColumns-,._.,-|__--_unlikely-_-name_--__|-,._.,-resizeColumns") == null) {
+  sessionStorage.setItem("resizeColumns-,._.,-|__--_unlikely-_-name_--__|-,._.,-resizeColumns", "1");
+  firstRunResizeRepoTableColumns = sessionStorage.getItem("resizeColumns-,._.,-|__--_unlikely-_-name_--__|-,._.,-resizeColumns");
+  /* The marker span disappears on a hard reload while sessionStorage survives, which signals that a reset is needed. */
+  let makeCheckForSessionReset = document.createElement("span");
+  makeCheckForSessionReset.style.display = "none";
+  makeCheckForSessionReset.id = "checkIfSessionNeedsResetting--__-unlikely_-_name-__--checkIfSessionNeedsResetting";
+  document.body.appendChild(makeCheckForSessionReset);
+ } else {
+  firstRunResizeRepoTableColumns = 0;
+ }
+ /* Get current directory and locate the repo file listing. */
+ var setGlobals = function() {
+  curPageResizeRepoTableColumns = location.host + location.pathname;
+  if (curPageResizeRepoTableColumns.indexOf("github.com") > -1) {
+   turnOffResizeRepoTableColumns = 0;
+   fileTableResizeRepoTableColumns = document.querySelector('table[aria-labelledby="folders-and-files"]');
+   if (!fileTableResizeRepoTableColumns) {
+    /* Fallback in case GitHub changes the labelledby hook: take the first table whose header mentions Name. */
+    let findRightTable = document.getElementsByTagName("table");
+    let findRightTableLen = findRightTable.length;
+    for (let t = 0; t < findRightTableLen; t++) {
+     let curHead = findRightTable[t].getElementsByTagName("thead")[0];
+     if (curHead && curHead.innerText.indexOf("Name") > -1) {
+      fileTableResizeRepoTableColumns = findRightTable[t];
+      break;
+     }
+    }
+   }
+   let checkRoleRow = document.querySelectorAll('div[role="row"]');
+   if (fileTableResizeRepoTableColumns) {
+    tablePageResizeRepoTableColumns = 1;
+    tableRowResizeRepoTableColumns = fileTableResizeRepoTableColumns.getElementsByTagName("tr");
+   } else {
+    if (checkRoleRow.length >= 1) {
+     /* Older grid style listing built from div rows. */
+     tablePageResizeRepoTableColumns = 0;
+     tableRowResizeRepoTableColumns = checkRoleRow;
+    } else {
+     tableRowResizeRepoTableColumns = [];
+    }
+   }
+   tableRowLenResizeRepoTableColumns = tableRowResizeRepoTableColumns.length;
+  } else {
+   turnOffResizeRepoTableColumns = 1;
+   return;
+  }
+ };
+ /* GitHub renders duplicate cells for small and large screens, so only the visible ones count as columns. */
+ var getVisibleCellsResizeRepoTableColumns = function(row) {
+  let cells = row.children;
+  let cellsLen = cells.length;
+  let visibleCells = [];
+  for (let c = 0; c < cellsLen; c++) {
+   if (window.getComputedStyle(cells[c]).display != "none") { visibleCells.push(cells[c]); }
+  }
+  return visibleCells;
+ };
+ /* A table needs setup when it is new, when another bookmarklet has added or removed a column, or when pinned widths or handles were wiped by a re-render. */
+ var tableNeedsSetupResizeRepoTableColumns = function(table) {
+  if (!table) { return 0; }
+  let headerRow = table.getElementsByTagName("tr")[0];
+  if (!headerRow) { return 0; }
+  let visibleCells = getVisibleCellsResizeRepoTableColumns(headerRow);
+  let visibleCellsLen = visibleCells.length;
+  if (visibleCellsLen < 2) { return 0; }
+  if (table.getAttribute(tableFlagResizeRepoTableColumns) != String(visibleCellsLen)) { return 1; }
+  if (table.querySelectorAll("." + handleClassResizeRepoTableColumns).length == 0) { return 1; }
+  for (let c = 0; c < visibleCellsLen; c++) {
+   /* A column added or restyled by another bookmarklet shows up as a missing or non pixel inline width. */
+   if (visibleCells[c].style.width.indexOf("px") == -1) { return 1; }
+  }
+  return 0;
+ };
+ /* Build one drag handle over the boundary at the right edge of a header cell. makeApplyDelta runs at drag start and returns a function that applies a clamped horizontal mouse delta. */
+ var attachResizeHandle = function(headerCell, makeApplyDelta) {
+  let handle = document.createElement("span");
+  handle.className = handleClassResizeRepoTableColumns;
+  handle.style.position = "absolute";
+  handle.style.top = "0";
+  handle.style.right = "-5px";
+  handle.style.width = "10px";
+  handle.style.height = "100%";
+  handle.style.cursor = "col-resize";
+  handle.style.zIndex = "5";
+  handle.style.userSelect = "none";
+  handle.style.touchAction = "none";
+  handle.style.background = "transparent";
+  /* Always visible divider line centered on the boundary, using GitHub theme variables so it shows on light and dark themes. */
+  let handleLine = document.createElement("span");
+  handleLine.style.position = "absolute";
+  handleLine.style.top = "0";
+  handleLine.style.left = "4px";
+  handleLine.style.width = "2px";
+  handleLine.style.height = "100%";
+  handleLine.style.pointerEvents = "none";
+  handle.appendChild(handleLine);
+  let draggingHandle = 0;
+  let setHandleActive = function(on) {
+   handleLine.style.background = on ? "var(--borderColor-accent-emphasis, #0969da)" : "var(--borderColor-default, rgba(110, 118, 129, 0.6))";
+  };
+  setHandleActive(false);
+  handle.addEventListener("mouseenter", function() { setHandleActive(true); });
+  handle.addEventListener("mouseleave", function() { if (draggingHandle == 0) { setHandleActive(false); } });
+  handle.addEventListener("pointerdown", function(e) {
+   e.preventDefault();
+   e.stopPropagation();
+   draggingHandle = 1;
+   setHandleActive(true);
+   let startX = e.clientX;
+   let applyDelta = makeApplyDelta();
+   let prevBodyCursor = document.body.style.cursor;
+   /* Pointer capture keeps the drag alive when the mouse outruns the handle, and the page cursor stays a resize cursor for the whole drag. */
+   document.body.style.cursor = "col-resize";
+   if (handle.setPointerCapture) { handle.setPointerCapture(e.pointerId); }
+   let onMove = function(ev) { applyDelta(ev.clientX - startX); };
+   let onUp = function() {
+    draggingHandle = 0;
+    setHandleActive(false);
+    document.body.style.cursor = prevBodyCursor;
+    handle.removeEventListener("pointermove", onMove);
+    handle.removeEventListener("pointerup", onUp);
+    handle.removeEventListener("pointercancel", onUp);
+   };
+   handle.addEventListener("pointermove", onMove);
+   handle.addEventListener("pointerup", onUp);
+   handle.addEventListener("pointercancel", onUp);
+  });
+  if (window.getComputedStyle(headerCell).position == "static") {
+   headerCell.style.position = "relative";
+  }
+  headerCell.appendChild(handle);
+ };
+ /* Table layout: pin every visible column to its current pixel width, then trade width between the two columns at a dragged boundary. The total never changes, so the fixed table layout cannot redistribute space and the divider tracks the mouse one to one. Reruns as a rebuild whenever another bookmarklet changes the column set. */
+ var makeTableColumnsResizable = function() {
+  if (tableNeedsSetupResizeRepoTableColumns(fileTableResizeRepoTableColumns) == 0) { return; }
+  let headerRow = tableRowResizeRepoTableColumns[0];
+  let visibleCells = getVisibleCellsResizeRepoTableColumns(headerRow);
+  let visibleCellsLen = visibleCells.length;
+  fileTableResizeRepoTableColumns.setAttribute(tableFlagResizeRepoTableColumns, String(visibleCellsLen));
+  /* Clear handles from a previous pass so a rebuild does not stack duplicates. */
+  let oldHandles = fileTableResizeRepoTableColumns.querySelectorAll("." + handleClassResizeRepoTableColumns);
+  for (let h = oldHandles.length - 1; h >= 0; h--) { oldHandles[h].remove(); }
+  let checkStyleTag = document.getElementById("resizeStyle--_unlikely-_-text_--resizeStyle");
+  if (!checkStyleTag) {
+   /* Clip body cell content that no longer fits after a column is made narrower. Header cells stay unclipped so the handles can overhang the boundary. */
+   let styleTag = document.createElement("style");
+   styleTag.id = "resizeStyle--_unlikely-_-text_--resizeStyle";
+   styleTag.innerText = "table[" + tableFlagResizeRepoTableColumns + "] td { overflow: hidden; }";
+   document.head.appendChild(styleTag);
+  }
+  /* Pin visible columns to pixels, scaled to the container so widths left by other bookmarklets cannot make the table wider than the page. */
+  let containerWidth = fileTableResizeRepoTableColumns.parentElement ? fileTableResizeRepoTableColumns.parentElement.clientWidth : 0;
+  let startWidths = [];
+  let totalWidth = 0;
+  for (let c = 0; c < visibleCellsLen; c++) {
+   let curWidth = visibleCells[c].getBoundingClientRect().width;
+   startWidths.push(curWidth);
+   totalWidth += curWidth;
+  }
+  let scaleWidth = (containerWidth > 0 && totalWidth > 0) ? (containerWidth / totalWidth) : 1;
+  for (let c = 0; c < visibleCellsLen; c++) { visibleCells[c].style.width = (startWidths[c] * scaleWidth) + "px"; }
+  fileTableResizeRepoTableColumns.style.tableLayout = "fixed";
+  fileTableResizeRepoTableColumns.style.width = "100%";
+  for (let c = 0; c < visibleCellsLen - 1; c++) {
+   let leftCell = visibleCells[c];
+   attachResizeHandle(leftCell, function() {
+    /* Find the right neighbor and take fresh measurements at drag start, so a column inserted later by another bookmarklet pairs correctly. */
+    let rightCell = leftCell.nextElementSibling;
+    while (rightCell && window.getComputedStyle(rightCell).display == "none") { rightCell = rightCell.nextElementSibling; }
+    let startWidthLeft = leftCell.getBoundingClientRect().width;
+    let startWidthRight = rightCell ? rightCell.getBoundingClientRect().width : 0;
+    return function(delta) {
+     if (!rightCell) { return; }
+     if (delta < minColumnWidthResizeRepoTableColumns - startWidthLeft) { delta = minColumnWidthResizeRepoTableColumns - startWidthLeft; }
+     if (delta > startWidthRight - minColumnWidthResizeRepoTableColumns) { delta = startWidthRight - minColumnWidthResizeRepoTableColumns; }
+     leftCell.style.width = (startWidthLeft + delta) + "px";
+     rightCell.style.width = (startWidthRight - delta) + "px";
+    };
+   });
+  }
+ };
+ /* Older grid layout: dragging a boundary trades width between the two neighboring cells in every row. */
+ var makeGridColumnsResizable = function() {
+  let headerRow = tableRowResizeRepoTableColumns[0];
+  if (!headerRow) { return; }
+  if (headerRow.getAttribute(tableFlagResizeRepoTableColumns) == "1") { return; }
+  let visibleCells = getVisibleCellsResizeRepoTableColumns(headerRow);
+  let visibleCellsLen = visibleCells.length;
+  if (visibleCellsLen < 2) { return; }
+  headerRow.setAttribute(tableFlagResizeRepoTableColumns, "1");
+  let gridRows = tableRowResizeRepoTableColumns;
+  let gridRowsLen = tableRowLenResizeRepoTableColumns;
+  let setGridCellWidth = function(cell, width) {
+   if (!cell) { return; }
+   cell.style.width = width + "px";
+   cell.style.minWidth = width + "px";
+   cell.style.maxWidth = width + "px";
+   cell.style.flex = "0 0 auto";
+  };
+  for (let c = 0; c < visibleCellsLen - 1; c++) {
+   let leftIndex = Array.prototype.indexOf.call(headerRow.children, visibleCells[c]);
+   let rightIndex = Array.prototype.indexOf.call(headerRow.children, visibleCells[c + 1]);
+   let leftHeaderCell = visibleCells[c];
+   let rightHeaderCell = visibleCells[c + 1];
+   attachResizeHandle(leftHeaderCell, function() {
+    let startWidthLeft = leftHeaderCell.getBoundingClientRect().width;
+    let startWidthRight = rightHeaderCell.getBoundingClientRect().width;
+    return function(delta) {
+     if (delta < minColumnWidthResizeRepoTableColumns - startWidthLeft) { delta = minColumnWidthResizeRepoTableColumns - startWidthLeft; }
+     if (delta > startWidthRight - minColumnWidthResizeRepoTableColumns) { delta = startWidthRight - minColumnWidthResizeRepoTableColumns; }
+     for (let r = 0; r < gridRowsLen; r++) {
+      setGridCellWidth(gridRows[r].children[leftIndex], startWidthLeft + delta);
+      setGridCellWidth(gridRows[r].children[rightIndex], startWidthRight - delta);
+     }
+    };
+   });
+  }
+ };
+ /* Apply the resize behavior to the current file listing. */
+ var githubTableFunction = function() {
+  if (turnOffResizeRepoTableColumns == 1) { return; }
+  if (firstRunResizeRepoTableColumns != 0) { console.log("Bookmarklet running:"); }
+  if (tableRowLenResizeRepoTableColumns == 0) { return; }
+  if (tablePageResizeRepoTableColumns == 1) {
+   makeTableColumnsResizable();
+  } else {
+   makeGridColumnsResizable();
+  }
+ };
+ /* Run bookmarklet according to current directory. */
+ var runBookmarklet = function() {
+  setGlobals();
+  if (turnOffResizeRepoTableColumns == 0) {
+   githubTableFunction();
+  } else {
+   return;
+  }
+ };
+ if (firstRunResizeRepoTableColumns == 1) {
+  runBookmarklet();
+ } else {
+  let checkIfSessionNeedsResetting = document.getElementById("checkIfSessionNeedsResetting--__-unlikely_-_name-__--checkIfSessionNeedsResetting");
+  if (!checkIfSessionNeedsResetting) { sessionNeedsResettingResizeRepoTableColumns = 1; }
+ }
+ /* Run bookmarklet with changing directories. */
+ var checkForChangeDir = function() {
+  if (curDirResizeRepoTableColumns !== window.location.href && turnOffResizeRepoTableColumns == 0) {
+   curDirResizeRepoTableColumns = window.location.href;
+   runBookmarklet();
+  } else {
+   if (turnOffResizeRepoTableColumns == 0) {
+    /* GitHub can swap in a fresh table on the same address, and other bookmarklets can add or restyle columns, so re-apply whenever the table needs setup. */
+    let curTable = document.querySelector('table[aria-labelledby="folders-and-files"]');
+    if (tableNeedsSetupResizeRepoTableColumns(curTable) == 1) {
+     runBookmarklet();
+    }
+   }
+  }
+  if (turnOffResizeRepoTableColumns == 0) {
+   setTimeout(checkForChangeDir, 1000);
+  } else {
+   console.log("Bookmarklet did not run:");
+   return;
+  }
+ };
+ if (sessionNeedsResettingResizeRepoTableColumns == 1) {
+  sessionNeedsResettingResizeRepoTableColumns = 0;
+  sessionStorage.removeItem("resizeColumns-,._.,-|__--_unlikely-_-name_--__|-,._.,-resizeColumns");
+  firstRunResizeRepoTableColumns = 1;
+  runBookmarklet();
+ }
+ if (turnOffResizeRepoTableColumns == 0) {
+  checkForChangeDir();
+ } else {
+  console.log("Bookmarklet is not running:");
+  return;
+ }
+})();
