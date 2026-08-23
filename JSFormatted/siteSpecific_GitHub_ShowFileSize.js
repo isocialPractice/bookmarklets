@@ -4,6 +4,18 @@ javascript:(function(){
  var onRoot=0,tablePage=1,apiRoot, curAPI, mapAPI;
  /* Switch to prevent new columns being added on navigations */
  var firstLoad = 0, curDir = window.location.href, turnOff, firstRun, fileSizeHasID, reGetAPIJSON, sessionNeedsResetting = 0;
+ var docBody = document.getElementsByTagName("body");
+ /* style td element text color */
+ var bookmarkletStyle = document.createElement("style");
+ bookmarkletStyle.id = "fileSizeStyle--__-unlikely_-_name-__--fileSizeStyle";
+ bookmarkletStyle.textContent = `td[id^="fileSize-__-unlikely-name-__-fileSize"] { color: #9198a1 !important; }`;
+ /* insert style, re-inserting if a soft navigation replaced the body */
+ var insertBookmarkletStyle = function() {
+  if (!document.getElementById("fileSizeStyle--__-unlikely_-_name-__--fileSizeStyle")) {
+   docBody[0].insertAdjacentElement("afterbegin", bookmarkletStyle);
+  }
+ };
+ insertBookmarkletStyle();
  if (sessionStorage.getItem("showFileSize-,._.,-|__--_unlikely-_-name_--__|-,._.,-showFileSize") == null) {
   sessionStorage.setItem("showFileSize-,._.,-|__--_unlikely-_-name_--__|-,._.,-showFileSize", "1");
   firstRun = sessionStorage.getItem("showFileSize-,._.,-|__--_unlikely-_-name_--__|-,._.,-showFileSize");
@@ -22,9 +34,9 @@ javascript:(function(){
  } else {
   firstRun = 0;
  }
- var setGlobals = function() {  
-   curPage = location.host + location.pathname;      
-   apiRoot = "https://api.github.com/repos"; 
+ var setGlobals = function() {
+   curPage = location.host + location.pathname;
+   apiRoot = "https://api.github.com/repos";
    if (curPage.indexOf("github.com") > -1) {
     let checkRoleRow = document.querySelectorAll('div[role="row"]');
     if (curPage.indexOf("tree") > -1) {
@@ -46,10 +58,10 @@ javascript:(function(){
     }
     if (onRoot == 0 && tablePage == 1) {
      tableRow = document.getElementsByTagName("tr");
-     tableRowLen = tableRow.length;         
+     tableRowLen = tableRow.length;
     } else {
      tableRow = document.querySelectorAll('div[role="row"]');
-     tableRowLen = tableRow.length;               
+     tableRowLen = tableRow.length;
     }
     turnOff = 0;
     /* extract user and repo */
@@ -57,7 +69,7 @@ javascript:(function(){
     curUser = curExtract.substr(0, curExtract.indexOf("/"));
     curExtract = curExtract.substr(curExtract.indexOf("/")+1);
     if (
-     curExtract.indexOf("/") == -1 || 
+     curExtract.indexOf("/") == -1 ||
      curExtract.substr(curExtract.indexOf("/")+1).split("/").length == 2
     ) {
      onRoot = 1;
@@ -81,7 +93,7 @@ javascript:(function(){
     turnOff = 1;
     return;
    }
- };  
+ };
  /* function to add size data after json stored */
  var addSizeCol = function(cur) {
   if (turnOff == 1) { return; }
@@ -103,7 +115,7 @@ javascript:(function(){
      continue;
     }
    }
-   /* redo fetch */      
+   /* redo fetch */
    reGetAPIJSON = async function(api) {
     let a = await fetch(api);
     let b = await a.text();
@@ -112,35 +124,36 @@ javascript:(function(){
    };
   };
   /* run if on repo root page out of tree */
-  let repoRoot = function(curI) { 
+  let repoRoot = function(curI) {
    if (tableRow[curI] && tableRow[curI].hasChildNodes()) {
     sizeTD = document.createElement("div");
     sizeTD.style.margin = "0 60px";
-    sizeTD.style.width = "10%";      
+    sizeTD.style.width = "10%";
     tableRow[curI].children[1].style.width = "35%";
     if (tableRow[curI].children.length > 1 && tableRow[curI].children[1]) {
      if (tableRow[curI].innerHTML.indexOf('aria-label="Directory"') == -1) {
       sizeTD.dataset.fileSize = "1";
-      fileName = tableRow[curI].children[1].innerText;        
+      fileName = tableRow[curI].children[1].innerText;
       for (j in cur) {
        if (cur[j].name == fileName) {
-        sizeTD.innerText = 
-         cur[j].size < 1024 ? cur[j].size + " B" : 
-         (cur[j].size < 1048576 ? (unit = " KiB", cur[j].size /= 1024) : 
-         cur[j].size < 1073741824 ? (unit = " MiB", cur[j].size /= 1048576) : 
+        sizeTD.innerText =
+         cur[j].size < 1024 ? cur[j].size + " B" :
+         (cur[j].size < 1048576 ? (unit = " KiB", cur[j].size /= 1024) :
+         cur[j].size < 1073741824 ? (unit = " MiB", cur[j].size /= 1048576) :
          (unit = " GiB", cur[j].size /= 1073741824),cur[j].size.toFixed(1) + unit);
        }
-      }        
+      }
      sizeTD.id = "fileSize-__-unlikely-name-__-fileSize"+indexSizeID;
-     indexSizeID++;       
+     sizeTD.style.color = "#9198a1";
+     indexSizeID++;
      } else {
-      sizeTD.innerText = "";       
+      sizeTD.innerText = "";
      }
      tableRow[curI].children[1].insertAdjacentElement("afterend", sizeTD);
     }
-   }      
+   }
   };
-  for (i = 0; i < tableRowLen; i++) {    
+  for (i = 0; i < tableRowLen; i++) {
    if (i == 0) {
     if (tablePage == 1) {
      if (firstLoad == 0) {
@@ -153,10 +166,10 @@ javascript:(function(){
        tableRow[i].children[1].insertAdjacentElement("afterend", sizeTH);
        tableRow[i].children[1].style.width = "30%";
       }
-     }     
+     }
     } else {
-     repoRoot(i);        
-    }    
+     repoRoot(i);
+    }
    } else {
     if (i == 1) {
      if (tablePage == 1) {
@@ -165,69 +178,69 @@ javascript:(function(){
        firstLoad = 1;
       } else {
        resetFileSize();
-       if (fileSizeHasID == 1) { 
+       if (fileSizeHasID == 1) {
         setTimeout(function() {
-         setGlobals();       
+         setGlobals();
         }, 500);
         if (turnOff == 0) {
-         setTimeout(function() {         
-          reGetAPIJSON(curAPI);         
+         setTimeout(function() {
+          reGetAPIJSON(curAPI);
          }, 1000);
         }
         break;
        }
-      }     
+      }
      } else {
       if (firstLoad == 0) {
        repoRoot(i);
       } else {
        resetFileSize();
-       if (fileSizeHasID == 1) { 
+       if (fileSizeHasID == 1) {
         setTimeout(function() {
-         setGlobals();       
+         setGlobals();
         }, 500);
         if (turnOff == 0) {
-         setTimeout(function() {         
-          reGetAPIJSON(curAPI);         
+         setTimeout(function() {
+          reGetAPIJSON(curAPI);
          }, 1000);
         }
         break;
-       }              
+       }
       }
      }
-    } else {  
+    } else {
      if (tablePage == 1) {
-      sizeTD = document.createElement("td");      
+      sizeTD = document.createElement("td");
       if (tableRow[i] && tableRow[i].hasChildNodes()) {
        if (tableRow[i].children.length > 1 && tableRow[i].children[1]) {
         if (tableRow[i].innerText.indexOf("(Directory)") == -1) {
          sizeTD.dataset.fileSize = "1";
-         fileName = tableRow[i].children[1].innerText;        
+         fileName = tableRow[i].children[1].innerText;
          /*fileName = fileName.substr(0,fileName.indexOf("\n"));*/
          for (j in cur) {
           if (cur[j].name == fileName) {
-           sizeTD.innerText = 
-            cur[j].size < 1024 ? cur[j].size + " B" : 
-            (cur[j].size < 1048576 ? (unit = " KiB", cur[j].size /= 1024) : 
-            cur[j].size < 1073741824 ? (unit = " MiB", cur[j].size /= 1048576) : 
+           sizeTD.innerText =
+            cur[j].size < 1024 ? cur[j].size + " B" :
+            (cur[j].size < 1048576 ? (unit = " KiB", cur[j].size /= 1024) :
+            cur[j].size < 1073741824 ? (unit = " MiB", cur[j].size /= 1048576) :
             (unit = " GiB", cur[j].size /= 1073741824),cur[j].size.toFixed(1) + unit);
           }
-         }        
+         }
         sizeTD.id = "fileSize-__-unlikely-name-__-fileSize"+indexSizeID;
-        indexSizeID++;       
+        indexSizeID++;
         } else {
-         sizeTD.innerText = "";       
+         sizeTD.innerText = "";
         }
         tableRow[i].children[1].insertAdjacentElement("afterend", sizeTD);
        }
       }
      } else {
      repoRoot(i);
-     }     
-    } 
-   }         
+     }
+    }
+   }
   }
- };        
+ };
  /* get api as text, convert to json, then use json to add size col to table */
  var getAPIJSON = async function(api) {
   let a = await fetch(api);
@@ -236,18 +249,19 @@ javascript:(function(){
   let d = await addSizeCol(c);
  };
  /* run bookmarklet according to current directory */
- var runBookmarklet = function() {  
+ var runBookmarklet = function() {
+  insertBookmarkletStyle();
   setGlobals();
-  if (turnOff == 0) {    
+  if (turnOff == 0) {
    setTimeout(function() { getAPIJSON(curAPI); }, 1000);
   } else {
    return;
   }
- };  
- if (firstRun == 1) {   
-  runBookmarklet(); 
+ };
+ if (firstRun == 1) {
+  runBookmarklet();
  } else {
-  let checkIfSessionNeedsResetting = 
+  let checkIfSessionNeedsResetting =
    document.getElementById("checkIfSessionNeedsResetting--__-unlikely_-_name-__--checkIfSessionNeedsResetting");
   if (!checkIfSessionNeedsResetting) { sessionNeedsResetting = 1; }
  }
@@ -258,7 +272,7 @@ javascript:(function(){
    runBookmarklet();
   }
   if (turnOff == 0) {
-   setTimeout(checkForChangeDir, 1000); 
+   setTimeout(checkForChangeDir, 1000);
   } else {
    console.log("Add file size bookmarklet did not run:");
    return;
@@ -267,11 +281,11 @@ javascript:(function(){
  if (sessionNeedsResetting == 1) {
   sessionNeedsResetting = 0;
   sessionStorage.removeItem("showFileSize-,._.,-|__--_unlikely-_-name_--__|-,._.,-showFileSize");
-  firstRun = 1;   
+  firstRun = 1;
   runBookmarklet();
  }
  if (turnOff == 0) {
-  checkForChangeDir(); 
+  checkForChangeDir();
  } else {
   console.log("Add file size bookmarklet is not running:");
   return;
