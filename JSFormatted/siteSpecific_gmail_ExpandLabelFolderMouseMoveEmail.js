@@ -1,0 +1,495 @@
+javascript:(function(){
+ /* Define global variables. */
+ /* Settings: toggle flag, hover ms, jitter px, total ghost effect ms. */
+ var flagNameExpandLabelFolderMouseMoveEmail = "springLabels--__-unlikely_-_name-__--ExpandLabelFolderMouseMoveEmail";
+ var dwellMSExpandLabelFolderMouseMoveEmail = 500;
+ var moveTolExpandLabelFolderMouseMoveEmail = 5;
+ var ghostMSExpandLabelFolderMouseMoveEmail = 250;
+ /* Switches (1 on, 0 off): debug log, mousedown backup, ghost effect. */
+ var debugExpandLabelFolderMouseMoveEmail = 1;
+ var useMouseDownExpandLabelFolderMouseMoveEmail = 0;
+ var useGhostExpandLabelFolderMouseMoveEmail = 1;
+ /* HOT-GLUE: Gmail selectors for label item, label row, expand arrow, and email row. */
+ var itemSelExpandLabelFolderMouseMoveEmail = "div.aim";
+ var rowSelExpandLabelFolderMouseMoveEmail = 'div.aim,div.TO,[role="treeitem"]';
+ var arrowSelExpandLabelFolderMouseMoveEmail = "div.TH";
+ var mailSelExpandLabelFolderMouseMoveEmail = 'tr.zA,[role="listitem"],[data-legacy-thread-id],[data-thread-id]';
+ /* Runtime state: 0/1 switches, pointer positions (-1 = none), armed label, timers. */
+ var draggingExpandLabelFolderMouseMoveEmail = 0, mouseDownExpandLabelFolderMouseMoveEmail = 0;
+ var pointerXExpandLabelFolderMouseMoveEmail = -1, pointerYExpandLabelFolderMouseMoveEmail = -1;
+ var lastXExpandLabelFolderMouseMoveEmail = -1, lastYExpandLabelFolderMouseMoveEmail = -1;
+ var lastItemExpandLabelFolderMouseMoveEmail = null, armedItemExpandLabelFolderMouseMoveEmail = null, armedShadowExpandLabelFolderMouseMoveEmail = "";
+ var dwellTimerExpandLabelFolderMouseMoveEmail = 0, openedCountExpandLabelFolderMouseMoveEmail = 0;
+ var toastExpandLabelFolderMouseMoveEmail = null, toastTimerExpandLabelFolderMouseMoveEmail = 0;
+ var dragDataExpandLabelFolderMouseMoveEmail = null, ghostTimerExpandLabelFolderMouseMoveEmail = 0;
+ var turnOffExpandLabelFolderMouseMoveEmail = 0;
+
+ /************************************* SUPPORT FUNCTIONS *************************************/
+ /* Return 1 to run, or 0 to stop (not Gmail, or this click turned it off). */
+ const checkGmailExpandLabelFolderMouseMoveEmail = () => {
+  if (location.host.indexOf("mail.google.com") == -1) {
+   console.log("Spring-loaded labels: open Gmail first.");
+   return 0;
+  }
+  /* already running - turn off */
+  if (window[flagNameExpandLabelFolderMouseMoveEmail] &&
+      window[flagNameExpandLabelFolderMouseMoveEmail].offExpandLabelFolderMouseMoveEmail) {
+   window[flagNameExpandLabelFolderMouseMoveEmail].offExpandLabelFolderMouseMoveEmail();
+   window[flagNameExpandLabelFolderMouseMoveEmail] = null;
+   return 0;
+  }
+  return 1;
+ };
+ /* Log to the console when debug is 1. */
+ const logExpandLabelFolderMouseMoveEmail = (text) => {
+  if (debugExpandLabelFolderMouseMoveEmail == 1) {
+   console.log("springLabels: " + text);
+  }
+ };
+ /* Show a status toast bottom-left and fade it out after 1.6s. */
+ const sayExpandLabelFolderMouseMoveEmail = (text)=> {
+  if (!toastExpandLabelFolderMouseMoveEmail) {
+   toastExpandLabelFolderMouseMoveEmail = document.createElement("div");
+   toastExpandLabelFolderMouseMoveEmail.style.cssText = "position:fixed;z-index:2147483647;left:16px;bottom:16px;padding:8px 12px;border-radius:6px;background:#202124;color:#fff;font:400 13px/18px Roboto,Arial,sans-serif;box-shadow:0 1px 8px rgba(0,0,0,.4);pointer-events:none;opacity:0;transition:opacity .15s";
+   document.body.appendChild(toastExpandLabelFolderMouseMoveEmail);
+  }
+  toastExpandLabelFolderMouseMoveEmail.innerText = text;
+  toastExpandLabelFolderMouseMoveEmail.style.opacity = "1";
+  clearTimeout(toastTimerExpandLabelFolderMouseMoveEmail);
+  toastTimerExpandLabelFolderMouseMoveEmail = setTimeout(function() {
+   if (toastExpandLabelFolderMouseMoveEmail) {
+    toastExpandLabelFolderMouseMoveEmail.style.opacity = "0";
+   }
+  }, 1600);
+ };
+ /* Get the label's own row, skipping rows that belong to nested sub-labels. */
+ const ownRowExpandLabelFolderMouseMoveEmail = (item) => {
+  let rows = item.querySelectorAll(rowSelExpandLabelFolderMouseMoveEmail);
+  for (let i = 0; i < rows.length; i++) {
+   if (rows[i].closest(itemSelExpandLabelFolderMouseMoveEmail) == item) {
+    return rows[i];
+   }
+  }
+  return item;
+ };
+ /* Find the first match that belongs to this label, not to a nested sub-label. */
+ const ownFindExpandLabelFolderMouseMoveEmail = (item, sel) => {
+  let found = item.querySelectorAll(sel);
+  for (let i = 0; i < found.length; i++) {
+   let owner = found[i].closest(itemSelExpandLabelFolderMouseMoveEmail);
+   if (!owner || owner == item || !item.contains(owner)) {
+    return found[i];
+   }
+  }
+  return null;
+ };
+ /* Check that the exact pointer is inside the label's own row. */
+ const rowHasPointExpandLabelFolderMouseMoveEmail = (item, x, y) => {
+  let r = ownRowExpandLabelFolderMouseMoveEmail(item).getBoundingClientRect();
+  return (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+ };
+ /* Get the label under the exact pointer, or null. */
+ const itemFromPointExpandLabelFolderMouseMoveEmail = (x, y, fallbackTarget) => {
+  let el = document.elementFromPoint(x, y);
+  if (!el || !el.closest) {
+   el = fallbackTarget;
+  }
+  if (!el || !el.closest) {
+   return null;
+  }
+  let hit = el.closest(rowSelExpandLabelFolderMouseMoveEmail);
+  if (!hit) return null;
+  let item = hit.closest(itemSelExpandLabelFolderMouseMoveEmail) || hit;
+  /* ignore wrapper hits outside the label's own row */
+  if (!rowHasPointExpandLabelFolderMouseMoveEmail(item, x, y)) return null;
+  return item;
+ };
+ /* Read the label's own state from arrow title, then aria-label, then aria-expanded. */
+ const stateOfExpandLabelFolderMouseMoveEmail = (item)=> {
+  if (!item) return "";
+  let arrow = ownFindExpandLabelFolderMouseMoveEmail(item, arrowSelExpandLabelFolderMouseMoveEmail + "[title]");
+  let t = arrow ? (arrow.getAttribute("title") || "") : "";
+  if (/^\s*expand/i.test(t)) {
+   return "collapsed";
+  }
+  if (/^\s*collapse/i.test(t)) {
+   return "expanded";
+  }
+  let link = ownFindExpandLabelFolderMouseMoveEmail(item, "a[aria-label]");
+  let al = link ? (link.getAttribute("aria-label") || "") : "";
+  if (/\bcollapsed\b/i.test(al)) {
+   return "collapsed";
+  }
+  if (/\bexpanded\b/i.test(al)) {
+   return "expanded";
+  }
+  let any = ownFindExpandLabelFolderMouseMoveEmail(item, "[aria-expanded]");
+  if (any) {
+   return any.getAttribute("aria-expanded") == "true" ? "expanded" : "collapsed";
+  }
+  return "";
+ };
+ /* Get the arrow to click, only when the label is collapsed. */
+ const findToggleExpandLabelFolderMouseMoveEmail = (item) => {
+  if (stateOfExpandLabelFolderMouseMoveEmail(item) != "collapsed") {
+   return null;
+  }
+  return ownFindExpandLabelFolderMouseMoveEmail(item, arrowSelExpandLabelFolderMouseMoveEmail) ||
+         ownFindExpandLabelFolderMouseMoveEmail(item, '[aria-expanded="false"]');
+ };
+ /* Outline the label about to open, one at a time. */
+ const armExpandLabelFolderMouseMoveEmail = (item) => {
+  if (armedItemExpandLabelFolderMouseMoveEmail == item) {
+   return;
+  }
+  disarmExpandLabelFolderMouseMoveEmail();
+  if (!item) {
+   return;
+  }
+  armedItemExpandLabelFolderMouseMoveEmail = item;
+  armedShadowExpandLabelFolderMouseMoveEmail = item.style.boxShadow;
+  item.style.boxShadow = "inset 0 0 0 2px #1a73e8";
+ };
+ /* Remove the outline and forget the armed label. */
+ const disarmExpandLabelFolderMouseMoveEmail = () => {
+  if (armedItemExpandLabelFolderMouseMoveEmail) {
+   armedItemExpandLabelFolderMouseMoveEmail.style.boxShadow = armedShadowExpandLabelFolderMouseMoveEmail;
+  }
+  armedItemExpandLabelFolderMouseMoveEmail = null;
+  armedShadowExpandLabelFolderMouseMoveEmail = "";
+ };
+ /* Simulate hover and click at the element's center (exact pointer if it has no size). */
+ const pokeExpandLabelFolderMouseMoveEmail = (el) => {
+  if (!el) {
+   return;
+  }
+  let r = el.getBoundingClientRect();
+  let x = r.left + (r.width / 2), y = r.top + (r.height / 2);
+  if (r.width == 0 && r.height == 0) {
+   x = pointerXExpandLabelFolderMouseMoveEmail;
+   y = pointerYExpandLabelFolderMouseMoveEmail;
+  }
+  let opts = { bubbles: true, cancelable: true, view: window, button: 0, buttons: 0, clientX: x, clientY: y };
+  el.dispatchEvent(new MouseEvent("mouseover", opts));
+  el.dispatchEvent(new MouseEvent("click", opts));
+ };
+ /* Backup: send a mousedown when useMouseDown is 1. */
+ const pokeHardExpandLabelFolderMouseMoveEmail = (el) => {
+  if (!el || useMouseDownExpandLabelFolderMouseMoveEmail == 0) {
+   return;
+  }
+  let r = el.getBoundingClientRect();
+  let x = r.left + (r.width / 2), y = r.top + (r.height / 2);
+  if (r.width == 0 && r.height == 0) {
+   x = pointerXExpandLabelFolderMouseMoveEmail;
+   y = pointerYExpandLabelFolderMouseMoveEmail;
+  }
+  el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true, view: window, button: 0, buttons: 1, clientX: x, clientY: y }));
+ };
+ /* List label items whose own row is visible now. */
+ const visibleItemsExpandLabelFolderMouseMoveEmail = () => {
+  let found = document.querySelectorAll(itemSelExpandLabelFolderMouseMoveEmail);
+  let list = [];
+  for (let i = 0; i < found.length; i++) {
+   let r = ownRowExpandLabelFolderMouseMoveEmail(found[i]).getBoundingClientRect();
+   if (r.width > 0 && r.height > 0) {
+    list.push(found[i]);
+   }
+  }
+  return list;
+ };
+ /* Identify a label by its link, so a redrawn row still matches. */
+ const keyOfExpandLabelFolderMouseMoveEmail = (item) => {
+  let a = ownFindExpandLabelFolderMouseMoveEmail(item, "a[href]");
+  return a ? a.getAttribute("href") : item;
+ };
+ /* Find the label again by its key, in case Gmail redrew it. */
+ const refindExpandLabelFolderMouseMoveEmail = (item) => {
+  let key = keyOfExpandLabelFolderMouseMoveEmail(item);
+  let all = document.querySelectorAll(itemSelExpandLabelFolderMouseMoveEmail);
+  for (let i = 0; i < all.length; i++) {
+   if (typeof key == "string" && keyOfExpandLabelFolderMouseMoveEmail(all[i]) == key) {
+    return all[i];
+   }
+  }
+  return item;
+ };
+ /* Return 1 if the label opened: new sub-labels are showing, or it now reads as expanded. */
+ const openedExpandLabelFolderMouseMoveEmail = (item, before) => {
+  let keys = visibleItemsExpandLabelFolderMouseMoveEmail().map(keyOfExpandLabelFolderMouseMoveEmail);
+  for (let i = 0; i < keys.length; i++) {
+   if (before.indexOf(keys[i]) == -1) {
+    return 1;
+   }
+  }
+  return stateOfExpandLabelFolderMouseMoveEmail(refindExpandLabelFolderMouseMoveEmail(item)) == "expanded" ? 1 : 0;
+ };
+ /* Send Gmail one fake pointer step (drag events in a native drag, else mouse events). */
+ const fakeMoveExpandLabelFolderMouseMoveEmail = (prev, el, x, y) => {
+  let opts = { bubbles: true, cancelable: true, view: window, button: 0, buttons: 1, clientX: x, clientY: y, relatedTarget: prev };
+  let left = Object.assign({}, opts, { relatedTarget: el });
+  if (draggingExpandLabelFolderMouseMoveEmail == 1) {
+   /* reuse the real drag data so Gmail accepts the event */
+   opts.dataTransfer = dragDataExpandLabelFolderMouseMoveEmail;
+   left.dataTransfer = dragDataExpandLabelFolderMouseMoveEmail;
+   if (prev != el) {
+    el.dispatchEvent(new DragEvent("dragenter", opts));
+    if (prev) {
+     prev.dispatchEvent(new DragEvent("dragleave", left));
+    }
+   }
+   el.dispatchEvent(new DragEvent("dragover", opts));
+   return;
+  }
+  if (prev != el) {
+   if (prev) {
+    prev.dispatchEvent(new MouseEvent("mouseout", left));
+   }
+   el.dispatchEvent(new MouseEvent("mouseover", opts));
+  }
+  el.dispatchEvent(new PointerEvent("pointermove", Object.assign({ pointerId: 1, pointerType: "mouse", isPrimary: true }, opts)));
+  el.dispatchEvent(new MouseEvent("mousemove", opts));
+ };
+ /* Get the center of a label's own row, or null if another element covers it. */
+ const ghostPointExpandLabelFolderMouseMoveEmail = (target) => {
+  if (!target) {
+   return null;
+  }
+  let r = ownRowExpandLabelFolderMouseMoveEmail(target).getBoundingClientRect();
+  let x = r.left + (r.width / 2), y = r.top + (r.height / 2);
+  return itemFromPointExpandLabelFolderMouseMoveEmail(x, y, null) == target ? [x, y] : null;
+ };
+ /*
+  Ghost effect: hover each new sub-label, then the next sibling, else the previous sibling,
+  else the parent, spread over ghostMS, so Gmail refreshes its drop targets.
+ */
+ const ghostExpandLabelFolderMouseMoveEmail = (item, before) => {
+  if (useGhostExpandLabelFolderMouseMoveEmail == 0) {
+   return;
+  }
+  let after = visibleItemsExpandLabelFolderMouseMoveEmail();
+  let keys = after.map(keyOfExpandLabelFolderMouseMoveEmail);
+  let at = keys.indexOf(keyOfExpandLabelFolderMouseMoveEmail(item)), last = -1, points = [];
+  for (let i = 0; i < after.length; i++) {
+   if (before.indexOf(keys[i]) == -1) {
+    let p = ghostPointExpandLabelFolderMouseMoveEmail(after[i]);
+    if (p) {
+     points.push(p);
+    }
+    last = i;
+   }
+  }
+  /* sibling step: label below the new ones, else above the parent, else the parent */
+  let base = last > -1 ? last : at;
+  let below = base > -1 ? after[base + 1] : null;
+  let above = at > 0 ? after[at - 1] : null;
+  let end = ghostPointExpandLabelFolderMouseMoveEmail(below) ||
+            ghostPointExpandLabelFolderMouseMoveEmail(above) ||
+            ghostPointExpandLabelFolderMouseMoveEmail(at > -1 ? after[at] : null);
+  if (end) {
+   points.push(end);
+  }
+  if (points.length == 0) {
+   return;
+  }
+  logExpandLabelFolderMouseMoveEmail("ghost over " + points.length + " label(s)");
+  let gap = ghostMSExpandLabelFolderMouseMoveEmail / points.length;
+  let step = () => {
+   ghostTimerExpandLabelFolderMouseMoveEmail = 0;
+   if (turnOffExpandLabelFolderMouseMoveEmail == 1 ||
+       (draggingExpandLabelFolderMouseMoveEmail == 0 && mouseDownExpandLabelFolderMouseMoveEmail == 0)) {
+    return;
+   }
+   let p = points.shift();
+   let real = document.elementFromPoint(pointerXExpandLabelFolderMouseMoveEmail, pointerYExpandLabelFolderMouseMoveEmail);
+   let el = document.elementFromPoint(p[0], p[1]);
+   /* there and straight back before the browser paints, so nothing visibly moves */
+   if (real && el) {
+    fakeMoveExpandLabelFolderMouseMoveEmail(real, el, p[0], p[1]);
+    fakeMoveExpandLabelFolderMouseMoveEmail(el, real, pointerXExpandLabelFolderMouseMoveEmail, pointerYExpandLabelFolderMouseMoveEmail);
+   }
+   if (points.length > 0) {
+    ghostTimerExpandLabelFolderMouseMoveEmail = setTimeout(step, gap);
+   }
+  };
+  step();
+ };
+ /* Click the arrow; when it opens (180ms, or 420ms after a retry), report and ghost. */
+ const openFolderExpandLabelFolderMouseMoveEmail = (item) => {
+  let toggle = findToggleExpandLabelFolderMouseMoveEmail(item);
+  if (!toggle) {
+   return;
+  }
+  /* remember what was visible so new sub-labels can be found */
+  let before = visibleItemsExpandLabelFolderMouseMoveEmail().map(keyOfExpandLabelFolderMouseMoveEmail);
+  logExpandLabelFolderMouseMoveEmail("dwell done, clicking the arrow");
+  pokeExpandLabelFolderMouseMoveEmail(toggle);
+  let done = () => {
+   openedCountExpandLabelFolderMouseMoveEmail++;
+   sayExpandLabelFolderMouseMoveEmail("Opened nested labels");
+   recheckExpandLabelFolderMouseMoveEmail();
+   ghostExpandLabelFolderMouseMoveEmail(refindExpandLabelFolderMouseMoveEmail(item), before);
+  };
+  setTimeout(function() {
+   if (openedExpandLabelFolderMouseMoveEmail(item, before) == 1) {
+    done();
+    return;
+   }
+   logExpandLabelFolderMouseMoveEmail("click alone did not open it");
+   pokeHardExpandLabelFolderMouseMoveEmail(toggle);
+   setTimeout(function() {
+    if (openedExpandLabelFolderMouseMoveEmail(item, before) == 1) {
+     done();
+    } else {
+     sayExpandLabelFolderMouseMoveEmail("Could not open that label");
+    }
+   }, 240);
+  }, 180);
+  /* forget the label now so the next move checks again */
+  disarmExpandLabelFolderMouseMoveEmail();
+  lastItemExpandLabelFolderMouseMoveEmail = null;
+ };
+ /* Cancel the countdown and remove the outline. */
+ const resetDwellExpandLabelFolderMouseMoveEmail = () => {
+  clearTimeout(dwellTimerExpandLabelFolderMouseMoveEmail);
+  dwellTimerExpandLabelFolderMouseMoveEmail = 0;
+  disarmExpandLabelFolderMouseMoveEmail();
+ };
+ /* Re-check the label under the exact pointer after the sidebar shifts. */
+ const recheckExpandLabelFolderMouseMoveEmail = () => {
+  if (draggingExpandLabelFolderMouseMoveEmail == 0 && mouseDownExpandLabelFolderMouseMoveEmail == 0) {
+   return;
+  }
+  lastItemExpandLabelFolderMouseMoveEmail = null;
+  trackExpandLabelFolderMouseMoveEmail(pointerXExpandLabelFolderMouseMoveEmail, pointerYExpandLabelFolderMouseMoveEmail, null);
+ };
+ /* On each pointer move: skip jitter, reset the countdown, and arm a collapsed label. */
+ const trackExpandLabelFolderMouseMoveEmail = (x, y, target) => {
+  if (turnOffExpandLabelFolderMouseMoveEmail == 1) {
+   return;
+  }
+  /* record the exact pointer on every event */
+  pointerXExpandLabelFolderMouseMoveEmail = x;
+  pointerYExpandLabelFolderMouseMoveEmail = y;
+  let item = itemFromPointExpandLabelFolderMouseMoveEmail(x, y, target);
+  /* skip small moves that stay on the same label */
+  let moved = (Math.abs(x - lastXExpandLabelFolderMouseMoveEmail) > moveTolExpandLabelFolderMouseMoveEmail ||
+               Math.abs(y - lastYExpandLabelFolderMouseMoveEmail) > moveTolExpandLabelFolderMouseMoveEmail);
+  if (!moved && item == lastItemExpandLabelFolderMouseMoveEmail) {
+   return;
+  }
+  lastXExpandLabelFolderMouseMoveEmail = x;
+  lastYExpandLabelFolderMouseMoveEmail = y;
+  lastItemExpandLabelFolderMouseMoveEmail = item;
+  resetDwellExpandLabelFolderMouseMoveEmail();
+  if (!item) {
+   return;
+  }
+  let state = stateOfExpandLabelFolderMouseMoveEmail(item);
+  if (state != "collapsed") {
+   return;
+  }
+  logExpandLabelFolderMouseMoveEmail("armed on a collapsed label");
+  armExpandLabelFolderMouseMoveEmail(item);
+  dwellTimerExpandLabelFolderMouseMoveEmail = setTimeout(function() {
+   /* open only if the exact pointer is still on this label */
+   if (itemFromPointExpandLabelFolderMouseMoveEmail(pointerXExpandLabelFolderMouseMoveEmail, pointerYExpandLabelFolderMouseMoveEmail, null) != item) {
+    logExpandLabelFolderMouseMoveEmail("pointer left the label, not opening");
+    resetDwellExpandLabelFolderMouseMoveEmail();
+    lastItemExpandLabelFolderMouseMoveEmail = null;
+    return;
+   }
+   openFolderExpandLabelFolderMouseMoveEmail(item);
+  }, dwellMSExpandLabelFolderMouseMoveEmail);
+ };
+ /* Reset all drag state. */
+ const stopDragExpandLabelFolderMouseMoveEmail = () => {
+  draggingExpandLabelFolderMouseMoveEmail = 0;
+  mouseDownExpandLabelFolderMouseMoveEmail = 0;
+  lastItemExpandLabelFolderMouseMoveEmail = null;
+  lastXExpandLabelFolderMouseMoveEmail = -1;
+  lastYExpandLabelFolderMouseMoveEmail = -1;
+  pointerXExpandLabelFolderMouseMoveEmail = -1;
+  pointerYExpandLabelFolderMouseMoveEmail = -1;
+  dragDataExpandLabelFolderMouseMoveEmail = null;
+  clearTimeout(ghostTimerExpandLabelFolderMouseMoveEmail);
+  ghostTimerExpandLabelFolderMouseMoveEmail = 0;
+  resetDwellExpandLabelFolderMouseMoveEmail();
+ };
+ /* Event handlers for native and mouse drags; replayed (untrusted) events are skipped. */
+ const onDragStartExpandLabelFolderMouseMoveEmail = (e) => {
+  draggingExpandLabelFolderMouseMoveEmail = 1;
+  lastXExpandLabelFolderMouseMoveEmail = -1;
+  lastYExpandLabelFolderMouseMoveEmail = -1;
+  lastItemExpandLabelFolderMouseMoveEmail = null;
+  logExpandLabelFolderMouseMoveEmail("drag started");
+ };
+ const onDragOverExpandLabelFolderMouseMoveEmail = (e) => {
+  if (!e.isTrusted) {
+   return;
+  }
+  if (draggingExpandLabelFolderMouseMoveEmail == 0) {
+   draggingExpandLabelFolderMouseMoveEmail = 1;
+  }
+  dragDataExpandLabelFolderMouseMoveEmail = e.dataTransfer || null;
+  trackExpandLabelFolderMouseMoveEmail(e.clientX, e.clientY, e.target);
+ };
+ const onDragEndExpandLabelFolderMouseMoveEmail = (e) => {
+  stopDragExpandLabelFolderMouseMoveEmail();
+ };
+ /* Track only drags that start on an email row. */
+ const onMouseDownExpandLabelFolderMouseMoveEmail = (e) => {
+  if (e.target && e.target.closest && e.target.closest(mailSelExpandLabelFolderMouseMoveEmail)) {
+   mouseDownExpandLabelFolderMouseMoveEmail = 1;
+  }
+ };
+ const onMouseMoveExpandLabelFolderMouseMoveEmail = (e) => {
+  if (!e.isTrusted || mouseDownExpandLabelFolderMouseMoveEmail == 0) {
+   return;
+  }
+  trackExpandLabelFolderMouseMoveEmail(e.clientX, e.clientY, e.target);
+ };
+ const onMouseUpExpandLabelFolderMouseMoveEmail = (e) => {
+  stopDragExpandLabelFolderMouseMoveEmail();
+ };
+ /* Add listeners in the capture phase to see events before Gmail does. */
+ const attachExpandLabelFolderMouseMoveEmail = () => {
+  document.addEventListener("dragstart", onDragStartExpandLabelFolderMouseMoveEmail, true);
+  document.addEventListener("dragover", onDragOverExpandLabelFolderMouseMoveEmail, true);
+  document.addEventListener("dragend", onDragEndExpandLabelFolderMouseMoveEmail, true);
+  document.addEventListener("drop", onDragEndExpandLabelFolderMouseMoveEmail, true);
+  document.addEventListener("mousedown", onMouseDownExpandLabelFolderMouseMoveEmail, true);
+  document.addEventListener("mousemove", onMouseMoveExpandLabelFolderMouseMoveEmail, true);
+  document.addEventListener("mouseup", onMouseUpExpandLabelFolderMouseMoveEmail, true);
+ };
+ /* Remove listeners (must match each add exactly), reset, and report. */
+ const detachExpandLabelFolderMouseMoveEmail = () => {
+  /* stop tracking first */
+  turnOffExpandLabelFolderMouseMoveEmail = 1;
+  document.removeEventListener("dragstart", onDragStartExpandLabelFolderMouseMoveEmail, true);
+  document.removeEventListener("dragover", onDragOverExpandLabelFolderMouseMoveEmail, true);
+  document.removeEventListener("dragend", onDragEndExpandLabelFolderMouseMoveEmail, true);
+  document.removeEventListener("drop", onDragEndExpandLabelFolderMouseMoveEmail, true);
+  document.removeEventListener("mousedown", onMouseDownExpandLabelFolderMouseMoveEmail, true);
+  document.removeEventListener("mousemove", onMouseMoveExpandLabelFolderMouseMoveEmail, true);
+  document.removeEventListener("mouseup", onMouseUpExpandLabelFolderMouseMoveEmail, true);
+  stopDragExpandLabelFolderMouseMoveEmail();
+  sayExpandLabelFolderMouseMoveEmail("Spring-loaded labels: off");
+  console.log("Spring-loaded labels: off after " + openedCountExpandLabelFolderMouseMoveEmail + " expansion(s)");
+ };
+ /*********************************************************************************************
+                                         MAIN FUNCTION
+ *********************************************************************************************/
+ /* Check the page, attach listeners, mark as running, and announce. */
+ function mainExpandLabelFolderMouseMoveEmail() {
+  if (checkGmailExpandLabelFolderMouseMoveEmail() == 0) {
+   return;
+  }
+  attachExpandLabelFolderMouseMoveEmail();
+  window[flagNameExpandLabelFolderMouseMoveEmail] = { offExpandLabelFolderMouseMoveEmail: detachExpandLabelFolderMouseMoveEmail };
+  sayExpandLabelFolderMouseMoveEmail("Spring-loaded labels: on \u00b7 hold " + (dwellMSExpandLabelFolderMouseMoveEmail / 1000) + "s over a label");
+  console.log("Spring-loaded labels: on. Click the bookmarklet again to turn it off.");
+ }
+ /* Run bookmarklet. */
+ mainExpandLabelFolderMouseMoveEmail();
+})();
