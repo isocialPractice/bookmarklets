@@ -33,6 +33,7 @@
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
   - [GitHub - Commit Date Timestamp](#github---commit-date-timestamp) - ready to use
   - [GitHub - List Old Newest Commits](#github---list-old-newest-commits) - ready to use
+  - [GitHub - Navigate Commits Sequentially](#github---navigate-commits-sequentially) - ready to use
   - [GitHub - Resize Repo Table Columns](#github---resize-repo-table-columns) - ready to use
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
   - [Gmail - Expand Label Folder Mouse Move Email](#gmail---expand-label-folder-mouse-move-email) - ready to use 
@@ -615,6 +616,27 @@ Copy/paste: open [siteSpecific_GitHub_ListOldNewestCommits.js](https://raw.githu
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GitHub_ListOldNewestCommits.js](https://gist.github.com/jhauga/ef2c574d2e678f58b6792c2c859e2e6b)
+
+</details>
+</dd></dl></dd></dl>
+
+GitHub - Navigate Commits Sequentially:
+----
+<dl><dd><dl><dd>
+
+Stepping through commits one at a time, with Previous and Next buttons added beside Browse files on a commit page. <br><br>
+
+<strong>USE - ready to use</strong>
+
+Copy/paste: open [siteSpecific_GitHub_NavigateCommitsSequentially.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GitHub_NavigateCommitsSequentially.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
+
+<details>
+
+<summary>siteSpecific_GitHub_NavigateCommitsSequentially.js</summary><br>
+
+<!-- PASTE VIDEO HERE -->
+
+Gist page for [siteSpecific_GitHub_NavigateCommitsSequentially.js](https://gist.github.com/jhauga/c65f32a69fa07ae47d8b8700444a09ce)
 
 </details>
 </dd></dl></dd></dl>
