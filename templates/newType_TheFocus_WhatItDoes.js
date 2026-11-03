@@ -1,1 +1,0 @@
-javascript:(function() {_PASTE_HERE_})();

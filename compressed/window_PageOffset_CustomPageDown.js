@@ -1,1 +1,0 @@
-javascript:(function(){var pageDownBy=500;function runPageDown(y){scrollTo(0,y);}document.body.addEventListener("click",function(){pageDown=pageYOffset+pageDownBy;runPageDown(pageDown)});})();

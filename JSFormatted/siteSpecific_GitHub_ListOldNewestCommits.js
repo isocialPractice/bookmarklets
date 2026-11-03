@@ -90,8 +90,8 @@ javascript:(function(){
   let a = pagLinkGitHubListOldNewestCommits("NextPage");
   let h = a ? (a.getAttribute("href") || "") : "";
   let v = h.match(/[?&]after=([^&]*)/);
-  if (v && v[1].indexOf("%2B") > -1) {
-   sepGitHubListOldNewestCommits = "%2B";
+  if (v && v[1].indexOf("\x252B") > -1) {
+   sepGitHubListOldNewestCommits = "\x252B";
   } else {
    sepGitHubListOldNewestCommits = "+";
   }
