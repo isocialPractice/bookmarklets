@@ -12,6 +12,7 @@
 - [DOM Bookmarklets](#dom-bookmarklets)
   - [Clipboard - Convert Page To Markdown](#clipboard-convert-page-to-markdown) - ready to use
   - [Clipboard - Log Make Md Link List](#clipboard-make-md-link-list) - ready to use
+  - [Clutter - Click To Hide](#clutter---click-to-hide) - ready to use
   - [Note - Take Page Notes](#note-take-page-notes) - ready to use
   - [Parse - Dom Stop Page Parsing](#parse---dom-stop-page-parsing) - ready to use
   - [Parse - Dom Stop Page Parsed Height](#parse---dom-stop-page-parsed-height) - ready to use
@@ -153,6 +154,22 @@ Copy/paste: open [dom_Clipboard_MakeMdLinkList.js](https://raw.githubusercontent
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Clipboard_MakeMdLinkList.js](https://gist.github.com/jhauga/7d0f3aa4e78e29a8309dbfea7cfb366a)
+
+</dd></dl></dd></dl>
+
+Clutter - Click To Hide:
+----
+<dl><dd><dl><dd>
+
+Hiding pop-ups, banners, ads, and other clutter on any page by clicking them, with undo. <br><br>
+
+<strong>USE - ready to use</strong>
+
+Copy/paste: open [dom_Clutter_ClickToHide.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/dom_Clutter_ClickToHide.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
+
+<!-- PASTE VIDEO HERE -->
+
+Gist page for [dom_Clutter_ClickToHide.js](https://gist.github.com/jhauga/95d74982e82a5a825bc3ccd65542a835)
 
 </dd></dl></dd></dl>
 
