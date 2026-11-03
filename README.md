@@ -134,15 +134,10 @@ Convert a web page to Markdown. If the page is not very simple, post edits will 
 
 Copy/paste: open [dom_Clipboard_ConvertPageToMarkdown.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/dom_Clipboard_ConvertPageToMarkdown.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>dom_Clipboard_ConvertPageToMarkdown.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Clipboard_ConvertPageToMarkdown.js](https://gist.github.com/jhauga/46e9f1ad5626d49de81754f0307452e9)
 
-</details>
 </dd></dl></dd></dl>
 
 Clipboard Make Md Link List:
@@ -155,15 +150,10 @@ Getting documentation links as a markdown list, with sections applied <br><br>
 
 Copy/paste: open [dom_Clipboard_MakeMdLinkList.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/dom_Clipboard_MakeMdLinkList.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>dom_Clipboard_MakeMdLinkList.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Clipboard_MakeMdLinkList.js](https://gist.github.com/jhauga/7d0f3aa4e78e29a8309dbfea7cfb366a)
 
-</details>
 </dd></dl></dd></dl>
 
 Note Take Page Notes:
@@ -176,15 +166,10 @@ When learning something new, and want to take notes on it. <br><br>
 
 Copy/paste: open [dom_Note_TakePageNotes.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/dom_Note_TakePageNotes.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>dom_Note_TakePageNotes.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Note_TakePageNotes.js](https://gist.github.com/jhauga/52661cda4f5340a8023ffee94ece792b)
 
-</details>
 </dd></dl></dd></dl>
 
 Parse - Dom Stop Page Parsing:
@@ -200,15 +185,10 @@ Copy/paste: open [dom_Parse_DomStopPageParsing.js](https://raw.githubusercontent
 Loosely Teste on [taxnotes.com](https://www.taxnotes.com/). <br>
 Page tested - **[Featured News](https://www.taxnotes.com/featured-news)**.
 
-<details>
-
-<summary>dom_Parse_DomStopPageParsing.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Parse_DomStopPageParsing.js](https://gist.github.com/jhauga/bd8d1598d8731d242e0f18100b27edd9)
 
-</details>
 </dd></dl></dd></dl>
 
 Parse - Dom Stop Page Parsed Height:
@@ -224,15 +204,10 @@ Copy/paste: open [dom_Parse_DomStopPageParsedHeight.js](https://raw.githubuserco
 Loosely Teste on [taxnotes.com](https://www.taxnotes.com/). <br>
 Page tested - **[Featured News](https://www.taxnotes.com/featured-news)**.
 
-<details>
-
-<summary>dom_Parse_DomStopPageParsedHeight.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Parse_DomStopPageParsedHeight.js](https://gist.github.com/jhauga/e150dbfc1471cfd4d62367ea3084aa19)
 
-</details>
 </dd></dl></dd></dl>
 
 Search - Search Page:
@@ -247,15 +222,10 @@ Click and drag to adjust top position (*range of 40px to 150px*).<br><br>
 
 Copy/paste: open [dom_search_page.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/dom_search_page.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>dom_search_page.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_search_page.js](https://gist.github.com/jhauga/7e3af6f91cc931f492d0615367612627)
 
-</details>
 </dd></dl></dd></dl>
 
 Video - Dom Take Video Notes:
@@ -277,15 +247,10 @@ Copy/paste: open [dom_Video_DomTakeVideoNotes.js](https://raw.githubusercontent.
 
 Page tested - **[Chrome for Developers](https://developer.chrome.com/docs/devtools/overrides)**.
 
-<details>
-
-<summary>dom_Video_DomTakeVideoNotes.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [dom_Video_DomTakeVideoNotes.js](https://gist.github.com/jhauga/5a246efafe3dd894c93d6725978651a1)
 
-</details>
 </dd></dl></dd></dl>
 
 </div>
@@ -307,15 +272,10 @@ Fix side navigation and aside to position of page, and make it scrollable. <br><
 
 Copy/paste: open [nav_Sidebar_FixAndScrollSideMenu.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/nav_Sidebar_FixAndScrollSideMenu.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>nav_Sidebar_FixAndScrollSideMenu.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [nav_Sidebar_FixAndScrollSideMenu.js](https://gist.github.com/jhauga/68d76f72d3adfebfb99cc34b459e2cc6)
 
-</details>
 </dd></dl></dd></dl>
 
 Sidebar - Highlight Current Page:
@@ -329,15 +289,10 @@ then use this bookmarklet: <br><br>
 
 Copy/paste: open [nav_Sidebar_HighlightCurrentPage.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/nav_Sidebar_HighlightCurrentPage.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>nav_Sidebar_HighlightCurrentPage.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [nav_Sidebar_HighlightCurrentPage.js](https://gist.github.com/jhauga/716cd39dc31ac9f607993f709cc48f60)
 
-</details>
 </dd></dl></dd></dl>
 
 Sidebar - Underline Anchor Link:
@@ -351,15 +306,10 @@ when clicked use this bookmarklet: <br><br>
 
 Copy/paste: open [nav_Sidebar_UnderlineAnchorLink.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/nav_Sidebar_UnderlineAnchorLink.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>nav_Sidebar_UnderlineAnchorLink.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [nav_Sidebar_UnderlineAnchorLink.js](https://gist.github.com/jhauga/34b965a0e2a49fdf075fdf44d15306d0)
 
-</details>
 </dd></dl></dd></dl>
 </div>
 <hr><br>
@@ -383,10 +333,6 @@ Change or add a website favicon. For fun or to help identify sites by tab or boo
 
 Copy/paste: open [style_Favicon_ChangeOrAddFavicon.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/style_Favicon_ChangeOrAddFavicon.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>style_Favicon_ChangeOrAddFavicon.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 <strong>Required \(x1\)</strong>
@@ -394,7 +340,6 @@ Copy/paste: open [style_Favicon_ChangeOrAddFavicon.js](https://raw.githubusercon
 
 Gist page for [style_Favicon_ChangeOrAddFavicon.js](https://gist.github.com/jhauga/82ddb109ee790c2a3670457a8cbbff73)
 
-</details>
 </dd></dl></dd></dl>
 </div>
 <hr><br>
@@ -414,15 +359,10 @@ Hide Amazon product video pause icon when video is instructional, and you want t
 
 Copy/paste: open [siteSpecific_Amazon_HideVideoPauseIcon.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_Amazon_HideVideoPauseIcon.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_Amazon_HideVideoPauseIcon.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_Amazon_HideVideoPauseIcon.js](https://gist.github.com/jhauga/298d732bea258a5948c984535895511d)
 
-</details>
 </dd></dl></dd></dl>
 
 ChatGPT - Bookmark a specific response
@@ -435,10 +375,6 @@ If any error, escape quotes and special characters in text and repaste. <br><br>
 <strong>USE - requires 1 change </strong>
 
 Copy/paste: open [siteSpecific_chatGPT_BookmarkResponse.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_BookmarkResponse.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
-
-<details>
-
-<summary>siteSpecific_chatGPT_BookmarkResponse.js</summary><br>
 
 <!-- PASTE VIDEO HERE -->
 
@@ -453,7 +389,6 @@ Copy/paste: open [siteSpecific_chatGPT_BookmarkResponse.js](https://raw.githubus
 
 Gist page for [siteSpecific_chatGPT_BookmarkResponse.js](https://gist.github.com/jhauga/328eccd84d072664c68bf2079fd11bab)
 
-</details>
 </dd></dl></dd></dl>
 
 ChatGPT- Navigate Answers:
@@ -466,15 +401,10 @@ Navigate through long chatGPT conversations one answer at a time. <br><br>
 
 Copy/paste: open [siteSpecific_chatGPT_NavigateAnswers.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_NavigateAnswers.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_chatGPT_NavigateAnswers.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_chatGPT_NavigateAnswers.js](https://gist.github.com/jhauga/ada256a97a9725a7ba117de31909b4cd)
 
-</details>
 </dd></dl></dd></dl>
 
 ChatGPT - Paste Ready Bookmark Response:
@@ -489,17 +419,12 @@ Copy a ready bookmarklet to the clipboard. Once run all copied answers will be c
 
 Copy/paste: open [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_chatGPT_PasteReadyBookmarkResponse.js</summary><br>
-
 <strong>Video Demonstration for Use:</strong>
 
 `Ctrl + click` link to view demo on YouTube [ChatGPT - Paste Ready Bookmark Response](https://youtu.be/0aGQyrg7vo0)
 
 Gist page for [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2)
 
-</details>
 </dd></dl></dd></dl>
 
 ChatGPT - Resize Prompt
@@ -514,15 +439,10 @@ Resize the ChatGPT text prompt. Works with:
 
 Copy/paste: open [siteSpecific_chatGPT_ResizePrompt.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_ResizePrompt.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_chatGPT_ResizePrompt.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_chatGPT_ResizePrompt.js](https://gist.github.com/jhauga/edf8e8a842ebe8b00e1a5ff3ec24892c)
 
-</details>
 </dd></dl></dd></dl>
 
 ChatGPT - Search Chat History:
@@ -535,15 +455,10 @@ Search titles of chat history when chat history gets long. <br><br>
 
 Copy/paste: open [siteSpecific_chatGPT_SearchChatHistory.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_SearchChatHistory.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_chatGPT_SearchChatHistory.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_chatGPT_SearchChatHistory.js](https://gist.github.com/jhauga/90ccd5e537c2bd08e5a9427c82d437ae)
 
-</details>
 </dd></dl></dd></dl>
 
 GitHub - Alternate Row Color:
@@ -560,15 +475,10 @@ Alternate the row colors of repo directory. Activate in repo root and file viewi
 
 Copy/paste: open [siteSpecific_GitHub_AlternateRowColor.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GitHub_AlternateRowColor.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_GitHub_AlternateRowColor.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GitHub_AlternateRowColor.js](https://gist.github.com/jhauga/bb175713e395ac4135f21e7de11245a3)
 
-</details>
 </dd></dl></dd></dl>
 
 GitHub - Commit Date Timestamp:
@@ -585,10 +495,6 @@ Show the last commit using the time stamp and not a relative date calculation. W
 
 Copy/paste: open [siteSpecific_GitHub_CommitDateTimestamp.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GitHub_CommitDateTimestamp.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_GitHub_CommitDateTimestamp.js</summary><br>
-
 <!--
 <strong>Video Demonstration for Use:</strong>
 
@@ -597,7 +503,6 @@ Copy/paste: open [siteSpecific_GitHub_CommitDateTimestamp.js](https://raw.github
 
 Gist page for [siteSpecific_GitHub_CommitDateTimestamp.js](https://gist.github.com/jhauga/042103e01e2c89e400a9b416b480801c)
 
-</details>
 </dd></dl></dd></dl>
 
 GitHub - List Old Newest Commits:
@@ -610,14 +515,10 @@ Navigate commit history to instantly get to the newest or oldest list of commits
 
 Copy/paste: open [siteSpecific_GitHub_ListOldNewestCommits.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GitHub_ListOldNewestCommits.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_GitHub_ListOldNewestCommits.js</summary><br>
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GitHub_ListOldNewestCommits.js](https://gist.github.com/jhauga/ef2c574d2e678f58b6792c2c859e2e6b)
 
-</details>
 </dd></dl></dd></dl>
 
 GitHub - Navigate Commits Sequentially:
@@ -630,15 +531,10 @@ Stepping through commits one at a time, with Previous and Next buttons added bes
 
 Copy/paste: open [siteSpecific_GitHub_NavigateCommitsSequentially.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GitHub_NavigateCommitsSequentially.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_GitHub_NavigateCommitsSequentially.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GitHub_NavigateCommitsSequentially.js](https://gist.github.com/jhauga/c65f32a69fa07ae47d8b8700444a09ce)
 
-</details>
 </dd></dl></dd></dl>
 
 GitHub - Resize Repo Table Columns:
@@ -655,15 +551,10 @@ Resize repository directory table columns.Works with: <br><br>
 
 Copy/paste: open [siteSpecific_GitHub_ResizeRepoTableColumns.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GitHub_ResizeRepoTableColumns.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_GitHub_ResizeRepoTableColumns.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GitHub_ResizeRepoTableColumns.js](https://gist.github.com/jhauga/367eddf6a916c505051cfc4a7df8dfef)
 
-</details>
 </dd></dl></dd></dl>
 
 GitHub - Show File Size:
@@ -682,15 +573,10 @@ Loosely based on [stackoverflow answer](https://stackoverflow.com/questions/3867
 
 Copy/paste: open [siteSpecific_GitHub_ShowFileSize.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GitHub_ShowFileSize.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_GitHub_ShowFileSize.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GitHub_ShowFileSize.js](https://gist.github.com/jhauga/247e43f74af2f196309d5746710899ae)
 
-</details>
 </dd></dl></dd></dl>
 
 Gmail - Expand Label Folder Mouse Move Email: 
@@ -703,15 +589,10 @@ Often Move Gmail emails to nested label folders, but forget to expand label befo
 
 Copy/paste: open [siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js](https://gist.github.com/jhauga/80970130b90bf6e32438a77aed8cc1ec)
 
-</details>
 </dd></dl></dd></dl>
 
 Gmail - Resize Side Bar:
@@ -724,15 +605,10 @@ Resize the Gmail sidebar when labels have long and similar names <br><br>
 
 Copy/paste: open [siteSpecific_Gmail_ResizeSideBar.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_Gmail_ResizeSideBar.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_Gmail_ResizeSideBar.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_Gmail_ResizeSideBar.js](https://gist.github.com/jhauga/6ed0d7b27e2214fb3444a0757129d9c6)
 
-</details>
 </dd></dl></dd></dl>
 
 Gmail - Style Sponsored Email:
@@ -745,15 +621,10 @@ Use this bookmarklet to get contrast between regular emails and sponsored emails
 
 Copy/paste: open [siteSpecific_Gmail_StyleSponsoredEmail.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_Gmail_StyleSponsoredEmail.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_Gmail_StyleSponsoredEmail.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_Gmail_StyleSponsoredEmail.js](https://gist.github.com/jhauga/98f86d2bab59a2a9618644cf598077ce)
 
-</details>
 </dd></dl></dd></dl>
 
 Google - Paste Ready Bookmark AI Response:
@@ -766,15 +637,10 @@ Bookmark the contents of a Generative AI response from Google search. Run bookma
 
 Copy/paste: open [siteSpecific_Google_PasteReadyBookmarkAIResponse.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_Google_PasteReadyBookmarkAIResponse.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_Google_PasteReadyBookmarkAIResponse.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_Google_PasteReadyBookmarkAIResponse.js](https://gist.github.com/jhauga/0910c78eef852fc381464db7cfae49ab)
 
-</details>
 </dd></dl></dd></dl>
 
 Google Maps - Custom Mearsure Distance:
@@ -787,15 +653,10 @@ Draw multiple measurements using scale of Google Maps.
 
 Copy/paste: open [siteSpecific_GoogleMaps_CustomMearsureDistance.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_GoogleMaps_CustomMearsureDistance.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_GoogleMaps_CustomMearsureDistance.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_GoogleMaps_CustomMearsureDistance.js](https://gist.github.com/jhauga/c16243b10c2cd74e4dd7a2259109f575)
 
-</details>
 </dd></dl></dd></dl>
 
 OctoPrint - Change Graph Image:
@@ -813,10 +674,6 @@ Copy/paste: open [siteSpecific_OctoPrint_ChangeGraphImage.js](https://raw.github
 
 <strong>USE - optional 1 change(s)</strong>
 
-<details>
-
-<summary>siteSpecific_OctoPrint_ChangeGraphImage.js</summary><br>
-
 <strong>Optional \(x1\)</strong>
 
 <strong>NOTE</strong> - this assumes you have access to the OS OctoPrint is installed on via ssh or a GUI.
@@ -832,7 +689,6 @@ Copy/paste: open [siteSpecific_OctoPrint_ChangeGraphImage.js](https://raw.github
 
 Gist page for [siteSpecific_OctoPrint_ChangeGraphImage.js](https://gist.github.com/jhauga/f853e5427458c9e065695e32e4a8ed4f)
 
-</details>
 </dd></dl></dd></dl>
 
 Stackoverflow - Add Answer Anchor Links:
@@ -845,15 +701,10 @@ Add a button to extract an answers id and add to address bar as if clicking an a
 
 Copy/paste: open [siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js](https://gist.github.com/jhauga/4cb77c8ca7966c63e23f6f13db316ea1)
 
-</details>
 </dd></dl></dd></dl>
 
 Stackoverflow - Copy Answer Anchor Links:
@@ -866,15 +717,10 @@ Add a button to extract an answers id, adding it to address bar as anchor link, 
 
 Copy/paste: open [siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
-		
+
 Gist page for [siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js](https://gist.github.com/jhauga/80fa99670b2d27c373e11e485ba451bd)
 
-</details>
 </dd></dl></dd></dl>
 
 w3Schools - Example Line Numbers:
@@ -887,15 +733,10 @@ Show the line numbers for code examples on w3schools.com. <br><br>
 
 Copy/paste: open [siteSpecific_w3Schools_exampleLineNumbers.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_w3Schools_exampleLineNumbers.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_w3Schools_exampleLineNumbers.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_w3Schools_exampleLineNumbers.js](https://gist.github.com/jhauga/65647ae028eac8156902c88e1d7db776)
 
-</details>
 </dd></dl></dd></dl>
 
 w3Schools - Hide Side Bar:
@@ -910,15 +751,10 @@ When reading a w3shcools.com tutorial, and sidebar is distracting. Works with:
 
 Copy/paste: open [siteSpecific_w3Schools_hideSideBar.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_w3Schools_hideSideBar.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_w3Schools_hideSideBar.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_w3Schools_hideSideBar.js](https://gist.github.com/jhauga/2a610c4b8b6a1e5116d69b87099376f4)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Add Time Marks
@@ -937,15 +773,10 @@ Add time marks to current video, creating links with value of marked time. When 
 
 Copy/paste: open [siteSpecific_YouTube_AddTimeMarks.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_AddTimeMarks.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_AddTimeMarks.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_AddTimeMarks.js](https://gist.github.com/jhauga/98fa9a1b56811c1d65751de76fce2f02)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Darken Bottom Controls:
@@ -958,15 +789,10 @@ Darken the bottom controls of a YouTube video when the video has a constant ligh
 
 Copy/paste: open [siteSpecific_YouTube_DarkenBottomControls.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_DarkenBottomControls.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_DarkenBottomControls.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_DarkenBottomControls.js](https://gist.github.com/jhauga/b0405d62454e073d9512cbb20d1399ef)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Dynamic History Search:
@@ -979,15 +805,10 @@ search YouTube video watch history dynamically <br><br>
 
 Copy/paste: open [siteSpecific_YouTube_dynamicHistorySearch.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_dynamicHistorySearch.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_dynamicHistorySearch.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_dynamicHistorySearch.js](https://gist.github.com/jhauga/e88d4b75abc28d0d10dfa065e970a775)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Hide Short History:
@@ -1000,15 +821,10 @@ Hide short watch history on YouTube history feed. <br><br>
 
 Copy/paste: open [siteSpecific_YouTube_HideShortHistory.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_HideShortHistory.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_HideShortHistory.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_HideShortHistory.js](https://gist.github.com/jhauga/f7be2360de10033c2bccfc8cec76b23c)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Save Page Notes to Local Storage:
@@ -1025,15 +841,10 @@ Saving notes taken of a YouTube video for later referencing or to continue notes
 
 Copy/paste: open [siteSpecific_YouTube_SavePageNotesToLocalStorage.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_SavePageNotesToLocalStorage.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_SavePageNotesToLocalStorage.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_SavePageNotesToLocalStorage.js](https://gist.github.com/jhauga/1a1ab0a105b5ba616de1f2c46816a0a4)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Saved Page Notes to Notebox:
@@ -1057,15 +868,10 @@ Extract saved notes taken of a YouTube video for later referencing or to continu
 
 Copy/paste: open [siteSpecific_YouTube_SavedPageNotesToNotebox.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_SavedPageNotesToNotebox.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_SavedPageNotesToNotebox.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_SavedPageNotesToNotebox.js](https://gist.github.com/jhauga/5dfca4820e20b57b9bf97647519c2dc6)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Short Hover Title:
@@ -1078,15 +884,10 @@ Show short full title on mouseover.<br><br>
 
 Copy/paste: open [siteSpecific_YouTube_ShortHoverTitle.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_ShortHoverTitle.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_ShortHoverTitle.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_ShortHoverTitle.js](https://gist.github.com/jhauga/ddb02303082c8912e208b30bd3bc0db9)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Show Short Release Date:
@@ -1103,15 +904,10 @@ Copy/paste: open [siteSpecific_YouTube_ShowShortReleaseDate.js](https://raw.gith
 
 <strong>NOTE</strong> - delay of 1/2 second before release date is added to top of right-most action widgets.
 
-<details>
-
-<summary>siteSpecific_YouTube_ShowShortReleaseDate.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_ShowShortReleaseDate.js](https://gist.github.com/jhauga/6924dfc7556ae2c9e2a9c6ea57231d45)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Stack User Playlist Feed:
@@ -1124,15 +920,10 @@ Stack the playlists in the user playlist feed as if dispaly were  block, increas
 
 Copy/paste: open [siteSpecific_YouTube_StackUserPlaylistFeed.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_StackUserPlaylistFeed.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_StackUserPlaylistFeed.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_StackUserPlaylistFeed.js](https://gist.github.com/jhauga/b2da5b4b5d639eb7d309231c4038a6a5)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Sync Audio:
@@ -1145,15 +936,10 @@ Quickly resync video and audio are out of sync to resynchronize audio to video <
 
 Copy/paste: open [siteSpecific_YouTube_SyncAudio.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_SyncAudio.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_SyncAudio.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_SyncAudio.js](https://gist.github.com/jhauga/4e4b1e29e97aa5dd4383cac435331bcf)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Take Notes and Add Removable Time Marks:
@@ -1176,15 +962,10 @@ Add note box to YouTube video and take notes on it. Just start typing. Press `Ct
 
 Copy/paste: open [siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks.js](https://gist.github.com/jhauga/a2011b5dd50336546f8f91ee2d051de5)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Take Video Notes:
@@ -1207,15 +988,10 @@ Take notes on a YouTube video. Press ctrl+Shift to quickly move focus out of not
 
 Copy/paste: open [siteSpecific_YouTube_TakeVideoNotes.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_TakeVideoNotes.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_TakeVideoNotes.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_TakeVideoNotes.js](https://gist.github.com/jhauga/d3b4f0442de3d1b72da26ae0c9cbe499)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Top Subscription Toggle Btn:
@@ -1228,15 +1004,10 @@ When toggling subscription list, and tired of scrolling way up to show less <br>
 
 Copy/paste: open [siteSpecific_YouTube_TopSubscriptionToggleBtn.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_TopSubscriptionToggleBtn.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_TopSubscriptionToggleBtn.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_TopSubscriptionToggleBtn.js](https://gist.github.com/jhauga/57f0fe041128b93c13e161587e94e19f)
 
-</details>
 </dd></dl></dd></dl>
 
 YouTube - Watch Random Video:
@@ -1249,15 +1020,10 @@ Bookmarklet for when you want to watch all videos in home feed at once, and can'
 
 Copy/paste: open [siteSpecific_YouTube_WatchRandomVideo.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_WatchRandomVideo.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>siteSpecific_YouTube_WatchRandomVideo.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [siteSpecific_YouTube_WatchRandomVideo.js](https://gist.github.com/jhauga/c21475673dee3816b6ce3f9ed7fe35ec)
 
-</details>
 </dd></dl></dd></dl>
 
 </div>
@@ -1279,15 +1045,10 @@ Click anywhere on a webpage with a customized page down value. Good for reading 
 
 Copy/paste: open [window_PageOffset_CustomPageDown.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/window_PageOffset_CustomPageDown.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>window_PageOffset_CustomPageDown.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [window_PageOffset_CustomPageDown.js](https://gist.github.com/jhauga/5b5bf9e7ae170f1f412085b1005114d8)
 
-</details>
 </dd></dl></dd></dl>
 
 
@@ -1303,15 +1064,10 @@ Run this bookmarklet when you want to bold selected text on a webpage. Press `ct
 
 Copy/paste: open [window_style_boldSelectedText.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/window_style_boldSelectedText.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>window_style_boldSelectedText.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [window_style_boldSelectedText.js](https://gist.github.com/jhauga/b8e11ddaf7f0fdf9e5c31dddc23b6794)
 
-</details>
 </dd></dl></dd></dl>
 
 Style- Highlight Selected Text:
@@ -1326,15 +1082,10 @@ Run this bookmarklet when you want to highlight selected text on a webpage. Pres
 
 Copy/paste: open [window_style_highlightSelectedText.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/window_style_highlightSelectedText.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>window_style_highlightSelectedText.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [window_style_highlightSelectedText.js](https://gist.github.com/jhauga/3bd193b98a84a0ac048c607d6d2a804d)
 
-</details>
 </dd></dl></dd></dl>
 
 Style - Italic Selected Text:
@@ -1349,15 +1100,10 @@ Run this bookmarklet when you want to italicize selected text on a webpage. Pres
 
 Copy/paste: open [window_style_italicSelectedText.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/window_style_italicSelectedText.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>window_style_italicSelectedText.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [window_style_italicSelectedText.js](https://gist.github.com/jhauga/f5dbf303496f6db838794c4464591afb)
 
-</details>
 </dd></dl></dd></dl>
 
 Style - Underline Selected Text:
@@ -1372,15 +1118,10 @@ Run this bookmarklet when you want to underline selected text on a webpage. Pres
 
 Copy/paste: open [window_style_underlineSelectedText.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/window_style_underlineSelectedText.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>window_style_underlineSelectedText.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [window_style_underlineSelectedText.js](https://gist.github.com/jhauga/645e97a7af14a14965d040d3bb2aa45f)
 
-</details>
 </dd></dl></dd></dl>
 
 URI - Anchor Higlighted Text:
@@ -1393,15 +1134,10 @@ Select text and add it to URI as anchor link. NOTE - for best results limit sele
 
 Copy/paste: open [window_URI_AnchorHighlightedText.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/window_URI_AnchorHighlightedText.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<details>
-
-<summary>window_URI_AnchorHighlightedText.js</summary><br>
-
 <!-- PASTE VIDEO HERE -->
 
 Gist page for [window_URI_AnchorHighlightedText.js](https://gist.github.com/jhauga/861f74e65191714ecbd2d0eee7712754)
 
-</details>
 </dd></dl></dd></dl>
 
 </div>
