@@ -9,13 +9,24 @@ javascript:(function(){
  var pageHead  = "ChatGPT Response"; /* <-- OPTIONAL - change head  */
 
  /* DOM variables. */
- /* Class names to identify div that is parent of button row.                  */
+ /* Copy button that starts the bookmark, matched from the clicked element.    */
  var copyButtonSelector =       /* select copy button by attribute             */
-  "[aria-label=\"Copy\"]";  
- 
- /* Class names to identify the answer area sibling so answer area can be selected. */
- var answerAreaClassNameIdentifier =  /* HOT-GLUE - likely to change                */
-  "flex min-h-[46px] justify-start"; 
+  "[aria-label=\"Copy\"]";
+
+ /* Copy buttons inside these are skipped - code block and prompt copy buttons. */
+ var skipCopySelector =         /* HOT-GLUE - likely to change                 */
+  "pre, .markdown, [data-turn=\"user\"]";
+
+ /* Conversation turn holding one response and its button row.                 */
+ var turnSelector =             /* HOT-GLUE - likely to change                 */
+  "article, [data-turn], [data-testid^=\"conversation-turn\"]";
+
+ /* Answer area in the turn - first selector with a match is used.             */
+ var answerAreaSelector = [     /* HOT-GLUE - likely to change                 */
+  "[data-message-author-role=\"assistant\"] .markdown",
+  ".markdown",
+  "[data-message-author-role=\"assistant\"]"
+ ];
 
  /* Switch variables. */
  var onOffPasteReadyBookmarkResponse = 1; /* 1 (default) on, 0 is off */
@@ -67,17 +78,6 @@ javascript:(function(){
   }
  };
 
-/* Define variables for later use. */  
- var answerRow, buttonRow, copyButton, cancelWhile = 0, 
-     answerArea, currentButtonsPath, currentButtonsPathLen, currentButton, 
-     currentButtonsPathArr, currentSelection, priorSelection, 
-     copyButtonIndex, priorSelectionIndex, pathPar, 
-     pathGrandPar, pathGreatGrandPar;
-     
- /* Select all copy buttons and use in loop. */
- currentButtonsPath = document.querySelectorAll(copyButtonSelector);
- currentButtonsPathLen = currentButtonsPath.length; 
- 
  /* Style the bookmarked page. */
  {
  var bookmarkPageStyle = `
@@ -302,98 +302,24 @@ javascript:(function(){
  }
  
  /******************************** SUPPORT FUNCTIONS ********************************/
- /* Increments so no duplicate ids for marker ids, */
- var numID = 0;  
- 
- /* Add click event to document and check elements, running bookmark accordingly.  */
- var mouseMoved = 0; /* call mouse move function on first click if click reads svg */
+ /* Add click event to document, running bookmark when a response copy button is clicked. */
  const docEventChatGPTPasteReadyBookmark = () => {
   /* add a click event listener to the document */
   document.addEventListener('click', function(event) {
-   /* ensure bookmarklet is on and a errpr was not found */
-   if (onOffPasteReadyBookmarkResponse  == 1) { /* defined at top            */
-    /* check if the clicked e/*lement or any of its parents has the attribute */
-    let clickedItem = event.target;
-    
-    /* redefine clickedItem to allow entire element area to be clicked */
-    let safeOutredefineClickedItem = 0; /* prevent below from running over 5 times */
-    let redefineClickedItem = (cur) => {
-     /* 
-     needed to allow element click anywhere, without edge of element would have
-     to be clicked 
-     */
-     let mouseX = event.clientX;
-     let mouseY = event.clientY;
-     let elOver = document.elementFromPoint(mouseX, mouseY);
-     /* will continue to run until svg is found */
-     if (elOver.tagName == "svg") {
-      clickedItem = elOver.parentElement;
-     } else {
-      if (safeOutredefineClickedItem >= 5) {
-       return;
-      } else {
-       safeOutredefineClickedItem++;
-      }      
-     }
-    };
+   /* ensure bookmarklet is on and an error was not found */
+   if (onOffPasteReadyBookmarkResponse != 1) return; /* defined at top          */
 
-    /* Check if svg or path element detected (probably) by click */
-    if ((clickedItem.getAttribute("class") == "icon" && clickedItem.hasAttribute("width") && 
-        clickedItem.hasAttribute("height")) || clickedItem.hasAttribute("d")) {
-     document.addEventListener('mousemove', redefineClickedItem(event));
-     if (mouseMoved == 0) {
-      redefineClickedItem(event);
-      mouseMoved = 1;
-     }
-    } 
-    let curID;
+   /* clicked element can be the button, its svg, or the svg path */
+   let clickedItem = event.target;
+   if (!clickedItem || !clickedItem.closest) return; /* not an element          */
 
-    /* check if id has been assigned */
-    if (clickedItem.hasAttribute("id") && 
-        clickedItem.id.indexOf(
-         "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark"
-        ) > -1) {
-     /* define current id */
-     curID = clickedItem.id;
-    } else {
-     /* define current id */
-     curID = /* use current value of incrementing number */
-      "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID;
+   /* select the copy button holding the clicked element */
+   let copyButton = clickedItem.closest(copyButtonSelector);
 
-     if (clickedItem.hasAttribute("id")) {
-      let curElID = /* include current id */
-       clickedItem.getAttribute("id");
-      clickedItem.setAttribute(
-       "id",  /* append to current id */
-       curElID + " unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID
-      );
-
-      /* reset curID */
-      curID = clickedItem.getAttribute("id");
-     } else {
-      clickedItem.setAttribute(
-       "id", 
-       "unexpected_value_bookmarklet_chatgpt_pasteReadyBookmark" + numID
-      );
-     }
-
-     /* increment number id for unique id value */
-     numID++;
-    }
-    /* select current item with unique id */
-    let curItem = document.getElementById(curID);
-
-    /* check if the copy button was clicked */
-    if (curItem.parentElement && 
-        curItem.parentElement.hasAttribute("aria-label") && 
-        curItem.parentElement.getAttribute("aria-label") == "Copy") {
-     /* call main function */
-     pasteReadyBookmarkResponse(curItem.parentElement);
-    } else {
-     let skip; /* do nothing */
-    }
-   } else { /* do nothing */
-    let skip;
+   /* run if copy button is not a code block or prompt copy button */
+   if (copyButton && !copyButton.closest(skipCopySelector)) {
+    /* call main function */
+    pasteReadyBookmarkResponse(copyButton);
    }
   });
  };
@@ -454,62 +380,42 @@ javascript:(function(){
   }
  };
  
- /* Check class name that is used to identify answer area. */
- const checkClassIdentityChatGPTPasteReadyBookmark = (curClass) => {
-  let checkClass = 0; /* reset                              */
-  /* check string against common values of class names used */
-  for (i = 0; i < answerAreaClassNameIdentifierLen; i++) {
-   if (curClass.indexOf(answerAreaClassNameIdentifier[i]) > -1) {
-     /* match - increment checkClass */
-     checkClass++;    
-   } else { /* do nothing */
-    let skip;
+ /* Find the answer area for the copy button that was clicked. */
+ const findAnswerAreaChatGPTPasteReadyBookmark = (copyButton) => {
+  /* conversation turn holding the copy button */
+  let curTurn = copyButton.closest(turnSelector);
+
+  /* use first answer area selector with a match in the turn */
+  if (curTurn) {
+   for (let i = 0; i < answerAreaSelector.length; i++) {
+    let curAnswer = curTurn.querySelectorAll(answerAreaSelector[i]);
+    if (curAnswer.length > 0) {
+     return Array.from(curAnswer); /* response can have more than one part  */
+    }
    }
   }
-  /* return the final true false value */
-  return checkClass;
+
+  /* fallback - check the element before each parent of the copy button */
+  let buttonRow = copyButton.parentElement;
+  for (let i = 0; i < 20 && buttonRow && buttonRow != curTurn; i++) { /* safety limit */
+   let answerRow = buttonRow.previousElementSibling;
+   if (answerRow && answerRow.innerText.trim().length >= 100) { /* probably match */
+    return [answerRow];
+   }
+   buttonRow = buttonRow.parentElement; /* check next top-level element         */
+  }
+
+  /* answer area not found */
+  return [];
  };
 
- /* Redefine variable used to identify answer ares, making array. */
- answerAreaClassNameIdentifier = /* make array using space as divider */
-  answerAreaClassNameIdentifier.split(" ");
-  
- /* Get length for future use. */
- var answerAreaClassNameIdentifierLen = /* length of array */
-  answerAreaClassNameIdentifier.length;
-  
  /*********************************************************************************** 
   MAIN FUNCTION
   ***********************************************************************************/
  function pasteReadyBookmarkResponse(aWhat) {
-  buttonRow = aWhat.parentElement;    
-  /* start process to select answer ares */        
-  let checkForAnswerArea = () => {
-   /* variable to hold count of matching identifiers in class name */
-   let checkClass = "no"; /* inially no - so if no class           */
-   if (buttonRow.hasAttribute("class")) {
-    checkClass = /* pass to support function to count matches      */
-     checkClassIdentityChatGPTPasteReadyBookmark(buttonRow.className);
-   } 
-   if (checkClass != "no" &&  /* has been redefined witn sorted class              */
-       checkClass >= answerAreaClassNameIdentifierLen && /* likely matches         */ 
-       buttonRow.previousElementSibling               && /* more likely match      */       
-       buttonRow.previousElementSibling.innerText.length >= 100 /* probably match  */
-      ) {      
-    /* probably found it (hey - this is a bookmarklet), define global variable     */
-    answerRow = buttonRow.previousElementSibling;    
-   } else {
-    cancelWhile+=1; /********************** increment safety linit      */
-    buttonRow = buttonRow.parentElement; /* check nxt top-level element */
-    if (cancelWhile <= 20) { /* recurs are below safety limit            */
-     checkForAnswerArea();
-    } else {                /* do nothing ********************************/
-     let skip;
-    }    
-   }
-  };
-  checkForAnswerArea();
-  
+  /* select the answer area for the copy button that was clicked */
+  let answerArea = findAnswerAreaChatGPTPasteReadyBookmark(aWhat);
+
   /* dry alert - repair needed */
   let dryAlert = () => {
    alert("REPAIR NEEDED:\n\n" +
@@ -522,17 +428,16 @@ javascript:(function(){
   
   /* define function variable */
   let copiedContent;  
-  /* ensure that answerRow has been defined */
-  if (cancelWhile >= 20 && answerRow == undefined) { /* answerRow not defined */
-   console.log(answerRow);
-   console.log(cancelWhile);
+  /* ensure that answer area has been found */
+  if (answerArea.length == 0) { /* answer area not found */
+   console.log(aWhat);
    /* alert repair is needed        */
    dryAlert();
    /* exit function */
-   return;    
-  } else { /* found from func function checkForAnserArea */
-   /* now the answer's div element should be extracted */
-   copiedContent = answerRow.innerHTML;
+   return;
+  } else { /* found from function findAnswerAreaChatGPTPasteReadyBookmark */
+   /* now the answer's div elements should be extracted */
+   copiedContent = answerArea.map((curArea) => curArea.innerHTML).join("");
   }
 
   /* clean up a bit */       
@@ -642,8 +547,8 @@ if (prefersDarkScheme.matches) {
   "**************** \n" +
   "IMPORTANT - click copy button around bottom. \n\n" +
   "1. Run bookmarklet. \n" +
-  "2. Click the copy answer button (at bottom of button). \n" + 
-  "3. Create a new bookmarket, pasting contents of clipboard in the URL box.");
+  "2. Click the copy button below the answer. \n" +
+  "3. Create a new bookmark, pasting contents of clipboard in the URL box.");
  }
 }
 )();
