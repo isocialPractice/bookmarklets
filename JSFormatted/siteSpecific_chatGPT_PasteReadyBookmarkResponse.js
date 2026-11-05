@@ -28,6 +28,17 @@ javascript:(function(){
   "[data-message-author-role=\"assistant\"]"
  ];
 
+ /* Code block marked by the page, such as code with a Run button.             */
+ var codeBlockSelector =        /* HOT-GLUE - likely to change                 */
+  "[data-code-block], [data-markdown-copy=\"code-block\"]";
+
+ /* Code text in a block - code editor lines first, then code, then pre.       */
+ var codeTextSelector = [".cm-content", "code", "pre"]; /* HOT-GLUE            */
+
+ /* Code block - parents climbed from code to the whole block with its toolbar. */
+ var codeBlockClimbTags = ["DIV", "PRE", "SPAN"]; /* HOT-GLUE - likely to change */
+ var codeBlockToolbarLimit = 60; /* most characters of toolbar text in a block   */
+
  /* Switch variables. */
  var onOffPasteReadyBookmarkResponse = 1; /* 1 (default) on, 0 is off */
  
@@ -57,25 +68,15 @@ javascript:(function(){
   ` #include <iostream>using namespace std;int main() { `
   after being bookmarked using bookmarklet.
   Here a question was asked were several code examples in several
-  languages were given, but for some reason C++ did not transpose correctly, 
+  languages were given, but for some reason C++ did not transpose correctly,
+  NOTE - code blocks are now copied as plain text and skip RUNNING_FIX, so the
+         C++ items are gone; add items here for text outside of code blocks.
  ***********/
  var RUNNING_FIX = {
  "1": {
   one: "\\",   /* IMPORTANT - this needs to stay */
   two: "&#92;" /* IMPORTANT - this needs to stay */
- },
-  "2": {
-   one: "&lt;iostream&gt;",
-   two: "&lt;iostream&gt;<br>"
-  },
-  "3": {
-   one: " std;",
-   two: " std;<br>"
-  },
-  "4": {
-   one: ";\n}",
-   two: ";<br>}"
-  }
+ }
  };
 
  /* Style the bookmarked page. */
@@ -91,139 +92,64 @@ javascript:(function(){
   margin-right: auto;
   background:rgb(47 79 79 / 3%);
  }
- p code {    
-  color: black;
-  font-size: 12pt;
-  font-weight: 600;
- }
  p {
   font-size: 12pt;
-  margin-bottom: 1.25em;
-  margin-top: 1.25em;
-  line-height: 16pt;
-  display: inline;
- }
- pre {
-  max-width: 800px;
-  overflow-x: scroll;
-  padding: 1px 3px;
-  border-radius: 3px;
-  border: 1px solid #d6d6d6;
-  background: #d3d3d342;
-  color: black;
-  display: inline;
- }
- code, pre {
-  line-height: 14pt;
-  font-family: monospace !important;
-  background-color: #f0f0f4;
- }
- pre pre {
-  display: inline-block !important;
-  max-width: 800px !important;
-  padding: 20px 20px !important;
-  overflow: auto !important;
-  width: 100% !important;
- }
- pre div.dark.bg-gray-950 div.flex.items-center.relative span {
-  background: rgb(55 55 55);
-  display: block;
-  width: 110%;
-  padding: 8px 0 0 25px;
-  left: -3.5%;
-  position: relative;
-  top: -20px;
-  color: #cdcdcd;
-  font-size: 10pt;
- }   
- pre div.bg-black.rounded-md code {
-  line-height: 1;    
- }
- pre code * {
-  padding: 2px 0px;
-  display: inline-block;
-  font-family: system-ui !important;
- }   
- pre div.bg-black.rounded-md code .hljs-comment,
- pre div.bg-black.rounded-md code .hljs-meta, 
- pre span.hljs-comment {
-  display: block;
-  color: hsla(200, 20%, 40%, 1);
- }  
- pre div.bg-black.rounded-md code .hljs-meta:first-of-type {
-  display: inline-block;
-  position: relative;
-  top: -20px;
-  line-height: 2;
- }
- pre div.bg-black.rounded-md code .hljs-meta:last-of-type {
-  display: block;
-  margin-bottom: -10px;
+  margin: 0 0 1em;
   line-height: 1.5;
+  display: block;
  }
- pre div.bg-black.rounded-md .flex.items-center.relative.text-gray-200.bg-gray-800, 
- pre div.bg-black.rounded-md button {
-  vertical-align: middle;
-  padding: 5px 40px;
-  color: rgb(217,217,227);
+ li > p {
+  margin: 0;
  }
- pre div.bg-black.rounded-md .flex.items-center.relative.text-gray-200.bg-gray-800 {
-  display: inline-block;
-  position: relative;
-  width: 100%;
-  top: -20px;
-  right: -5% !important;
-  margin-left: -8% !important;
-  overflow-x: hidden !important;    
-  background: rgb(52,53,65);
+ code {
+  padding: .2em .4em;
+  border-radius: 6px;
+  background-color: rgba(129, 139, 152, .12);
+  color: inherit;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
+  font-size: 85%;
  }
- pre div.bg-black.rounded-md .flex.items-center.relative.text-gray-200.bg-gray-800 span:first-of-type {
-  line-height: 2;
+ div.codeBlockPasteReady {
+  margin: 16px 0;
+  border: 1px solid #d1d9e0;
+  border-radius: 6px;
+  background: #f6f8fa;
+  overflow: hidden;
  }
- pre div.bg-black.rounded-md button {
-  display: inline-block;
-  float: right;
-  cursor: pointer;
-  max-width:150px; 
-  background: none;    
-  border: none; 
-  text-decoration: line-through;
+ div.codeLangPasteReady {
+  padding: 6px 16px;
+  border-bottom: 1px solid #d1d9e0;
+  color: #59636e !important;
+  font-size: 12px;
  }
- pre div.bg-black.rounded-md button svg { 
-  height: 15px;
-  width: 20px;
-  margin-right: 3px;
- }    
- .hljs-doctag, 
- .hljs-formula, 
- .hljs-keyword, 
- .hljs-literal {
-  color: #2e95d3;
+ pre.codePasteReady {
+  display: block;
+  max-width: none;
+  margin: 0;
+  padding: 16px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background: none !important;
+  color: #1f2328 !important;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
+  font-size: 13.6px;
+  line-height: 1.45;
+  white-space: pre;
  }
- .hljs-comment {
-  color: hsla(0,0%,100%,.5);
+ @media (prefers-color-scheme: dark) {
+  div.codeBlockPasteReady {
+   border-color: #3d444d;
+   background: #151b23;
+  }
+  div.codeLangPasteReady {
+   border-color: #3d444d;
+   color: #9198a1 !important;
+  }
+  pre.codePasteReady {
+   color: #f0f6fc !important;
+  }
  }
- .hljs-addition, 
- .hljs-attribute, 
- .hljs-meta-string, 
- .hljs-regexp, 
- .hljs-string {
-  color: #00a67d;
- }
- .hljs-built_in, 
- .hljs-class .hljs-title {
-  color: #e9950c;
- }
- .hljs-attr, 
- .hljs-number, 
- .hljs-selector-attr, 
- .hljs-selector-class, 
- .hljs-selector-pseudo, 
- .hljs-template-variable, 
- .hljs-type, 
- .hljs-variable {
-  color: #df3079;
- }  
  div[data-side='1'] {
   display:inline-block;
   position:fixed;
@@ -240,7 +166,8 @@ javascript:(function(){
  div[data-side='1'] h3 {
   display: inline-block;
  }
- div[data-side='1'] svg {    
+ div[data-side='1'] svg {
+  color: #000;
   background: white;
   border-radius: 100%;
   margin-top: 20px;
@@ -277,26 +204,6 @@ javascript:(function(){
  ol li {
   margin-top: 12px;    
  }
- ul li code,
- ol li code {
-  color: black;
-  background: #ececec;
-  border-radius: .25rem;    
-  font-size: 1.115em;
-  font-weight: 500;
-  padding: .15rem .3rem;
- }
- ul li code::before,
- ul li code::after,
- ol li code::before,
- ol li code::after    {
-  content: '\`';
- }
- code[class*='hljs language-'] {
-  background: none !important;
-  font-size: 12pt;
- }
- 
 </style>
 `;
  }
@@ -409,6 +316,99 @@ javascript:(function(){
   return [];
  };
 
+ /* Plain text of code, from the code editor when the block has one. */
+ const codeTextChatGPTPasteReadyBookmark = (curCode) => {
+  let curText = "";
+  if (curCode.classList.contains("cm-content")) {
+   /* whole document from the editor, as long code may only draw lines in view */
+   let curRef = curCode.cmView || curCode.cmTile;
+   let curView = curRef && (curRef.view || (curRef.rootView && curRef.rootView.view) ||
+                            (curRef.root && curRef.root.view));
+   if (curView && curView.state && curView.state.doc) {
+    curText = curView.state.doc.toString();
+   } else { /* one editor line per element */
+    curText = Array.from(curCode.querySelectorAll(".cm-line"))
+     .map((curLine) => curLine.textContent).join("\n");
+   }
+  } else { /* line breaks and indents as shown on the page */
+   curText = curCode.innerText || curCode.textContent;
+  }
+  /* no-break spaces to spaces, and no trailing line breaks */
+  return curText.split(String.fromCharCode(160)).join(" ").replace(/\n+$/, "");
+ };
+
+ /* Mark each code block in the answer, saving its language and plain text. */
+ const markCodeBlocksChatGPTPasteReadyBookmark = (curArea, codeBlocks) => {
+  /* mark block so its copy is swapped for a token */
+  let markBlock = (curBlock, curCode) => {
+   /* language from toolbar text, else from the code's language attribute or class */
+   let curLang = "";
+   let curWalker = document.createTreeWalker(curBlock, NodeFilter.SHOW_TEXT);
+   while (!curLang && curWalker.nextNode()) {
+    let curNode = curWalker.currentNode;
+    if (curCode.contains(curNode) || curNode.parentElement.closest("button")) continue;
+    curLang = curNode.textContent.trim().slice(0, 30);
+   }
+   if (!curLang) {
+    let langMatch = /language-([\w#+.-]+)/.exec(curCode.className);
+    curLang = curCode.getAttribute("data-language") || (langMatch ? langMatch[1] : "");
+   }
+
+   curBlock.setAttribute("data-paste-ready-code", codeBlocks.length);
+   codeBlocks.push({lang: curLang, text: codeTextChatGPTPasteReadyBookmark(curCode)});
+  };
+
+  /* blocks the page marks as code blocks, such as code with a Run button */
+  curArea.querySelectorAll(codeBlockSelector).forEach((curBlock) => {
+   if (curBlock.closest("[data-paste-ready-code]")) return; /* already in a block   */
+   let curCode = null;
+   for (let i = 0; i < codeTextSelector.length && !curCode; i++) {
+    curCode = curBlock.querySelector(codeTextSelector[i]);
+   }
+   if (curCode) markBlock(curBlock, curCode);
+  });
+
+  /* count of code and pre elements, including the element */
+  let codeCount = (curEl) =>
+   curEl.querySelectorAll("code, pre").length + (curEl.matches("code, pre") ? 1 : 0);
+
+  /* other code that is a block - in a pre, has a language, or more than one line */
+  let curCodes = Array.from(curArea.querySelectorAll("pre, code")).filter((curCode) =>
+   (curCode.tagName == "PRE" && !curCode.querySelector("code")) ||
+   (curCode.tagName == "CODE" && (curCode.closest("pre") ||
+    /language-/.test(curCode.className) || curCode.textContent.indexOf("\n") > -1))
+  );
+
+  curCodes.forEach((curCode) => {
+   if (curCode.closest("[data-paste-ready-code]")) return; /* already in a block   */
+   let codeLength = curCode.textContent.length;
+
+   /* climb to the parent holding only this code and its toolbar */
+   let curBlock = curCode.closest("pre") || curCode;
+   let curPar = curBlock.parentElement;
+   while (curPar && curPar != curArea &&
+          codeBlockClimbTags.indexOf(curPar.tagName) > -1 &&
+          curPar.querySelectorAll("code, pre").length == codeCount(curBlock) &&
+          curPar.textContent.length - codeLength <= codeBlockToolbarLimit) {
+    curBlock = curPar;
+    curPar = curBlock.parentElement;
+   }
+   markBlock(curBlock, curCode);
+  });
+ };
+
+ /* Write a code block as html, safe in the bookmarklet string and the URL field. */
+ const codeBlockHTMLChatGPTPasteReadyBookmark = (curBlock) => {
+  let encode = (curText) => curText
+   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+   .replace(/"/g, "&quot;").replace(/'/g, "&#39;").replace(/\\/g, "&#x5c;")
+   .replace(/`/g, "&#96;").replace(/%/g, "&#37;").replace(/\t/g, "&#9;")
+   .replace(/\r/g, "").replace(/\n/g, "<br>");
+  return "<div class='codeBlockPasteReady'>" +
+   (curBlock.lang ? "<div class='codeLangPasteReady'>" + encode(curBlock.lang) + "</div>" : "") +
+   "<pre class='codePasteReady'>" + encode(curBlock.text) + "</pre></div>";
+ };
+
  /*********************************************************************************** 
   MAIN FUNCTION
   ***********************************************************************************/
@@ -426,8 +426,8 @@ javascript:(function(){
    onOffPasteReadyBookmarkResponse = 0;
   };
   
-  /* define function variable */
-  let copiedContent;  
+  /* define function variables */
+  let copiedContent, codeBlocks = [];
   /* ensure that answer area has been found */
   if (answerArea.length == 0) { /* answer area not found */
    console.log(aWhat);
@@ -436,24 +436,40 @@ javascript:(function(){
    /* exit function */
    return;
   } else { /* found from function findAnswerAreaChatGPTPasteReadyBookmark */
-   /* now the answer's div elements should be extracted */
-   copiedContent = answerArea.map((curArea) => curArea.innerHTML).join("");
+   /* now the answer's div elements should be extracted, code blocks as tokens */
+   copiedContent = answerArea.map((curArea) => {
+    markCodeBlocksChatGPTPasteReadyBookmark(curArea, codeBlocks);
+    let curClone = curArea.cloneNode(true);
+    curClone.querySelectorAll("[data-paste-ready-code]").forEach((curBlock) => {
+     curBlock.replaceWith(
+      "codeblock_paste_ready_" + curBlock.getAttribute("data-paste-ready-code") + "_end"
+     );
+    });
+    return curClone.innerHTML;
+   }).join("");
+
+   /* remove code block marks from the page */
+   document.querySelectorAll("[data-paste-ready-code]").forEach((curBlock) => {
+    curBlock.removeAttribute("data-paste-ready-code");
+   });
   }
 
   /* clean up a bit */       
   copiedContent = copiedContent.replace(/\n/g, "--new-line_unlikely_line-new--"); /* new line marker replaced later    */
-  copiedContent = copiedContent.replace(/<code /g, "<pre ");      /* change opening code HTML tags to pre tags         */
-  copiedContent = copiedContent.replace(/<\/code>/g, "</pre>");   /* change closing code HTML tags to pre tags         */  
   copiedContent = copiedContent.replace(/\"/g, '&#92;&quot;');    /* use html encoding for escaped double quotes       */
   copiedContent = copiedContent.replace(/"/g, '\"');              /* keep double quotes as needed for inline html      */
   copiedContent = copiedContent.replace(/\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes       */
   copiedContent = copiedContent.replace(/'/g, "'");               /* keep single quotes as needed for inline html      */
-  copiedContent = copiedContent.replace(/([ ]{2,})/g, "<br>$1");  /* replace 2 or momre spaces with <br> tag           */
   copiedContent = copiedContent.replace(/class=&#92;&quot;/g, "class='"); /* HOT-GLUE - correct open class  - HOT-GLUE */
-  copiedContent = copiedContent.replace(/&#92;&quot;>/g, "'>");           /* HOT-GLUE - correct close class - HOT-GLUE */  
-  
+  copiedContent = copiedContent.replace(/&#92;&quot;>/g, "'>");           /* HOT-GLUE - correct close class - HOT-GLUE */
+
   /* utilize "RUNNING_FIX" to correctly write unexpected outputs */
   copiedContent = runningFixChatGPTPasteReadyBookmark(copiedContent);
+
+  /* swap code block tokens for plain text code blocks */
+  copiedContent = copiedContent.replace(/codeblock_paste_ready_(\d+)_end/g,
+   (curToken, curIndex) => codeBlockHTMLChatGPTPasteReadyBookmark(codeBlocks[curIndex])
+  );
 
   /* alert to wait - if pasted immediately = does not work */
   alert(
@@ -489,15 +505,7 @@ setTimeout(function() {
  /* remove remaining new line markers */
  chatGPTPasteReadyBookmark.innerHTML = /* replace with empty string */
   chatGPTPasteReadyBookmark.innerHTML.replace(/--new-line_unlikely_line-new--/g, '');
- /* HOT-GLUE dark-theme */  
- var prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
-
-if (prefersDarkScheme.matches) {
- let pageStyle = document.getElementsByTagName('style');
- pageStyle[0].innerHTML += 'p, h1, h2, h3, h4, h6, h7, ul *, ol *, table td, table th {' +
- '    color: white;' +
- '} pre[data-start] { color: black; }';
- }
+ /* dark theme comes from the color-scheme meta tag and the style media query */
 }, 500);
 </script>
 `;
@@ -505,7 +513,8 @@ if (prefersDarkScheme.matches) {
   /* store new bookmarklet to be written to clipboard */
   var bookmarklet = 'javascript:(function() {document.write("' + 
    /* write html head content */
-   "<!DOCTYPE HTML><html><head><title>" + pageTitle + "</title>" +
+   "<!DOCTYPE HTML><html><head><meta name='color-scheme' content='light dark'>" +
+   "<title>" + pageTitle + "</title>" +
    /* style a bit */
    bookmarkPageStyle + 
    /* add page body and div */
