@@ -3,16 +3,27 @@
 Planned work for this repository. `## Current` holds the next items to
 complete, in order. The level 2 sections below it are the roadmap those items
 are drawn from, and each item pulled into `## Current` keeps a nested `From:`
-line naming its section.
+line naming its section. Versions here are dated, as `CHANGELOG.md` declares:
+nothing is bumped, tagged or released, so a section states its intent and names
+no version update.
 
 The testing sections come first on purpose. Once `test-bm.js` exists, every
 bookmarklet a later section adds lands with a `test-bm.json` entry and a
 passing run, rather than being tested after the fact.
 
-A new bookmarklet is three things in one item: its file in `JSFormatted/`, its
-entry in `test-bm.json`, and a passing `node test-bm.js <name>`. Its gist and
-README entry come afterwards and are published by the maintainer, which is
-what `## User Use Only` at the bottom of this file is for.
+A new bookmarklet is one item from file to gist: its file in `JSFormatted/`,
+its entry in `test-bm.json`, a passing `node test-bm.js <name>`, its gist, and
+its README entry linking that gist. Runs post and update gists with
+`gitHubTask`:
+
+- **New bookmarklet**: post its gist with
+  `gitHubTask /gr "JSFormatted\<name>.js" "<description>"`, add the README
+  entry with the new gist's id, then commit with
+  `gitHubTask /rg -m "new bookmarklet: <name>.js"`.
+- **Repaired bookmarklet**: commit the fix with
+  `gitHubTask /rg -m "update: <what changed>"`, which updates the posted gist
+  from the working copy before it commits. Leave the file unstaged until then,
+  because the gist step reads only unstaged changes.
 
 ## Current
 
@@ -142,8 +153,6 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-Next version: minor.
-
 - [ ] Support bookmarklets for signed-in sites without keeping any sign-in in
   the repository
   - An `auth` property names a Playwright storage-state file in the folder
@@ -162,8 +171,7 @@ Next version: minor.
     started, so a clip can be cut to the moment the bookmarklet ran without
     anyone scrubbing through it.
   - A failure always keeps its after screenshot, captured or not.
-  - These captures are also the footage for the README's
-    `<!-- PASTE VIDEO HERE -->` slots.
+  - These captures are also the footage for `## Short Videos`.
 - [ ] Self-test the harness with fixture bookmarklets in `test/fixtures/`,
   run by `node --test`
   - One that passes; one that throws; one with a `//` comment; one with an
@@ -177,6 +185,8 @@ Next version: minor.
     `localStorage`, the clipboard and `location` behave as they do on a site.
     It also needs no network and never changes.
   - `url` accepts `fixture:<file>.html` as shorthand for that origin.
+  - The same pages are the deployed site's practice pages
+    (`## Improve GitHub Pages Site`), so they stay presentable to a reader.
 - [ ] Add `--browser firefox` as a second engine
   - Bookmarklet handling differs between engines, and Firefox is the second
     most likely place a reader pastes one. Chromium stays the default and the
@@ -187,8 +197,6 @@ Next version: minor.
 Entries in `test-bm.json` for the bookmarklets already published. The default
 safe run covers anything without an entry; these entries add the assertions
 that show a bookmarklet did its job, rather than merely not crashing.
-
-Next version: patch.
 
 - [ ] Run `node test-bm.js --all` once and file every failure as its own item
   under `## Existing Bookmarklets`, with `**Issue**` and `**Goal**` nested
@@ -221,9 +229,7 @@ Next version: patch.
 ## Existing Bookmarklets
 
 Fixes and changes to bookmarklets already published. The first full test run
-files its failures here.
-
-Next version: patch.
+files its failures here. A fix is finished when its posted gist carries it too.
 
 - [ ] Add an `s, s` key sequence to `siteSpecific_chatGPT_NavigateAnswers.js`
   that returns the page to normal
@@ -237,8 +243,6 @@ proposes, and `test-bm.js` decides.
 
 Everything here is tool-neutral. The procedure is written once, in a tracked
 file every assistant reads, rather than once per assistant.
-
-Next version: minor.
 
 - [ ] Make a failure report an agent can act on without re-running anything
   - For a `requires` failure: the missing selector, the lines of the
@@ -281,8 +285,6 @@ How to install, run, configure and schedule `test-bm.js`, written in
 `docs/testing.md` and linked from the README. Documentation only: items pulled
 from here carry `From: version.control = null`.
 
-Next version: patch.
-
 - [ ] Write `docs/testing.md`: install (`npm install`, then
   `npx playwright install chromium`), run one, run all, run the scheduled set,
   the flags, the exit codes, and where the report is written
@@ -301,45 +303,224 @@ Next version: patch.
 - [ ] Add a short Testing paragraph to the README intro linking
   `docs/testing.md`
 
-## Documentation Site
+## Improve GitHub Pages Site
 
-The README is past both of the automation's documentation-site thresholds
-(1,164 lines and 48,668 characters on 2026-11-04). The
-`### Create and Deploy GitHub Pages Override` under `## Current` holds `No site`
-so that the queue is worked first. This section hands the decision back.
+The site at `https://isocialpractice.github.io/bookmarklets/` stays the
+repository's one site. It is `index.html`, a gallery that shows the pages in
+`examples/` in a frame, served by a legacy GitHub Pages build from `main` at
+`/`, and the README's intro links to it. The README is past the automation's
+documentation-site thresholds, so `- No site` under
+`### Create and Deploy GitHub Pages Override` stays. Every item here improves
+the deployed site's own files; none changes the Pages source or build type or
+adds a second site. Pages publishes what is committed to `main`, so a page
+committed here is a page on the site.
 
-What the site needs, beyond splitting the README:
+- [ ] Make `index.html` work on a phone and pass the W3C validator
+  - Add `lang="en"`, `<meta name="viewport">`, a description, and the
+    repository's `favicon.png`. Give the frame a `title`.
+  - Replace the absolutely positioned 15% side navigation and the floated 80%
+    frame with a grid that stacks the navigation above the frame on narrow
+    screens.
+  - Style the frame's border with CSS in place of the deprecated
+    `frameborder` attribute, which also lacks a space before it today.
+  - Make the `<title>` and the `<h1>` agree. They read "Bookmarklet Examples"
+    and "Bookmarklets Examples" today.
+- [ ] Let a reader control the slideshow
+  - It advances every three seconds until something is clicked, cycles every
+    `<a>` on the page, and treats a hover as a click. Scope it to the example
+    links and give it a visible pause and play button.
+  - Stop it on any click, focus or key press, and never start it when the
+    reader's system asks for reduced motion (`prefers-reduced-motion`).
+    Content that moves on its own needs a way to pause it (WCAG 2.2.2).
+- [ ] Give each example its own address
+  - Choosing an example sets `#<example-file-name>` in the address bar,
+    opening the page with that hash shows that example, and Back returns to
+    the previous one. The README can then link straight to an example.
+  - Mark the open example's link with `aria-current="page"` in place of
+    `data-active`, with a visible focus style.
+  - Size the frame from the example's `load` event and a `ResizeObserver` on
+    its body. The examples share the site's origin, so this replaces the
+    polling loop that runs every 100 ms and stops after 300.
+- [ ] Explain the page above the gallery
+  - Say what the examples are: pages that
+    `ChatGPT - Paste Ready Bookmark Response` saved as bookmarks, each shown
+    as a reader would see it on opening the bookmark. Link the bookmarklet's
+    README entry, raw file, gist and short.
+  - Add a short how-to-install with `support/Demo-ReadyToUse.gif`, and a link
+    to the README for the full list.
+- [ ] Add examples from the other two bookmarklets that save an answer as a
+  bookmark: `ChatGPT - Bookmark a specific response` and
+  `Google - Paste Ready Bookmark AI Response`
+  - Two or three each, made by running the bookmarklet on a real answer and
+    saving the page the bookmark opens, in the same form as the existing five.
+  - Name each after its site, bookmarklet and topic, extending the
+    `chatGPT_Bookmark_<Topic>.html` pattern so the two ChatGPT bookmarklets'
+    files stay apart.
+  - Group the side navigation by bookmarklet, one heading each, as the `<h3>`
+    above the existing five does now.
+- [ ] Add more `ChatGPT - Paste Ready Bookmark Response` examples, including
+  one answer with several code blocks and one with a table, the content a
+  saved bookmark has to keep intact
+  - Topics stay ordinary subjects, as the existing ones are (a schedule, a
+    musical, marketing, computer science). No personal details or private
+    conversations go into an example.
+- [ ] Add practice pages, where a reader can try the bookmarklets that work on
+  any page (`dom_`, `nav_`, `style_` and `window_`): an article with headings
+  and long text, a table, a form, a page with a sidebar, and one with a video
+  - Link them from the gallery under their own heading, each listing the
+    bookmarklets to try on it.
+  - Make them the same pages as the test fixtures under `## Test Harness`, so
+    one set serves both the site and the tests.
+- [ ] Add an install page with a drag-to-install link for each bookmarklet
+  - A site can render `<a href="javascript:...">` for a reader to drag onto
+    the bookmarks bar, which a GitHub README cannot. Build each `href` from the
+    same join `test-bm.js` checks, percent-encoded, so what installs is what
+    was tested.
+  - One row per bookmarklet: name, one-line description, status ("ready to
+    use" or "requires N changes"), the link to drag, and links to its README
+    entry, gist and short.
+  - Pages runs no build here, so a script generates the page and the result is
+    committed. Regenerate it whenever a bookmarklet is added or repaired.
+- [ ] Check the deployed site in the scheduled run
+  - Open the live site, open every example and practice page from its
+    navigation, and fail on a broken link, a missing page, or a console error
+    from the site's own script.
+  - After a push that changes the site, wait for the Pages build to finish
+    (`gh api repos/isocialPractice/bookmarklets/pages/builds/latest`) before
+    checking.
 
-- **One page per bookmarklet**: description, status ("ready to use" or
-  "requires N changes"), raw link, gist link, a demo video or GIF slot, and the
-  result of the last `--scheduled` run.
-- **A drag-to-install link for each bookmarklet.** A site can render
-  `<a href="javascript:...">` for a reader to drag onto the bookmarks bar,
-  which a GitHub README cannot. Build the `href` from the same join `test-bm.js`
-  checks, percent-encoded, so what gets installed is exactly what was tested.
-- **The current address keeps working.** GitHub Pages serves this repository
-  at `https://isocialpractice.github.io/bookmarklets/` today, from `main` at
-  `/`, and the page there is `index.html`'s example page. That page becomes
-  part of the site rather than disappearing.
-- **The README stays the front door**, with its headings linked to the site.
+## Short Videos
 
-Next version: minor.
+One short per bookmarklet: its essential use in under ten seconds, framed with
+the repository's stamp border, posted to YouTube and linked from its README
+entry. Shorts are made in the maintainer's After Effects project on this
+machine. The project, its folders and the accounts posted to are local, and the
+run's constants keep them under `## Social Media Posting`.
 
-- [ ] Hand the site decision back to the run: under
-  `### Create and Deploy GitHub Pages Override`, replace `- No site` with
-  `- Build the documentation site described in ## Documentation Site`
-  - Only once the build-type item under `## User Use Only` is checked. A deploy
-    workflow is ignored while Pages builds from a branch, so the site cannot be
-    built until that is decided.
-  - The run after this one builds the site rather than working the queue. That
-    is expected.
+Each README entry links its videos from a block that takes the place of its
+`<!-- PASTE VIDEO HERE -->` comment, below the gist paragraph:
+
+```html
+<details>
+
+<summary>Show Details</summary>
+
+<br>
+
+<b>Video Demonstration for Use:</b>
+
+- `Ctrl + click` link to view short on YouTube [Short - <Focus> - <What It Does>](https://www.youtube.com/shorts/<id>)
+<!-- - `Ctrl + click` link to view demo on YouTube [Demo - <Focus> - <What It Does>](https://www.youtube.com/watch?v=<id>) -->
+
+</details>
+```
+
+`<Focus>` and `<What It Does>` are the second and third parts of the file name,
+spelled the way the entry's heading spells them: `dom_Note_TakePageNotes` links
+as `Short - Note - Take Page Notes`. The demo line stays commented out until
+the bookmarklet has a demo.
+
+- [ ] Move `OctoPrint - Change Graph Image`'s older demo link, which sits above
+  its gist paragraph, into a video block's demo line in place of its comment,
+  with the short line commented out until its short exists
+  - The README keeps its CRLF line endings.
+- [ ] Write the short script: an ExtendScript (`.jsx`) file kept beside the
+  After Effects project, outside version control, that builds one
+  bookmarklet's short and queues its renders
+  - It takes the bookmarklet's name. `AfterFX.exe -s` runs a script string, so
+    a run can set the name and then `$.evalFile` the script.
+  - A new composition named after the bookmarklet: 648x648, 10 fps, duration
+    `0:00:10:00`. A square frame is what makes YouTube file the upload as a
+    Short.
+  - Import the recording into the project's folder for source GIFs.
+  - Add the project's stamp border composition as a layer: anchor point
+    centered, uniform scale 25%, aligned to the composition's top right.
+  - Add the recording as a layer: anchor point centered, aligned to the
+    composition's center both ways, and moved to the bottom of the layer
+    stack, below the stamp border.
+  - The length follows the recording. One shorter than ten seconds sets the
+    work area to the recording layer, so the render ends with it. A longer one
+    is time-stretched (`layer.stretch`) to end at `0:00:10:00`.
+  - Queue the composition in Adobe Media Encoder
+    (`app.project.renderQueue.queueInAME`) for an H.264 MP4 and an animated
+    GIF, both named after the bookmarklet, then save the project.
+  - Running it again for the same bookmarklet replaces that composition rather
+    than adding a second one.
+  - Check it against the two shorts already made: `dom_Note_TakePageNotes`, a
+    9.7-second recording kept at its length, and
+    `siteSpecific_chatGPT_PasteReadyBookmarkResponse`, 26.5 seconds played in
+    10. The script's renders match them in size, frame rate and length.
+  - Post a short with its `https://www.youtube.com/shorts/<id>` link, and
+    confirm that link opens as a Short rather than redirecting to the watch
+    page.
+- [ ] Let `gitHubTask` (on `PATH`, outside this repository) post a short
+  without prompts
+  - `gitHubTask /v` uploads unattended when it is given the title,
+    description, tags and privacy, but its only playlist is the demo playlist,
+    picked by a `_Demo` file-name prefix. Give it the shorts playlist.
+  - Passing its tags argument through to the upload is already planned on the
+    `gitHubTask` side.
+  - Add the GIF posting the run's constants describe. The key is read from the
+    local note at run time and never written into the script.
+  - Leave each new video's URL where a run can read it, for the README.
+- [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
+  and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
+  - Builds on `--capture` under `## Test Harness`. Start just before the
+    bookmarklet runs and stop once its result is on screen.
+  - Write to the folder named by a `TEST_BM_SHORTS_DIR` environment variable,
+    defaulting to `test-results/shorts/`.
+  - Never overwrite a recording that is already there. The maintainer's hand
+    recordings come first.
+  - An entry with `auth` needs its saved sign-in, as its test does.
+- [ ] Make and post the shorts for the bookmarklets that work on any page:
+  `dom_`, `nav_`, `style_` and `window_`
+  - For each: the recording, the short script, the posts the run's constants
+    describe, then the video block in place of the entry's comment.
+- [ ] Make and post the shorts for the public site-specific bookmarklets
+  - The same steps. A site that blocks a headless recording is listed for a
+    hand recording rather than skipped without a word. OctoPrint needs the
+    printer's address, as its test does.
+- [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
+  ChatGPT, Gmail and Amazon
+  - From saved sign-ins where they exist, otherwise from the maintainer's hand
+    recordings. List the ones still without a recording.
+- [ ] Make a short part of every new bookmarklet: extend the paragraph at the
+  top of this file so a new bookmarklet's item ends with its short posted and
+  its video block in the README
+
+## Demo Videos - paused
+
+A full walkthrough per bookmarklet, made in After Effects through an MCP server
+built for the job. This repository is where the server is proven: every demo is
+made through it, and any step that still needs a hand in After Effects becomes
+a change to the server.
+
+- [ ] Build an After Effects MCP server, in a repository of its own, with a
+  tool for every step the short script takes
+  - Open and save a project; create a composition; import footage into a
+    project folder; add a layer from footage or a composition; set its anchor
+    point, scale and alignment; set the work area or time-stretch a layer;
+    reorder layers; queue renders in Media Encoder and report when they finish.
+  - Its first test is the short script: a short made through the server
+    matches one made by the script.
+- [ ] Settle the demo format before the first demo: length, frame size, how
+  installing the bookmarklet is shown, and the opening and closing cards
+- [ ] Remake the bookmarklet demos already on the channel through the server
+  - List the channel's bookmarklet uploads first. The shorts made in the
+    current format stay; every other bookmarklet upload is remade.
+  - Each new demo replaces the old link in the README.
+    `ChatGPT - Paste Ready Bookmark Response` and
+    `OctoPrint - Change Graph Image` link old demos today.
+- [ ] Make and post demos for the bookmarklets without one, a type at a time
+  - Public, in the demos playlist, titled with the entry's heading. The
+    description starts from the entry's and is rewritten for someone watching:
+    what the bookmarklet is for, how to install it, and what to look for.
+  - Uncomment the demo line in the entry's video block, with the new link.
 
 ## New Bookmarklets - DOM
 
 Bookmarklets for working with a page's content and structure, filed under
 `# DOM Bookmarklets` in the README.
-
-Next version: minor.
 
 - [ ] `dom_Clipboard_CopyTableAsCsv.js` - click any table to copy it as CSV,
   or as TSV for pasting straight into a spreadsheet; `colspan` cells repeat
@@ -382,8 +563,6 @@ Next version: minor.
 Bookmarklets for moving around a page or between pages, filed under
 `# Navigation Bookmarklets` in the README.
 
-Next version: minor.
-
 - [ ] `nav_Toc_FloatingTableOfContents.js` - a floating table of contents
   built from the page's headings, highlighting the section in view
 - [ ] `nav_Anchor_ShowHeadingLinks.js` - a `#` link beside every heading that
@@ -403,8 +582,6 @@ Next version: minor.
 Bookmarklets that change how a page looks, filed under `# Style Bookmarklets`
 in the README.
 
-Next version: minor.
-
 - [ ] `style_Theme_ForceDarkMode.js` - invert the page and re-invert images and
   video, toggled, remembered per host in `localStorage`
 - [ ] `style_Font_ReadableText.js` - cap the line length near 70 characters,
@@ -423,8 +600,6 @@ Next version: minor.
 Bookmarklets for one site each, filed under `# Site Specific Bookmarklets` in
 the README. A site's markup is the part most likely to change, so every item
 here lists its selectors in `requires`.
-
-Next version: minor.
 
 - [ ] `siteSpecific_chatGPT_ResizeSidebar.js` - drag to resize the chat
   history sidebar, with the width remembered
@@ -473,8 +648,6 @@ Next version: minor.
 Bookmarklets for the window, the URL and the selection, filed under
 `# Window Bookmarklets` in the README.
 
-Next version: minor.
-
 - [ ] `window_URI_CleanTrackingParams.js` - remove `utm_*`, `fbclid`, `gclid`
   and similar parameters from the address bar with `history.replaceState`, and
   copy the clean URL
@@ -504,8 +677,6 @@ The type is spelled out on purpose. The maintainer's README tooling finds a
 type's section by turning the prefix into words, so `accessibility_` lands in
 `# Accessibility Bookmarklets` with no change to that tooling, where `a11y_`
 would land in `# A11y Bookmarklets`.
-
-Next version: minor.
 
 - [ ] Add the `# Accessibility Bookmarklets` section to the README, worded like
   the other sections' introductions, with an empty group in the navigation
@@ -544,8 +715,6 @@ page. The README's `# DOM Bookmarklets` section is about a page's content and
 structure; these are about its images, video and audio as things to keep,
 reuse or record, which makes them a category of their own.
 
-Next version: minor.
-
 - [ ] Add the `# Media Bookmarklets` section to the README, worded like the
   other sections' introductions, with an empty group in the navigation list,
   and add `templates/media_TEMPLATE.js`
@@ -582,17 +751,18 @@ Next version: minor.
 ## User Use Only
 
 Work the maintainer does by hand. Runs never work, check or queue anything in
-this section, but they do add to it: a run that adds a bookmarklet appends
-`- [ ] Publish <name>.js - gist and README entry` here, because both need a
-gist id that only exists once the maintainer has published it.
+this section.
 
-- [ ] Decide whether GitHub Pages keeps building from the `main` branch or
-  moves to a GitHub Actions workflow. Pages reports `build_type: legacy` with
-  `source: main /`, so a deploy workflow is ignored until the source changes,
-  and changing it on a live site can take the site down. Not a change to make
-  unattended.
+- [x] Decide the short's frame. YouTube files an upload as a Short only when it
+  is square or taller than it is wide.
+  - Square, 648x648. Both existing shorts were re-rendered at that size and
+    posted again as Shorts on 2026-11-06.
 
 ## Complete
 
 Finished items, archived from `## Current` with the `From:` line recording the
 roadmap section each one came from.
+
+- [x] Put every README entry's `<!-- PASTE VIDEO HERE -->` comment below its
+  gist paragraph, adding one where an entry had none
+  - From: Short Videos
