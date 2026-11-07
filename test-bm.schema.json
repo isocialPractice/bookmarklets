@@ -1,0 +1,153 @@
+{
+ "$schema": "https://json-schema.org/draft-07/schema#",
+ "$id": "https://isocialpractice.github.io/bookmarklets/test-bm.schema.json",
+ "title": "test-bm configuration",
+ "description": "Per-bookmarklet test configuration for test-bm.js. Each key is a bookmarklet name, which is the file name in JSFormatted without its .js. A bookmarklet with no entry gets the default safe run: example.com, one run, a settle period, and a pass when it parsed, ran and threw nothing.",
+ "type": "object",
+ "properties": {
+  "$schema": {
+   "type": "string",
+   "description": "Points at this file, so an editor offers completion and validation."
+  }
+ },
+ "additionalProperties": { "$ref": "#/definitions/entry" },
+ "definitions": {
+  "entry": {
+   "type": "object",
+   "description": "What a run does with one bookmarklet.",
+   "additionalProperties": false,
+   "properties": {
+    "url": {
+     "type": "string",
+     "description": "The page to open. Defaults to https://example.com/, which is reserved for documentation.",
+     "default": "https://example.com/"
+    },
+    "scheduled": {
+     "type": "boolean",
+     "description": "Include this entry in node test-bm.js --scheduled. Only for pages that load headless with no consent wall and no bot check.",
+     "default": false
+    },
+    "requires": {
+     "type": "array",
+     "description": "The CSS selectors the bookmarklet reads, taken from its source rather than from memory. Each is checked before the bookmarklet runs, and a missing one fails with \"site changed: <selector> not found on <url>\".",
+     "items": { "type": "string", "minLength": 1 }
+    },
+    "steps": {
+     "type": "array",
+     "description": "What to do on the page, in order. The bookmarklet runs once: at the step that names it, or after load when no step does.",
+     "items": { "$ref": "#/definitions/step" }
+    },
+    "dialogs": {
+     "type": "array",
+     "description": "Answers to alert, confirm and prompt, in the order they appear. A dialog with no answer left is dismissed.",
+     "items": { "$ref": "#/definitions/dialog" }
+    },
+    "permissions": {
+     "type": "array",
+     "description": "Browser permissions the context grants, such as clipboard-read and clipboard-write. An expect on a clipboard value needs clipboard-read.",
+     "items": { "type": "string", "minLength": 1 }
+    },
+    "skip": {
+     "type": "string",
+     "minLength": 1,
+     "description": "A reason to list the entry as skipped without running it. A skip never fails a run.",
+     "examples": ["the page needs a signed-in session"]
+    },
+    "timeout": {
+     "type": "number",
+     "description": "Milliseconds the whole entry is allowed, after which it fails.",
+     "default": 30000
+    },
+    "settle": {
+     "type": "number",
+     "description": "Milliseconds to wait after the last step, for anything the bookmarklet started.",
+     "default": 500
+    }
+   }
+  },
+  "step": {
+   "type": "object",
+   "description": "One thing to do. Exactly one of run, click, fill, press, wait or expect.",
+   "additionalProperties": false,
+   "properties": {
+    "run": {
+     "const": true,
+     "description": "Run the bookmarklet here, rather than after load. A second run step runs it again, which is how a bookmarklet that turns itself off on the second run is checked."
+    },
+    "click": {
+     "type": "string",
+     "minLength": 1,
+     "description": "A selector to click."
+    },
+    "fill": {
+     "description": "A selector to type into, with the value beside it or nested in an object.",
+     "oneOf": [
+      { "type": "string", "minLength": 1 },
+      {
+       "type": "object",
+       "additionalProperties": false,
+       "required": ["selector", "value"],
+       "properties": {
+        "selector": { "type": "string", "minLength": 1 },
+        "value": { "type": "string" }
+       }
+      }
+     ]
+    },
+    "press": {
+     "type": "string",
+     "minLength": 1,
+     "description": "A key to press, such as Enter or Control+c. With a selector beside it, the key goes to that element.",
+     "examples": ["Enter", "Escape", "s"]
+    },
+    "wait": {
+     "description": "Milliseconds to wait, or a selector to wait for.",
+     "oneOf": [{ "type": "number" }, { "type": "string", "minLength": 1 }]
+    },
+    "expect": { "$ref": "#/definitions/expect" },
+    "selector": {
+     "type": "string",
+     "minLength": 1,
+     "description": "The element a press goes to."
+    },
+    "value": {
+     "type": "string",
+     "description": "The value a fill types, when fill is written as a selector on its own."
+    },
+    "text": {
+     "type": "string",
+     "description": "The value a fill types, written the other way round."
+    }
+   }
+  },
+  "expect": {
+   "type": "object",
+   "description": "What should be true. A selector that is visible or hidden, matches a count, or holds some text; or a clipboard value.",
+   "additionalProperties": false,
+   "properties": {
+    "selector": { "type": "string", "minLength": 1, "description": "The elements to look at." },
+    "visible": { "const": true, "description": "The first match is showing." },
+    "hidden": { "const": true, "description": "The first match is not showing." },
+    "count": { "type": "number", "description": "How many elements the selector matches, exactly." },
+    "text": { "type": "string", "description": "Text the first match holds somewhere in it." },
+    "clipboard": { "type": "string", "description": "What the clipboard holds, trimmed at both ends. Needs clipboard-read in permissions." }
+   },
+   "anyOf": [
+    { "required": ["clipboard"] },
+    { "required": ["selector", "visible"] },
+    { "required": ["selector", "hidden"] },
+    { "required": ["selector", "count"] },
+    { "required": ["selector", "text"] }
+   ]
+  },
+  "dialog": {
+   "type": "object",
+   "description": "One answer to one dialog.",
+   "additionalProperties": false,
+   "properties": {
+    "accept": { "type": "boolean", "description": "Accept it rather than dismissing it.", "default": false },
+    "text": { "type": "string", "description": "What to type into a prompt before accepting it." }
+   }
+  }
+ }
+}

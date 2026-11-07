@@ -27,117 +27,52 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] Add a `package.json` with Playwright as its one dependency, and ignore
-  rules that a clone inherits
-  - `"private": true`, and `playwright` (the library, not `@playwright/test`)
-    under `devDependencies`, pinned to an exact version. Lockfiles are excluded
-    by a global ignore rule on the maintainer's machine, so the pin in
-    `package.json` is the only one a clone gets.
-  - Scripts: `"test": "node test-bm.js --all"` and
-    `"test:scheduled": "node test-bm.js --scheduled"`. The browser installs
-    with `npx playwright install chromium`; nothing downloads one implicitly.
-  - Ignore `node_modules/` and `test-results/`. The repository's `.gitignore`
-    is not tracked today, because a global `.*` rule hides it. A `!.gitignore`
-    line inside the file un-ignores it (measured: `git status` then lists it as
-    `??`, so the ordinary commit picks it up and no `git add -f` is needed).
-    Review the lines already in it first: they name local working files, and
-    tracking the file publishes those names.
+- [ ] Self-test the harness with fixture bookmarklets in `test/fixtures/`,
+  run by `node --test`
+  - One that passes; one that throws; one with a `//` comment; one with an
+    `i%16` modulo; one with a missing semicolon between two lines; one whose
+    page logs its own console error while the bookmarklet succeeds. Each
+    asserts the verdict and the reason `test-bm.js` gives.
+  - `npm test` runs these before the bookmarklets themselves.
   - From: Test Harness
-- [ ] Write `test-bm.js`, so `node test-bm.js <name>` runs one bookmarklet in a
-  real browser and reports pass or fail
-  - Resolve `<name>` the way `bookmarklet.js copy` does: `name`, `name.js` or
-    `JSFormatted/name.js`.
-  - Check the file before any browser starts. Join it two ways: the space join
-    `bookmarklet.js` uses (`/\s*\r?\n\s*/g` to one space), and a strict join
-    that drops CR and LF with nothing in their place, which is what newline
-    stripping in a URL field does. Parse both with `vm.Script` once the
-    `javascript:` prefix is removed. A file that parses one way and not the
-    other has a line that only works by accident; fail it and give the line
-    number in the formatted file.
-  - Percent-decode the joined code before running it, the way a `javascript:`
-    URL is decoded. A modulo such as `i%16` decodes to a control character on a
-    real bookmarks bar, and this is where that should surface.
-  - Run it the way a browser runs a bookmarklet. The page's content security
-    policy does not block the bookmarklet itself but does apply to what it
-    adds, and `page.evaluate` matches that. Leave `bypassCSP` off, so a refused
-    inline style or script is reported exactly as a user on that site would
-    meet it.
-  - Name the injected source with a `//# sourceURL=bookmarklet/<name>.js` tag,
-    so an error's stack says whether it came from the bookmarklet or from the
-    page. Only the bookmarklet's errors fail the test; the page's own console
-    errors are recorded, not judged. Confirm the tag survives however the code
-    ends up injected, with CDP `Runtime.evaluate` as the Chromium fallback.
-  - Fresh browser context with no profile, a fixed 1280x720 viewport, dialogs
-    dismissed unless configured, and popups closed and recorded.
-  - Default safe run, for any bookmarklet with no `test-bm.json` entry: open
-    `https://example.com/` (reserved for documentation, so there is nothing to
-    break), run the bookmarklet once, wait a settle period, and pass when it
-    parsed, ran and threw nothing.
-  - Exit codes: `0` pass, `1` fail, `2` usage or configuration error. `--headed`
-    and `--slow-mo <ms>` are for watching a run; neither is ever needed.
+- [ ] Serve local fixture pages from a fake origin instead of `file://`
+  - `page.route("https://fixtures.test/**", ...)` fulfilled from
+    `test/fixtures/pages/` gives each fixture a real origin, so
+    `localStorage`, the clipboard and `location` behave as they do on a site.
+    It also needs no network and never changes.
+  - `url` accepts `fixture:<file>.html` as shorthand for that origin.
+  - The same pages are the deployed site's practice pages
+    (`## Improve GitHub Pages Site`), so they stay presentable to a reader.
   - From: Test Harness
-- [ ] Add `test-bm.json`, the per-bookmarklet test configuration, with a JSON
-  schema beside it
-  - Keyed by bookmarklet name (the file name without `.js`). A
-    `"$schema": "./test-bm.schema.json"` line gives editors completion and
-    validation.
-  - Properties: `url` (default `https://example.com/`); `scheduled` (boolean,
-    default `false`); `requires`, the CSS selectors the bookmarklet depends on,
-    checked before it runs; `steps`; `dialogs`, the answers to `alert`,
-    `confirm` and `prompt` in the order they appear; `permissions`, such as
-    `["clipboard-read", "clipboard-write"]`; `skip`, a reason string that lists
-    the entry as skipped without running it; and `timeout` and `settle` in
-    milliseconds.
-  - `steps` run in order: `{ "run": true }` runs the bookmarklet (once, after
-    load, when no step names it), plus `click`, `fill`, `press`, `wait` (ms or
-    a selector) and `expect` (a selector that is `visible`, `hidden`, has a
-    `count` or `text`, or a `clipboard` value).
-  - A missing `requires` selector fails with
-    `site changed: <selector> not found on <url>`. That message is what this
-    whole harness exists to produce when a site redesigns underneath a
-    bookmarklet.
-  - Illustrative shape; the real entries are written under
-    `## Test Configurations`:
-
-    ```json
-    {
-      "$schema": "./test-bm.schema.json",
-      "dom_Clutter_ClickToHide": {
-        "url": "https://example.com/",
-        "scheduled": true,
-        "steps": [
-          { "run": true },
-          { "click": "h1" },
-          { "expect": { "selector": "h1", "hidden": true } }
-        ]
-      },
-      "siteSpecific_Example_DoSomething": {
-        "url": "https://example.org/page",
-        "requires": ["#selector-the-bookmarklet-reads"],
-        "dialogs": [{ "accept": true, "text": "42" }],
-        "scheduled": false
-      }
-    }
-    ```
-
-  - From: Test Harness
-- [ ] Add `--all`, `--scheduled` and `--list`, with a report a scheduled task
-  can act on
-  - `--all` runs every file in `JSFormatted/`, configured or not.
-    `--scheduled` runs only entries with `"scheduled": true`, which is all a
-    cron job or Windows scheduled task has to call: `node test-bm.js
-    --scheduled`. `--list` prints each bookmarklet and what a run would do with
-    it (configured, default safe run, skip) without opening a browser.
-  - One browser for the batch and a fresh context per bookmarklet, run one at a
-    time.
-  - Write `test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json` and
-    `summary.txt`, one line per bookmarklet with verdict, reason and duration.
-    The last line sums the run up for anyone reading a log:
-    `test-bm: 54 run, 51 passed, 2 failed, 1 skipped`.
-  - Exit `0` when nothing failed (skips never fail a run), `1` when anything
-    failed, `2` on a configuration error. Nothing in the scheduled path prompts
-    or waits for input.
-  - From: Test Harness
+- [ ] Write entries for the bookmarklets that work on any page: `dom_`, `nav_`,
+  `style_` and `window_`
+  - Use `fixture:` pages where `https://example.com/` lacks what the
+    bookmarklet needs, such as tables, headings, a sidebar, a video or a form.
+    It no longer serves an `h1` either, so a heading is one of them.
+  - Assert the effect: an element hidden, text wrapped in `<b>`, a panel added,
+    a clipboard value written. Mark each `"scheduled": true`; these never
+    depend on a third-party site.
+  - From: Test Configurations
+- [ ] Write entries for the public site-specific bookmarklets: GitHub, Stack
+  Overflow, w3Schools, YouTube, Google and Google Maps
+  - Each lists in `requires` every selector the bookmarklet reads, taken from
+    its source rather than from memory.
+  - Pick pages that load signed out and are unlikely to move, such as this
+    repository's own GitHub page.
+  - Mark `"scheduled": true` only where the page loads headless without a
+    consent wall or bot check from this machine. YouTube and Google serve
+    consent pages in some regions; an entry that cannot get past one is
+    `scheduled: false` with the reason in `skip`.
+  - From: Test Configurations
+- [ ] Run `node test-bm.js --all` once and file every failure as its own item
+  under `## Existing Bookmarklets`, with `**Issue**` and `**Goal**` nested
+  - The README's status line already says some existing bookmarklets may not
+    work. This run is what turns that into a list of which ones.
+  - Worked last of this batch on purpose. The run on 11.07.2026 failed 13 of
+    54, and every one was a site-specific bookmarklet meeting a bare page
+    rather than a defect, so the entries above come first and this run reports
+    what is left.
+  - From: Test Configurations
 
 ### Create and Deploy GitHub Pages Override
 
@@ -233,6 +168,57 @@ files its failures here. A fix is finished when its posted gist carries it too.
 
 - [ ] Add an `s, s` key sequence to `siteSpecific_chatGPT_NavigateAnswers.js`
   that returns the page to normal
+
+### From the Open Issues
+
+The repository's open GitHub issues, each needing the live site to confirm.
+`test-bm.js` reaches every one of these pages, so an entry under
+`## Test Configurations` is what turns each into something a run can judge
+rather than something a person has to reproduce by hand.
+
+- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes only part of the file sizes
+  the first time a directory loads
+  - **Issue**: File size data is sometimes partially written into the updated
+    table, on the first load of a directory. The cause was never found.
+  - **Goal**: Write a `test-bm.json` entry that loads a directory page cold and
+    counts the size cells against the rows, so the partial write is a verdict
+    rather than a sighting. Fix what the entry then shows, and close the issue
+    with `Fixes #1`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/1>
+- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes no file sizes when the repo
+  root is reached from the navigation path
+  - **Issue**: Viewing the repo root from the tree view and then clicking the
+    repo root link in the navigation path above the table leaves the sizes
+    unloaded. It appears to happen only on the first navigation to the root.
+  - **Goal**: Give the entry a step that clicks the navigation path's root link
+    from a tree view, then expects a size in every row. Fix what it shows, and
+    close the issue with `Fixes #2`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/2>
+- [ ] `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` breaks on an answer
+  holding a `\u` sequence
+  - **Issue**: An answer containing `\u` is written out without the backslash
+    being doubled, so the pasted bookmarklet carries a broken escape.
+  - **Goal**: Escape the sequence where the answer is encoded. The file already
+    turns a backslash into `&#x5c;` when it encodes a code block, so decide
+    whether that path is the one missing the case, or whether the plain text
+    path needs its own. The entry for this bookmarklet needs an answer holding
+    `\u` to paste. Close the issue with `Fixes #4`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/4>
+- [ ] `siteSpecific_YouTube_ShowShortReleaseDate.js` breaks on a short behind a
+  viewer discretion notice
+  - **Issue**: A short that opens with an approval request has a different DOM,
+    and the bookmarklet breaks on it rather than skipping it.
+  - **Goal**: Read the DOM of a short behind the notice, and leave that short
+    alone instead of breaking. Close the issue with `Fixes #11`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/11>
+- [ ] `siteSpecific_YouTube_ShowShortReleaseDate.js` renders nothing on the
+  first visit to YouTube
+  - **Issue**: Running it on a first visit to the site renders no data, because
+    the markup it reads is not the markup a first visit serves.
+  - **Goal**: Wait for, or read, whatever the first visit does serve. An entry
+    with a fresh context is a first visit every time, so this one is testable
+    without any sign-in. Close the issue with `Fixes #14`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/14>
 
 ## AI-Assisted Verification
 
@@ -753,16 +739,132 @@ reuse or record, which makes them a category of their own.
 Work the maintainer does by hand. Runs never work, check or queue anything in
 this section.
 
-- [x] Decide the short's frame. YouTube files an upload as a Short only when it
-  is square or taller than it is wide.
-  - Square, 648x648. Both existing shorts were re-rendered at that size and
-    posted again as Shorts on 2026-11-06.
-
 ## Complete
 
 Finished items, archived from `## Current` with the `From:` line recording the
 roadmap section each one came from.
 
+<details>
+<summary>Show Details</summary>
+
 - [x] Put every README entry's `<!-- PASTE VIDEO HERE -->` comment below its
   gist paragraph, adding one where an entry had none
   - From: Short Videos
+- [x] Add a `package.json` with Playwright as its one dependency, and ignore
+  rules that a clone inherits
+  - `"private": true`, and `playwright` (the library, not `@playwright/test`)
+    under `devDependencies`, pinned to an exact version. Lockfiles are excluded
+    by a global ignore rule on the maintainer's machine, so the pin in
+    `package.json` is the only one a clone gets.
+  - Scripts: `"test": "node test-bm.js --all"` and
+    `"test:scheduled": "node test-bm.js --scheduled"`. The browser installs
+    with `npx playwright install chromium`; nothing downloads one implicitly.
+  - Ignore `node_modules/` and `test-results/`. The repository's `.gitignore`
+    is not tracked today, because a global `.*` rule hides it. A `!.gitignore`
+    line inside the file un-ignores it (measured: `git status` then lists it as
+    `??`, so the ordinary commit picks it up and no `git add -f` is needed).
+    Review the lines already in it first: they name local working files, and
+    tracking the file publishes those names.
+  - From: Test Harness
+- [x] Write `test-bm.js`, so `node test-bm.js <name>` runs one bookmarklet in a
+  real browser and reports pass or fail
+  - Resolve `<name>` the way `bookmarklet.js copy` does: `name`, `name.js` or
+    `JSFormatted/name.js`.
+  - Check the file before any browser starts. Join it two ways: the space join
+    `bookmarklet.js` uses (`/\s*\r?\n\s*/g` to one space), and a strict join
+    that drops CR and LF with nothing in their place, which is what newline
+    stripping in a URL field does. Parse both with `vm.Script` once the
+    `javascript:` prefix is removed. A file that parses one way and not the
+    other has a line that only works by accident; fail it and give the line
+    number in the formatted file.
+  - Percent-decode the joined code before running it, the way a `javascript:`
+    URL is decoded. A modulo such as `i%16` decodes to a control character on a
+    real bookmarks bar, and this is where that should surface.
+  - Run it the way a browser runs a bookmarklet. The page's content security
+    policy does not block the bookmarklet itself but does apply to what it
+    adds, and `page.evaluate` matches that. Leave `bypassCSP` off, so a refused
+    inline style or script is reported exactly as a user on that site would
+    meet it.
+  - Name the injected source with a `//# sourceURL=bookmarklet/<name>.js` tag,
+    so an error's stack says whether it came from the bookmarklet or from the
+    page. Only the bookmarklet's errors fail the test; the page's own console
+    errors are recorded, not judged. Confirm the tag survives however the code
+    ends up injected, with CDP `Runtime.evaluate` as the Chromium fallback.
+  - Fresh browser context with no profile, a fixed 1280x720 viewport, dialogs
+    dismissed unless configured, and popups closed and recorded.
+  - Default safe run, for any bookmarklet with no `test-bm.json` entry: open
+    `https://example.com/` (reserved for documentation, so there is nothing to
+    break), run the bookmarklet once, wait a settle period, and pass when it
+    parsed, ran and threw nothing.
+  - Exit codes: `0` pass, `1` fail, `2` usage or configuration error. `--headed`
+    and `--slow-mo <ms>` are for watching a run; neither is ever needed.
+  - From: Test Harness
+- [x] Add `test-bm.json`, the per-bookmarklet test configuration, with a JSON
+  schema beside it
+  - Keyed by bookmarklet name (the file name without `.js`). A
+    `"$schema": "./test-bm.schema.json"` line gives editors completion and
+    validation.
+  - Properties: `url` (default `https://example.com/`); `scheduled` (boolean,
+    default `false`); `requires`, the CSS selectors the bookmarklet depends on,
+    checked before it runs; `steps`; `dialogs`, the answers to `alert`,
+    `confirm` and `prompt` in the order they appear; `permissions`, such as
+    `["clipboard-read", "clipboard-write"]`; `skip`, a reason string that lists
+    the entry as skipped without running it; and `timeout` and `settle` in
+    milliseconds.
+  - `steps` run in order: `{ "run": true }` runs the bookmarklet (once, after
+    load, when no step names it), plus `click`, `fill`, `press`, `wait` (ms or
+    a selector) and `expect` (a selector that is `visible`, `hidden`, has a
+    `count` or `text`, or a `clipboard` value).
+  - A missing `requires` selector fails with
+    `site changed: <selector> not found on <url>`. That message is what this
+    whole harness exists to produce when a site redesigns underneath a
+    bookmarklet.
+  - Illustrative shape; the real entries are written under
+    `## Test Configurations`:
+
+    ```json
+    {
+      "$schema": "./test-bm.schema.json",
+      "dom_Clutter_ClickToHide": {
+        "url": "https://example.com/",
+        "scheduled": true,
+        "steps": [
+          { "run": true },
+          { "click": "h1" },
+          { "expect": { "selector": "h1", "hidden": true } }
+        ]
+      },
+      "siteSpecific_Example_DoSomething": {
+        "url": "https://example.org/page",
+        "requires": ["#selector-the-bookmarklet-reads"],
+        "dialogs": [{ "accept": true, "text": "42" }],
+        "scheduled": false
+      }
+    }
+    ```
+
+  - From: Test Harness
+- [x] Add `--all`, `--scheduled` and `--list`, with a report a scheduled task
+  can act on
+  - `--all` runs every file in `JSFormatted/`, configured or not.
+    `--scheduled` runs only entries with `"scheduled": true`, which is all a
+    cron job or Windows scheduled task has to call: `node test-bm.js
+    --scheduled`. `--list` prints each bookmarklet and what a run would do with
+    it (configured, default safe run, skip) without opening a browser.
+  - One browser for the batch and a fresh context per bookmarklet, run one at a
+    time.
+  - Write `test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json` and
+    `summary.txt`, one line per bookmarklet with verdict, reason and duration.
+    The last line sums the run up for anyone reading a log:
+    `test-bm: 54 run, 51 passed, 2 failed, 1 skipped`.
+  - Exit `0` when nothing failed (skips never fail a run), `1` when anything
+    failed, `2` on a configuration error. Nothing in the scheduled path prompts
+    or waits for input.
+  - From: Test Harness
+- [x] Decide the short's frame. YouTube files an upload as a Short only when it
+  is square or taller than it is wide.
+  - Square, 648x648. Both existing shorts were re-rendered at that size and
+    posted again as Shorts on 2026-11-06.
+  - From: User Use Only
+
+</details>

@@ -1,0 +1,8 @@
+_COMMIT - message consistency.txt 
+_READY.txt 
+zipFilesCall.bat 
+_TEMP* 
+\#videos/
+!.gitignore
+node_modules/
+test-results/

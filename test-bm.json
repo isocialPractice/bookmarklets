@@ -1,0 +1,14 @@
+{
+ "$schema": "./test-bm.schema.json",
+
+ "dom_Clutter_ClickToHide": {
+  "url": "https://example.com/",
+  "scheduled": true,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#clutterClickToHide--__-unlikely_-_name-__--clutterClickToHide", "count": 1 } },
+   { "run": true },
+   { "expect": { "selector": "#clutterClickToHide--__-unlikely_-_name-__--clutterClickToHide", "count": 0 } }
+  ]
+ }
+}

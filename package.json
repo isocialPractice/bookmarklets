@@ -1,0 +1,13 @@
+{
+  "name": "bookmarklets",
+  "private": true,
+  "description": "A running list of browser bookmarklets, with a Playwright harness that checks each one still works.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node test-bm.js --all",
+    "test:scheduled": "node test-bm.js --scheduled"
+  },
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
+}
