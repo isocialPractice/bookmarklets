@@ -1,6 +1,34 @@
 {
  "$schema": "./test-bm.schema.json",
 
+ "dom_Clipboard_ConvertPageToMarkdown": {
+  "url": "fixture:snippet.html",
+  "scheduled": false,
+  "requires": ["h1", "ul li", "table th", "a[href]", "img[src]"],
+  "permissions": ["clipboard-read", "clipboard-write"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 45000,
+  "settle": 500,
+  "steps": [
+   { "run": true },
+   { "wait": 4000 },
+   { "expect": { "clipboard": "# One of each\r\n\r\nA small page, so the markdown a converter produces can be read in full.\r\n\r\n## A list\r\n\r\n-   First\r\n-   Second\r\n\r\n## A table\r\n\r\n| Stop | Name |\r\n| --- | --- |\r\n| 1 | Depot |\r\n| 2 | Main Street |\r\n\r\n## A link and an image\r\n\r\n[All practice pages](https://fixtures.test/index.html)\r\n\r\n![A placeholder badge](https://fixtures.test/badge.svg)" } }
+  ]
+ },
+
+ "dom_Clipboard_MakeMdLinkList": {
+  "url": "fixture:table.html",
+  "scheduled": true,
+  "requires": ["a", "h2"],
+  "permissions": ["clipboard-read", "clipboard-write"],
+  "dialogs": [{ "accept": true }],
+  "steps": [
+   { "run": true },
+   { "wait": 800 },
+   { "expect": { "clipboard": "### Section 1\r\n\r\n- [Routes](https://fixtures.test/article.html#routes)\r\n\r\n### Section 2\r\n\r\n- [Stops](https://fixtures.test/article.html#stops)\r\n\r\n### Section 3\r\n\r\n- [Fares](https://fixtures.test/article.html#fares)" } }
+  ]
+ },
+
  "dom_Clutter_ClickToHide": {
   "url": "https://example.com/",
   "scheduled": true,
@@ -10,5 +38,495 @@
    { "run": true },
    { "expect": { "selector": "#clutterClickToHide--__-unlikely_-_name-__--clutterClickToHide", "count": 0 } }
   ]
+ },
+
+ "dom_Note_TakePageNotes": {
+  "url": "fixture:form.html",
+  "scheduled": true,
+  "requires": ["body"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#noteContainerDomTakePageNotes", "count": 1 } },
+   { "expect": { "selector": "#noteBoxDomTakePageNotes", "visible": true } },
+   { "click": "#toggleBtnDomTakePageNotes" },
+   { "expect": { "selector": "#noteBoxDomTakePageNotes", "hidden": true } },
+   { "run": true },
+   { "expect": { "selector": "#noteContainerDomTakePageNotes", "count": 1 } }
+  ]
+ },
+
+ "dom_Parse_DomStopPageParsedHeight": {
+  "url": "fixture:lazy.html",
+  "scheduled": true,
+  "requires": [".lazy_loader", "#feed"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": ".lazy_loader", "hidden": true } },
+   { "expect": { "selector": "#feed li", "count": 7 } }
+  ]
+ },
+
+ "dom_Parse_DomStopPageParsing": {
+  "url": "fixture:lazy.html",
+  "scheduled": true,
+  "requires": [".lazy_loader", "#feed"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": ".lazy_loader", "hidden": true } },
+   { "expect": { "selector": "main > span", "count": 0 } }
+  ]
+ },
+
+ "dom_Video_DomTakeVideoNotes": {
+  "url": "fixture:video.html",
+  "scheduled": true,
+  "requires": ["video", "iframe"],
+  "dialogs": [{ "accept": true }],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#noteBoxDomTakeVideoNotes", "count": 1 } },
+   { "expect": { "selector": "#textareaDomTakeVideoNotes", "count": 1 } },
+   { "expect": { "selector": "video[tabindex='-1']", "count": 1 } },
+   { "run": true },
+   { "expect": { "selector": "#noteBoxDomTakeVideoNotes", "count": 1 } }
+  ]
+ },
+
+ "dom_search_page": {
+  "url": "fixture:article.html",
+  "scheduled": true,
+  "requires": ["main"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "input[data-id='bookmarkletDOMSearchSearchPage']", "visible": true } },
+   { "expect": { "selector": ".bookmarkletDOMSearchSearchPage", "count": 1 } },
+   { "run": true },
+   { "expect": { "selector": ".bookmarkletDOMSearchSearchPage", "count": 1 } }
+  ]
+ },
+
+ "nav_Sidebar_FixAndScrollSideMenu": {
+  "url": "fixture:sidebar.html",
+  "scheduled": true,
+  "requires": ["head", "nav"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "head style", "count": 1 } },
+   { "expect": { "selector": "head style", "text": "position: sticky" } }
+  ]
+ },
+
+ "nav_Sidebar_HighlightCurrentPage": {
+  "url": "fixture:sidebar.html",
+  "scheduled": true,
+  "requires": ["a"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "nav.side a[style*='background: white']", "count": 8 } },
+   { "expect": { "selector": "nav.side a[style*='color: black']", "count": 8 } }
+  ]
+ },
+
+ "nav_Sidebar_UnderlineAnchorLink": {
+  "url": "fixture:sidebar.html#intro",
+  "scheduled": true,
+  "requires": ["a"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "a[style*='text-decoration: underline']", "count": 1 } },
+   { "expect": { "selector": "nav.side a[href$='#intro'][style*='text-decoration: underline']", "count": 1 } }
+  ]
+ },
+
+ "style_Favicon_ChangeOrAddFavicon": {
+  "url": "https://example.com/",
+  "scheduled": true,
+  "requires": ["head"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "head link[rel='icon'][href='CHANGE']", "count": 1 } }
+  ]
+ },
+
+ "window_PageOffset_CustomPageDown": {
+  "url": "fixture:scroll.html",
+  "scheduled": true,
+  "requires": ["body", "#offset"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#offset", "text": "offset 0" } },
+   { "click": "h1" },
+   { "wait": 500 },
+   { "expect": { "selector": "#offset", "text": "offset 500" } }
+  ]
+ },
+
+ "window_URI_AnchorHighlightedText": {
+  "url": "fixture:scroll.html",
+  "scheduled": true,
+  "requires": ["#weeks li", "#offset"],
+  "steps": [
+   { "expect": { "selector": "#offset", "text": "offset 0 (at the top)" } },
+   { "select": "#weeks li:last-child" },
+   { "run": true },
+   { "wait": 1000 },
+   { "expect": { "selector": "#offset", "text": "(scrolled)" } }
+  ]
+ },
+
+ "window_style_boldSelectedText": {
+  "url": "fixture:article.html",
+  "scheduled": true,
+  "requires": ["body", "p.try-styling"],
+  "dialogs": [{ "accept": true }],
+  "steps": [
+   { "run": true },
+   { "select": "p.try-styling" },
+   { "press": "Control" },
+   { "press": "b" },
+   { "expect": { "selector": "p.try-styling strong", "text": "Six routes cross the town centre" } }
+  ]
+ },
+
+ "window_style_highlightSelectedText": {
+  "url": "fixture:article.html",
+  "scheduled": true,
+  "requires": ["body", "p.try-styling"],
+  "dialogs": [{ "accept": true }],
+  "steps": [
+   { "run": true },
+   { "select": "p.try-styling" },
+   { "press": "Control" },
+   { "press": "Shift" },
+   { "press": "h" },
+   { "expect": { "selector": "p.try-styling span[style*='background']", "text": "Six routes cross the town centre" } }
+  ]
+ },
+
+ "window_style_italicSelectedText": {
+  "url": "fixture:article.html",
+  "scheduled": true,
+  "requires": ["body", "p.try-styling"],
+  "dialogs": [{ "accept": true }],
+  "steps": [
+   { "run": true },
+   { "select": "p.try-styling" },
+   { "press": "Control" },
+   { "press": "i" },
+   { "expect": { "selector": "p.try-styling em", "text": "Six routes cross the town centre" } }
+  ]
+ },
+
+ "window_style_underlineSelectedText": {
+  "url": "fixture:article.html",
+  "scheduled": true,
+  "requires": ["body", "p.try-styling"],
+  "dialogs": [{ "accept": true }],
+  "steps": [
+   { "run": true },
+   { "select": "p.try-styling" },
+   { "press": "Control" },
+   { "press": "Shift" },
+   { "press": "u" },
+   { "expect": { "selector": "p.try-styling u", "text": "Six routes cross the town centre" } }
+  ]
+ },
+ "siteSpecific_GitHub_AlternateRowColor": {
+  "url": "https://github.com/isocialPractice/bookmarklets",
+  "scheduled": true,
+  "requires": ["tr", "a"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "tr[style*='background-color: aliceblue']", "visible": true } }
+  ]
+ },
+
+ "siteSpecific_GitHub_CommitDateTimestamp": {
+  "url": "https://github.com/isocialPractice/bookmarklets/commit/2f66629eec48980ed9c63d9014bcca716b45b5c2",
+  "scheduled": true,
+  "requires": ["relative-time, time-ago, local-time, time[datetime]"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "relative-time[format='datetime'][month='short']", "count": 1 } },
+   { "expect": { "selector": "relative-time[hour='numeric'][minute='2-digit']", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_GitHub_ListOldNewestCommits": {
+  "url": "https://github.com/isocialPractice/bookmarklets/commits/main",
+  "scheduled": true,
+  "requires": [".tmp-mb-3.prc-Stack-Stack-UQ9k6", "relative-time[datetime]"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": 2000 },
+   { "expect": { "selector": "#jumpCommits--__-unlikely_-_name-__--jumpCommits", "count": 1 } },
+   { "expect": { "selector": "#jumpCommits--__-unlikely_-_name-__--jumpCommits button", "count": 2 } }
+  ]
+ },
+
+ "siteSpecific_GitHub_NavigateCommitsSequentially": {
+  "url": "https://github.com/isocialPractice/bookmarklets/commit/2f66629eec48980ed9c63d9014bcca716b45b5c2",
+  "scheduled": true,
+  "requires": ["relative-time[datetime]"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": 2500 },
+   { "expect": { "selector": "#navCommits--__-unlikely_-_name-__--navCommits", "count": 1 } },
+   { "expect": { "selector": "#navCommits--__-unlikely_-_name-__--navCommits a", "count": 2 } }
+  ]
+ },
+
+ "siteSpecific_GitHub_ResizeRepoTableColumns": {
+  "url": "https://github.com/isocialPractice/bookmarklets",
+  "scheduled": true,
+  "requires": ["table", "thead", "tr"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#resizeStyle--_unlikely-_-text_--resizeStyle", "count": 1 } },
+   { "expect": { "selector": "table[style*='table-layout: fixed']", "count": 1 } },
+   { "expect": { "selector": ".resizeHandle-__-unlikely-name-__-resizeHandle", "count": 2 } }
+  ]
+ },
+
+ "siteSpecific_GitHub_ShowFileSize": {
+  "url": "https://github.com/isocialPractice/bookmarklets",
+  "scheduled": true,
+  "requires": ["table", "tr", "body"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": 2500 },
+   { "expect": { "selector": "#fileSizeStyle--__-unlikely_-_name-__--fileSizeStyle", "count": 1 } },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "count": 1 } },
+   { "expect": { "selector": "#fileSize-__-unlikely-name-__-fileSize0", "visible": true } }
+  ]
+ },
+
+ "siteSpecific_Stackoverflow_Add_Answer_Anchor_Links": {
+  "url": "https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array",
+  "scheduled": false,
+  "skip": "stackoverflow.com answers a headless load from this machine with a Cloudflare challenge page, so the question never renders",
+  "requires": [".answer", ".answer .js-vote-count", "#answers"],
+  "timeout": 45000
+ },
+
+ "siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links": {
+  "url": "https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array",
+  "scheduled": false,
+  "skip": "stackoverflow.com answers a headless load from this machine with a Cloudflare challenge page, so the question never renders",
+  "requires": [".answer", "#answers"],
+  "permissions": ["clipboard-read", "clipboard-write"],
+  "timeout": 45000
+ },
+
+ "siteSpecific_w3Schools_exampleLineNumbers": {
+  "url": "https://www.w3schools.com/js/tryit.asp?filename=tryjs_statements",
+  "scheduled": true,
+  "requires": ["#textareawrapper div.CodeMirror-code", "#textareawrapper div.CodeMirror-code pre.CodeMirror-line", ".CodeMirror"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#lineNumberColW3ExLnNum", "count": 1 } },
+   { "expect": { "selector": "#toggleBtnW3ExLnNum", "visible": true } },
+   { "expect": { "selector": ".lineNumW3ExLnNum", "visible": true } }
+  ]
+ },
+
+ "siteSpecific_w3Schools_hideSideBar": {
+  "url": "https://www.w3schools.com/js/js_statements.asp",
+  "scheduled": true,
+  "requires": ["#leftmenuinnerinner", "head"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": 1000 },
+   { "expect": { "selector": "#styleTagW3HideSideBar", "count": 1 } },
+   { "expect": { "selector": "#w3HideSideBar", "visible": true } }
+  ]
+ },
+
+ "siteSpecific_YouTube_AddTimeMarks": {
+  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "scheduled": true,
+  "requires": ["#above-the-fold", "#player", "video"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#bookmarkletArea", "count": 1 } },
+   { "press": "Control+m" },
+   { "wait": 1500 },
+   { "expect": { "selector": "#timeMarkButtonArea", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_YouTube_DarkenBottomControls": {
+  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "scheduled": true,
+  "requires": ["body", "div.ytp-time-display", "div.ytp-progress-bar-container"],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true },
+   { "expect": { "selector": "body > style:first-child", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_YouTube_HideShortHistory": {
+  "url": "https://www.youtube.com/feed/history",
+  "scheduled": false,
+  "skip": "it only acts on the watch history feed, which is empty without a signed-in session",
+  "requires": ["ytd-reel-shelf-renderer", "body"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_YouTube_SavePageNotesToLocalStorage": {
+  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "scheduled": false,
+  "skip": "it saves what is already in the notebox another bookmarklet adds, and an entry runs one bookmarklet",
+  "requires": ["#top-row", "#noteBox"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_YouTube_SavedPageNotesToNotebox": {
+  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "scheduled": true,
+  "requires": ["#above-the-fold", "#player"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#noteBox", "count": 1 } },
+   { "expect": { "selector": "#noteArea", "count": 1 } },
+   { "expect": { "selector": "#noteTextArea", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_YouTube_ShortHoverTitle": {
+  "url": "https://www.youtube.com/",
+  "scheduled": false,
+  "skip": "it reads the shorts shelf overlay, and the home page serves no shorts shelf to a signed-out load",
+  "requires": ["#experiment-overlay", "ytd-reel-shelf-renderer"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_YouTube_ShowShortReleaseDate": {
+  "url": "https://www.youtube.com/shorts/jNQXAC9IVRw",
+  "scheduled": false,
+  "skip": "the shorts player refuses an ordinary video id and redirects to the watch page, so this entry needs a short chosen to stay available",
+  "requires": ["#actions"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_YouTube_StackUserPlaylistFeed": {
+  "url": "https://www.youtube.com/feed/playlists",
+  "scheduled": true,
+  "requires": ["body", "head"],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#stackUserPlaylistFeed", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_YouTube_SyncAudio": {
+  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "scheduled": true,
+  "requires": [".ytp-button.ytp-settings-button", "video"],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true },
+   { "wait": 4000 },
+   { "expect": { "selector": ".ytp-quality-menu", "count": 1 } },
+   { "expect": { "selector": ".ytp-settings-shown", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_YouTube_TakeVideoNotes": {
+  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "scheduled": true,
+  "requires": ["#above-the-fold", "#player"],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#noteBoxTakNotes", "count": 1 } },
+   { "expect": { "selector": "#noteAreaTakeNotes", "count": 1 } },
+   { "expect": { "selector": "#closeBMBtnNoteBoxBtn", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_YouTube_TopSubscriptionToggleBtn": {
+  "url": "https://www.youtube.com/",
+  "scheduled": false,
+  "skip": "it toggles the subscriptions shelf at the top of the home page, which only appears for a signed-in session",
+  "requires": ["ytd-guide-section-renderer"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_YouTube_WatchRandomVideo": {
+  "url": "https://www.youtube.com/",
+  "scheduled": true,
+  "requires": [".yt-lockup-view-model__content-image"],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true }
+  ]
+ },
+
+ "siteSpecific_YouTube_dynamicHistorySearch": {
+  "url": "https://www.youtube.com/feed/history",
+  "scheduled": false,
+  "skip": "it searches the watch history, which is empty without a signed-in session, and the search box it reads is not served",
+  "requires": ["#input-1"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks": {
+  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+  "scheduled": true,
+  "requires": ["#above-the-fold", "#player"],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#noteBox", "count": 1 } },
+   { "expect": { "selector": "#noteArea", "count": 1 } },
+   { "expect": { "selector": "#noteTextArea", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_Google_PasteReadyBookmarkAIResponse": {
+  "url": "https://www.google.com/search?q=what+is+a+bookmarklet",
+  "scheduled": false,
+  "skip": "google.com answers a headless search from this machine with its /sorry/index bot check, so no result page renders",
+  "requires": ["#search"],
+  "permissions": ["clipboard-read", "clipboard-write"],
+  "timeout": 45000
+ },
+
+ "siteSpecific_GoogleMaps_CustomMearsureDistance": {
+  "url": "https://www.google.com/maps",
+  "scheduled": false,
+  "skip": "the map renders no scale bar for a headless load from this machine, and the bookmarklet measures against the scale bar",
+  "requires": ["canvas"],
+  "timeout": 60000
  }
 }

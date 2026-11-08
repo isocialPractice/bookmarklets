@@ -27,6 +27,13 @@
 // What the bookmarklet adds to the page still answers to the page's content security policy, so an
 // injected <style> is refused on a strict site exactly as it would be for a reader.
 //
+// An entry's url may be "fixture:<file>.html", which is a page in test/fixtures/pages served from
+// https://fixtures.test/ without a network. A real origin is what makes localStorage, the clipboard
+// and location behave as they do on a site; file:// gives an opaque origin and refuses all three.
+//
+// TEST_BM_JS_DIR and TEST_BM_CONFIG move the bookmarklet folder and the configuration file, which is
+// how test/harness.test.js runs this harness against its own fixtures. Nothing else sets them.
+//
 // Exit 0 nothing failed, 1 something failed, 2 usage or configuration error. A skip never fails a
 // run. --all and --scheduled write test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json and
 // summary.txt.
@@ -35,11 +42,34 @@ var fs = require("fs");
 var path = require("path");
 var vm = require("vm");
 
-// Repo layout.
+// Repo layout. The two folders a run reads can be moved, which is how the self-test points this
+// harness at test/fixtures and checks the harness itself rather than a copy of it.
 var rootDir = __dirname;
-var jsDir = path.join(rootDir, "JSFormatted");
-var configFile = path.join(rootDir, "test-bm.json");
+var jsDir = fromEnv("TEST_BM_JS_DIR", path.join(rootDir, "JSFormatted"));
+var configFile = fromEnv("TEST_BM_CONFIG", path.join(rootDir, "test-bm.json"));
 var resultsRoot = path.join(rootDir, "test-results", "test-bm");
+
+// Local pages, served from an origin of their own rather than opened as file:// - an opaque origin
+// refuses localStorage, the clipboard and a same-document navigation, so a bookmarklet that uses one
+// of those would fail on the fixture and work on a site. Nothing here reaches the network, and the
+// pages never change.
+var fixtureOrigin = "https://fixtures.test";
+var fixturePagesDir = path.join(rootDir, "test", "fixtures", "pages");
+var fixtureTypes = {
+ ".html": "text/html; charset=utf-8",
+ ".css": "text/css; charset=utf-8",
+ ".js": "text/javascript; charset=utf-8",
+ ".json": "application/json; charset=utf-8",
+ ".txt": "text/plain; charset=utf-8",
+ ".svg": "image/svg+xml",
+ ".png": "image/png",
+ ".gif": "image/gif",
+ ".jpg": "image/jpeg",
+ ".jpeg": "image/jpeg",
+ ".ico": "image/x-icon",
+ ".webm": "video/webm",
+ ".mp4": "video/mp4"
+};
 
 // What an entry gets when it does not say otherwise. example.com is reserved for documentation, so
 // a default run has nothing to break.
@@ -58,12 +88,19 @@ var exitConfig = 2;
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
  "timeout", "settle"];
-var stepActions = ["run", "click", "fill", "press", "wait", "expect"];
+var stepActions = ["run", "click", "fill", "press", "select", "wait", "expect"];
 var stepExtras = ["value", "text", "selector"];
-var expectKeys = ["selector", "visible", "hidden", "count", "text", "clipboard"];
+var expectKeys = ["selector", "visible", "hidden", "count", "text", "clipboard", "location"];
 
 // How the code gets into the page, worked out once per browser by chooseInjector.
 var injector = "";
+
+// A folder named by the environment, read from the repository root when it is relative.
+function fromEnv(name, fallback) {
+ var value = process.env[name];
+ if (!value || !String(value).trim()) { return fallback; }
+ return path.resolve(rootDir, String(value).trim());
+}
 
 function configError(message) {
  console.error("test-bm: " + message);
@@ -114,7 +151,31 @@ function bookmarkletName(arg) {
 
 function bookmarkletFile(name) { return path.join(jsDir, name + ".js"); }
 
+// How a path reads in a message, which is from the repository root and with forward slashes.
+function shownPath(full) { return path.relative(rootDir, full).replace(/\\/g, "/"); }
+
+// "fixture:sidebar.html#intro" -> { page: "sidebar.html", rest: "#intro" }, and null for any other
+// url. The page and what follows it are kept apart, because one names a file and one does not.
+function fixtureName(url) {
+ var m = /^fixture:([^?#]+)([?#].*)?$/.exec(String(url).trim());
+ if (!m) { return null; }
+ return { page: m[1].replace(/^\/+/, ""), rest: m[2] || "" };
+}
+
+// The url a run opens: a fixture name becomes an address on the fixture origin.
+function resolveUrl(url) {
+ var named = fixtureName(url);
+ return named === null ? String(url) : fixtureOrigin + "/" + named.page + named.rest;
+}
+
+// The file a fixture name is served from, or "" when it climbs out of the fixture folder.
+function fixtureFile(name) {
+ var full = path.resolve(fixturePagesDir, name);
+ return full.indexOf(fixturePagesDir + path.sep) === 0 ? full : "";
+}
+
 function allNames() {
+ if (!fs.existsSync(jsDir)) { configError("there is no " + shownPath(jsDir) + " to read bookmarklets from"); }
  return fs.readdirSync(jsDir)
   .filter(function (f) { return /\.js$/i.test(f); })
   .map(function (f) { return f.replace(/\.js$/i, ""); })
@@ -266,9 +327,9 @@ function readConfig() {
  try {
   raw = JSON.parse(fs.readFileSync(configFile, "utf8").replace(/^﻿/, ""));
  } catch (err) {
-  configError("test-bm.json does not parse: " + err.message);
+  configError(shownPath(configFile) + " does not parse: " + err.message);
  }
- if (!raw || typeof raw != "object" || Array.isArray(raw)) { configError("test-bm.json is not an object"); }
+ if (!raw || typeof raw != "object" || Array.isArray(raw)) { configError(shownPath(configFile) + " is not an object"); }
  var out = {};
  Object.keys(raw).forEach(function (key) {
   if (key != "$schema") { out[key] = raw[key]; }
@@ -297,6 +358,7 @@ function validateStep(step, where, problems) {
  if (action == "run" && step.run !== true) { problems.push(where + ": run takes true"); }
  if (action == "click" && typeof step.click != "string") { problems.push(where + ": click takes a selector"); }
  if (action == "press" && typeof step.press != "string") { problems.push(where + ": press takes a key"); }
+ if (action == "select" && typeof step.select != "string") { problems.push(where + ": select takes a selector"); }
  if (action == "wait" && typeof step.wait != "number" && typeof step.wait != "string") {
   problems.push(where + ": wait takes milliseconds or a selector");
  }
@@ -317,12 +379,14 @@ function validateStep(step, where, problems) {
   Object.keys(want).forEach(function (k) {
    if (expectKeys.indexOf(k) < 0) { problems.push(where + ": expect has no " + k); }
   });
-  if (want.clipboard === undefined && typeof want.selector != "string") {
-   problems.push(where + ": expect takes a selector, or a clipboard value");
+  var valueOnly = want.clipboard !== undefined || want.location !== undefined;
+  if (!valueOnly && typeof want.selector != "string") {
+   problems.push(where + ": expect takes a selector, a clipboard value, or a location");
   }
-  if (want.clipboard === undefined && want.visible === undefined && want.hidden === undefined
+  if (want.location !== undefined && typeof want.location != "string") { problems.push(where + ": location takes a string"); }
+  if (!valueOnly && want.visible === undefined && want.hidden === undefined
    && want.count === undefined && want.text === undefined) {
-   problems.push(where + ": expect takes visible, hidden, count, text or clipboard");
+   problems.push(where + ": expect takes visible, hidden, count, text, clipboard or location");
   }
   if (want.count !== undefined && typeof want.count != "number") { problems.push(where + ": count takes a number"); }
   if (want.visible !== undefined && want.visible !== true) { problems.push(where + ": visible takes true - for the other way round, ask for hidden"); }
@@ -334,7 +398,7 @@ function validateConfig(config, names) {
  var problems = [];
  Object.keys(config).forEach(function (name) {
   if (names.indexOf(name) < 0) {
-   problems.push(name + ": there is no JSFormatted/" + name + ".js");
+   problems.push(name + ": there is no " + shownPath(bookmarkletFile(name)));
    return;
   }
   var entry = config[name];
@@ -346,6 +410,17 @@ function validateConfig(config, names) {
    if (entryKeys.indexOf(key) < 0) { problems.push(name + ": unknown property " + key); }
   });
   if (entry.url !== undefined && typeof entry.url != "string") { problems.push(name + ": url takes a string"); }
+  if (typeof entry.url == "string") {
+   var fixture = fixtureName(entry.url);
+   if (fixture !== null) {
+    var page = fixtureFile(fixture.page);
+    if (!page) {
+     problems.push(name + ": " + entry.url + " reaches outside " + shownPath(fixturePagesDir));
+    } else if (!fs.existsSync(page)) {
+     problems.push(name + ": there is no " + shownPath(page));
+    }
+   }
+  }
   if (entry.scheduled !== undefined && typeof entry.scheduled != "boolean") { problems.push(name + ": scheduled takes true or false"); }
   if (entry.skip !== undefined && (typeof entry.skip != "string" || !entry.skip.length)) { problems.push(name + ": skip takes a reason"); }
   if (entry.timeout !== undefined && typeof entry.timeout != "number") { problems.push(name + ": timeout takes milliseconds"); }
@@ -378,7 +453,7 @@ function validateConfig(config, names) {
    }
   }
  });
- if (problems.length) { configError("test-bm.json:\n  " + problems.join("\n  ")); }
+ if (problems.length) { configError(shownPath(configFile) + ":\n  " + problems.join("\n  ")); }
 }
 
 // ----------------------------------------------------------------------------------------------- //
@@ -434,6 +509,31 @@ async function inject(page, code, name) {
  } finally {
   await cdp.detach().catch(function () { });
  }
+}
+
+// Every request to the fixture origin is answered from test/fixtures/pages, so a fixture entry needs
+// no network and cannot be changed by anyone but this repository. A path that is missing, or that
+// climbs out of the folder, is a 404 the page sees rather than a crash the run reports.
+async function serveFixtures(page) {
+ await page.route(fixtureOrigin + "/**", async function (route) {
+  var asked = "";
+  try {
+   asked = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\/+/, "");
+  } catch (err) {
+   asked = "";
+  }
+  var file = fixtureFile(asked || "index.html");
+  if (!file || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+   await route.fulfill({ status: 404, contentType: "text/plain; charset=utf-8",
+    body: "no fixture page: " + (asked || "index.html") }).catch(function () { });
+   return;
+  }
+  await route.fulfill({
+   status: 200,
+   contentType: fixtureTypes[path.extname(file).toLowerCase()] || "application/octet-stream",
+   body: fs.readFileSync(file)
+  }).catch(function () { });
+ });
 }
 
 // The whole entry inside its own time limit, so a page that never settles cannot hold up a
@@ -529,6 +629,14 @@ async function checkRequires(page, ctx) {
 }
 
 async function doExpect(page, ctx, want, where) {
+ if (want.location !== undefined) {
+  var at = page.url();
+  if (at.indexOf(String(want.location)) < 0) {
+   throw failure(where + ": the page is at " + JSON.stringify(cut(at)) + ", which does not hold "
+    + JSON.stringify(cut(want.location)));
+  }
+  return;
+ }
  if (want.clipboard !== undefined) {
   var held;
   try {
@@ -579,6 +687,33 @@ async function doExpect(page, ctx, want, where) {
  }
 }
 
+// A selection, which is what the bookmarklets that style selected text read. Dragging the mouse
+// across the text selects whatever happens to lie under the pointer, so the range is set in the page
+// instead. Nothing is focused afterwards, so the keys a bookmarklet listens for still reach the body.
+async function selectText(page, selector) {
+ await page.waitForSelector(selector, { state: "attached" });
+ var held = await page.evaluate(function (sel) {
+  var el = document.querySelector(sel);
+  if (!el) { return ""; }
+  var range = document.createRange();
+  // A drag across a paragraph leaves the range inside the text node, and a bookmarklet that asks
+  // for the selection parent reads that node. selectNodeContents would hand it the element
+  // instead, which is a shape no reader can produce and which several of these refuse.
+  var first = el.firstChild, last = el.lastChild;
+  if (first && first.nodeType === 3 && first === last) {
+   range.setStart(first, 0);
+   range.setEnd(last, String(last.nodeValue).length);
+  } else {
+   range.selectNodeContents(el);
+  }
+  var selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return String(selection);
+ }, selector);
+ if (!held.trim()) { throw failure("there is no text to select in " + selector); }
+}
+
 async function doStep(page, ctx, step, index) {
  var where = "step " + index;
  if (step.run) { return runBookmarklet(page, ctx); }
@@ -594,6 +729,7 @@ async function doStep(page, ctx, step, index) {
   if (typeof step.selector == "string") { return page.press(step.selector, step.press); }
   return page.keyboard.press(step.press);
  }
+ if (step.select !== undefined) { return selectText(page, step.select); }
  if (step.wait !== undefined) {
   if (typeof step.wait == "number") { return page.waitForTimeout(step.wait); }
   return page.waitForSelector(step.wait, { state: "attached" });
@@ -648,7 +784,7 @@ async function runOne(browser, name, entry) {
 
  var file = bookmarkletFile(name);
  if (!fs.existsSync(file)) {
-  return close("fail", "not found: " + path.relative(rootDir, file).replace(/\\/g, "/"));
+  return close("fail", "not found: " + shownPath(file));
  }
  if (entry && entry.skip) { return close("skip", entry.skip); }
 
@@ -664,7 +800,7 @@ async function runOne(browser, name, entry) {
  var ctx = {
   name: name,
   check: check,
-  url: (entry && entry.url) || defaultUrl,
+  url: resolveUrl((entry && entry.url) || defaultUrl),
   timeout: (entry && typeof entry.timeout == "number") ? entry.timeout : defaultTimeout,
   settle: (entry && typeof entry.settle == "number") ? entry.settle : defaultSettle,
   requires: (entry && entry.requires) || [],
@@ -687,6 +823,15 @@ async function runOne(browser, name, entry) {
  }
  page.setDefaultTimeout(Math.min(ctx.timeout, requiresTimeout));
  attachListeners(page, result, ctx);
+
+ if (ctx.url.indexOf(fixtureOrigin + "/") === 0) {
+  try {
+   await serveFixtures(page);
+  } catch (err) {
+   await context.close().catch(function () { });
+   return close("fail", "the fixture pages could not be served: " + firstLine(err));
+  }
+ }
 
  try {
   await withTimeout(playEntry(page, ctx), ctx.timeout + ctx.settle,
@@ -849,7 +994,7 @@ async function main() {
   queue = names.filter(function (n) { return config[n] && config[n].scheduled === true; });
  } else {
   if (!fs.existsSync(bookmarkletFile(options.name))) {
-   configError("not found: JSFormatted/" + options.name + ".js");
+   configError("not found: " + shownPath(bookmarkletFile(options.name)));
   }
   queue = [options.name];
  }
@@ -879,7 +1024,7 @@ async function main() {
  if (batch) {
   var dir = writeReport(results, options.mode, started, new Date());
   console.log(tally(counts));
-  console.log("report: " + path.relative(rootDir, dir).replace(/\\/g, "/"));
+  console.log("report: " + shownPath(dir));
  }
  process.exit(counts.failed ? exitFailed : exitOk);
 }

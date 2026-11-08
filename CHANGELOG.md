@@ -6,6 +6,76 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.08.2026]
+
+### Added
+
+- `test/harness.test.js`, a `node --test` suite that runs `test-bm.js` against
+  nine fixture bookmarklets whose verdict is known before the run starts, so
+  the harness is checked rather than trusted.
+  - One fixture per thing the harness can say: a bookmarklet that works and
+    turns itself off on a second run, one that throws, one carrying a `//`
+    comment, one holding an `i%16` modulo, one missing the semicolon between
+    two statements, one whose line runs into the line below it, one that works
+    on a page raising errors of its own, one that needs a real origin, and one
+    that reads a selection.
+  - Each assertion is the verdict and the part of the reason `test-bm.js`
+    writes, never the part V8 writes, so a Chromium that rewords a syntax
+    error does not fail the suite.
+  - The suite spends one browser launch on one `--all` run and reads the
+    report, which is why thirteen checks take three seconds.
+  - `npm test` runs it ahead of the bookmarklets themselves, as
+    `npm run test:harness` and `npm run test:bookmarklets`.
+- Fixture pages in `test/fixtures/pages/`, served from `https://fixtures.test/`
+  by `page.route` rather than opened as `file://`.
+  - An entry's `url` takes the form `fixture:<file>.html`, with a hash after
+    the file name where one is wanted. A fixture naming a page that is not
+    there, or one that climbs out of the folder, is a configuration error
+    before any browser opens.
+  - A real origin is the point of it: `file://` gives an opaque origin, which
+    refuses local storage, the clipboard and a same-document navigation, so a
+    bookmarklet using any of those would fail on the fixture and work on a
+    site.
+  - Nine pages, each self-contained: an article, a table, a form, a sidebar, a
+    video, a page whose loader never finishes, a long page with a scroll
+    offset readout, a small page holding one of each thing a converter has to
+    handle, and an index listing them. Nothing on any of them reaches the
+    network.
+- A `select` step, which selects an element's text the way a reader drags
+  across it. The range is set inside the element's text node, because that is
+  the shape a drag leaves and the shape the bookmarklets that style selected
+  text refuse to work without.
+- An `expect` taking a `location`, for a bookmarklet that navigates.
+- `TEST_BM_JS_DIR` and `TEST_BM_CONFIG`, which move the bookmarklet folder and
+  the configuration file. Only the self-test sets them.
+- `test-bm.json` entries for forty four bookmarklets, up from one.
+  - Every bookmarklet that works on any page: the effect is asserted, not
+    merely the absence of a crash. An element hidden, a panel added, a
+    notebox that collapses when its button is clicked, text wrapped in
+    `<strong>`, a clipboard holding the exact markdown produced, a page that
+    moved five hundred pixels.
+  - The public site-specific bookmarklets for GitHub, Stack Overflow,
+    w3Schools, YouTube, Google and Google Maps. Each `requires` lists the
+    selectors its bookmarklet reads, so a redesign is reported as
+    `site changed: <selector> not found` rather than as a crash.
+  - Thirty three are `scheduled: true`. Ten are skipped with the reason:
+    Stack Overflow answers a headless load with a Cloudflare challenge,
+    Google answers a headless search with its bot check, Google Maps renders
+    no scale bar, and six YouTube bookmarklets need a signed-in session, a
+    shorts shelf, or a notebox another bookmarklet adds.
+  - The forty fourth, the markdown converter, runs and passes but is
+    `scheduled: false` with no skip: it loads turndown and the GFM plugin from
+    unpkg.com, so a scheduled run of it would depend on a third party.
+
+### Changed
+
+- A path in a `test-bm.js` message is now written from the repository root
+  through one helper, so moving the bookmarklet folder or the configuration
+  file does not leave `JSFormatted/` or `test-bm.json` in the text of an error
+  about a different one.
+- A missing bookmarklet folder is reported as a configuration error instead of
+  a stack trace.
+
 ## [11.07.2026]
 
 ### Added
