@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Self-test page: a page with its own errors</title>
+ <meta name="description" content="A self-test page that logs a console error and throws an uncaught error of its own, so the harness can be shown not to blame a bookmarklet for either.">
+ <link rel="stylesheet" href="fixture.css">
+</head>
+<body>
+ <header class="page">
+  <h1>A page with its own errors</h1>
+  <p>This one is for the harness, not for practice. It breaks on purpose.</p>
+ </header>
+
+ <main>
+  <h2>What it does</h2>
+  <p>It writes a console error and throws an uncaught error, neither of which has anything to do
+   with a bookmarklet. A run on this page should still pass, with both recorded against the page.</p>
+  <p id="target">A paragraph for a bookmarklet to change.</p>
+ </main>
+
+ <script>
+  /* The page's own noise, raised after the listeners are attached and before the run settles. */
+  setTimeout(function () {
+   console.error("self-test page: a console error of the page's own");
+   throw new Error("self-test page: an uncaught error of the page's own");
+  }, 0);
+ </script>
+</body>
+</html>

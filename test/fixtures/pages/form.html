@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Practice page: a form</title>
+ <meta name="description" content="A practice page with a form, for trying the bookmarklets that read or style what is on a page.">
+ <link rel="stylesheet" href="fixture.css">
+</head>
+<body>
+ <header class="page">
+  <h1>Rider survey</h1>
+  <p>A practice page. The form goes nowhere: submitting it reloads this page and nothing is sent.</p>
+ </header>
+
+ <main>
+  <div class="try">
+   <h3>Try these on this page</h3>
+   <ul>
+    <li><strong>Note - take page notes</strong>: a notebox you can drag over the form.</li>
+    <li><strong>Clutter - click to hide</strong>: hide a question you would not answer.</li>
+   </ul>
+  </div>
+
+  <h2>About your journey</h2>
+  <form action="form.html" method="get">
+   <label for="name">Name</label>
+   <input id="name" name="name" type="text" value="Jane Doe" autocomplete="off">
+
+   <label for="email">Email</label>
+   <input id="email" name="email" type="email" value="jane.doe@example.com" autocomplete="off">
+
+   <label for="route">Route you use most</label>
+   <select id="route" name="route">
+    <option value="eastern">Eastern loop</option>
+    <option value="western">Western loop</option>
+    <option value="school">School service</option>
+   </select>
+
+   <label for="boardings">Boardings on an ordinary weekday</label>
+   <input id="boardings" name="boardings" type="number" min="0" max="20" value="3">
+
+   <label for="comment">Anything else</label>
+   <textarea id="comment" name="comment" rows="4">The stop outside the library needs a light.</textarea>
+
+   <button type="submit">Send the survey</button>
+  </form>
+
+  <h2>What happens to it</h2>
+  <p>Nothing. The form's action is this page, so the browser reloads it with the answers in the
+   address bar and no request reaches anybody. That is deliberate: a practice page that posted
+   somewhere would be a practice page you had to trust.</p>
+ </main>
+
+ <footer class="page">
+  <a href="index.html">All practice pages</a>
+ </footer>
+</body>
+</html>

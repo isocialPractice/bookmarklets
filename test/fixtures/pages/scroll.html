@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Practice page: a long page</title>
+ <meta name="description" content="A long practice page with a scroll offset readout, for trying the bookmarklets that scroll or page down.">
+ <link rel="stylesheet" href="fixture.css">
+</head>
+<body>
+ <header class="page">
+  <h1>Patronage log</h1>
+  <p>A practice page, long on purpose. The readout in the corner is this page's own, not a
+   bookmarklet's.</p>
+ </header>
+
+ <output class="readout" id="offset" aria-live="off">offset 0 (at the top)</output>
+
+ <main>
+  <div class="try">
+   <h3>Try these on this page</h3>
+   <ul>
+    <li><strong>PageOffset - custom page down</strong>: click anywhere and the page moves down by 500 pixels.</li>
+    <li><strong>Sidebar - fix and scroll the side menu</strong>: nothing to fix here, which is also worth seeing.</li>
+   </ul>
+  </div>
+
+  <h2>Weekly figures</h2>
+  <p>Fifty two weeks of invented boardings, so there is something to scroll through.</p>
+  <ol id="weeks"></ol>
+
+  <h2>End of the log</h2>
+  <p>If you reached this by clicking, the page-down bookmarklet is working.</p>
+ </main>
+
+ <footer class="page">
+  <a href="index.html">All practice pages</a>
+ </footer>
+
+ <script>
+  /* Fill the log, so the page is long without fifty two paragraphs in the source. */
+  (function () {
+   var weeks = document.getElementById("weeks");
+   var out = [];
+   for (var i = 1; i <= 52; i++) {
+    out.push("<li>Week " + i + ": " + (1800 + ((i * 137) % 900)) + " boardings, "
+     + (i % 7 === 0 ? "a market week" : "an ordinary week") + ".</li>");
+   }
+   weeks.innerHTML = out.join("");
+  })();
+
+  /* Show the scroll offset, so a bookmarklet that scrolls the page can be seen to have done it. */
+  (function () {
+   var readout = document.getElementById("offset");
+   function show() {
+    var at = Math.round(window.pageYOffset);
+    readout.textContent = "offset " + at + (at > 0 ? " (scrolled)" : " (at the top)");
+   }
+   window.addEventListener("scroll", show, { passive: true });
+   show();
+  })();
+ </script>
+</body>
+</html>

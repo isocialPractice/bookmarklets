@@ -1,0 +1,95 @@
+/* Shared styling for the practice pages. One stylesheet, linked rather than inlined, so a page's
+   head holds no style element of its own and a bookmarklet that adds one is easy to see. */
+
+:root {
+ --ink: #22272e;
+ --quiet: #57606a;
+ --rule: #d8dee4;
+ --tint: #f6f8fa;
+ --link: #0969da;
+}
+
+* { box-sizing: border-box; }
+
+body {
+ margin: 0;
+ font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+ font-size: 16px;
+ line-height: 1.6;
+ color: var(--ink);
+ background: #fff;
+}
+
+header.page {
+ padding: 24px 32px 16px;
+ border-bottom: 1px solid var(--rule);
+ background: var(--tint);
+}
+
+header.page p { margin: 4px 0 0; color: var(--quiet); }
+
+main { max-width: 760px; padding: 24px 32px 64px; margin: 0; }
+
+h1 { font-size: 28px; margin: 0; }
+h2 { font-size: 22px; margin-top: 32px; border-bottom: 1px solid var(--rule); padding-bottom: 4px; }
+h3 { font-size: 18px; margin-top: 24px; }
+
+a { color: var(--link); }
+
+table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+caption { text-align: left; font-weight: 600; padding-bottom: 8px; }
+th, td { border: 1px solid var(--rule); padding: 6px 10px; text-align: left; }
+thead th { background: var(--tint); }
+
+label { display: block; margin-top: 12px; font-weight: 600; }
+input, select, textarea { width: 100%; max-width: 360px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 4px; font: inherit; }
+button { margin-top: 16px; padding: 8px 16px; border: 1px solid var(--rule); border-radius: 4px; background: var(--tint); font: inherit; cursor: pointer; }
+
+.try {
+ margin: 16px 0;
+ padding: 12px 16px;
+ border-left: 4px solid var(--link);
+ background: var(--tint);
+}
+.try h3 { margin-top: 0; }
+.try ul { margin: 8px 0 0; padding-left: 20px; }
+
+.layout { display: grid; grid-template-columns: 1fr; gap: 0; }
+@media (min-width: 720px) { .layout { grid-template-columns: 220px 1fr; } }
+
+nav.side {
+ padding: 24px 16px;
+ border-bottom: 1px solid var(--rule);
+ background: var(--tint);
+}
+@media (min-width: 720px) { nav.side { border-bottom: 0; border-right: 1px solid var(--rule); min-height: 100vh; } }
+nav.side h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--quiet); border: 0; margin: 0 0 8px; }
+nav.side ul { list-style: none; margin: 0; padding: 0; }
+nav.side li { margin: 4px 0; }
+
+figure { margin: 16px 0; }
+figcaption { color: var(--quiet); font-size: 14px; }
+video { width: 100%; max-width: 560px; background: #000; border-radius: 6px; }
+iframe { width: 100%; height: 320px; border: 1px solid var(--rule); border-radius: 6px; }
+
+.lazy_loader {
+ margin: 24px 0;
+ padding: 16px;
+ border: 1px dashed var(--rule);
+ border-radius: 6px;
+ color: var(--quiet);
+ text-align: center;
+}
+
+.readout {
+ position: fixed;
+ top: 8px;
+ right: 8px;
+ padding: 8px 12px;
+ border: 1px solid var(--rule);
+ border-radius: 6px;
+ background: #fff;
+ font-variant-numeric: tabular-nums;
+}
+
+footer.page { padding: 16px 32px; border-top: 1px solid var(--rule); color: var(--quiet); font-size: 14px; }

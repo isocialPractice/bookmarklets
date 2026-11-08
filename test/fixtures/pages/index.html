@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Practice pages</title>
+ <meta name="description" content="Pages for trying the bookmarklets that work on any page, and the same pages the test harness runs against.">
+ <link rel="stylesheet" href="fixture.css">
+</head>
+<body>
+ <header class="page">
+  <h1>Practice pages</h1>
+  <p>Pages to try the bookmarklets on, and the pages the test harness runs against. One set, so a
+   page a reader can try is a page a test has already checked.</p>
+ </header>
+
+ <main>
+  <h2>The pages</h2>
+  <ul>
+   <li><a href="article.html">An article</a> - headings, long text and links.</li>
+   <li><a href="table.html">A table</a> - two tables, an image and a column of links.</li>
+   <li><a href="form.html">A form</a> - text, a number, a select and a textarea. It sends nothing.</li>
+   <li><a href="sidebar.html">A sidebar</a> - a side navigation and anchor links.</li>
+   <li><a href="video.html">A video</a> - a player and an embedded frame.</li>
+   <li><a href="lazy.html">A page that keeps loading</a> - a loader that never finishes.</li>
+   <li><a href="scroll.html">A long page</a> - fifty two sections and a scroll offset readout.</li>
+   <li><a href="snippet.html">One of each</a> - a heading, a list, a table, a link and an image, and nothing else.</li>
+  </ul>
+
+  <h2>Nothing here reaches the network</h2>
+  <p>Every page is self-contained: one stylesheet, inline images, and no script beyond the two that
+   fill the long page and show its scroll offset. The harness serves them from an origin of its
+   own, so the clipboard and local storage behave as they would on a real site while nothing is
+   fetched.</p>
+
+  <h2>Installing a bookmarklet</h2>
+  <p>Each page lists what to try on it. The bookmarklets themselves, and how to install one, are in
+   the <a href="https://github.com/isocialPractice/bookmarklets">repository README</a>.</p>
+ </main>
+
+ <footer class="page">
+  Practice pages for the bookmarklets repository.
+ </footer>
+</body>
+</html>

@@ -1,0 +1,60 @@
+{
+ "$schema": "../../test-bm.schema.json",
+
+ "fixture_Pass_AddsAPanel": {
+  "url": "fixture:article.html",
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#panel--__-unlikely_-_name-__--fixturePassAddsAPanel", "count": 1 } },
+   { "expect": { "selector": "#panel--__-unlikely_-_name-__--fixturePassAddsAPanel", "text": "the fixture ran" } },
+   { "run": true },
+   { "expect": { "selector": "#panel--__-unlikely_-_name-__--fixturePassAddsAPanel", "count": 0 } }
+  ]
+ },
+
+ "fixture_PageNoise_PageLogsItsOwnError": {
+  "url": "fixture:self-test-noisy.html",
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#target", "text": "the fixture ran" } }
+  ],
+  "settle": 1000
+ },
+
+ "fixture_Origin_UsesStorageAndLocation": {
+  "url": "fixture:self-test-noisy.html",
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#target", "text": "kept at https://fixtures.test" } }
+  ]
+ },
+
+ "fixture_Selection_AnchorsTheSelection": {
+  "url": "fixture:article.html",
+  "steps": [
+   { "select": "p.try-styling" },
+   { "run": true },
+   { "expect": { "location": "#selected=Six%20routes%20cross" } }
+  ]
+ },
+
+ "fixture_Throw_ReadsAMissingThing": {
+  "url": "fixture:article.html"
+ },
+
+ "fixture_Comment_LineCommentSwallowsIt": {
+  "url": "fixture:article.html"
+ },
+
+ "fixture_Percent_ModuloSixteen": {
+  "url": "fixture:article.html"
+ },
+
+ "fixture_Semicolon_MissingBetweenTwoLines": {
+  "url": "fixture:article.html"
+ },
+
+ "fixture_Junction_RunsIntoTheLineBelow": {
+  "url": "fixture:article.html"
+ }
+}

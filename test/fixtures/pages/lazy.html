@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Practice page: a page that keeps loading</title>
+ <meta name="description" content="A practice page with a lazy loader at the foot of the list, for trying the bookmarklets that stop a page parsing more of itself.">
+ <link rel="stylesheet" href="fixture.css">
+</head>
+<body>
+ <header class="page">
+  <h1>Patronage notes, newest first</h1>
+  <p>A practice page. The list ends in a loader that never finishes, which is the point of it.</p>
+ </header>
+
+ <main>
+  <div class="try">
+   <h3>Try these on this page</h3>
+   <ul>
+    <li><strong>Parse - stop page parsing</strong>: hides the loader at the foot of the list.</li>
+    <li><strong>Parse - stop page parsing at the parsed height</strong>: the same, and holds the height.</li>
+   </ul>
+  </div>
+
+  <h2>Notes</h2>
+  <ul id="feed">
+   <li>Tuesday: the library stop took 268 boardings, which is a record for a weekday.</li>
+   <li>Monday: the valley was closed by snow until half past nine.</li>
+   <li>Sunday: no school services, so the fleet ran four short.</li>
+   <li>Saturday: the market doubled the Springfield Market stop, as it does every week.</li>
+   <li>Friday: Acme Works changed shift an hour early and nobody told the depot.</li>
+   <li>Thursday: an umbrella went in the cupboard by the gate.</li>
+   <li>Wednesday: the radio reached the valley for eleven minutes, which nobody can explain.</li>
+  </ul>
+
+  <span></span>
+  <div class="lazy_loader">Loading more notes...</div>
+
+  <h2>Why it never finishes</h2>
+  <p>There is nothing behind the loader. A real page would fetch the next batch and replace it; this
+   one leaves it spinning so the bookmarklets that look for a loader have one to find.</p>
+ </main>
+
+ <footer class="page">
+  <a href="index.html">All practice pages</a>
+ </footer>
+</body>
+</html>

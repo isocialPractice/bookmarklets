@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Practice page: a video</title>
+ <meta name="description" content="A practice page with a video player and an embedded frame, for trying the video note-taking bookmarklets.">
+ <link rel="stylesheet" href="fixture.css">
+</head>
+<body>
+ <header class="page">
+  <h1>Depot walkthrough</h1>
+  <p>A practice page. The player carries no footage, which is all these bookmarklets need from it.</p>
+ </header>
+
+ <main>
+  <div class="try">
+   <h3>Try these on this page</h3>
+   <ul>
+    <li><strong>Video - take video notes</strong>: adds a notebox beside the player.</li>
+    <li><strong>Note - take page notes</strong>: the same notebox without the player part.</li>
+   </ul>
+  </div>
+
+  <h2>The player</h2>
+  <figure>
+   <video controls preload="none" title="Depot walkthrough"
+    poster="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NjAgMzE1Ij48cmVjdCB3aWR0aD0iNTYwIiBoZWlnaHQ9IjMxNSIgZmlsbD0iIzIyMjcyZSIvPjxwb2x5Z29uIHBvaW50cz0iMjUwLDEyMCAzMjUsMTU4IDI1MCwxOTUiIGZpbGw9IiNmNmY4ZmEiLz48dGV4dCB4PSIyODAiIHk9IjI0NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiNkOGRlZTQiPnByYWN0aWNlIHBsYXllciAtIG5vIGZvb3RhZ2U8L3RleHQ+PC9zdmc+"></video>
+   <figcaption>A player with a poster and no source. The bookmarklets here look for the element,
+    not for footage, so nothing has to be downloaded.</figcaption>
+  </figure>
+
+  <h2>An embedded frame</h2>
+  <p>Some of these bookmarklets treat a frame the way they treat a player, so there is one of each
+   on this page.</p>
+  <figure>
+   <iframe src="article.html" title="The field notes practice page, embedded"></iframe>
+   <figcaption>The field notes page, embedded from the same origin.</figcaption>
+  </figure>
+
+  <h2>Taking notes</h2>
+  <p>The note-taking bookmarklets keep what you type in the page and nowhere else, so reloading
+   loses it. That is worth knowing before you write anything long in one.</p>
+ </main>
+
+ <footer class="page">
+  <a href="index.html">All practice pages</a>
+ </footer>
+</body>
+</html>

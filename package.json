@@ -4,7 +4,9 @@
   "description": "A running list of browser bookmarklets, with a Playwright harness that checks each one still works.",
   "license": "MIT",
   "scripts": {
-    "test": "node test-bm.js --all",
+    "test": "npm run test:harness && npm run test:bookmarklets",
+    "test:harness": "node --test test/harness.test.js",
+    "test:bookmarklets": "node test-bm.js --all",
     "test:scheduled": "node test-bm.js --scheduled"
   },
   "devDependencies": {

@@ -19,8 +19,9 @@
    "properties": {
     "url": {
      "type": "string",
-     "description": "The page to open. Defaults to https://example.com/, which is reserved for documentation.",
-     "default": "https://example.com/"
+     "description": "The page to open. Defaults to https://example.com/, which is reserved for documentation. A url of the form fixture:<file>.html is a page in test/fixtures/pages, served from https://fixtures.test/ without a network: a real origin, so localStorage, the clipboard and location behave as they do on a site. A hash may follow the file name. A fixture naming a page that is not there is a configuration error.",
+     "default": "https://example.com/",
+     "examples": ["https://example.com/", "fixture:article.html", "fixture:sidebar.html#intro"]
     },
     "scheduled": {
      "type": "boolean",
@@ -67,7 +68,7 @@
   },
   "step": {
    "type": "object",
-   "description": "One thing to do. Exactly one of run, click, fill, press, wait or expect.",
+   "description": "One thing to do. Exactly one of run, click, fill, press, select, wait or expect.",
    "additionalProperties": false,
    "properties": {
     "run": {
@@ -100,6 +101,12 @@
      "description": "A key to press, such as Enter or Control+c. With a selector beside it, the key goes to that element.",
      "examples": ["Enter", "Escape", "s"]
     },
+    "select": {
+     "type": "string",
+     "minLength": 1,
+     "description": "A selector whose text to select, the way a reader drags across it. The range is set inside the element's text node, which is the shape a drag leaves and the shape the bookmarklets that style selected text read.",
+     "examples": ["p.try-styling", "#weeks li:last-child"]
+    },
     "wait": {
      "description": "Milliseconds to wait, or a selector to wait for.",
      "oneOf": [{ "type": "number" }, { "type": "string", "minLength": 1 }]
@@ -122,7 +129,7 @@
   },
   "expect": {
    "type": "object",
-   "description": "What should be true. A selector that is visible or hidden, matches a count, or holds some text; or a clipboard value.",
+   "description": "What should be true. A selector that is visible or hidden, matches a count, or holds some text; or a clipboard value; or where the page is.",
    "additionalProperties": false,
    "properties": {
     "selector": { "type": "string", "minLength": 1, "description": "The elements to look at." },
@@ -130,10 +137,12 @@
     "hidden": { "const": true, "description": "The first match is not showing." },
     "count": { "type": "number", "description": "How many elements the selector matches, exactly." },
     "text": { "type": "string", "description": "Text the first match holds somewhere in it." },
-    "clipboard": { "type": "string", "description": "What the clipboard holds, trimmed at both ends. Needs clipboard-read in permissions." }
+    "clipboard": { "type": "string", "description": "What the clipboard holds, trimmed at both ends. The whole value, not a part of it. Needs clipboard-read in permissions." },
+    "location": { "type": "string", "description": "Text the page's address holds somewhere in it, for a bookmarklet that navigates. Chromium keeps a text fragment directive out of the address, so a bookmarklet that writes one is read off the page it moved instead." }
    },
    "anyOf": [
     { "required": ["clipboard"] },
+    { "required": ["location"] },
     { "required": ["selector", "visible"] },
     { "required": ["selector", "hidden"] },
     { "required": ["selector", "count"] },
