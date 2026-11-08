@@ -27,56 +27,95 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] Self-test the harness with fixture bookmarklets in `test/fixtures/`,
-  run by `node --test`
-  - One that passes; one that throws; one with a `//` comment; one with an
-    `i%16` modulo; one with a missing semicolon between two lines; one whose
-    page logs its own console error while the bookmarklet succeeds. Each
-    asserts the verdict and the reason `test-bm.js` gives.
-  - `npm test` runs these before the bookmarklets themselves.
+- [ ] Support bookmarklets for signed-in sites without keeping any sign-in in
+  the repository
+  - An `auth` property names a Playwright storage-state file in the folder
+    given by a `TEST_BM_AUTH_DIR` environment variable, which must resolve
+    outside the repository. `node test-bm.js --save-auth <file> <url>` opens a
+    headed browser, waits while the maintainer signs in, then saves the state.
+  - A missing state file makes the entry a skip with the reason, never a
+    failure, so a scheduled run on a machine without it stays green.
+  - An entry with `auth` runs read-only: no step may submit a form or send a
+    message, and the runner refuses to start if one would.
   - From: Test Harness
-- [ ] Serve local fixture pages from a fake origin instead of `file://`
-  - `page.route("https://fixtures.test/**", ...)` fulfilled from
-    `test/fixtures/pages/` gives each fixture a real origin, so
-    `localStorage`, the clipboard and `location` behave as they do on a site.
-    It also needs no network and never changes.
-  - `url` accepts `fixture:<file>.html` as shorthand for that origin.
-  - The same pages are the deployed site's practice pages
-    (`## Improve GitHub Pages Site`), so they stay presentable to a reader.
-  - From: Test Harness
-- [ ] Write entries for the bookmarklets that work on any page: `dom_`, `nav_`,
-  `style_` and `window_`
-  - Use `fixture:` pages where `https://example.com/` lacks what the
-    bookmarklet needs, such as tables, headings, a sidebar, a video or a form.
-    It no longer serves an `h1` either, so a heading is one of them.
-  - Assert the effect: an element hidden, text wrapped in `<b>`, a panel added,
-    a clipboard value written. Mark each `"scheduled": true`; these never
-    depend on a third-party site.
+- [ ] Write entries for the signed-in site-specific bookmarklets: ChatGPT,
+  Gmail and Amazon, each with `auth` and `"scheduled": false`
+  - Four of the five failures the 11.08.2026 `--all` run reported are these
+    bookmarklets meeting `https://example.com/`, which is the absence of an
+    entry rather than a fault.
   - From: Test Configurations
-- [ ] Write entries for the public site-specific bookmarklets: GitHub, Stack
-  Overflow, w3Schools, YouTube, Google and Google Maps
-  - Each lists in `requires` every selector the bookmarklet reads, taken from
-    its source rather than from memory.
-  - Pick pages that load signed out and are unlikely to move, such as this
-    repository's own GitHub page.
-  - Mark `"scheduled": true` only where the page loads headless without a
-    consent wall or bot check from this machine. YouTube and Google serve
-    consent pages in some regions; an entry that cannot get past one is
-    `scheduled: false` with the reason in `skip`.
+- [ ] Let `url` read an environment variable, as in `"url": "$OCTOPRINT_URL"`,
+  and write the OctoPrint entry with it
+  - OctoPrint runs on a printer on the maintainer's own network, so its address
+    does not belong in the repository. An unset variable is a skip.
   - From: Test Configurations
-- [ ] Run `node test-bm.js --all` once and file every failure as its own item
-  under `## Existing Bookmarklets`, with `**Issue**` and `**Goal**` nested
-  - The README's status line already says some existing bookmarklets may not
-    work. This run is what turns that into a list of which ones.
-  - Worked last of this batch on purpose. The run on 11.07.2026 failed 13 of
-    54, and every one was a site-specific bookmarklet meeting a bare page
-    rather than a defect, so the entries above come first and this run reports
-    what is left.
-  - From: Test Configurations
+- [ ] `siteSpecific_YouTube_WatchRandomVideo.js` finds no videos on the home
+  feed, so it opens nothing
+  - **Issue**: It reads the home feed through
+    `.yt-lockup-view-model__content-image`, which YouTube no longer serves. The
+    entry fails with `site changed: .yt-lockup-view-model__content-image not
+    found on https://www.youtube.com/`, and the class carries a `HOT-GLUE - may
+    change` comment in the source saying this was expected.
+  - **Goal**: Read what the signed-out home feed serves now, take the link from
+    that, and keep the entry's `requires` naming whatever replaces it so the next
+    redesign is reported the same way rather than as a silent no-op.
+  - From: Existing Bookmarklets
 
 ### Create and Deploy GitHub Pages Override
 
 - No site
+
+### UI/UX Override - practice pages
+
+#### Resolve Issues
+
+- [ ] Practice Page Presentation 1
+  - Three things a reader meets on the practice pages before they meet a
+    bookmarklet: a heading level skipped on six of the nine, a table that
+    scrolls the document sideways on a phone, and a readout that sits on top
+    of the text it is reporting on.
+  - **Issue**: Measured headlessly on 11.08.2026 at 1280x720 and 400x720, from
+    `https://fixtures.test`. (1) The "Try these on this page" box is an `<h3>`
+    above the page's first `<h2>`, so the outline runs h1 then h3 then h2 on
+    `article.html`, `table.html`, `form.html`, `video.html`, `lazy.html` and
+    `scroll.html`; `sidebar.html` escapes it only because `nav.side` carries
+    its own `<h2>Contents</h2>` earlier. (2) `table.html` at 400px reports
+    `scrollWidth` 446 against `clientWidth` 400, giving the document a
+    horizontal scrollbar and clipping the Notes column mid-word. (3)
+    `scroll.html` at 400px, scrolled to 900, has the opaque fixed `.readout`
+    covering "Week 7: 1859 boardings, a market week." and "Week 8: 1996
+    boardings, an ordinary week." outright; at 1280px `main` is narrow enough
+    to clear it, so it is the narrow viewport only.
+  - **Goal**: Resolve to [practice-page-presentation.prompt.md](.claude/prompts/practice-page-presentation.prompt.md)
+  - From: Test Harness
+
+#### Found Issues
+
+- [ ] No test pins the practice pages' presentation
+  - **Issue**: `node test-bm.js --scheduled` proves the bookmarklets still work
+    on these pages, and `test/harness.test.js` proves the harness reads them
+    correctly, but nothing asserts the pages are fit to show a reader. All
+    three defects above were present the moment the pages were committed and
+    the suite stayed green. They are also the pages the deployed site will link
+    to once `## Improve GitHub Pages Site` adds the gallery, so a regression
+    here is public.
+  - **Goal**: Add `test/pages.test.js` in the `node --test` style
+    `test/harness.test.js` already uses, driving `playwright` directly and
+    serving `test/fixtures/pages/` from `https://fixtures.test` the way
+    `serveFixtures` in `test-bm.js` does. Load all nine pages at 1280x720 and
+    400x720 and assert: one `h1` per page; the heading outline never skips a
+    level going down; `documentElement.scrollWidth <= clientWidth`; the "All
+    practice pages" link returns 200 and reaches the index; every link the
+    index lists resolves; every form control has a visible label tied by
+    `for`/`id`; each table has a caption and a header row; and no text run
+    intersects a fixed overlay, measured with `Range.getClientRects()` per text
+    node rather than element boxes. Add it to the `test` script in
+    `package.json` beside `test:harness`, since `node --test` is pointed at one
+    named file on purpose. The verification run's throwaway script did exactly
+    this and its assertions are listed in
+    `test-results/ui-ux-tester.agent/ui-ux-tester.log`; it was not promoted
+    because it fails until the item above is fixed.
+  - From: UI/UX Override - practice pages
 
 ## Test Harness
 
@@ -107,21 +146,6 @@ browser for the same result.
     anyone scrubbing through it.
   - A failure always keeps its after screenshot, captured or not.
   - These captures are also the footage for `## Short Videos`.
-- [ ] Self-test the harness with fixture bookmarklets in `test/fixtures/`,
-  run by `node --test`
-  - One that passes; one that throws; one with a `//` comment; one with an
-    `i%16` modulo; one with a missing semicolon between two lines; one whose
-    page logs its own console error while the bookmarklet succeeds. Each
-    asserts the verdict and the reason `test-bm.js` gives.
-  - `npm test` runs these before the bookmarklets themselves.
-- [ ] Serve local fixture pages from a fake origin instead of `file://`
-  - `page.route("https://fixtures.test/**", ...)` fulfilled from
-    `test/fixtures/pages/` gives each fixture a real origin, so
-    `localStorage`, the clipboard and `location` behave as they do on a site.
-    It also needs no network and never changes.
-  - `url` accepts `fixture:<file>.html` as shorthand for that origin.
-  - The same pages are the deployed site's practice pages
-    (`## Improve GitHub Pages Site`), so they stay presentable to a reader.
 - [ ] Add `--browser firefox` as a second engine
   - Bookmarklet handling differs between engines, and Firefox is the second
     most likely place a reader pastes one. Chromium stays the default and the
@@ -133,27 +157,6 @@ Entries in `test-bm.json` for the bookmarklets already published. The default
 safe run covers anything without an entry; these entries add the assertions
 that show a bookmarklet did its job, rather than merely not crashing.
 
-- [ ] Run `node test-bm.js --all` once and file every failure as its own item
-  under `## Existing Bookmarklets`, with `**Issue**` and `**Goal**` nested
-  - The README's status line already says some existing bookmarklets may not
-    work. This run is what turns that into a list of which ones.
-- [ ] Write entries for the bookmarklets that work on any page: `dom_`, `nav_`,
-  `style_` and `window_`
-  - Use `fixture:` pages where `https://example.com/` lacks what the
-    bookmarklet needs, such as tables, headings, a sidebar, a video or a form.
-  - Assert the effect: an element hidden, text wrapped in `<b>`, a panel added,
-    a clipboard value written. Mark each `"scheduled": true`; these never
-    depend on a third-party site.
-- [ ] Write entries for the public site-specific bookmarklets: GitHub, Stack
-  Overflow, w3Schools, YouTube, Google and Google Maps
-  - Each lists in `requires` every selector the bookmarklet reads, taken from
-    its source rather than from memory.
-  - Pick pages that load signed out and are unlikely to move, such as this
-    repository's own GitHub page.
-  - Mark `"scheduled": true` only where the page loads headless without a
-    consent wall or bot check from this machine. YouTube and Google serve
-    consent pages in some regions; an entry that cannot get past one is
-    `scheduled: false` with the reason in `skip`.
 - [ ] Write entries for the signed-in site-specific bookmarklets: ChatGPT,
   Gmail and Amazon, each with `auth` and `"scheduled": false`
 - [ ] Let `url` read an environment variable, as in `"url": "$OCTOPRINT_URL"`,
@@ -168,6 +171,16 @@ files its failures here. A fix is finished when its posted gist carries it too.
 
 - [ ] Add an `s, s` key sequence to `siteSpecific_chatGPT_NavigateAnswers.js`
   that returns the page to normal
+- [ ] `siteSpecific_YouTube_WatchRandomVideo.js` finds no videos on the home
+  feed, so it opens nothing
+  - **Issue**: It reads the home feed through
+    `.yt-lockup-view-model__content-image`, which YouTube no longer serves. The
+    entry fails with `site changed: .yt-lockup-view-model__content-image not
+    found on https://www.youtube.com/`, and the class carries a `HOT-GLUE - may
+    change` comment in the source saying this was expected.
+  - **Goal**: Read what the signed-out home feed serves now, take the link from
+    that, and keep the entry's `requires` naming whatever replaces it so the next
+    redesign is reported the same way rather than as a silent no-op.
 
 ### From the Open Issues
 
@@ -184,6 +197,9 @@ rather than something a person has to reproduce by hand.
     counts the size cells against the rows, so the partial write is a verdict
     rather than a sighting. Fix what the entry then shows, and close the issue
     with `Fixes #1`.
+  - Measured on 11.08.2026, signed out and headless, on this repository's own
+    root: the size column header is added and ten of the twelve rows get a size
+    cell, so the partial write reproduces without a signed-in session.
   - <https://github.com/isocialPractice/bookmarklets/issues/1>
 - [ ] `siteSpecific_GitHub_ShowFileSize.js` writes no file sizes when the repo
   root is reached from the navigation path
@@ -356,7 +372,11 @@ committed here is a page on the site.
   - Link them from the gallery under their own heading, each listing the
     bookmarklets to try on it.
   - Make them the same pages as the test fixtures under `## Test Harness`, so
-    one set serves both the site and the tests.
+    one set serves both the site and the tests. They are in
+    `test/fixtures/pages/` as of 11.08.2026 - an article, a table, a form, a
+    sidebar, a video, a page whose loader never finishes, a long page, a small
+    page holding one of each thing a converter handles, and an index listing
+    them. Pages already serves them; this item is the gallery link.
 - [ ] Add an install page with a drag-to-install link for each bookmarklet
   - A site can render `<a href="javascript:...">` for a reader to drag onto
     the bookmarks bar, which a GitHub README cannot. Build each `href` from the
@@ -866,5 +886,52 @@ roadmap section each one came from.
   - Square, 648x648. Both existing shorts were re-rendered at that size and
     posted again as Shorts on 2026-11-06.
   - From: User Use Only
+- [x] Self-test the harness with fixture bookmarklets in `test/fixtures/`,
+  run by `node --test`
+  - One that passes; one that throws; one with a `//` comment; one with an
+    `i%16` modulo; one with a missing semicolon between two lines; one whose
+    page logs its own console error while the bookmarklet succeeds. Each
+    asserts the verdict and the reason `test-bm.js` gives.
+  - `npm test` runs these before the bookmarklets themselves.
+  - From: Test Harness
+- [x] **Practice Page Presentation**: Serve local fixture pages from a fake
+  origin instead of `file://`
+  - `page.route("https://fixtures.test/**", ...)` fulfilled from
+    `test/fixtures/pages/` gives each fixture a real origin, so
+    `localStorage`, the clipboard and `location` behave as they do on a site.
+    It also needs no network and never changes.
+  - `url` accepts `fixture:<file>.html` as shorthand for that origin.
+  - The same pages are the deployed site's practice pages
+    (`## Improve GitHub Pages Site`), so they stay presentable to a reader.
+  - From: Test Harness
+- [x] Write entries for the bookmarklets that work on any page: `dom_`, `nav_`,
+  `style_` and `window_`
+  - Use `fixture:` pages where `https://example.com/` lacks what the
+    bookmarklet needs, such as tables, headings, a sidebar, a video or a form.
+    It no longer serves an `h1` either, so a heading is one of them.
+  - Assert the effect: an element hidden, text wrapped in `<b>`, a panel added,
+    a clipboard value written. Mark each `"scheduled": true`; these never
+    depend on a third-party site.
+  - From: Test Configurations
+- [x] Write entries for the public site-specific bookmarklets: GitHub, Stack
+  Overflow, w3Schools, YouTube, Google and Google Maps
+  - Each lists in `requires` every selector the bookmarklet reads, taken from
+    its source rather than from memory.
+  - Pick pages that load signed out and are unlikely to move, such as this
+    repository's own GitHub page.
+  - Mark `"scheduled": true` only where the page loads headless without a
+    consent wall or bot check from this machine. YouTube and Google serve
+    consent pages in some regions; an entry that cannot get past one is
+    `scheduled: false` with the reason in `skip`.
+  - From: Test Configurations
+- [x] Run `node test-bm.js --all` once and file every failure as its own item
+  under `## Existing Bookmarklets`, with `**Issue**` and `**Goal**` nested
+  - The README's status line already says some existing bookmarklets may not
+    work. This run is what turns that into a list of which ones.
+  - Worked last of this batch on purpose. The run on 11.07.2026 failed 13 of
+    54, and every one was a site-specific bookmarklet meeting a bare page
+    rather than a defect, so the entries above come first and this run reports
+    what is left.
+  - From: Test Configurations
 
 </details>
