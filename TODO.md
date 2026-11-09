@@ -61,61 +61,67 @@ its README entry linking that gist. Runs post and update gists with
     redesign is reported the same way rather than as a silent no-op.
   - From: Existing Bookmarklets
 
-### Create and Deploy GitHub Pages Override
-
-- No site
-
-### UI/UX Override - practice pages
-
-#### Resolve Issues
-
-- [ ] Practice Page Presentation 1
-  - Three things a reader meets on the practice pages before they meet a
-    bookmarklet: a heading level skipped on six of the nine, a table that
-    scrolls the document sideways on a phone, and a readout that sits on top
-    of the text it is reporting on.
-  - **Issue**: Measured headlessly on 11.08.2026 at 1280x720 and 400x720, from
-    `https://fixtures.test`. (1) The "Try these on this page" box is an `<h3>`
-    above the page's first `<h2>`, so the outline runs h1 then h3 then h2 on
-    `article.html`, `table.html`, `form.html`, `video.html`, `lazy.html` and
-    `scroll.html`; `sidebar.html` escapes it only because `nav.side` carries
-    its own `<h2>Contents</h2>` earlier. (2) `table.html` at 400px reports
-    `scrollWidth` 446 against `clientWidth` 400, giving the document a
-    horizontal scrollbar and clipping the Notes column mid-word. (3)
-    `scroll.html` at 400px, scrolled to 900, has the opaque fixed `.readout`
-    covering "Week 7: 1859 boardings, a market week." and "Week 8: 1996
-    boardings, an ordinary week." outright; at 1280px `main` is narrow enough
-    to clear it, so it is the narrow viewport only.
-  - **Goal**: Resolve to [practice-page-presentation.prompt.md](.claude/prompts/practice-page-presentation.prompt.md)
-  - From: Test Harness
+### UI/UX Override - practice pages read-through
 
 #### Found Issues
 
-- [ ] No test pins the practice pages' presentation
-  - **Issue**: `node test-bm.js --scheduled` proves the bookmarklets still work
-    on these pages, and `test/harness.test.js` proves the harness reads them
-    correctly, but nothing asserts the pages are fit to show a reader. All
-    three defects above were present the moment the pages were committed and
-    the suite stayed green. They are also the pages the deployed site will link
-    to once `## Improve GitHub Pages Site` adds the gallery, so a regression
-    here is public.
-  - **Goal**: Add `test/pages.test.js` in the `node --test` style
-    `test/harness.test.js` already uses, driving `playwright` directly and
-    serving `test/fixtures/pages/` from `https://fixtures.test` the way
-    `serveFixtures` in `test-bm.js` does. Load all nine pages at 1280x720 and
-    400x720 and assert: one `h1` per page; the heading outline never skips a
-    level going down; `documentElement.scrollWidth <= clientWidth`; the "All
-    practice pages" link returns 200 and reaches the index; every link the
-    index lists resolves; every form control has a visible label tied by
-    `for`/`id`; each table has a caption and a header row; and no text run
-    intersects a fixed overlay, measured with `Range.getClientRects()` per text
-    node rather than element boxes. Add it to the `test` script in
-    `package.json` beside `test:harness`, since `node --test` is pointed at one
-    named file on purpose. The verification run's throwaway script did exactly
-    this and its assertions are listed in
-    `test-results/ui-ux-tester.agent/ui-ux-tester.log`; it was not promoted
-    because it fails until the item above is fixed.
-  - From: UI/UX Override - practice pages
+- [ ] `table.html`'s caption scrolls away with the table it titles
+  - **Issue**: The `<caption>` sits inside the `<table>`, which sits inside the
+    `.table_scroll` wrapper, so it is as wide as the table and scrolls with it.
+    At 400x720, scrolling the eastern loop wrapper to its end leaves the title
+    reading "y stop, an ordinary Tuesday" - it slides out of its own box exactly
+    when a reader does the thing the wrapper exists to allow. The same string is
+    also the wrapper's `aria-label`, so a screen reader announces it twice, once
+    entering the region and once for the table.
+  - **Goal**: Give the title one home. Either lift it out of the table into the
+    wrapper and drop the `<caption>`, or keep the `<caption>`, drop the
+    duplicate `aria-label` for `aria-labelledby` naming it, and hold it still
+    with `position: sticky; left: 0` so it stays readable as the table scrolls
+    under it.
+  - From: UI/UX Override - practice pages read-through
+- [ ] The table wrapper is a keyboard stop at widths where nothing scrolls
+  - **Issue**: `.table_scroll` carries `tabindex="0"` on every viewport. At
+    1280x720 both wrappers measure `scrollWidth === clientWidth` at 696px, so
+    the first Tab on `table.html` lands on a region that cannot scroll and rings
+    the whole table before any link is reached. The ring itself is correct at
+    both widths - 1px `outline-style: auto` hugging the box, not clipped by the
+    wrapper's own overflow - so this is the stop existing, not how it looks.
+  - **Goal**: Make the wrapper focusable only when it overflows, which is what
+    the scrollable-region pattern asks for: set `tabindex` from
+    `scrollWidth > clientWidth` on load and on resize, and drop `role="region"`
+    with it so an unscrollable box is not announced as a landmark either.
+  - From: UI/UX Override - practice pages read-through
+- [ ] The readout's 140px inset is applied far wider than it does any work
+  - **Issue**: The `@media (max-width: 909px)` block does two things - narrows
+    the readout to 124px and 13px, and insets `header.page`, `main` and
+    `footer.page` 140px on the right. Sweeping `scroll.html` at offset 1234 from
+    909px down to 380px in 10px steps, with the inset dropped and the narrowed
+    readout kept, the first width at which any text run meets the readout is
+    509px. From 519px to 909px the inset prevents nothing and costs the text
+    column 108px, 696px becoming 588px in one 1px step at the breakpoint. The
+    narrowing itself is placed correctly: at 910px the unnarrowed readout's left
+    edge is 728px, exactly the text column's box edge.
+  - **Goal**: Split the query. Keep the readout narrowing at 909px, where it is
+    measured to belong, and move the 140px inset to its own `max-width` near
+    520px, where the sweep shows it starts doing work. Re-run the sweep after,
+    and confirm the first covered width sits below the new breakpoint.
+  - From: UI/UX Override - practice pages read-through
+- [ ] No test measures the band the readout breakpoint was moved for
+  - **Issue**: `test/pages.test.js` measures 1280x720 and 400x720 only, so
+    nothing exercises 820-909px - the band the breakpoint was moved to cover,
+    and the band the item's own prompt would have left broken. A change to the
+    breakpoint, to the readout's width, or to its text would not be caught.
+  - **Goal**: Add a third viewport to `VIEWPORTS` in `test/pages.test.js`, a
+    tablet width inside the band such as 880x720, and update the comment above
+    it that currently names a desktop width and a phone width. Every existing
+    test then runs across the band, the covered-text check at its scroll stops
+    included. Do this after the item above, so the width pinned is the one the
+    split query settles on.
+  - From: UI/UX Override - practice pages read-through
+
+### Create and Deploy GitHub Pages Override
+
+- No site
 
 ## Test Harness
 
@@ -302,6 +308,10 @@ from here carry `From: version.control = null`.
 - [ ] Add an AI-assisted section to `docs/testing.md` that points at
   `AGENTS.md`, and name Claude Code, Codex and GitHub Copilot as the
   assistants it has been written for
+- [ ] Document the three stages `npm test` runs in `docs/testing.md`:
+  `test:harness`, `test:pages` and `test:bookmarklets`, what each one proves,
+  and that `test/pages.test.js` is what keeps the practice pages fit to show
+  a reader
 - [ ] Add a short Testing paragraph to the README intro linking
   `docs/testing.md`
 
@@ -933,5 +943,49 @@ roadmap section each one came from.
     rather than a defect, so the entries above come first and this run reports
     what is left.
   - From: Test Configurations
+- [x] Practice Page Presentation 1
+  - Three things a reader meets on the practice pages before they meet a
+    bookmarklet: a heading level skipped on six of the nine, a table that
+    scrolls the document sideways on a phone, and a readout that sits on top
+    of the text it is reporting on.
+  - **Issue**: Measured headlessly on 11.08.2026 at 1280x720 and 400x720, from
+    `https://fixtures.test`. (1) The "Try these on this page" box is an `<h3>`
+    above the page's first `<h2>`, so the outline runs h1 then h3 then h2 on
+    `article.html`, `table.html`, `form.html`, `video.html`, `lazy.html` and
+    `scroll.html`; `sidebar.html` escapes it only because `nav.side` carries
+    its own `<h2>Contents</h2>` earlier. (2) `table.html` at 400px reports
+    `scrollWidth` 446 against `clientWidth` 400, giving the document a
+    horizontal scrollbar and clipping the Notes column mid-word. (3)
+    `scroll.html` at 400px, scrolled to 900, has the opaque fixed `.readout`
+    covering "Week 7: 1859 boardings, a market week." and "Week 8: 1996
+    boardings, an ordinary week." outright; at 1280px `main` is narrow enough
+    to clear it, so it is the narrow viewport only.
+  - **Goal**: Resolve to [practice-page-presentation.prompt.md](.claude/prompts/practice-page-presentation.prompt.md)
+  - From: Test Harness
+- [x] No test pins the practice pages' presentation
+  - **Issue**: `node test-bm.js --scheduled` proves the bookmarklets still work
+    on these pages, and `test/harness.test.js` proves the harness reads them
+    correctly, but nothing asserts the pages are fit to show a reader. All
+    three defects above were present the moment the pages were committed and
+    the suite stayed green. They are also the pages the deployed site will link
+    to once `## Improve GitHub Pages Site` adds the gallery, so a regression
+    here is public.
+  - **Goal**: Add `test/pages.test.js` in the `node --test` style
+    `test/harness.test.js` already uses, driving `playwright` directly and
+    serving `test/fixtures/pages/` from `https://fixtures.test` the way
+    `serveFixtures` in `test-bm.js` does. Load all nine pages at 1280x720 and
+    400x720 and assert: one `h1` per page; the heading outline never skips a
+    level going down; `documentElement.scrollWidth <= clientWidth`; the "All
+    practice pages" link returns 200 and reaches the index; every link the
+    index lists resolves; every form control has a visible label tied by
+    `for`/`id`; each table has a caption and a header row; and no text run
+    intersects a fixed overlay, measured with `Range.getClientRects()` per text
+    node rather than element boxes. Add it to the `test` script in
+    `package.json` beside `test:harness`, since `node --test` is pointed at one
+    named file on purpose. The verification run's throwaway script did exactly
+    this and its assertions are listed in
+    `test-results/ui-ux-tester.agent/ui-ux-tester.log`; it was not promoted
+    because it fails until the item above is fixed.
+  - From: UI/UX Override - practice pages
 
 </details>
