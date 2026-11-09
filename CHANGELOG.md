@@ -6,6 +6,72 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.09.2026]
+
+### Fixed
+
+- The practice pages under `test/fixtures/pages/` now read properly at a phone
+  width as well as a desktop one. All three defects were present from the day
+  the pages were committed, and the suite stayed green through them.
+  - The "Try these on this page" box is an `<h2>` rather than an `<h3>`. It
+    sits above the page's first `<h2>`, so the outline ran h1 then h3 then h2
+    on six of the nine pages. It is a sibling section of the page's other
+    sections, not a subsection of anything. `fixture.css` gives the `h2` back
+    the look the `h3` had, including suppressing the rule line the bare `h2`
+    rule draws, so the rendered page is unchanged but for the 3px the h2's
+    smaller default bottom margin tightens above the list.
+  - Each table in `table.html` sits in a `.table_scroll` wrapper that scrolls
+    on its own axis, so the table no longer pushes the document sideways. At
+    400px the document reported a `scrollWidth` of 446 against a `clientWidth`
+    of 400, which gave the whole page a horizontal scrollbar and clipped the
+    Notes column mid-word. The wrapper is a keyboard-reachable
+    `role="region"` named after each table's caption, and the table stays a
+    real table, which is what the markdown converters need from the page.
+  - The fixed readout on `scroll.html` keeps clear of the log it reports on.
+    Below 910px the page insets its own text on the right and the readout
+    narrows to fit the band reserved for it; above that width `main` stops at
+    760px and the readout already lands in the gutter beside it. Measured at
+    400px, the opaque readout had been covering two rows of the log outright
+    once the page was scrolled.
+  - The readout breakpoint is 910px rather than a rounder figure because that
+    is where the text column stops reaching it: `main` is 760px wide with a
+    32px right padding, and the readout needs the 182px to the right of that.
+    A narrower breakpoint leaves a band of widths where the readout still sits
+    on the text.
+
+### Added
+
+- `test/pages.test.js`, a `node --test` suite that pins how the practice pages
+  read, so a presentation regression fails a run rather than reaching the
+  deployed site.
+  - It drives Playwright directly and serves the pages from
+    `https://fixtures.test` the way `test-bm.js` does, so links, anchors and
+    the embedded frame resolve as they would on a site.
+  - All nine pages at 1280x720 and 400x720: one `h1` each, an outline that
+    never skips a level going down, no horizontal overflow, a header row on
+    every table and a caption on every table a reader reads as content, a
+    visible label tied by `for` and `id` to every form control, an "All
+    practice pages" link that answers 200 and reaches the index, and every
+    link the index lists resolving.
+  - Nothing the page floats over itself may cover its text. That is measured
+    as glyph runs, by taking `getClientRects()` of a `Range` over every
+    non-empty text node and intersecting each with the overlay's own rect: an
+    element box is too coarse, because a wide list item whose words stop short
+    of an overlay is not a defect. The check is taken at rest and at offsets
+    down the page, since the readout only covered anything once the page had
+    moved.
+  - Three of the eleven checks name the defects above directly, so a
+    regression reads as itself rather than as a general assertion failing.
+  - One browser launch and one pass fill a report the assertions share, the
+    way `harness.test.js` shares a single harness run, which is why eleven
+    checks take about a second.
+  - `npm test` runs it between the harness and the bookmarklets, as
+    `npm run test:pages`.
+- `snippet.html` is exempt from the table-caption check, named in the suite
+  with the reason: it is a converter fixture holding one of each construct, and
+  `dom_Clipboard_ConvertPageToMarkdown` pins its whole markdown output, which a
+  caption would change.
+
 ## [11.08.2026]
 
 ### Added

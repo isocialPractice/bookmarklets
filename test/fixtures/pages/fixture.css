@@ -40,6 +40,8 @@ table { border-collapse: collapse; width: 100%; margin: 16px 0; }
 caption { text-align: left; font-weight: 600; padding-bottom: 8px; }
 th, td { border: 1px solid var(--rule); padding: 6px 10px; text-align: left; }
 thead th { background: var(--tint); }
+.table_scroll { overflow-x: auto; }
+.table_scroll table { min-width: 420px; }
 
 label { display: block; margin-top: 12px; font-weight: 600; }
 input, select, textarea { width: 100%; max-width: 360px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 4px; font: inherit; }
@@ -51,7 +53,7 @@ button { margin-top: 16px; padding: 8px 16px; border: 1px solid var(--rule); bor
  border-left: 4px solid var(--link);
  background: var(--tint);
 }
-.try h3 { margin-top: 0; }
+.try h2 { font-size: 18px; margin-top: 0; border-bottom: 0; padding-bottom: 0; }
 .try ul { margin: 8px 0 0; padding-left: 20px; }
 
 .layout { display: grid; grid-template-columns: 1fr; gap: 0; }
@@ -93,3 +95,10 @@ iframe { width: 100%; height: 320px; border: 1px solid var(--rule); border-radiu
 }
 
 footer.page { padding: 16px 32px; border-top: 1px solid var(--rule); color: var(--quiet); font-size: 14px; }
+
+@media (max-width: 909px) {
+ .readout_page .readout { width: 124px; padding: 6px 8px; font-size: 13px; line-height: 1.35; }
+ .readout_page header.page,
+ .readout_page main,
+ .readout_page footer.page { padding-right: 140px; }
+}
