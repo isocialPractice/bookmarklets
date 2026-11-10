@@ -56,5 +56,23 @@
 
  "fixture_Junction_RunsIntoTheLineBelow": {
   "url": "fixture:article.html"
+ },
+
+ "fixture_Popup_OpensANewTab": {
+  "url": "fixture:article.html",
+  "steps": [
+   { "run": true },
+   { "expect": { "popup": "fixtures.test/table.html" } }
+  ]
+ },
+
+ "fixture_Auth_MarksTheSignedInPage": {
+  "url": "fixture:article.html",
+  "auth": "fixture-site",
+  "signedIn": "main",
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#mark--__-unlikely_-_name-__--fixtureAuthMarksTheSignedInPage", "text": "the signed-in fixture ran" } }
+  ]
  }
 }

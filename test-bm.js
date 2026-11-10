@@ -8,12 +8,14 @@
 //   node test-bm.js --all [--headed] [--slow-mo <ms>]
 //   node test-bm.js --scheduled
 //   node test-bm.js --list
+//   node test-bm.js --sign-in <site>
 //
 // <name>       A bookmarklet in JSFormatted, as "name", "name.js", or "JSFormatted/name.js".
 // --all        Every file in JSFormatted, configured or not.
 // --scheduled  Only the test-bm.json entries marked "scheduled": true, which is all a cron job or
 //              a Windows scheduled task has to call. Nothing on this path waits for input.
 // --list       What a run would do with each bookmarklet, without opening a browser.
+// --sign-in    Ask the sign-in launcher to open <site> for signing in, then exit.
 // --headed     Watch the run in a browser window.
 // --slow-mo    Milliseconds between actions, for the same reason. Neither is ever needed.
 //
@@ -34,12 +36,23 @@
 // TEST_BM_JS_DIR and TEST_BM_CONFIG move the bookmarklet folder and the configuration file, which is
 // how test/harness.test.js runs this harness against its own fixtures. Nothing else sets them.
 //
+// An entry with "auth": "<site>" needs a signed-in browser, and this harness never signs in or
+// starts one itself. It loads the module TEST_BM_AUTH_LAUNCHER names, an absolute path outside the
+// repository, and asks it for a Playwright BrowserContext with launch({ chromium, site }). Without a
+// launcher, or with one that has no sign-in for the site, the entry is a skip. The entry also names
+// "signedIn", a selector only a signed-in page has, and a page without it, or one that lands on
+// another origin, is a skip reading "signed out of <site>". It runs read-only: a click, fill or
+// press aimed at a form, a text area, an editable region or a submit control is refused before it
+// acts. Nothing the page shows is written down. When the run ends, the launcher's
+// signInState(states) hears which sites were found signed in. An entry with auth is never scheduled.
+//
 // Exit 0 nothing failed, 1 something failed, 2 usage or configuration error. A skip never fails a
 // run. --all and --scheduled write test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json and
 // summary.txt.
 
 var fs = require("fs");
 var path = require("path");
+var nodeUrl = require("url");
 var vm = require("vm");
 
 // Repo layout. The two folders a run reads can be moved, which is how the self-test points this
@@ -87,10 +100,16 @@ var exitConfig = 2;
 
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
- "timeout", "settle"];
+ "timeout", "settle", "auth", "signedIn"];
 var stepActions = ["run", "click", "fill", "press", "select", "wait", "expect"];
 var stepExtras = ["value", "text", "selector"];
-var expectKeys = ["selector", "visible", "hidden", "count", "text", "clipboard", "location"];
+var expectKeys = ["selector", "visible", "hidden", "count", "text", "clipboard", "location", "popup"];
+
+// A site name is all an entry with auth hands the sign-in launcher, so it is held to a shape that
+// cannot carry anything else.
+var siteNamePattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
+var launcherVariable = "TEST_BM_AUTH_LAUNCHER";
+var withheldText = "(not recorded on a signed-in page)";
 
 // How the code gets into the page, worked out once per browser by chooseInjector.
 var injector = "";
@@ -379,14 +398,17 @@ function validateStep(step, where, problems) {
   Object.keys(want).forEach(function (k) {
    if (expectKeys.indexOf(k) < 0) { problems.push(where + ": expect has no " + k); }
   });
-  var valueOnly = want.clipboard !== undefined || want.location !== undefined;
+  var valueOnly = want.clipboard !== undefined || want.location !== undefined || want.popup !== undefined;
   if (!valueOnly && typeof want.selector != "string") {
-   problems.push(where + ": expect takes a selector, a clipboard value, or a location");
+   problems.push(where + ": expect takes a selector, a clipboard value, a location, or a popup");
   }
   if (want.location !== undefined && typeof want.location != "string") { problems.push(where + ": location takes a string"); }
+  if (want.popup !== undefined && (typeof want.popup != "string" || !want.popup.length)) {
+   problems.push(where + ": popup takes the text the new tab's address holds");
+  }
   if (!valueOnly && want.visible === undefined && want.hidden === undefined
    && want.count === undefined && want.text === undefined) {
-   problems.push(where + ": expect takes visible, hidden, count, text, clipboard or location");
+   problems.push(where + ": expect takes visible, hidden, count, text, clipboard, location or popup");
   }
   if (want.count !== undefined && typeof want.count != "number") { problems.push(where + ": count takes a number"); }
   if (want.visible !== undefined && want.visible !== true) { problems.push(where + ": visible takes true - for the other way round, ask for hidden"); }
@@ -425,6 +447,16 @@ function validateConfig(config, names) {
   if (entry.skip !== undefined && (typeof entry.skip != "string" || !entry.skip.length)) { problems.push(name + ": skip takes a reason"); }
   if (entry.timeout !== undefined && typeof entry.timeout != "number") { problems.push(name + ": timeout takes milliseconds"); }
   if (entry.settle !== undefined && typeof entry.settle != "number") { problems.push(name + ": settle takes milliseconds"); }
+  if (entry.auth !== undefined && (typeof entry.auth != "string" || !siteNamePattern.test(entry.auth))) {
+   problems.push(name + ": auth takes a site name of lower-case letters, digits and hyphens, such as chatgpt");
+  }
+  if (entry.auth !== undefined && (typeof entry.signedIn != "string" || !entry.signedIn.length)) {
+   problems.push(name + ": an entry with auth names signedIn, a selector only a signed-in page has");
+  }
+  if (entry.signedIn !== undefined && entry.auth === undefined) { problems.push(name + ": signedIn goes with auth"); }
+  if (entry.auth !== undefined && entry.scheduled === true) {
+   problems.push(name + ": an entry with auth is never scheduled - an unattended run has no one to sign in");
+  }
   if (entry.requires !== undefined && !isStringList(entry.requires)) { problems.push(name + ": requires takes a list of selectors"); }
   if (entry.permissions !== undefined && !isStringList(entry.permissions)) { problems.push(name + ": permissions takes a list of names"); }
   if (entry.dialogs !== undefined) {
@@ -454,6 +486,107 @@ function validateConfig(config, names) {
   }
  });
  if (problems.length) { configError(shownPath(configFile) + ":\n  " + problems.join("\n  ")); }
+}
+
+// ----------------------------------------------------------------------------------------------- //
+// The sign-in launcher
+// ----------------------------------------------------------------------------------------------- //
+
+// True for the repository root and anything inside it.
+function insideRepository(full) {
+ var rel = path.relative(fs.realpathSync(rootDir), full);
+ return rel === "" || (rel.split(path.sep)[0] != ".." && !path.isAbsolute(rel));
+}
+
+// The module an entry with auth gets its browser from. The launcher is the maintainer's own and is
+// kept outside the repository, so nothing here knows how it signs in. An unset variable is a reason
+// to skip rather than an error, so a machine without a launcher still runs everything else; a
+// variable that is set but wrong is a configuration error.
+async function loadLauncher() {
+ var named = String(process.env[launcherVariable] || "").trim();
+ if (!named) { return { api: null, why: "no sign-in launcher: " + launcherVariable + " is not set" }; }
+ if (!path.isAbsolute(named)) { configError(launcherVariable + " must be an absolute path"); }
+ var full = path.resolve(named);
+ if (!fs.existsSync(full) || !fs.statSync(full).isFile()) { configError(launcherVariable + " names no file: " + full); }
+ full = fs.realpathSync(full);
+ if (insideRepository(full)) { configError(launcherVariable + " must name a file outside the repository"); }
+ var loaded = null;
+ try {
+  loaded = await import(nodeUrl.pathToFileURL(full).href);
+ } catch (err) {
+  configError("the sign-in launcher would not load: " + firstLine(err));
+ }
+ var api = loaded && loaded.default && typeof loaded.default.launch == "function" ? loaded.default : loaded;
+ if (!api || typeof api.launch != "function") { configError("the sign-in launcher has no launch function"); }
+ return { api: api, why: "" };
+}
+
+// A signed-in context for one site, or the reason there is none.
+async function openSignedIn(session, site) {
+ if (!session.launcher.api) { return { context: null, why: session.launcher.why }; }
+ var context = null;
+ try {
+  context = await session.launcher.api.launch({ chromium: session.chromium, site: site });
+ } catch (err) {
+  return { context: null, why: "the sign-in launcher could not open " + site + ": " + firstLine(err) };
+ }
+ if (!context) { return { context: null, why: "the sign-in launcher has no sign-in for " + site }; }
+ if (typeof context.newPage != "function" || typeof context.close != "function") {
+  return { context: null, why: "the sign-in launcher returned something other than a browser context for " + site };
+ }
+ return { context: context, why: "" };
+}
+
+function originOf(address) {
+ try {
+  return new URL(address).origin;
+ } catch (err) {
+  return "nowhere";
+ }
+}
+
+// A signed-out page is the absence of a sign-in, not a fault in the bookmarklet, so it is a skip.
+function signedOut(ctx, why) {
+ var err = failure("signed out of " + ctx.auth + ": " + why);
+ err.skip = true;
+ ctx.signedInFound = false;
+ return err;
+}
+
+async function checkSignedIn(page, ctx) {
+ var wanted = originOf(ctx.url);
+ if (originOf(page.url()) !== wanted) { throw signedOut(ctx, "the page went to " + originOf(page.url())); }
+ try {
+  await page.waitForSelector(ctx.signedIn, { state: "attached", timeout: Math.min(ctx.timeout, requiresTimeout) });
+ } catch (err) {
+  if (originOf(page.url()) !== wanted) { throw signedOut(ctx, "the page went to " + originOf(page.url())); }
+  throw signedOut(ctx, ctx.signedIn + " is not on the page");
+ }
+ ctx.signedInFound = true;
+}
+
+// What a step on a signed-in page must never touch: everywhere a site sends a message or saves a
+// change. It runs in the page against the live element, because a selector alone cannot say, and it
+// is written to be sent there as source, so it uses nothing from this file.
+function classifyTarget(el) {
+ if (!el || el === document.body || el === document.documentElement) { return ""; }
+ var tag = String(el.tagName || "").toLowerCase();
+ var type = String((el.getAttribute && el.getAttribute("type")) || "").toLowerCase();
+ if (tag == "iframe" || tag == "frame") { return "a frame"; }
+ if (el.isContentEditable) { return "an editable region"; }
+ if (tag == "textarea") { return "a text area"; }
+ if ((tag == "input" && (type == "submit" || type == "image"))
+  || (tag == "button" && el.form && (type == "" || type == "submit"))) { return "a submit control"; }
+ if (el.form || (el.closest && el.closest("form"))) { return "a form"; }
+ return "";
+}
+
+async function writesTo(page, selector) {
+ if (selector) {
+  await page.waitForSelector(selector, { state: "attached" });
+  return page.locator(selector).first().evaluate(classifyTarget);
+ }
+ return page.evaluate("(" + classifyTarget.toString() + ")(document.activeElement)");
 }
 
 // ----------------------------------------------------------------------------------------------- //
@@ -513,9 +646,11 @@ async function inject(page, code, name) {
 
 // Every request to the fixture origin is answered from test/fixtures/pages, so a fixture entry needs
 // no network and cannot be changed by anyone but this repository. A path that is missing, or that
-// climbs out of the folder, is a 404 the page sees rather than a crash the run reports.
+// climbs out of the folder, is a 404 the page sees rather than a crash the run reports. The route
+// is the context's rather than the page's, because a tab the bookmarklet opens makes its first
+// request before any route of its own could be added.
 async function serveFixtures(page) {
- await page.route(fixtureOrigin + "/**", async function (route) {
+ await page.context().route(fixtureOrigin + "/**", async function (route) {
   var asked = "";
   try {
    asked = decodeURIComponent(new URL(route.request().url()).pathname).replace(/^\/+/, "");
@@ -557,9 +692,15 @@ function attachListeners(page, result, ctx) {
  var answers = ctx.dialogs;
  var answered = 0;
 
+ // On a signed-in page the page's own words are counted, never kept: its console, its errors, its
+ // dialogs and the addresses its popups open can all carry the account and what it holds.
  page.on("console", function (msg) {
   var type = msg.type();
   if (type != "error" && type != "warning") { return; }
+  if (ctx.private) {
+   result.withheld.console++;
+   return;
+  }
   if (result.console.length >= consoleLimit) { return; }
   result.console.push({ type: type, text: cut(msg.text()) });
  });
@@ -567,10 +708,15 @@ function attachListeners(page, result, ctx) {
  // Only the bookmarklet's errors fail the entry. The page's own are recorded and left alone.
  page.on("pageerror", function (err) {
   var stack = String((err && err.stack) || (err && err.message) || err || "");
+  var from = stack.indexOf(sourceUrl(ctx.name)) >= 0 ? "bookmarklet" : "page";
+  if (ctx.private && from == "page") {
+   result.withheld.pageErrors++;
+   return;
+  }
   result.errors.push({
-   from: stack.indexOf(sourceUrl(ctx.name)) >= 0 ? "bookmarklet" : "page",
+   from: from,
    message: firstLine(err),
-   at: stack.split("\n").slice(0, 4).join(" | ")
+   at: ctx.private ? "" : stack.split("\n").slice(0, 4).join(" | ")
   });
  });
 
@@ -579,7 +725,7 @@ function attachListeners(page, result, ctx) {
   var accept = !!(answer && answer.accept);
   result.dialogs.push({
    type: dialog.type(),
-   message: cut(dialog.message()),
+   message: ctx.private ? null : cut(dialog.message()),
    answered: accept ? "accepted" : "dismissed",
    text: answer && answer.text !== undefined ? String(answer.text) : ""
   });
@@ -589,8 +735,12 @@ function attachListeners(page, result, ctx) {
   done.catch(function () { });
  });
 
+ // A popup's address is kept in memory for an expect on it, and written down only off a signed-in
+ // page. Playwright raises the event once the popup's first response has started, so the address
+ // is the one the bookmarklet opened.
  page.on("popup", function (popup) {
-  result.popups.push({ url: popup.url() });
+  ctx.popupUrls.push(popup.url());
+  result.popups.push({ url: ctx.private ? null : popup.url() });
   popup.close().catch(function () { });
  });
 }
@@ -629,11 +779,21 @@ async function checkRequires(page, ctx) {
 }
 
 async function doExpect(page, ctx, want, where) {
+ if (want.popup !== undefined) {
+  var holds = function (u) { return String(u).indexOf(String(want.popup)) >= 0; };
+  var until = Date.now() + Math.min(ctx.timeout, requiresTimeout);
+  while (!ctx.popupUrls.some(holds) && Date.now() < until) { await page.waitForTimeout(100); }
+  if (!ctx.popupUrls.some(holds)) {
+   throw failure(where + ": no new tab opened an address holding " + JSON.stringify(cut(want.popup))
+    + (ctx.popupUrls.length ? " (" + ctx.popupUrls.length + " opened elsewhere)" : ""));
+  }
+  return;
+ }
  if (want.location !== undefined) {
   var at = page.url();
   if (at.indexOf(String(want.location)) < 0) {
-   throw failure(where + ": the page is at " + JSON.stringify(cut(at)) + ", which does not hold "
-    + JSON.stringify(cut(want.location)));
+   throw failure(where + ": the page is at " + (ctx.private ? withheldText : JSON.stringify(cut(at)))
+    + ", which does not hold " + JSON.stringify(cut(want.location)));
   }
   return;
  }
@@ -646,8 +806,8 @@ async function doExpect(page, ctx, want, where) {
     + " [\"clipboard-read\"] (" + firstLine(err) + ")");
   }
   if (String(held).trim() !== String(want.clipboard).trim()) {
-   throw failure(where + ": the clipboard holds " + JSON.stringify(cut(held)) + ", not "
-    + JSON.stringify(cut(want.clipboard)));
+   throw failure(where + ": the clipboard holds " + (ctx.private ? withheldText : JSON.stringify(cut(held)))
+    + ", not " + JSON.stringify(cut(want.clipboard)));
   }
   return;
  }
@@ -682,7 +842,7 @@ async function doExpect(page, ctx, want, where) {
   throw failure(where + ": " + want.selector + " has no text to read (" + firstLine(err) + ")");
  }
  if (reads.indexOf(String(want.text)) < 0) {
-  throw failure(where + ": " + want.selector + " reads " + JSON.stringify(cut(reads))
+  throw failure(where + ": " + want.selector + " reads " + (ctx.private ? withheldText : JSON.stringify(cut(reads)))
    + ", which does not hold " + JSON.stringify(cut(want.text)));
  }
 }
@@ -716,6 +876,14 @@ async function selectText(page, selector) {
 
 async function doStep(page, ctx, step, index) {
  var where = "step " + index;
+ if (ctx.private && (step.click !== undefined || step.fill !== undefined || step.press !== undefined)) {
+  var aimed = step.click !== undefined ? step.click
+   : step.fill !== undefined ? (typeof step.fill == "string" ? step.fill : step.fill.selector)
+   : (typeof step.selector == "string" ? step.selector : "");
+  var verb = step.click !== undefined ? "click" : step.fill !== undefined ? "type into" : "press a key in";
+  var hit = await writesTo(page, aimed);
+  if (hit) { throw failure("refused: " + where + " would " + verb + " " + hit + " on a signed-in page"); }
+ }
  if (step.run) { return runBookmarklet(page, ctx); }
  if (step.click !== undefined) { return page.click(step.click); }
  if (step.fill !== undefined) {
@@ -743,6 +911,7 @@ async function playEntry(page, ctx) {
  } catch (err) {
   throw failure("could not open " + ctx.url + ": " + firstLine(err));
  }
+ if (ctx.private) { await checkSignedIn(page, ctx); }
  await checkRequires(page, ctx);
  // The bookmarklet runs after load when no step names it. A step that names it twice runs it
  // twice, which is how a bookmarklet that turns itself off on the second run is checked.
@@ -758,7 +927,7 @@ async function playEntry(page, ctx) {
  await page.waitForTimeout(ctx.settle);
 }
 
-async function runOne(browser, name, entry) {
+async function runOne(browser, name, entry, session) {
  var started = Date.now();
  var result = {
   name: name,
@@ -779,6 +948,10 @@ async function runOne(browser, name, entry) {
   result.verdict = verdict;
   result.reason = reason || "";
   result.durationMs = Date.now() - started;
+  if (result.withheld && (result.withheld.console || result.withheld.pageErrors)) {
+   result.notes.push("a signed-in page: " + result.withheld.console + " console messages and "
+    + result.withheld.pageErrors + " page errors were counted and not recorded");
+  }
   return result;
  }
 
@@ -806,17 +979,35 @@ async function runOne(browser, name, entry) {
   requires: (entry && entry.requires) || [],
   steps: (entry && entry.steps) || [],
   dialogs: (entry && entry.dialogs) || [],
-  ran: false
+  ran: false,
+  popupUrls: [],
+  private: !!(entry && entry.auth),
+  auth: (entry && entry.auth) || "",
+  signedIn: (entry && entry.signedIn) || "",
+  signedInFound: undefined
  };
  result.url = ctx.url;
+ if (ctx.private) {
+  result.auth = ctx.auth;
+  result.withheld = { console: 0, pageErrors: 0 };
+ }
 
  var context, page;
  try {
-  context = await browser.newContext({
-   viewport: viewport,
-   permissions: (entry && entry.permissions) || []
-  });
-  page = await context.newPage();
+  if (ctx.private) {
+   var opened = await openSignedIn(session, ctx.auth);
+   if (!opened.context) { return close("skip", opened.why); }
+   context = opened.context;
+   if (entry.permissions && entry.permissions.length) { await context.grantPermissions(entry.permissions); }
+   page = await context.newPage();
+   await page.setViewportSize(viewport);
+  } else {
+   context = await browser.newContext({
+    viewport: viewport,
+    permissions: (entry && entry.permissions) || []
+   });
+   page = await context.newPage();
+  }
  } catch (err) {
   if (context) { await context.close().catch(function () { }); }
   return close("fail", "the browser would not open a page for this entry: " + firstLine(err));
@@ -838,9 +1029,12 @@ async function runOne(browser, name, entry) {
    "nothing finished inside the " + ctx.timeout + "ms this entry allows");
  } catch (err) {
   await context.close().catch(function () { });
+  if (typeof ctx.signedInFound == "boolean") { result.signedIn = ctx.signedInFound; }
+  if (err && err.skip) { return close("skip", err.message); }
   return close("fail", err && err.expected ? err.message : "the run stopped: " + firstLine(err));
  }
  await context.close().catch(function () { });
+ if (typeof ctx.signedInFound == "boolean") { result.signedIn = ctx.signedInFound; }
 
  if (!ctx.ran) { return close("fail", "the bookmarklet never ran - no step named it and the entry had none"); }
 
@@ -917,8 +1111,9 @@ function printList(names, config) {
    what = "skip";
    extra = entry.skip;
   } else if (entry) {
-   what = "configured";
+   what = entry.auth ? "signed in" : "configured";
    extra = (entry.url || defaultUrl)
+    + (entry.auth ? "  auth " + entry.auth : "")
     + (entry.scheduled ? "  scheduled" : "")
     + (entry.requires && entry.requires.length ? "  requires " + entry.requires.length : "")
     + (entry.steps && entry.steps.length ? "  " + entry.steps.length + " steps" : "");
@@ -927,15 +1122,18 @@ function printList(names, config) {
  });
  var configured = names.filter(function (n) { return config[n]; }).length;
  var scheduled = names.filter(function (n) { return config[n] && config[n].scheduled; }).length;
+ var signedIn = names.filter(function (n) { return config[n] && config[n].auth; }).length;
  console.log("");
  console.log("test-bm: " + names.length + " bookmarklets, " + configured + " configured, "
-  + scheduled + " scheduled");
+  + scheduled + " scheduled, " + signedIn + " signed in");
 }
 
 function printDetail(result) {
  result.notes.forEach(function (note) { console.log("  note: " + note); });
- result.dialogs.forEach(function (d) { console.log("  dialog: " + d.type + " " + JSON.stringify(d.message) + " " + d.answered); });
- result.popups.forEach(function (p) { console.log("  popup closed: " + p.url); });
+ result.dialogs.forEach(function (d) {
+  console.log("  dialog: " + d.type + " " + (d.message === null ? withheldText : JSON.stringify(d.message)) + " " + d.answered);
+ });
+ result.popups.forEach(function (p) { console.log("  popup closed: " + (p.url === null ? withheldText : p.url)); });
  result.console.forEach(function (c) { console.log("  console " + c.type + ": " + c.text); });
  result.errors.forEach(function (e) { console.log("  " + e.from + " error: " + e.message); });
 }
@@ -945,12 +1143,18 @@ function printDetail(result) {
 // ----------------------------------------------------------------------------------------------- //
 
 function readOptions(args) {
- var options = { mode: "", name: "", headed: false, slowMo: 0 };
+ var options = { mode: "", name: "", site: "", headed: false, slowMo: 0 };
  for (var i = 0; i < args.length; i++) {
   var arg = args[i];
-  if (arg == "--all" || arg == "--scheduled" || arg == "--list") {
-   if (options.mode) { configError("--all, --scheduled and --list ask for different runs - pick one"); }
+  if (arg == "--all" || arg == "--scheduled" || arg == "--list" || arg == "--sign-in") {
+   if (options.mode) { configError("--all, --scheduled, --list and --sign-in ask for different runs - pick one"); }
    options.mode = arg.slice(2);
+   if (arg == "--sign-in") {
+    options.site = String(args[++i] || "");
+    if (!siteNamePattern.test(options.site)) {
+     configError("--sign-in takes a site name of lower-case letters, digits and hyphens, such as chatgpt");
+    }
+   }
   } else if (arg == "--headed") {
    options.headed = true;
   } else if (arg == "--slow-mo") {
@@ -965,9 +1169,43 @@ function readOptions(args) {
    options.name = bookmarkletName(arg);
   }
  }
+ if (options.mode == "sign-in" && options.name) { configError("--sign-in takes a site, not a bookmarklet"); }
  if (options.mode && options.name) { configError("--" + options.mode + " takes the whole set, so it takes no name"); }
- if (!options.mode && !options.name) { configError("name a bookmarklet, or use --all, --scheduled or --list"); }
+ if (!options.mode && !options.name) { configError("name a bookmarklet, or use --all, --scheduled, --list or --sign-in"); }
  return options;
+}
+
+// Opening a site for signing in is the launcher's whole job; the harness only names the site.
+async function signIn(site) {
+ var loaded = await loadLauncher();
+ if (!loaded.api) { configError(loaded.why); }
+ if (typeof loaded.api.signIn != "function") { configError("the sign-in launcher has no signIn function"); }
+ try {
+  await loaded.api.signIn({ site: site });
+ } catch (err) {
+  configError("the sign-in launcher could not open " + site + ": " + firstLine(err));
+ }
+ console.log("test-bm: the sign-in launcher opened " + site);
+}
+
+// Which sites the run found signed in. A site seen signed out once stays signed out for the run.
+function signInStates(results) {
+ var states = {};
+ results.forEach(function (r) {
+  if (r.auth && typeof r.signedIn == "boolean") { states[r.auth] = states[r.auth] === false ? false : r.signedIn; }
+ });
+ return states;
+}
+
+async function reportSignIns(session, results) {
+ var states = signInStates(results);
+ if (!Object.keys(states).length || !session.launcher.api) { return; }
+ if (typeof session.launcher.api.signInState != "function") { return; }
+ try {
+  await session.launcher.api.signInState(states);
+ } catch (err) {
+  console.error("test-bm: the sign-in launcher's signInState failed: " + firstLine(err));
+ }
 }
 
 async function main() {
@@ -978,6 +1216,10 @@ async function main() {
  }
 
  var options = readOptions(args);
+ if (options.mode == "sign-in") {
+  await signIn(options.site);
+  process.exit(exitOk);
+ }
  var names = allNames();
  var config = readConfig();
  validateConfig(config, names);
@@ -1005,12 +1247,19 @@ async function main() {
 
  if (queue.length) {
   var playwright = requirePlaywright();
+  // The launcher is loaded only when an entry needs it, and before any browser starts, so a
+  // launcher that is set but wrong stops the run at once.
+  var needsLauncher = queue.some(function (n) { return config[n] && config[n].auth && !config[n].skip; });
+  var session = {
+   chromium: playwright.chromium,
+   launcher: needsLauncher ? await loadLauncher() : { api: null, why: "" }
+  };
   var browser = await playwright.chromium.launch({ headless: !options.headed, slowMo: options.slowMo });
   var width = 0;
   queue.forEach(function (n) { if (n.length > width) { width = n.length; } });
   try {
    for (var i = 0; i < queue.length; i++) {
-    var result = await runOne(browser, queue[i], config[queue[i]] || null);
+    var result = await runOne(browser, queue[i], config[queue[i]] || null, session);
     results.push(result);
     console.log(summaryLine(result, width));
     if (!batch) { printDetail(result); }
@@ -1018,6 +1267,7 @@ async function main() {
   } finally {
    await browser.close().catch(function () { });
   }
+  await reportSignIns(session, results);
  }
 
  var counts = countOf(results);

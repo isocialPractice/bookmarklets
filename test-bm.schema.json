@@ -52,7 +52,7 @@
      "type": "string",
      "minLength": 1,
      "description": "A reason to list the entry as skipped without running it. A skip never fails a run.",
-     "examples": ["the page needs a signed-in session"]
+     "examples": ["the page serves a consent wall to a headless browser"]
     },
     "timeout": {
      "type": "number",
@@ -63,8 +63,25 @@
      "type": "number",
      "description": "Milliseconds to wait after the last step, for anything the bookmarklet started.",
      "default": 500
+    },
+    "auth": {
+     "type": "string",
+     "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+     "description": "The sign-in this entry needs, by site name. test-bm.js never signs in itself: it asks the launcher module named by TEST_BM_AUTH_LAUNCHER, an absolute path outside the repository, for a signed-in browser context. Without one the entry is a skip. An entry with auth runs read-only, writes down nothing the page shows, names signedIn, and is never scheduled. Entries that share a sign-in share the name.",
+     "examples": ["chatgpt", "gmail"]
+    },
+    "signedIn": {
+     "type": "string",
+     "minLength": 1,
+     "description": "A selector only the signed-in page has, checked before requires. A page without it, or one that lands on another origin, is a skip reading \"signed out of <site>\" rather than a site-changed failure."
     }
-   }
+   },
+   "dependencies": {
+    "auth": ["signedIn"],
+    "signedIn": ["auth"]
+   },
+   "if": { "required": ["auth"] },
+   "then": { "properties": { "scheduled": { "const": false } } }
   },
   "step": {
    "type": "object",
@@ -129,7 +146,7 @@
   },
   "expect": {
    "type": "object",
-   "description": "What should be true. A selector that is visible or hidden, matches a count, or holds some text; or a clipboard value; or where the page is.",
+   "description": "What should be true. A selector that is visible or hidden, matches a count, or holds some text; or a clipboard value; or where the page is; or where a new tab went.",
    "additionalProperties": false,
    "properties": {
     "selector": { "type": "string", "minLength": 1, "description": "The elements to look at." },
@@ -138,11 +155,13 @@
     "count": { "type": "number", "description": "How many elements the selector matches, exactly." },
     "text": { "type": "string", "description": "Text the first match holds somewhere in it." },
     "clipboard": { "type": "string", "description": "What the clipboard holds, trimmed at both ends. The whole value, not a part of it. Needs clipboard-read in permissions." },
-    "location": { "type": "string", "description": "Text the page's address holds somewhere in it, for a bookmarklet that navigates. Chromium keeps a text fragment directive out of the address, so a bookmarklet that writes one is read off the page it moved instead." }
+    "location": { "type": "string", "description": "Text the page's address holds somewhere in it, for a bookmarklet that navigates. Chromium keeps a text fragment directive out of the address, so a bookmarklet that writes one is read off the page it moved instead." },
+    "popup": { "type": "string", "minLength": 1, "description": "Text the address of a new tab the bookmarklet opened holds somewhere in it, for a bookmarklet that opens a link in a new tab. Waits for the tab, up to the entry's timeout or ten seconds." }
    },
    "anyOf": [
     { "required": ["clipboard"] },
     { "required": ["location"] },
+    { "required": ["popup"] },
     { "required": ["selector", "visible"] },
     { "required": ["selector", "hidden"] },
     { "required": ["selector", "count"] },
