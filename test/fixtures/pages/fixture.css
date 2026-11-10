@@ -42,6 +42,12 @@ th, td { border: 1px solid var(--rule); padding: 6px 10px; text-align: left; }
 thead th { background: var(--tint); }
 .table_scroll { overflow-x: auto; }
 .table_scroll table { min-width: 420px; }
+/* The caption is as wide as the table it titles, so it cannot be held still itself: a sticky box
+   cannot be shifted past the edges of its own containing block, and here the two are the same
+   width. Its text can be. The span inside the caption is narrower than the caption, so left: 0
+   holds it against the left edge of the scrolling box while the table moves under it, and the
+   title stays readable at the end of the scroll instead of sliding out of its own box. */
+.table_scroll caption span { position: sticky; left: 0; display: inline-block; }
 
 label { display: block; margin-top: 12px; font-weight: 600; }
 input, select, textarea { width: 100%; max-width: 360px; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 4px; font: inherit; }
@@ -96,8 +102,26 @@ iframe { width: 100%; height: 320px; border: 1px solid var(--rule); border-radiu
 
 footer.page { padding: 16px 32px; border-top: 1px solid var(--rule); color: var(--quiet); font-size: 14px; }
 
+/* Two breakpoints, because the readout needs two different things of the page and needs them at
+   different widths.
+
+   Narrowing, at 909px: above it the unnarrowed readout already clears the text, because main stops
+   at 760px and the readout lands in the gutter beside it. At 910px the readout left edge is 728px,
+   exactly the text column box edge, so this is where the narrowing starts earning its place.
+
+   The inset, at 879px: the band between the two is the band where the narrowed readout clears
+   everything on its own. Sweeping scroll.html with the inset dropped, every width from 1280px to
+   380px and every 50px of scroll, the first width at which any text run meets the readout is 866px,
+   and it is the header paragraph rather than the log - the header spans the full width, so it
+   reaches the readout well before the 760px column does. 879px keeps a margin over that measured
+   866px and sits one pixel under the 880px viewport test/pages.test.js measures, so the test runs
+   at the first width where the inset is off. Between 880px and 909px the page keeps the 108px the
+   inset used to take from a text column that did not need it. */
 @media (max-width: 909px) {
  .readout_page .readout { width: 124px; padding: 6px 8px; font-size: 13px; line-height: 1.35; }
+}
+
+@media (max-width: 879px) {
  .readout_page header.page,
  .readout_page main,
  .readout_page footer.page { padding-right: 140px; }

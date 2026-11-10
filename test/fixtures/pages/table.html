@@ -24,9 +24,9 @@
   </div>
 
   <h2>Eastern loop</h2>
-  <div class="table_scroll" role="region" aria-label="Boardings by stop, an ordinary Tuesday" tabindex="0">
+  <div class="table_scroll" aria-labelledby="eastern_caption">
    <table>
-    <caption>Boardings by stop, an ordinary Tuesday</caption>
+    <caption id="eastern_caption"><span>Boardings by stop, an ordinary Tuesday</span></caption>
     <thead>
      <tr><th scope="col">Stop</th><th scope="col">Name</th><th scope="col">Boardings</th><th scope="col">Shelter</th><th scope="col">Notes</th></tr>
     </thead>
@@ -41,9 +41,9 @@
   </div>
 
   <h2>Western loop</h2>
-  <div class="table_scroll" role="region" aria-label="Boardings by stop, the same Tuesday" tabindex="0">
+  <div class="table_scroll" aria-labelledby="western_caption">
    <table>
-    <caption>Boardings by stop, the same Tuesday</caption>
+    <caption id="western_caption"><span>Boardings by stop, the same Tuesday</span></caption>
     <thead>
      <tr><th scope="col">Stop</th><th scope="col">Name</th><th scope="col">Boardings</th><th scope="col">Shelter</th></tr>
     </thead>
@@ -66,5 +66,28 @@
  <footer class="page">
   <a href="index.html">All practice pages</a>
  </footer>
+
+ <script>
+  /* A scrolling box is a keyboard stop only while it has something to scroll. At a width where the
+     table fits, the wrapper is neither focusable nor announced as a region, so Tab does not ring a
+     box that cannot move and a screen reader is not sent into a landmark holding nothing extra.
+     Read on load and on every resize, because the answer changes with the viewport. */
+  (function () {
+   var wrappers = document.querySelectorAll(".table_scroll");
+   function markScrollable() {
+    Array.prototype.forEach.call(wrappers, function (box) {
+     if (box.scrollWidth > box.clientWidth) {
+      box.setAttribute("role", "region");
+      box.setAttribute("tabindex", "0");
+     } else {
+      box.removeAttribute("role");
+      box.removeAttribute("tabindex");
+     }
+    });
+   }
+   markScrollable();
+   window.addEventListener("resize", markScrollable, { passive: true });
+  })();
+ </script>
 </body>
 </html>

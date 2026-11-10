@@ -61,64 +61,6 @@ its README entry linking that gist. Runs post and update gists with
     redesign is reported the same way rather than as a silent no-op.
   - From: Existing Bookmarklets
 
-### UI/UX Override - practice pages read-through
-
-#### Found Issues
-
-- [ ] `table.html`'s caption scrolls away with the table it titles
-  - **Issue**: The `<caption>` sits inside the `<table>`, which sits inside the
-    `.table_scroll` wrapper, so it is as wide as the table and scrolls with it.
-    At 400x720, scrolling the eastern loop wrapper to its end leaves the title
-    reading "y stop, an ordinary Tuesday" - it slides out of its own box exactly
-    when a reader does the thing the wrapper exists to allow. The same string is
-    also the wrapper's `aria-label`, so a screen reader announces it twice, once
-    entering the region and once for the table.
-  - **Goal**: Give the title one home. Either lift it out of the table into the
-    wrapper and drop the `<caption>`, or keep the `<caption>`, drop the
-    duplicate `aria-label` for `aria-labelledby` naming it, and hold it still
-    with `position: sticky; left: 0` so it stays readable as the table scrolls
-    under it.
-  - From: UI/UX Override - practice pages read-through
-- [ ] The table wrapper is a keyboard stop at widths where nothing scrolls
-  - **Issue**: `.table_scroll` carries `tabindex="0"` on every viewport. At
-    1280x720 both wrappers measure `scrollWidth === clientWidth` at 696px, so
-    the first Tab on `table.html` lands on a region that cannot scroll and rings
-    the whole table before any link is reached. The ring itself is correct at
-    both widths - 1px `outline-style: auto` hugging the box, not clipped by the
-    wrapper's own overflow - so this is the stop existing, not how it looks.
-  - **Goal**: Make the wrapper focusable only when it overflows, which is what
-    the scrollable-region pattern asks for: set `tabindex` from
-    `scrollWidth > clientWidth` on load and on resize, and drop `role="region"`
-    with it so an unscrollable box is not announced as a landmark either.
-  - From: UI/UX Override - practice pages read-through
-- [ ] The readout's 140px inset is applied far wider than it does any work
-  - **Issue**: The `@media (max-width: 909px)` block does two things - narrows
-    the readout to 124px and 13px, and insets `header.page`, `main` and
-    `footer.page` 140px on the right. Sweeping `scroll.html` at offset 1234 from
-    909px down to 380px in 10px steps, with the inset dropped and the narrowed
-    readout kept, the first width at which any text run meets the readout is
-    509px. From 519px to 909px the inset prevents nothing and costs the text
-    column 108px, 696px becoming 588px in one 1px step at the breakpoint. The
-    narrowing itself is placed correctly: at 910px the unnarrowed readout's left
-    edge is 728px, exactly the text column's box edge.
-  - **Goal**: Split the query. Keep the readout narrowing at 909px, where it is
-    measured to belong, and move the 140px inset to its own `max-width` near
-    520px, where the sweep shows it starts doing work. Re-run the sweep after,
-    and confirm the first covered width sits below the new breakpoint.
-  - From: UI/UX Override - practice pages read-through
-- [ ] No test measures the band the readout breakpoint was moved for
-  - **Issue**: `test/pages.test.js` measures 1280x720 and 400x720 only, so
-    nothing exercises 820-909px - the band the breakpoint was moved to cover,
-    and the band the item's own prompt would have left broken. A change to the
-    breakpoint, to the readout's width, or to its text would not be caught.
-  - **Goal**: Add a third viewport to `VIEWPORTS` in `test/pages.test.js`, a
-    tablet width inside the band such as 880x720, and update the comment above
-    it that currently names a desktop width and a phone width. Every existing
-    test then runs across the band, the covered-text check at its scroll stops
-    included. Do this after the item above, so the width pinned is the one the
-    split query settles on.
-  - From: UI/UX Override - practice pages read-through
-
 ### Create and Deploy GitHub Pages Override
 
 - No site
@@ -987,5 +929,58 @@ roadmap section each one came from.
     `test-results/ui-ux-tester.agent/ui-ux-tester.log`; it was not promoted
     because it fails until the item above is fixed.
   - From: UI/UX Override - practice pages
+- [x] `table.html`'s caption scrolls away with the table it titles
+  - **Issue**: The `<caption>` sits inside the `<table>`, which sits inside the
+    `.table_scroll` wrapper, so it is as wide as the table and scrolls with it.
+    At 400x720, scrolling the eastern loop wrapper to its end leaves the title
+    reading "y stop, an ordinary Tuesday" - it slides out of its own box exactly
+    when a reader does the thing the wrapper exists to allow. The same string is
+    also the wrapper's `aria-label`, so a screen reader announces it twice, once
+    entering the region and once for the table.
+  - **Goal**: Give the title one home. Either lift it out of the table into the
+    wrapper and drop the `<caption>`, or keep the `<caption>`, drop the
+    duplicate `aria-label` for `aria-labelledby` naming it, and hold it still
+    with `position: sticky; left: 0` so it stays readable as the table scrolls
+    under it.
+  - From: UI/UX Override - practice pages read-through
+- [x] The table wrapper is a keyboard stop at widths where nothing scrolls
+  - **Issue**: `.table_scroll` carries `tabindex="0"` on every viewport. At
+    1280x720 both wrappers measure `scrollWidth === clientWidth` at 696px, so
+    the first Tab on `table.html` lands on a region that cannot scroll and rings
+    the whole table before any link is reached. The ring itself is correct at
+    both widths - 1px `outline-style: auto` hugging the box, not clipped by the
+    wrapper's own overflow - so this is the stop existing, not how it looks.
+  - **Goal**: Make the wrapper focusable only when it overflows, which is what
+    the scrollable-region pattern asks for: set `tabindex` from
+    `scrollWidth > clientWidth` on load and on resize, and drop `role="region"`
+    with it so an unscrollable box is not announced as a landmark either.
+  - From: UI/UX Override - practice pages read-through
+- [x] The readout's 140px inset is applied far wider than it does any work
+  - **Issue**: The `@media (max-width: 909px)` block does two things - narrows
+    the readout to 124px and 13px, and insets `header.page`, `main` and
+    `footer.page` 140px on the right. Sweeping `scroll.html` at offset 1234 from
+    909px down to 380px in 10px steps, with the inset dropped and the narrowed
+    readout kept, the first width at which any text run meets the readout is
+    509px. From 519px to 909px the inset prevents nothing and costs the text
+    column 108px, 696px becoming 588px in one 1px step at the breakpoint. The
+    narrowing itself is placed correctly: at 910px the unnarrowed readout's left
+    edge is 728px, exactly the text column's box edge.
+  - **Goal**: Split the query. Keep the readout narrowing at 909px, where it is
+    measured to belong, and move the 140px inset to its own `max-width` near
+    520px, where the sweep shows it starts doing work. Re-run the sweep after,
+    and confirm the first covered width sits below the new breakpoint.
+  - From: UI/UX Override - practice pages read-through
+- [x] No test measures the band the readout breakpoint was moved for
+  - **Issue**: `test/pages.test.js` measures 1280x720 and 400x720 only, so
+    nothing exercises 820-909px - the band the breakpoint was moved to cover,
+    and the band the item's own prompt would have left broken. A change to the
+    breakpoint, to the readout's width, or to its text would not be caught.
+  - **Goal**: Add a third viewport to `VIEWPORTS` in `test/pages.test.js`, a
+    tablet width inside the band such as 880x720, and update the comment above
+    it that currently names a desktop width and a phone width. Every existing
+    test then runs across the band, the covered-text check at its scroll stops
+    included. Do this after the item above, so the width pinned is the one the
+    split query settles on.
+  - From: UI/UX Override - practice pages read-through
 
 </details>
