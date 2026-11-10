@@ -480,13 +480,14 @@
  },
 
  "siteSpecific_YouTube_WatchRandomVideo": {
-  "url": "https://www.youtube.com/",
+  "url": "https://www.youtube.com/@YouTube/videos",
   "scheduled": true,
-  "requires": [".yt-lockup-view-model__content-image"],
+  "requires": ["a.ytLockupViewModelContentImage[href*='/watch?v=']"],
   "timeout": 60000,
   "steps": [
    { "wait": 3000 },
-   { "run": true }
+   { "run": true },
+   { "expect": { "popup": "youtube.com/watch?v=" } }
   ]
  },
 

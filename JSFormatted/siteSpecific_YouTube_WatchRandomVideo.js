@@ -2,9 +2,15 @@ javascript:(function() {
  /* Config variable - 1 to oepn in new tab, 0 to not.     */
  var openInNewTabWatchRandomVideo = 1;
 
- /* Class name of element holding link for video.         */
+ /* Thumbnail links of the videos listed on the page. The lockup class comes first, which is what
+    the home feed, a channel's videos and the related videos all use; the older lockup class and
+    the search results' thumbnail follow. Only watch links count, so a short is never picked.   */
  var videoFeedWatchRandomVideo = /* HOT-GLUE - may change */
-  document.getElementsByClassName("yt-lockup-view-model__content-image");
+  document.querySelectorAll(
+   "a.ytLockupViewModelContentImage[href*='/watch?v='], " +
+   "a.yt-lockup-view-model__content-image[href*='/watch?v='], " +
+   "a#thumbnail[href*='/watch?v=']"
+  );
 
  /* Length of all videos in home feed. */
  var videoFeedWatchRandomVideoLen = videoFeedWatchRandomVideo.length;
@@ -28,8 +34,8 @@ javascript:(function() {
    /* watch random video                                                             */
    window.open(videoURL, target);
   } else {
-   /* do nothing                                                                     */
-   let skip;
+   /* say why nothing opened: a signed-out home feed lists no videos at all          */
+   alert("Watch Random Video: there are no videos on this page to choose from.");
   }
  }
 
