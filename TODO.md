@@ -27,27 +27,77 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] Support bookmarklets for signed-in sites without keeping any sign-in in
+- [x] Support bookmarklets for signed-in sites without keeping any sign-in in
   the repository
-  - An `auth` property names a Playwright storage-state file in the folder
-    given by a `TEST_BM_AUTH_DIR` environment variable, which must resolve
-    outside the repository. `node test-bm.js --save-auth <file> <url>` opens a
-    headed browser, waits while the maintainer signs in, then saves the state.
-  - A missing state file makes the entry a skip with the reason, never a
-    failure, so a scheduled run on a machine without it stays green.
-  - An entry with `auth` runs read-only: no step may submit a form or send a
-    message, and the runner refuses to start if one would.
+  - `"auth": "<site>"` names the sign-in an entry needs, such as `"chatgpt"`.
+    Entries that share a sign-in share the name.
+  - `test-bm.js` never signs in and never starts a signed-in browser itself.
+    It loads the launcher module named by `TEST_BM_AUTH_LAUNCHER`, which must
+    be an absolute path outside the repository, and asks it for a Playwright
+    `BrowserContext` with `launch({ chromium, site })`. From there the entry
+    runs as any entry does: the 1280x720 viewport, `fixture:` routes,
+    `requires`, `steps`, the same injection and the same verdicts, and the
+    harness closes the context when the entry ends.
+  - The launcher, and whatever it signs in to, stays on the maintainer's
+    machine: out of the repository and out of its documentation.
+  - `node test-bm.js --sign-in <site>` calls the launcher's `signIn({ site })`
+    and exits.
+  - After a run, the harness calls the launcher's `signInState(states)` once,
+    with `true` for each site whose entry reached its page signed in and
+    `false` for each that was sent to sign in, so the launcher can say which
+    sign-ins are missing. The harness itself sends no message about it.
+  - `TEST_BM_AUTH_LAUNCHER` unset, or a launcher with no sign-in for the site,
+    makes the entry a skip with the reason, never a failure, so a scheduled
+    run on a machine without one stays green.
+  - An entry with `auth` also gives `signedIn`, a selector only a signed-in
+    page has, because a site such as ChatGPT serves a signed-out page on its
+    own origin rather than redirecting. A page without it, or one that lands
+    off the entry's origin as a sign-in page does, is a skip reading
+    `signed out of <site>`, never a `site changed` failure.
+  - An entry with `auth` runs read-only. Before a `click`, `fill` or `press`
+    acts, the harness checks its live target, or the focused element for a
+    `press` with no selector, and refuses the entry if that is a submit
+    control, a `textarea`, a `contenteditable` element or anything inside a
+    `<form>`: the places a site sends a message or saves a change. A control
+    the bookmarklet adds outside them, such as its own search box, stays
+    usable.
+  - An entry with `auth` writes down nothing the page shows. Its report holds
+    the verdict, the reason, selectors and counts, never page text, HTML, an
+    ARIA snapshot, a screenshot, video, the page's console messages or what
+    the clipboard holds, and an `expect` on `text` or `clipboard` fails
+    without quoting what it found.
+  - Its `url` names no conversation, message, order or account: a site's
+    landing page, or an address from an environment variable once `url` reads
+    one.
+  - Done when `test/harness.test.js` holds a fixture with `auth` that skips
+    with `TEST_BM_AUTH_LAUNCHER` unset, passes through a stub launcher, is
+    refused for a `fill` inside a `<form>`, is a `signed out` skip when its
+    `signedIn` selector is missing, and hands the stub the right
+    `signInState`.
+  - **Goal**: Resolve the maintainer's own launcher to
+    [signed-in-sites.prompt.md](.claude/prompts/signed-in-sites.prompt.md).
   - From: Test Harness
-- [ ] Write entries for the signed-in site-specific bookmarklets: ChatGPT,
-  Gmail and Amazon, each with `auth` and `"scheduled": false`
-  - Four of the five failures the 11.08.2026 `--all` run reported are these
-    bookmarklets meeting `https://example.com/`, which is the absence of an
-    entry rather than a fault.
+- [ ] Write entries for the ChatGPT and Gmail bookmarklets, each with `auth`,
+  `signedIn` and `"scheduled": false`, and for the Amazon one as a guest
+  - Three of the five failures the 11.08.2026 `--all` run reported are the
+    ChatGPT and Gmail bookmarklets meeting `https://example.com/`, which is
+    the absence of an entry rather than a fault.
+  - `siteSpecific_Amazon_HideVideoPauseIcon.js` hides the
+    `vjs-big-play-button` a guest meets on any product page with a video, so
+    its entry has no `auth`, lists that class in `requires`, and is scheduled
+    by the rule the other public site-specific entries follow.
+  - For each signed-in site, record whether the run's browser stays signed
+    in; it reports `navigator.webdriver` true. A site that challenges or signs
+    it out is a skip with that reason, not a failure, and the missing sign-in
+    reaches the maintainer through `signInState` alone.
   - From: Test Configurations
 - [ ] Let `url` read an environment variable, as in `"url": "$OCTOPRINT_URL"`,
   and write the OctoPrint entry with it
   - OctoPrint runs on a printer on the maintainer's own network, so its address
     does not belong in the repository. An unset variable is a skip.
+  - The address a variable holds never appears in a reason, `report.json`,
+    `summary.txt` or `failure.md`; each names `$OCTOPRINT_URL` in its place,
+    so a pasted log or an assistant reading the report never learns it.
   - From: Test Configurations
 - [ ] `siteSpecific_YouTube_WatchRandomVideo.js` finds no videos on the home
   feed, so it opens nothing
@@ -59,6 +109,15 @@ its README entry linking that gist. Runs post and update gists with
   - **Goal**: Read what the signed-out home feed serves now, take the link from
     that, and keep the entry's `requires` naming whatever replaces it so the next
     redesign is reported the same way rather than as a silent no-op.
+  - **Short**: once the entry passes, make the bookmarklet's short and post it
+    as `## Short Videos` describes, built with the
+    `adobe-after-effects-scripting` skill from the After Effects project the
+    run's constants name.
+  - In its recording, every thumbnail on the home feed is swapped for a
+    generic cover graphic, a plain card with a placeholder title such as
+    `Sample Video 3`, before the bookmarklet runs, and the video it opens plays
+    with the sound off, so the short shows no one else's thumbnails and plays
+    no one else's audio.
   - From: Existing Bookmarklets
 
 ### Create and Deploy GitHub Pages Override
@@ -75,16 +134,55 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-- [ ] Support bookmarklets for signed-in sites without keeping any sign-in in
+- [x] Support bookmarklets for signed-in sites without keeping any sign-in in
   the repository
-  - An `auth` property names a Playwright storage-state file in the folder
-    given by a `TEST_BM_AUTH_DIR` environment variable, which must resolve
-    outside the repository. `node test-bm.js --save-auth <file> <url>` opens a
-    headed browser, waits while the maintainer signs in, then saves the state.
-  - A missing state file makes the entry a skip with the reason, never a
-    failure, so a scheduled run on a machine without it stays green.
-  - An entry with `auth` runs read-only: no step may submit a form or send a
-    message, and the runner refuses to start if one would.
+  - `"auth": "<site>"` names the sign-in an entry needs, such as `"chatgpt"`.
+    Entries that share a sign-in share the name.
+  - `test-bm.js` never signs in and never starts a signed-in browser itself.
+    It loads the launcher module named by `TEST_BM_AUTH_LAUNCHER`, which must
+    be an absolute path outside the repository, and asks it for a Playwright
+    `BrowserContext` with `launch({ chromium, site })`. From there the entry
+    runs as any entry does: the 1280x720 viewport, `fixture:` routes,
+    `requires`, `steps`, the same injection and the same verdicts, and the
+    harness closes the context when the entry ends.
+  - The launcher, and whatever it signs in to, stays on the maintainer's
+    machine: out of the repository and out of its documentation.
+  - `node test-bm.js --sign-in <site>` calls the launcher's `signIn({ site })`
+    and exits.
+  - After a run, the harness calls the launcher's `signInState(states)` once,
+    with `true` for each site whose entry reached its page signed in and
+    `false` for each that was sent to sign in, so the launcher can say which
+    sign-ins are missing. The harness itself sends no message about it.
+  - `TEST_BM_AUTH_LAUNCHER` unset, or a launcher with no sign-in for the site,
+    makes the entry a skip with the reason, never a failure, so a scheduled
+    run on a machine without one stays green.
+  - An entry with `auth` also gives `signedIn`, a selector only a signed-in
+    page has, because a site such as ChatGPT serves a signed-out page on its
+    own origin rather than redirecting. A page without it, or one that lands
+    off the entry's origin as a sign-in page does, is a skip reading
+    `signed out of <site>`, never a `site changed` failure.
+  - An entry with `auth` runs read-only. Before a `click`, `fill` or `press`
+    acts, the harness checks its live target, or the focused element for a
+    `press` with no selector, and refuses the entry if that is a submit
+    control, a `textarea`, a `contenteditable` element or anything inside a
+    `<form>`: the places a site sends a message or saves a change. A control
+    the bookmarklet adds outside them, such as its own search box, stays
+    usable.
+  - An entry with `auth` writes down nothing the page shows. Its report holds
+    the verdict, the reason, selectors and counts, never page text, HTML, an
+    ARIA snapshot, a screenshot, video, the page's console messages or what
+    the clipboard holds, and an `expect` on `text` or `clipboard` fails
+    without quoting what it found.
+  - Its `url` names no conversation, message, order or account: a site's
+    landing page, or an address from an environment variable once `url` reads
+    one.
+  - Done when `test/harness.test.js` holds a fixture with `auth` that skips
+    with `TEST_BM_AUTH_LAUNCHER` unset, passes through a stub launcher, is
+    refused for a `fill` inside a `<form>`, is a `signed out` skip when its
+    `signedIn` selector is missing, and hands the stub the right
+    `signInState`.
+  - **Goal**: Resolve the maintainer's own launcher to
+    [signed-in-sites.prompt.md](.claude/prompts/signed-in-sites.prompt.md).
 - [ ] Add `--capture` and a `capture` property: a screenshot before and after
   the bookmarklet runs, and a video of the whole entry
   - Fixed viewport, fixed steps, and no clock or random value rendered into the
@@ -92,7 +190,9 @@ browser for the same result.
   - The report lists each artifact path and the time offset at which every step
     started, so a clip can be cut to the moment the bookmarklet ran without
     anyone scrubbing through it.
-  - A failure always keeps its after screenshot, captured or not.
+  - A failure always keeps its after screenshot, captured or not, except in an
+    entry with `auth`, which captures nothing: a signed-in page shows the
+    account and what it holds.
   - These captures are also the footage for `## Short Videos`.
 - [ ] Add `--browser firefox` as a second engine
   - Bookmarklet handling differs between engines, and Firefox is the second
@@ -105,12 +205,23 @@ Entries in `test-bm.json` for the bookmarklets already published. The default
 safe run covers anything without an entry; these entries add the assertions
 that show a bookmarklet did its job, rather than merely not crashing.
 
-- [ ] Write entries for the signed-in site-specific bookmarklets: ChatGPT,
-  Gmail and Amazon, each with `auth` and `"scheduled": false`
+- [ ] Write entries for the ChatGPT and Gmail bookmarklets, each with `auth`,
+  `signedIn` and `"scheduled": false`, and for the Amazon one as a guest
+  - `siteSpecific_Amazon_HideVideoPauseIcon.js` hides the
+    `vjs-big-play-button` a guest meets on any product page with a video, so
+    its entry has no `auth`, lists that class in `requires`, and is scheduled
+    by the rule the other public site-specific entries follow.
+  - For each signed-in site, record whether the run's browser stays signed
+    in; it reports `navigator.webdriver` true. A site that challenges or signs
+    it out is a skip with that reason, not a failure, and the missing sign-in
+    reaches the maintainer through `signInState` alone.
 - [ ] Let `url` read an environment variable, as in `"url": "$OCTOPRINT_URL"`,
   and write the OctoPrint entry with it
   - OctoPrint runs on a printer on the maintainer's own network, so its address
     does not belong in the repository. An unset variable is a skip.
+  - The address a variable holds never appears in a reason, `report.json`,
+    `summary.txt` or `failure.md`; each names `$OCTOPRINT_URL` in its place,
+    so a pasted log or an assistant reading the report never learns it.
 
 ## Existing Bookmarklets
 
@@ -129,6 +240,15 @@ files its failures here. A fix is finished when its posted gist carries it too.
   - **Goal**: Read what the signed-out home feed serves now, take the link from
     that, and keep the entry's `requires` naming whatever replaces it so the next
     redesign is reported the same way rather than as a silent no-op.
+  - **Short**: once the entry passes, make the bookmarklet's short and post it
+    as `## Short Videos` describes, built with the
+    `adobe-after-effects-scripting` skill from the After Effects project the
+    run's constants name.
+  - In its recording, every thumbnail on the home feed is swapped for a
+    generic cover graphic, a plain card with a placeholder title such as
+    `Sample Video 3`, before the bookmarklet runs, and the video it opens plays
+    with the sound off, so the short shows no one else's thumbnails and plays
+    no one else's audio.
 
 ### From the Open Issues
 
@@ -202,6 +322,10 @@ file every assistant reads, rather than once per assistant.
     formatted file, and the after screenshot.
   - Write it as `failure.md` beside `report.json`, so any assistant reads it as
     plain text.
+  - For an entry with `auth`, only the selector or the message and the
+    bookmarklet's own lines: no ARIA snapshot, HTML, stack frames from the page
+    or screenshot, because those would hand a signed-in page's content to an
+    assistant.
 - [ ] Write the triage procedure in a tracked `AGENTS.md` at the repository
   root
   - Codex and GitHub Copilot's coding agent read `AGENTS.md` directly. Claude
@@ -217,15 +341,18 @@ file every assistant reads, rather than once per assistant.
     file's focus and action, and styling through the CSSOM. The automation's
     copy of them is in an untracked file, so a contributor's assistant would
     otherwise never see them.
-  - Hard limits, stated in the file: never sign in, never submit a form or
-    send a message, and never loosen a `test-bm.json` expectation to make a
-    test pass unless the bookmarklet's intended behaviour changed, saying so
-    when it did.
+  - Hard limits, stated in the file: never sign in, never run
+    `node test-bm.js --sign-in`, never attach a browser tool to a browser that
+    is signed in to anything, never submit a form or send a message, and never
+    loosen a `test-bm.json` expectation to make a test pass unless the
+    bookmarklet's intended behaviour changed, saying so when it did.
 - [ ] Document how each assistant gets a browser
   - The Playwright MCP server (`@playwright/mcp`) works with Claude Code,
     GitHub Copilot in VS Code, and Codex. Each tool registers MCP servers in its
     own config file, and those locations change between releases, so link each
     tool's documentation rather than restating a path.
+  - Run it with an isolated profile (`--isolated`), never in a mode that
+    connects it to the reader's own browser, which carries their sign-ins.
   - Config files such as `.mcp.json` start with a dot and are hidden by the
     ignore rules here, so this is documentation, not a committed config.
 
@@ -240,7 +367,11 @@ from here carry `From: version.control = null`.
   the flags, the exit codes, and where the report is written
 - [ ] Add a configuration reference to `docs/testing.md`: every property with
   an example, what the default safe run does and does not prove, fixture
-  pages, and `auth` with `TEST_BM_AUTH_DIR`
+  pages, and `auth`
+  - Describe `auth`, `signedIn` and `TEST_BM_AUTH_LAUNCHER` by contract alone:
+    what a launcher's three functions take and return, that an entry without
+    one is a skip, and that no sign-in or session is ever in the repository.
+    No launcher, browser profile or account is described.
   - Examples use `example.com`, `example.org` and placeholder bookmarklet
     names only.
 - [ ] Add a scheduling section to `docs/testing.md`: a Windows Task Scheduler
@@ -382,6 +513,34 @@ the bookmarklet has a demo.
   its gist paragraph, into a video block's demo line in place of its comment,
   with the short line commented out until its short exists
   - The README keeps its CRLF line endings.
+- [x] Write two general-use After Effects skills at user level, outside this
+  repository: `adobe-after-effects-scripting` and
+  `adobe-after-effects-integrations`
+  - `adobe-after-effects-scripting` is for automating After Effects and
+    writing or editing its scripts: ExtendScript (`.jsx`, `.jsxbin`) and its
+    ES3 limits, the `app` object model from projects and folders down to
+    layers, properties and keyframes, undo groups, the render queue and
+    `queueInAME`, running a script from outside (`AfterFX.exe -s` and `-r`),
+    `aerender`, and expressions.
+  - `adobe-after-effects-integrations` is for what runs beside or inside After
+    Effects: CEP panels, and UXP where the installed version has it; C++
+    effect and AEGP plugins built on the After Effects SDK; and MCP servers or
+    other bridges that let an outside program drive it.
+  - Each description says where the other begins, so a request loads one of
+    them: code After Effects runs is scripting, and a component that loads
+    into After Effects or drives it from outside is integrations. An MCP
+    server's tools are integrations; the ExtendScript they send is scripting.
+  - General use means nothing from this repository or the maintainer's
+    project in either skill: no frame sizes, folders, compositions, paths or
+    accounts. The short script below and `## Social Media Posting` keep those,
+    and the examples use placeholder names.
+  - Written before the short script below, the scripting skill's first use.
+    The After Effects MCP server under `## Demo Videos - paused` is the
+    integrations skill's.
+  - Done when each loads in a session opened outside this repository, is
+    chosen for a request in its own area and not for one in the other's, and
+    states nothing about After Effects that the scripting guide or the SDK
+    documentation does not.
 - [ ] Write the short script: an ExtendScript (`.jsx`) file kept beside the
   After Effects project, outside version control, that builds one
   bookmarklet's short and queues its renders
@@ -429,7 +588,8 @@ the bookmarklet has a demo.
     defaulting to `test-results/shorts/`.
   - Never overwrite a recording that is already there. The maintainer's hand
     recordings come first.
-  - An entry with `auth` needs its saved sign-in, as its test does.
+  - An entry with `auth` records through its launcher, as its test runs, and
+    its recording stays on the machine until the maintainer has reviewed it.
 - [ ] Make and post the shorts for the bookmarklets that work on any page:
   `dom_`, `nav_`, `style_` and `window_`
   - For each: the recording, the short script, the posts the run's constants
@@ -439,9 +599,12 @@ the bookmarklet has a demo.
     hand recording rather than skipped without a word. OctoPrint needs the
     printer's address, as its test does.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
-  ChatGPT, Gmail and Amazon
-  - From saved sign-ins where they exist, otherwise from the maintainer's hand
-    recordings. List the ones still without a recording.
+  ChatGPT and Gmail
+  - From the launcher's sign-in where it has one, otherwise from the
+    maintainer's hand recordings. List the ones still without a recording.
+  - A run renders these and stops before posting. The maintainer checks each
+    for an account name, address, avatar, conversation or message in view,
+    and posts it.
 - [ ] Make a short part of every new bookmarklet: extend the paragraph at the
   top of this file so a new bookmarklet's item ends with its short posted and
   its video block in the README
@@ -493,7 +656,10 @@ Bookmarklets for working with a page's content and structure, filed under
   `#:~:text=` fragment `window_URI_AnchorHighlightedText.js` builds
 - [ ] `dom_Form_SaveFormDraft.js` - save every field on the page to
   `localStorage` for this URL and restore it on the next click, so a long form
-  survives a crash or an expired session; password fields are never stored
+  survives a crash or an expired session
+  - Never stores password, hidden, payment (`autocomplete="cc-*"`) or
+    one-time-code fields, and says on first use that the site's own scripts
+    can read what it saves.
 - [ ] `dom_Form_AllowPaste.js` - restore paste, copy and the context menu on
   pages that block them, using capture-phase listeners that stop the page's
   handlers
@@ -511,6 +677,8 @@ Bookmarklets for working with a page's content and structure, filed under
   with a regular-expression option and undo; for mock-ups and screenshots
 - [ ] `dom_Parse_PrettyPrintJson.js` - turn a raw JSON response page into a
   collapsible, searchable tree
+  - Build the tree with `textContent` only, so a string in the JSON never runs
+    as markup on the page's origin.
 - [ ] `dom_Note_PersistentHighlights.js` - highlights that are saved per URL
   and reapplied the next time the bookmarklet runs on that page
 - [ ] `dom_Text_WordCount.js` - words, characters and reading time for the
@@ -534,6 +702,8 @@ Bookmarklets for moving around a page or between pages, filed under
   on one click and restore it on the next
 - [ ] `nav_Links_ListPageLinks.js` - a filterable panel of every link on the
   page, external links marked, click to jump to where each one sits
+  - Link text goes in with `textContent`, and a `javascript:` link is listed
+    and marked, never followed.
 
 ## New Bookmarklets - Style
 
@@ -576,7 +746,8 @@ here lists its selectors in `requires`.
 - [ ] `siteSpecific_GitHub_AddApiColumns.js` - add columns to the file table
   from the REST API, as `siteSpecific_GitHub_ShowFileSize.js` does for size
   - Signed-out requests are limited to 60 an hour; show the remaining count
-    rather than failing silently at the limit.
+    rather than failing silently at the limit. It never asks for or stores a
+    token to raise that limit.
 - [ ] `siteSpecific_GitHub_MarkdownLivePreview.js` - a live preview beside the
   editor when editing a `.md` file on GitHub
 - [ ] `siteSpecific_GitHub_ExpandAllConversation.js` - keep clicking "Load
