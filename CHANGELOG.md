@@ -6,6 +6,67 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.10.2026]
+
+### Fixed
+
+- The scrolling table boxes on `test/fixtures/pages/table.html` answer three
+  things a read-through of the practice pages raised.
+  - A scrolling table's title stays readable while the table scrolls under it.
+    The `<caption>` is as wide as the table it titles, so it used to slide out
+    of its own box at the end of a scroll, leaving the title cut off at
+    whatever letter the scroll had reached. A caption cannot be held still
+    itself - a sticky box cannot shift past its own containing block, and here
+    the two are the same width - so the caption's text is held instead, by a
+    span inside it that is narrower than the box it sits in.
+  - Each scrolling table box names itself with `aria-labelledby` pointing at
+    its caption, rather than repeating the caption as an `aria-label`. The
+    sentence was written out twice, so the title a reader saw and the name a
+    screen reader read could drift apart; now there is one copy and they
+    cannot. A box that fits is no longer a region at all, so it is not named
+    twice there either. Where a box does scroll, the region and the table it
+    holds still take their name from the same caption, and a screen reader
+    reads it on entering the region and again for the table.
+  - A scrolling table box is a keyboard stop only while it has something to
+    scroll. `tabindex="0"` and `role="region"` were on the wrapper at every
+    width, so at a desktop width the first Tab landed on a box that could not
+    move and rang the whole table before reaching a link. Both attributes are
+    now set from `scrollWidth > clientWidth`, on load and on resize, which is
+    what the scrollable-region pattern asks for.
+- The long page's two demands on the layout are two breakpoints rather than
+  one. Narrowing the fixed readout still happens at 909px, which is where the
+  text column stops reaching it. Insetting the page's three full-width bands by
+  140px now happens at 879px, because that is where the inset starts doing
+  work. Between those widths the page keeps the 108px the inset had been taking
+  from a column that did not need it.
+
+### Changed
+
+- `test/pages.test.js` measures a third viewport, a tablet width of 880x720,
+  between the desktop and phone widths it already took. It sits in the band
+  between the readout's two breakpoints and is the first width at which the
+  inset is off, so a breakpoint moved by a pixel now reads as a failure.
+- Five tests were added with it, each named for the defect it catches. Three
+  read the pages at rest: the caption staying inside its box at the end of a
+  scroll, a table box being a keyboard stop only where it can scroll, and the
+  page insetting its text only at the widths the narrowed readout cannot clear
+  on its own. Two more press keys and resize, which a snapshot of a page at
+  rest cannot answer: that the first Tab reaches a table box only where the box
+  scrolls, and that the stop is added and dropped on resize with no reload.
+  Each was confirmed to fail with its fix removed.
+
+### Notes
+
+- The breakpoint for the inset is 879px rather than the ~520px the read-through
+  proposed. The read-through swept the page at a single scroll offset, deep
+  enough into the log that only the 760px text column was beside the readout.
+  Swept at every width from 1280px to 380px and every 50px of scroll, the first
+  width at which any text run meets the readout with the inset dropped is
+  866px, and the text it meets is the header paragraph: the header spans the
+  full width, so it reaches the readout long before the column does. 879px
+  keeps a margin over that measurement and sits one pixel under the new 880px
+  test viewport.
+
 ## [11.09.2026]
 
 ### Fixed
