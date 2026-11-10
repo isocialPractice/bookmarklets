@@ -15,7 +15,7 @@
 // scrolled the whole document sideways under 400px, and a fixed readout sitting on top of the text
 // it reports on.
 //
-// Everything is measured from the rendered page at two viewports, served from the same fake origin
+// Everything is measured from the rendered page at three viewports, served from the same fake origin
 // test-bm.js uses so links, anchors and the embedded frame resolve as they would on a site. Text is
 // measured as glyph runs, through Range.getClientRects, rather than as element boxes: a wide list
 // item whose words stop short of an overlay is not a defect, and an element box says it is.
@@ -42,8 +42,13 @@ var types = {
 var PAGES = ["index.html", "article.html", "table.html", "form.html", "sidebar.html",
  "video.html", "lazy.html", "scroll.html", "snippet.html"];
 
-// A desktop width and a phone width. Two of the three defects showed at one and not the other.
-var VIEWPORTS = [{ width: 1280, height: 720 }, { width: 400, height: 720 }];
+// A desktop width, a tablet width and a phone width. Two of the three defects above showed at the
+// desktop width and not the phone width, or the other way about. 880px is here for a third reason:
+// it sits in the band between scroll.html's two readout breakpoints, where the readout is narrowed
+// but the page no longer insets its text for it. Nothing measured that band until it was added, and
+// it is the first width at which the inset is off, so a breakpoint moved by a pixel reads as a
+// failure here rather than as a page nobody looked at.
+var VIEWPORTS = [{ width: 1280, height: 720 }, { width: 880, height: 720 }, { width: 400, height: 720 }];
 
 // snippet.html's table carries no caption, and is the one table here that should not. That page is a
 // converter fixture holding one of each construct, and dom_Clipboard_ConvertPageToMarkdown pins its
@@ -159,6 +164,66 @@ function readCoveredText() {
  return { overlays: floating.length, total: hits.length, hits: hits.slice(0, 6) };
 }
 
+// Each scrolling table box: whether it has anything to scroll, whether it is a keyboard stop, how
+// it is named, and where its caption text sits once the table has been scrolled to its end beneath
+// it. The box is put back where it was, so the measurements after this one see the page at rest.
+function readTableScroll() {
+ return Array.prototype.map.call(document.querySelectorAll(".table_scroll"), function (box) {
+  var resting = box.scrollLeft;
+  box.scrollLeft = box.scrollWidth;
+  var scrolled = box.scrollLeft;
+  var span = box.querySelector("caption span");
+  var outer = box.getBoundingClientRect();
+  var title = span ? span.getBoundingClientRect() : null;
+  box.scrollLeft = resting;
+  return {
+   overflows: box.scrollWidth > box.clientWidth,
+   role: box.getAttribute("role"),
+   tabindex: box.getAttribute("tabindex"),
+   labelledBy: box.getAttribute("aria-labelledby"),
+   label: box.getAttribute("aria-label"),
+   scrolledTo: Math.round(scrolled),
+   captionText: span ? (span.textContent || "").trim() : null,
+   captionInside: title ? (title.left >= outer.left - 1 && title.right <= outer.right + 1) : false
+  };
+ });
+}
+
+// What a page with a fixed readout gives up to it at this width: the inset its three full-width
+// bands take on the right, and the width the readout itself has been narrowed to. Null on the eight
+// pages that carry no readout.
+function readReadoutBand() {
+ var readout = document.querySelector(".readout");
+ var main = document.querySelector("main");
+ if (!readout || !main) { return null; }
+ function padRight(el) {
+  return el ? Math.round(parseFloat(getComputedStyle(el).paddingRight)) : null;
+ }
+ return {
+  inset: padRight(main),
+  headerInset: padRight(document.querySelector("header.page")),
+  footerInset: padRight(document.querySelector("footer.page")),
+  readoutWidth: Math.round(readout.getBoundingClientRect().width)
+ };
+}
+
+// What the keyboard reached, and whether the browser drew a ring on it. A stop a reader cannot see
+// is a different defect from no stop at all, so the ring is read rather than assumed.
+function readFocused() {
+ var el = document.activeElement;
+ if (!el || el === document.body) { return { tag: null, text: "", isBox: false, ring: false }; }
+ var style = getComputedStyle(el);
+ var visible = false;
+ try { visible = el.matches(":focus-visible"); } catch (err) { visible = false; }
+ return {
+  tag: el.tagName.toLowerCase(),
+  text: (el.textContent || "").trim().slice(0, 40),
+  tabindex: el.getAttribute("tabindex"),
+  isBox: el === document.querySelector(".table_scroll"),
+  ring: visible && style.outlineStyle !== "none"
+ };
+}
+
 function readTables() {
  return Array.prototype.map.call(document.querySelectorAll("table"), function (t) {
   var cap = t.querySelector("caption");
@@ -227,6 +292,8 @@ async function measure() {
      outline: await page.evaluate(readOutline),
      overflow: await page.evaluate(readOverflow),
      tables: await page.evaluate(readTables),
+     tableScroll: await page.evaluate(readTableScroll),
+     band: await page.evaluate(readReadoutBand),
      controls: await page.evaluate(readControls),
      covered: []
     };
@@ -287,7 +354,53 @@ async function measure() {
  return report;
 }
 
+// ---- the pass that presses keys ----
+
+// measure() reads every page at rest and shares one snapshot, which cannot answer what Tab reaches
+// or what a resize changes: both need a page that is pressed and resized rather than read. This is
+// the second and last pass, kept to one launch of its own for the reason measure() is kept to one.
+async function exercise() {
+ var browser = await playwright.chromium.launch();
+ var out = { tabbed: {}, resize: [], afterResize: null };
+ try {
+  for (var v = 0; v < VIEWPORTS.length; v++) {
+   var viewport = VIEWPORTS[v];
+   var ctx = await browser.newContext({ viewport: viewport });
+   var page = await ctx.newPage();
+   await serveFixtures(page);
+   await page.goto(origin + "/table.html", { waitUntil: "load" });
+   await page.keyboard.press("Tab");
+   out.tabbed[viewport.width + "px"] = await page.evaluate(readFocused);
+   await ctx.close();
+  }
+
+  // The same page taken down to the phone width and back up, never reloaded, so what is read is
+  // the resize listener's work rather than a fresh parse of the document.
+  var liveCtx = await browser.newContext({ viewport: VIEWPORTS[0] });
+  var live = await liveCtx.newPage();
+  await serveFixtures(live);
+  await live.goto(origin + "/table.html", { waitUntil: "load" });
+  var widths = [VIEWPORTS[0].width, 400, VIEWPORTS[0].width, 400];
+  for (var w = 0; w < widths.length; w++) {
+   if (w > 0) {
+    await live.setViewportSize({ width: widths[w], height: VIEWPORTS[0].height });
+    // The listener runs on the resize event, so one frame is enough; the assertions below say so
+    // loudly if it never ran at all.
+    await live.waitForTimeout(150);
+   }
+   out.resize.push({ width: widths[w], boxes: await live.evaluate(readTableScroll) });
+  }
+  await live.keyboard.press("Tab");
+  out.afterResize = await live.evaluate(readFocused);
+  await liveCtx.close();
+ } finally {
+  await browser.close();
+ }
+ return out;
+}
+
 var report = null;
+var exercised = null;
 
 function eachPage(run) {
  Object.keys(report.pages).forEach(function (at) { run(at, report.pages[at]); });
@@ -301,6 +414,7 @@ function onlyPage(name, run) {
 
 test.before(async function () {
  report = await measure();
+ exercised = await exercise();
 }, { timeout: 300000 });
 
 // ----------------------------------------------------------------------------------------------- //
@@ -435,4 +549,128 @@ test("scroll.html keeps its readout clear of the log at every offset", function 
     return { at: c.at, hits: c.seen.hits };
    })));
  });
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// What the read-through of the pages found next, named the same way
+// ----------------------------------------------------------------------------------------------- //
+
+test("table.html holds each table's caption still while the table scrolls under it", function () {
+ var seen = 0;
+ onlyPage("table.html", function (at, found) {
+  assert.strictEqual(found.tableScroll.length, 2, at + ": should hold two scrolling table boxes");
+  found.tableScroll.forEach(function (box, n) {
+   var which = at + ": table box " + (n + 1);
+   seen++;
+   assert.ok(box.captionText, which + ": should title itself with caption text");
+   assert.ok(box.captionInside, which + ": scrolled to " + box.scrolledTo
+    + ", its caption slid out of the box it titles");
+   assert.ok(box.labelledBy, which + ": should name itself by its caption with aria-labelledby");
+   assert.strictEqual(box.label, null,
+    which + ": should not also carry the caption as an aria-label, which reads it twice");
+  });
+ });
+ assert.ok(seen > 0, "table.html should have contributed scrolling table boxes to check");
+});
+
+test("a table box is a keyboard stop only where it has something to scroll", function () {
+ var overflowing = 0;
+ var fitting = 0;
+ eachPage(function (at, found) {
+  found.tableScroll.forEach(function (box, n) {
+   var which = at + ": table box " + (n + 1);
+   if (box.overflows) {
+    overflowing++;
+    assert.strictEqual(box.tabindex, "0", which + ": overflows, so Tab should reach it");
+    assert.strictEqual(box.role, "region", which + ": overflows, so it should be a named region");
+   } else {
+    fitting++;
+    assert.strictEqual(box.tabindex, null,
+     which + ": has nothing to scroll, so Tab should pass it by");
+    assert.strictEqual(box.role, null,
+     which + ": has nothing to scroll, so it should not be announced as a region");
+   }
+  });
+ });
+ assert.ok(overflowing > 0, "some viewport should have a table box with something to scroll");
+ assert.ok(fitting > 0, "some viewport should have a table box with nothing to scroll");
+});
+
+test("scroll.html insets its text only at the widths the narrowed readout cannot clear", function () {
+ var bands = {};
+ onlyPage("scroll.html", function (at, found) {
+  assert.ok(found.band, at + ": should have measured what the readout costs the page");
+  bands[at.split(" @")[1]] = found.band;
+ });
+ ["1280px", "880px", "400px"].forEach(function (width) {
+  assert.ok(bands[width], "scroll.html should have been measured at " + width
+   + ", which VIEWPORTS no longer lists");
+ });
+
+ // Above 909px the readout is its own size and lands in the gutter beside a 760px column.
+ assert.strictEqual(bands["1280px"].inset, 32, "1280px: the page should not inset its text");
+ assert.ok(bands["1280px"].readoutWidth > 124,
+  "1280px: the readout should be at its full size, it is " + bands["1280px"].readoutWidth + "px");
+
+ // The band between the breakpoints: narrowed, and clearing the text without being given room.
+ assert.strictEqual(bands["880px"].readoutWidth, 124,
+  "880px: the readout should be narrowed, it is " + bands["880px"].readoutWidth + "px");
+ assert.strictEqual(bands["880px"].inset, 32,
+  "880px: the narrowed readout clears the text here, so the column should keep its full width");
+ assert.strictEqual(bands["880px"].headerInset, 32, "880px: the header should keep its full width");
+ assert.strictEqual(bands["880px"].footerInset, 32, "880px: the footer should keep its full width");
+
+ // Below 879px the header paragraph reaches the readout, so all three bands give it room.
+ assert.strictEqual(bands["400px"].readoutWidth, 124, "400px: the readout should be narrowed");
+ assert.strictEqual(bands["400px"].inset, 140, "400px: the page should inset its text");
+ assert.strictEqual(bands["400px"].headerInset, 140, "400px: the header should inset its text");
+ assert.strictEqual(bands["400px"].footerInset, 140, "400px: the footer should inset its text");
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// What a keyboard does with the table boxes, which a snapshot of a page at rest cannot say
+// ----------------------------------------------------------------------------------------------- //
+
+test("the first Tab on table.html reaches a table box only where the box scrolls", function () {
+ VIEWPORTS.forEach(function (viewport) {
+  var at = "table.html @" + viewport.width + "px";
+  var scrolls = report.pages[at].tableScroll[0].overflows;
+  var focused = exercised.tabbed[viewport.width + "px"];
+  var landed = focused.tag + " \"" + focused.text + "\"";
+  if (scrolls) {
+   assert.ok(focused.isBox,
+    at + ": the first box scrolls, so the first Tab should reach it, it reached " + landed);
+   assert.strictEqual(focused.tabindex, "0", at + ": it should be the stop by tabindex 0");
+   assert.ok(focused.ring, at + ": a box the keyboard stops on should be drawn with a focus ring");
+  } else {
+   assert.ok(!focused.isBox, at + ": the first box has nothing to scroll, so the first Tab should "
+    + "pass it by rather than ring a box that cannot move");
+   assert.strictEqual(focused.text, "Routes",
+    at + ": the first Tab should reach the first link in the table, it reached " + landed);
+  }
+ });
+});
+
+test("table.html adds and drops the table stop on resize, with no reload", function () {
+ assert.ok(exercised.resize.length >= 3, "the resize pass should have taken three readings or more");
+ exercised.resize.forEach(function (step, n) {
+  step.boxes.forEach(function (box, b) {
+   var which = "reading " + (n + 1) + " at " + step.width + "px: box " + (b + 1);
+   if (box.overflows) {
+    assert.strictEqual(box.tabindex, "0",
+     which + ": overflows at this width, so the stop should be there without a reload");
+    assert.strictEqual(box.role, "region",
+     which + ": overflows at this width, so it should be a named region without a reload");
+   } else {
+    assert.strictEqual(box.tabindex, null,
+     which + ": fits at this width, so the stop should have been dropped");
+    assert.strictEqual(box.role, null,
+     which + ": fits at this width, so the region should have been dropped");
+   }
+  });
+ });
+ // The attributes are the mechanism. That the keyboard arrives is the thing being promised.
+ assert.ok(exercised.afterResize.isBox, "narrowed to 400px without a reload: the first Tab should "
+  + "reach the first table's box, it reached " + exercised.afterResize.tag
+  + " \"" + exercised.afterResize.text + "\"");
 });
