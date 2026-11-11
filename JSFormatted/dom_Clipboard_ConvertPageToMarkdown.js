@@ -9,6 +9,13 @@ javascript:(function() {
  var gfmPluginCdnConvertPageToMarkdown  = /* cdn for github flavored markdown plugin            */
   "https://unpkg.com/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.js";
 
+ /* Subresource Integrity hashes of the two files above. The browser runs a file only if it is
+    byte for byte the version reviewed, so a changed file on the cdn is refused, not run.     */
+ var turndownSriConvertPageToMarkdown   =
+  "sha384-jz8bbuCPKxQBEcgaro/3+eMFneW3+kRVLS0pOVZX4CS6lSr8zG+aaBWqenopTc2Z";
+ var gfmPluginSriConvertPageToMarkdown  =
+  "sha384-2TroN1N6OfLQ+K4qttptnIfMREzUlMa3hW/nZqDZXv7Sm9BkESfGEupDEqCbzyRl";
+
  /* GLOBAL VARIABLES */
  var pageUrlConvertPageToMarkdown      = /* fully qualified url of current document             */
   document.baseURI || location.href;
@@ -20,11 +27,14 @@ javascript:(function() {
 
  /************************************* SUPPORT FUNCTIONS *************************************/
 
- /* Dynamically load an external script and resolve once it has finished executing. */
- const loadScriptConvertPageToMarkdown = (url) => {
+ /* Dynamically load an external script, pinned to its integrity hash, and resolve once it has
+    finished executing. A file that does not match the hash fires onerror and never runs.     */
+ const loadScriptConvertPageToMarkdown = (url, integrity) => {
   /* return a promise that resolves when script tag fires load event */
   return new Promise((resolve, reject) => {
    var s = document.createElement("script");
+   s.integrity = integrity;
+   s.crossOrigin = "anonymous";
    s.src = url;
    s.onload = () => resolve(true);
    s.onerror = () => reject(new Error("failed to load " + url));
@@ -168,8 +178,8 @@ javascript:(function() {
  /* Load required libraries, rewrite links, convert subtree to markdown, and copy the result. */
  function runConvertPageToMarkdown() {
   /* chain library loads then perform conversion and clipboard copy */
-  loadScriptConvertPageToMarkdown(turndownCdnConvertPageToMarkdown)
-   .then(() => loadScriptConvertPageToMarkdown(gfmPluginCdnConvertPageToMarkdown))
+  loadScriptConvertPageToMarkdown(turndownCdnConvertPageToMarkdown, turndownSriConvertPageToMarkdown)
+   .then(() => loadScriptConvertPageToMarkdown(gfmPluginCdnConvertPageToMarkdown, gfmPluginSriConvertPageToMarkdown))
    .then(() => {
     var prepared = resolveLinksConvertPageToMarkdown(  /* clone with absolute hrefs and srcs   */
      rootElementConvertPageToMarkdown,
