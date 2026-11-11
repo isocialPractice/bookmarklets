@@ -30,6 +30,31 @@ this file.
   that opens a new tab.
 - `siteSpecific_Amazon_HideVideoPauseIcon` has an entry, as a skip: a headless
   browser is shown a bot check in place of the product page.
+- No bookmarklet may do anything that could pass for malicious, and
+  `test-bm.js` now refuses one that tries. Before any browser starts, a file
+  that touches `document.cookie`, runs a string as code (`eval`,
+  `new Function`, a string handed to a timer, `import()`), or loads a
+  `<script>` by its `src` without an integrity hash fails. During the run,
+  every request started from the bookmarklet's code is noted, and one to a
+  host other than the page's own fails the entry unless the entry names that
+  host, or `*.` and its domain, under the new `network` property with the
+  reason. The whole synchronous stack is read, because a site that wraps
+  `fetch` puts its own frame above the bookmarklet's call.
+- The rule is stated in the README's new Safety block and in a new
+  `AGENTS.md`. A bookmarklet's own notes and settings in `localStorage` stay
+  fine; the README says the site's own scripts can read them.
+- Seven harness tests cover it, with fixtures that read cookies, run `eval`
+  and send to a `.invalid` host, so nothing leaves the machine.
+
+### Security
+
+- `dom_Clipboard_ConvertPageToMarkdown.js` loads `turndown` and its GFM plugin
+  from unpkg pinned by Subresource Integrity hashes, so a changed file on the
+  CDN is refused rather than run on the reader's page.
+- The entries that reach another host say so and why: the three GitHub
+  bookmarklets that read GitHub's own REST API, the Markdown converter's two
+  pinned libraries, and YouTube's own video servers, which the player calls
+  when `siteSpecific_YouTube_SyncAudio` changes the quality.
 
 ### Fixed
 

@@ -27,29 +27,6 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] **Important**: never ship a bookmarklet that does anything that could
-  pass for malicious, and make the harness refuse one that tries
-  - The rule, stated in the README and in `AGENTS.md`: a bookmarklet never
-    reads or writes cookies, never reads storage it did not write itself,
-    never sends anything from the page to another host, and never loads code
-    from anywhere at run time.
-  - Keeping its own data in the page's `localStorage` or `sessionStorage`
-    (notes, settings, column widths) is fine, and 14 bookmarklets do it
-    today. The README says once that the site's own scripts can read that
-    storage, so nothing private belongs in it.
-  - `test-bm.js` fails a bookmarklet that touches `document.cookie`, calls
-    `eval` or `new Function`, adds a `<script>` with a `src`, or makes a
-    request to a host other than the page's own, unless its entry names that
-    host in a new `network` list with the reason. The three GitHub
-    bookmarklets that call `api.github.com` declare it. The source is checked
-    before any browser starts, and the run records every request whose stack
-    passes through the bookmarklet's `sourceURL`, the way its errors are told
-    apart from the page's.
-  - `dom_Clipboard_ConvertPageToMarkdown.js` loads `turndown` and its GFM
-    plugin from unpkg each time it runs. Bundle them into the bookmarklet, or
-    pin them with Subresource Integrity hashes, so what runs is what was
-    reviewed.
-  - From: Test Harness
 - [ ] Add `--capture` and a `capture` property: a screenshot before and after
   the bookmarklet runs, and a video of the whole entry
   - Fixed viewport, fixed steps, and no clock or random value rendered into the
@@ -74,6 +51,16 @@ its README entry linking that gist. Runs post and update gists with
     root: the size column header is added and ten of the twelve rows get a size
     cell, so the partial write reproduces without a signed-in session.
   - <https://github.com/isocialPractice/bookmarklets/issues/1>
+  - From: Existing Bookmarklets `->` From the Open Issues
+- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes no file sizes when the repo
+  root is reached from the navigation path
+  - **Issue**: Viewing the repo root from the tree view and then clicking the
+    repo root link in the navigation path above the table leaves the sizes
+    unloaded. It appears to happen only on the first navigation to the root.
+  - **Goal**: Give the entry a step that clicks the navigation path's root link
+    from a tree view, then expects a size in every row. Fix what it shows, and
+    close the issue with `Fixes #2`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/2>
   - From: Existing Bookmarklets `->` From the Open Issues
 - [ ] Write entries for the ChatGPT and Gmail bookmarklets, each with `auth`,
   `signedIn` and `"scheduled": false`, and for the Amazon one as a guest
@@ -113,29 +100,6 @@ security policies, real dialogs and clipboard. It records video when asked, and
 it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
-
-- [ ] **Important**: never ship a bookmarklet that does anything that could
-  pass for malicious, and make the harness refuse one that tries
-  - The rule, stated in the README and in `AGENTS.md`: a bookmarklet never
-    reads or writes cookies, never reads storage it did not write itself,
-    never sends anything from the page to another host, and never loads code
-    from anywhere at run time.
-  - Keeping its own data in the page's `localStorage` or `sessionStorage`
-    (notes, settings, column widths) is fine, and 14 bookmarklets do it
-    today. The README says once that the site's own scripts can read that
-    storage, so nothing private belongs in it.
-  - `test-bm.js` fails a bookmarklet that touches `document.cookie`, calls
-    `eval` or `new Function`, adds a `<script>` with a `src`, or makes a
-    request to a host other than the page's own, unless its entry names that
-    host in a new `network` list with the reason. The three GitHub
-    bookmarklets that call `api.github.com` declare it. The source is checked
-    before any browser starts, and the run records every request whose stack
-    passes through the bookmarklet's `sourceURL`, the way its errors are told
-    apart from the page's.
-  - `dom_Clipboard_ConvertPageToMarkdown.js` loads `turndown` and its GFM
-    plugin from unpkg each time it runs. Bundle them into the bookmarklet, or
-    pin them with Subresource Integrity hashes, so what runs is what was
-    reviewed.
 
 - [ ] Add `--capture` and a `capture` property: a screenshot before and after
   the bookmarklet runs, and a video of the whole entry
@@ -1204,5 +1168,28 @@ roadmap section each one came from.
     confirm that link opens as a Short rather than redirecting to the watch
     page.
   - From: Short Videos
+- [x] **Important**: never ship a bookmarklet that does anything that could
+  pass for malicious, and make the harness refuse one that tries
+  - The rule, stated in the README and in `AGENTS.md`: a bookmarklet never
+    reads or writes cookies, never reads storage it did not write itself,
+    never sends anything from the page to another host, and never loads code
+    from anywhere at run time.
+  - Keeping its own data in the page's `localStorage` or `sessionStorage`
+    (notes, settings, column widths) is fine, and 14 bookmarklets do it
+    today. The README says once that the site's own scripts can read that
+    storage, so nothing private belongs in it.
+  - `test-bm.js` fails a bookmarklet that touches `document.cookie`, calls
+    `eval` or `new Function`, adds a `<script>` with a `src`, or makes a
+    request to a host other than the page's own, unless its entry names that
+    host in a new `network` list with the reason. The three GitHub
+    bookmarklets that call `api.github.com` declare it. The source is checked
+    before any browser starts, and the run records every request whose stack
+    passes through the bookmarklet's `sourceURL`, the way its errors are told
+    apart from the page's.
+  - `dom_Clipboard_ConvertPageToMarkdown.js` loads `turndown` and its GFM
+    plugin from unpkg each time it runs. Bundle them into the bookmarklet, or
+    pin them with Subresource Integrity hashes, so what runs is what was
+    reviewed.
+  - From: Test Harness
 
 </details>
