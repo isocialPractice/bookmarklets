@@ -19,9 +19,13 @@
    "properties": {
     "url": {
      "type": "string",
-     "description": "The page to open. Defaults to https://example.com/, which is reserved for documentation. A url of the form fixture:<file>.html is a page in test/fixtures/pages, served from https://fixtures.test/ without a network: a real origin, so localStorage, the clipboard and location behave as they do on a site. A hash may follow the file name. A fixture naming a page that is not there is a configuration error.",
+     "description": "The page to open. Defaults to https://example.com/, which is reserved for documentation. A url of the form fixture:<file>.html is a page in test/fixtures/pages, served from https://fixtures.test/ without a network: a real origin, so localStorage, the clipboard and location behave as they do on a site. A hash may follow the file name. A fixture naming a page that is not there is a configuration error. A url of the form $NAME names an environment variable holding the address, for a page whose address does not belong in the repository: the address is read when the entry runs and never written down, every reason and report naming the variable in its place, and an unset variable is a skip rather than a failure.",
      "default": "https://example.com/",
-     "examples": ["https://example.com/", "fixture:article.html", "fixture:sidebar.html#intro"]
+     "examples": ["https://example.com/", "fixture:article.html", "fixture:sidebar.html#intro", "$OCTOPRINT_URL"]
+    },
+    "capture": {
+     "const": true,
+     "description": "Write a screenshot of the page either side of the bookmarklet, and a video of the whole entry, into test-results/test-bm/<run>/capture/<name>/. Each artifact's path and the offset into the video at which every step started go in the report, so a clip can be cut to the moment the bookmarklet ran. --capture does the same for every entry a run reaches. A failure keeps failure.png whether or not the entry asked to be captured. An entry with auth captures nothing and refuses this, because a signed-in page shows the account and what it holds."
     },
     "scheduled": {
      "type": "boolean",
@@ -94,7 +98,7 @@
     "signedIn": ["auth"]
    },
    "if": { "required": ["auth"] },
-   "then": { "properties": { "scheduled": { "const": false } } }
+   "then": { "properties": { "scheduled": { "const": false }, "capture": false } }
   },
   "step": {
    "type": "object",
@@ -159,13 +163,14 @@
   },
   "expect": {
    "type": "object",
-   "description": "What should be true. A selector that is visible or hidden, matches a count, or holds some text; or a clipboard value; or where the page is; or where a new tab went.",
+   "description": "What should be true. A selector that is visible or hidden, matches a count, matches as many elements as another selector, or holds some text; or a clipboard value; or where the page is; or where a new tab went.",
    "additionalProperties": false,
    "properties": {
     "selector": { "type": "string", "minLength": 1, "description": "The elements to look at." },
     "visible": { "const": true, "description": "The first match is showing." },
     "hidden": { "const": true, "description": "The first match is not showing." },
     "count": { "type": "number", "description": "How many elements the selector matches, exactly." },
+    "matches": { "type": "string", "minLength": 1, "description": "A second selector, whose matches are counted against the first selector's. It is for one thing per row of something the page lists, where the count the page would give changes whenever the page does and the relation does not: a size cell in every file row, say. The failure names both counts.", "examples": ["table tr:has(a[href*='/blob/'])"] },
     "text": { "type": "string", "description": "Text the first match holds somewhere in it." },
     "clipboard": { "type": "string", "description": "What the clipboard holds, trimmed at both ends. The whole value, not a part of it. Needs clipboard-read in permissions." },
     "location": { "type": "string", "description": "Text the page's address holds somewhere in it, for a bookmarklet that navigates. Chromium keeps a text fragment directive out of the address, so a bookmarklet that writes one is read off the page it moved instead." },
@@ -178,6 +183,7 @@
     { "required": ["selector", "visible"] },
     { "required": ["selector", "hidden"] },
     { "required": ["selector", "count"] },
+    { "required": ["selector", "matches"] },
     { "required": ["selector", "text"] }
    ]
   },

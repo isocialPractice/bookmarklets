@@ -309,13 +309,22 @@
   "scheduled": true,
   "network": [{ "host": "api.github.com", "reason": "file sizes come from GitHub's own REST API" }],
   "requires": ["table", "tr", "body"],
-  "timeout": 45000,
+  "timeout": 90000,
   "steps": [
    { "run": true },
    { "wait": 2500 },
    { "expect": { "selector": "#fileSizeStyle--__-unlikely_-_name-__--fileSizeStyle", "count": 1 } },
    { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "count": 1 } },
-   { "expect": { "selector": "#fileSize-__-unlikely-name-__-fileSize0", "visible": true } }
+   { "expect": { "selector": "#fileSize-__-unlikely-name-__-fileSize0", "visible": true } },
+   { "expect": { "selector": "td[id^='fileSize-__-unlikely-name-__-fileSize']", "matches": "table tr:has(a[href*='/blob/'])" } },
+   { "click": "table tr a[href$='/tree/main/JSFormatted']:visible" },
+   { "wait": 6000 },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "count": 1 } },
+   { "expect": { "selector": "td[id^='fileSize-__-unlikely-name-__-fileSize']", "matches": "table tr:has(a[href*='/blob/'])" } },
+   { "click": "nav[aria-label='Breadcrumbs'] li:nth-child(2) a" },
+   { "wait": 6000 },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "count": 1 } },
+   { "expect": { "selector": "td[id^='fileSize-__-unlikely-name-__-fileSize']", "matches": "table tr:has(a[href*='/blob/'])" } }
   ]
  },
 
@@ -541,5 +550,112 @@
   "skip": "the map renders no scale bar for a headless load from this machine, and the bookmarklet measures against the scale bar",
   "requires": ["canvas"],
   "timeout": 60000
+ },
+
+ "siteSpecific_chatGPT_BookmarkResponse": {
+  "url": "fixture:snippet.html",
+  "scheduled": true,
+  "requires": ["body"],
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "body", "text": "PASTE_RESPONSE" } },
+   { "expect": { "selector": "body > div", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_chatGPT_NavigateAnswers": {
+  "url": "https://chatgpt.com/",
+  "scheduled": false,
+  "auth": "chatgpt",
+  "signedIn": "#history",
+  "requires": ["#main", "body"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#main .normal-chat", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_chatGPT_PasteReadyBookmarkResponse": {
+  "url": "https://chatgpt.com/",
+  "scheduled": false,
+  "auth": "chatgpt",
+  "signedIn": "#history",
+  "requires": ["body"],
+  "permissions": ["clipboard-read", "clipboard-write"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 60000
+ },
+
+ "siteSpecific_chatGPT_ResizePrompt": {
+  "url": "https://chatgpt.com/",
+  "scheduled": false,
+  "auth": "chatgpt",
+  "signedIn": "#history",
+  "requires": ["form", "#prompt-textarea", "body"],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "body > style:first-child", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_chatGPT_SearchChatHistory": {
+  "url": "https://chatgpt.com/",
+  "scheduled": false,
+  "auth": "chatgpt",
+  "signedIn": "#history",
+  "requires": ["a[href*='/c/']", "body"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#searchParChatGPTSearchChatHistory", "count": 1 } },
+   { "expect": { "selector": "#searchHistoryChatGPTSearchChatHistory", "count": 1 } },
+   { "expect": { "selector": "#clearChatGPTSearchChatHistory", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_Gmail_ResizeSideBar": {
+  "url": "https://mail.google.com/mail/u/0/",
+  "scheduled": false,
+  "auth": "gmail",
+  "signedIn": "div[gh='cm']",
+  "requires": ["div.aeN"],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#gmail-resizer-handle", "count": 1 } }
+  ]
+ },
+
+ "siteSpecific_Gmail_StyleSponsoredEmail": {
+  "url": "https://mail.google.com/mail/u/0/",
+  "scheduled": false,
+  "auth": "gmail",
+  "signedIn": "div[gh='cm']",
+  "requires": ["table", "tr"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail": {
+  "url": "https://mail.google.com/mail/u/0/",
+  "scheduled": false,
+  "auth": "gmail",
+  "signedIn": "div[gh='cm']",
+  "requires": ["div.aim", "div.TH"],
+  "timeout": 60000
+ },
+
+ "siteSpecific_OctoPrint_ChangeGraphImage": {
+  "url": "$OCTOPRINT_URL",
+  "scheduled": false,
+  "requires": ["#temperature-graph"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#temperature-graph[style*='background']", "count": 1 } }
+  ]
  }
 }

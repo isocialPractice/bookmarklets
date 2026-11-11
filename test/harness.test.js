@@ -474,3 +474,227 @@ test("--sign-in hands the launcher the site name and nothing else, and needs a l
   removeDir(stub.dir);
  }
 });
+
+// ----------------------------------------------------------------------------------------------- //
+// Capturing an entry
+// ----------------------------------------------------------------------------------------------- //
+
+// One fixture, copied under as many names as the run needs entries, with a configuration of its own.
+// It keeps these runs away from the shared fourteen, whose counts the assertions above pin down.
+function runApart(entries, args, env) {
+ var js = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-apart-"));
+ var source = fs.readFileSync(path.join(rootDir, jsDir, "fixture_Pass_AddsAPanel.js"));
+ try {
+  Object.keys(entries).forEach(function (name) { fs.writeFileSync(path.join(js, name + ".js"), source); });
+  var config = path.join(js, "test-bm.json");
+  fs.writeFileSync(config, JSON.stringify(entries));
+  var run = runHarness(args, Object.assign({ TEST_BM_JS_DIR: js, TEST_BM_CONFIG: config }, env || {}));
+  var named = /^report: (.+)$/m.exec(run.out);
+  var report = null;
+  if (named) {
+   report = JSON.parse(fs.readFileSync(path.join(rootDir, named[1].replace(/\//g, path.sep), "report.json"), "utf8"));
+  }
+  return { run: run, report: report };
+ } finally {
+  removeDir(js);
+ }
+}
+
+function onlyResult(answer) {
+ assert.ok(answer.report, "the run should have written a report:\n" + answer.run.out + answer.run.err);
+ assert.strictEqual(answer.report.results.length, 1);
+ return answer.report.results[0];
+}
+
+var panelSelector = "#panel--__-unlikely_-_name-__--fixturePassAddsAPanel";
+
+test("a captured entry writes a screenshot either side of the bookmarklet, and a video of the whole entry", function () {
+ var answer = runApart({
+  fixture_Capture_Captured: { url: "fixture:article.html", capture: true, steps: [{ run: true }] }
+ }, ["--all"]);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.ok(result.capture, "a captured entry should carry its artifacts in the report");
+
+ assert.deepStrictEqual(result.capture.screenshots.map(function (s) { return s.what; }), ["before", "after"]);
+ result.capture.screenshots.forEach(function (s) {
+  assert.ok(fs.existsSync(path.join(rootDir, s.file)), "there should be a file at " + s.file);
+  assert.ok(fs.statSync(path.join(rootDir, s.file)).size > 0, s.file + " should not be empty");
+  assert.ok(typeof s.at === "number" && s.at >= 0, "a screenshot carries its offset into the video");
+ });
+
+ assert.match(result.capture.video, /capture\/fixture_Capture_Captured\/entry\.webm$/);
+ assert.ok(fs.statSync(path.join(rootDir, result.capture.video)).size > 0, "the video should not be empty");
+});
+
+test("the report says where in the video every step started, so a clip can be cut to the run", function () {
+ var answer = runApart({
+  fixture_Capture_Timed: {
+   url: "fixture:article.html",
+   capture: true,
+   steps: [{ wait: 400 }, { run: true }, { expect: { selector: panelSelector, count: 1 } }]
+  }
+ }, ["--all"]);
+ var timeline = onlyResult(answer).capture.timeline;
+ assert.deepStrictEqual(timeline.map(function (t) { return t.what; }), [
+  "open https://fixtures.test/article.html",
+  "step 1: wait 400",
+  "step 2: run",
+  "the bookmarklet runs",
+  "step 3: expect"
+ ]);
+ for (var i = 1; i < timeline.length; i++) {
+  assert.ok(timeline[i].at >= timeline[i - 1].at, "the offsets should run forwards: " + JSON.stringify(timeline));
+ }
+ var ran = timeline.filter(function (t) { return t.what === "the bookmarklet runs"; })[0];
+ assert.ok(ran.at >= 400, "the bookmarklet ran after the wait, so its offset is past it: " + ran.at);
+});
+
+test("a bookmarklet an entry runs twice gets a numbered pair of screenshots for the second run", function () {
+ var answer = runApart({
+  fixture_Capture_Twice: { url: "fixture:article.html", capture: true, steps: [{ run: true }, { run: true }] }
+ }, ["--all"]);
+ assert.deepStrictEqual(onlyResult(answer).capture.screenshots.map(function (s) { return s.what; }),
+  ["before", "after", "before-2", "after-2"]);
+});
+
+test("a failure keeps a screenshot of the page as it stood, with nothing asking for a capture", function () {
+ var answer = runApart({
+  fixture_Capture_Failed: {
+   url: "fixture:article.html",
+   steps: [{ expect: { selector: "#nothing-of-the-sort", visible: true } }]
+  }
+ }, ["--all"]);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "fail");
+ assert.deepStrictEqual(result.capture.screenshots.map(function (s) { return s.what; }), ["failure"]);
+ assert.ok(fs.existsSync(path.join(rootDir, result.capture.screenshots[0].file)));
+ assert.strictEqual(result.capture.video, "", "nothing asked for a video, so there is none");
+});
+
+test("a quiet pass that nothing asked to capture carries no artifacts at all", function () {
+ var answer = runApart({ fixture_Capture_Quiet: { url: "fixture:article.html" } }, ["--all"]);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.strictEqual(result.capture, undefined);
+});
+
+test("--capture captures every entry it reaches, and an entry with auth none of it", function () {
+ var stub = makeStub();
+ try {
+  var answer = runApart({
+   fixture_Capture_Open: { url: "fixture:article.html" },
+   fixture_Capture_SignedIn: { url: "fixture:article.html", auth: "fixture-site", signedIn: "main" }
+  }, ["--all", "--capture"], { TEST_BM_AUTH_LAUNCHER: stub.file });
+  assert.ok(answer.report, answer.run.out + answer.run.err);
+
+  var open = answer.report.results.filter(function (r) { return r.name === "fixture_Capture_Open"; })[0];
+  assert.deepStrictEqual(open.capture.screenshots.map(function (s) { return s.what; }), ["before", "after"]);
+  assert.match(open.capture.video, /entry\.webm$/);
+
+  var signedIn = answer.report.results.filter(function (r) { return r.name === "fixture_Capture_SignedIn"; })[0];
+  assert.strictEqual(signedIn.capture, undefined, "a signed-in page is never captured");
+  assert.ok(signedIn.notes.some(function (n) { return /nothing was captured/.test(n); }),
+   "the run says why it captured nothing: " + JSON.stringify(signedIn.notes));
+ } finally {
+  removeDir(stub.dir);
+ }
+});
+
+test("an entry asking to capture a signed-in page is a configuration error", function () {
+ var bad = path.join(os.tmpdir(), "test-bm-capture-auth-" + process.pid + ".json");
+ fs.writeFileSync(bad, JSON.stringify({
+  fixture_Auth_MarksTheSignedInPage: { auth: "fixture-site", signedIn: "main", capture: true }
+ }));
+ try {
+  var run = runHarness(["--list"], fixtureEnv(bad));
+  assert.strictEqual(run.status, 2, "a configuration error exits 2");
+  assert.match(run.err, /an entry with auth captures nothing - a signed-in page shows the account/);
+ } finally {
+  fs.rmSync(bad, { force: true });
+ }
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// One selector counted against another
+// ----------------------------------------------------------------------------------------------- //
+
+test("matches passes when two selectors match the same number of elements", function () {
+ var answer = runApart({
+  fixture_Matches_Same: {
+   url: "fixture:article.html",
+   steps: [{ run: true }, { expect: { selector: panelSelector, matches: "body" } }]
+  }
+ }, ["--all"]);
+ assert.strictEqual(onlyResult(answer).verdict, "pass");
+});
+
+test("matches fails naming both counts, so a page listing more rows than it sized says so", function () {
+ var answer = runApart({
+  fixture_Matches_Short: {
+   url: "fixture:article.html",
+   steps: [{ run: true }, { expect: { selector: panelSelector, matches: "p" } }]
+  }
+ }, ["--all"]);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /matches 1, and p matches \d+$/);
+});
+
+test("matches with nothing to count against is a configuration error", function () {
+ var bad = path.join(os.tmpdir(), "test-bm-matches-bad-" + process.pid + ".json");
+ fs.writeFileSync(bad, JSON.stringify({
+  fixture_Pass_AddsAPanel: { steps: [{ expect: { selector: "p", matches: "" } }] }
+ }));
+ try {
+  var run = runHarness(["--list"], fixtureEnv(bad));
+  assert.strictEqual(run.status, 2);
+  assert.match(run.err, /matches takes the selector to count against/);
+ } finally {
+  fs.rmSync(bad, { force: true });
+ }
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// A url the environment holds
+// ----------------------------------------------------------------------------------------------- //
+
+test("a url naming an unset variable is a skip, so a page nobody here can reach never fails a run", function () {
+ var answer = runApart({ fixture_Env_Unset: { url: "$TEST_BM_NOT_SET_ANYWHERE" } }, ["--all"]);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "skip");
+ assert.strictEqual(result.reason, "the page comes from $TEST_BM_NOT_SET_ANYWHERE, which is not set");
+ assert.strictEqual(answer.run.status, 0, "a skip never fails a run");
+});
+
+test("the address a variable holds is used and never written down", function () {
+ var answer = runApart({
+  fixture_Env_Opened: { url: "$TEST_BM_FIXTURE_ADDRESS", steps: [{ run: true }] },
+  fixture_Env_Missing: { url: "$TEST_BM_FIXTURE_ADDRESS", requires: ["#no-such-thing"], timeout: 4000 }
+ }, ["--all"], { TEST_BM_FIXTURE_ADDRESS: "https://fixtures.test/article.html" });
+ assert.ok(answer.report, answer.run.out + answer.run.err);
+
+ var opened = answer.report.results.filter(function (r) { return r.name === "fixture_Env_Opened"; })[0];
+ assert.strictEqual(opened.verdict, "pass", opened.reason);
+ assert.strictEqual(opened.url, "$TEST_BM_FIXTURE_ADDRESS", "the report names the variable, not the address");
+
+ var missing = answer.report.results.filter(function (r) { return r.name === "fixture_Env_Missing"; })[0];
+ assert.strictEqual(missing.verdict, "fail");
+ assert.strictEqual(missing.reason, "site changed: #no-such-thing not found on $TEST_BM_FIXTURE_ADDRESS");
+
+ assert.doesNotMatch(JSON.stringify(answer.report), /fixtures\.test/,
+  "nothing in the report says where the variable pointed");
+ assert.doesNotMatch(answer.run.out, /fixtures\.test/, "and nothing the run printed says it either");
+});
+
+test("a url that opens with a dollar but is not a variable name is a configuration error", function () {
+ var bad = path.join(os.tmpdir(), "test-bm-env-shape-" + process.pid + ".json");
+ fs.writeFileSync(bad, JSON.stringify({ fixture_Pass_AddsAPanel: { url: "$octoprint url" } }));
+ try {
+  var run = runHarness(["--list"], fixtureEnv(bad));
+  assert.strictEqual(run.status, 2);
+  assert.match(run.err, /a url naming an environment variable is written as \$NAME, in upper case/);
+ } finally {
+  fs.rmSync(bad, { force: true });
+ }
+});

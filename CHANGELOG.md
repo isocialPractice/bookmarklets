@@ -6,6 +6,90 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.11.2026]
+
+### Added
+
+- `--capture`, and an entry's `"capture": true`, write a screenshot of the page
+  either side of the bookmarklet and a video of the whole entry, into
+  `test-results/test-bm/<run>/capture/<name>/`. The report lists every artifact
+  path and the offset into the video at which each step started, so a clip can
+  be cut to the moment the bookmarklet ran without anyone scrubbing through it;
+  a single-name run prints the same lines. A bookmarklet an entry runs twice
+  gets a numbered pair for the second run. Everything the harness decides is
+  fixed so two captures of an unchanged bookmarklet match - the viewport, the
+  steps and their order, and what reaches the page, which is the bookmarklet and
+  nothing else - and a capturing run settles hinting, subpixel antialiasing and
+  the colour profile, stops animations and hides the caret. On a page that holds
+  still that is byte-for-byte; what is left over is Chromium rasterizing the
+  page itself, a channel out by one either side of a glyph or a rounded border.
+- A failure now keeps `failure.png`, the page as it stood when the entry failed,
+  whether or not anything asked for a capture. An entry with `auth` captures
+  nothing at all, refuses `"capture": true` as a configuration error, and says
+  in its notes that nothing was captured, because a signed-in page shows the
+  account and what it holds.
+- `expect.matches` counts one selector's matches against another's, for one
+  thing per row of something a page lists: the failure names both counts. It is
+  what turns a partial write into a verdict, where the count a page would give
+  changes whenever the page does and the relation does not.
+- An entry's `url` may name an environment variable, as `"$OCTOPRINT_URL"`, for
+  a page whose address does not belong in the repository. The address is read
+  when the entry runs and reaches the browser only: every reason, `report.json`
+  and `summary.txt` names the variable in its place, and the address is taken
+  back out of anything the page itself said - its console, its errors, its
+  dialogs, a popup address. An unset variable is a skip rather than a failure,
+  and a `$name` that is not a variable's shape is a configuration error.
+- Every bookmarklet in `JSFormatted` now has a `test-bm.json` entry. The five
+  ChatGPT and three Gmail bookmarklets that read a signed-in page have one with
+  `auth`, `signedIn` and `"scheduled": false`, so the three that used to fail
+  against `https://example.com/` are a stated skip until a sign-in is there
+  rather than a fault; `siteSpecific_chatGPT_BookmarkResponse` needs no sign-in,
+  because it writes a bookmark page out of a response pasted into it, so its
+  entry runs on a fixture page and checks what it wrote. The OctoPrint entry
+  takes its address from the environment variable above.
+- `test/harness.test.js` covers all three with thirteen more tests: the
+  screenshots, the video, the step offsets, the numbered second pair, a failure
+  keeping its screenshot with nothing asking for one, a quiet pass keeping
+  nothing, a signed-in page capturing nothing, both sides of `matches`, and a
+  url from the environment used without being written down.
+
+### Fixed
+
+- `siteSpecific_GitHub_ShowFileSize.js` sizes every file in a directory, and
+  labels the column it adds, however the directory was reached. It read the
+  listing by row number, so the second row was always treated as the row above
+  the listing: on a tree page that row is the latest commit, but the repository
+  root has no such row, so its first file was given no size cell and had its
+  commit message widened into the size column instead. It also wrote a size
+  into every folder row, because it looked for `(Directory)` in the row's text
+  where GitHub now carries it in the name link's `aria-label`, and the API gives
+  a folder a size of 0, so each folder read `0 B`. Rows are now told apart by
+  what they hold rather than by their number, a folder is told from a file by
+  the API's own `type`, and a row spanning the table has its `colspan` raised by
+  one off its own value rather than set to a fixed four. The column header is
+  written whenever it is missing, so a root reached by clicking the repository
+  in the navigation path above the table gets one again - the listing holding
+  the old header has been replaced by then - and the rows are counted again when
+  the data comes back, because GitHub can finish rendering the table while the
+  fetch is still out. A second paste clears the column it wrote before rather
+  than leaving two side by side.
+- `siteSpecific_GitHub_ShowFileSize.js` puts the column back when GitHub takes
+  it away. The address changes first and the listing is replaced a moment later,
+  so a column written in between is thrown out with the table that held it,
+  which is why the second issue reported the sizes missing only on the first
+  navigation to a directory. The second-by-second check that already watched the
+  address now also notices a column that was written and is no longer there, and
+  writes it again. A page with no listing to write one into is left alone, so
+  nothing asks GitHub for the data every second on a page that was never going
+  to carry a column.
+- Measured on this repository's own root and on a directory in it: before the
+  fix, 17 size cells against 13 file rows; after it, one size in every file row,
+  folders blank, and the header present on a cold root, a cold directory, and
+  the root reached from the navigation path. The entry walks all three, so the
+  replacement showed up as one failing scheduled run out of several before the
+  check above was added, and eight runs in a row pass after it. Its gist carries
+  the fix. Fixes #1 and #2.
+
 ## [11.10.2026]
 
 ### Added

@@ -4,8 +4,8 @@
 // *********************************************************************************************** //
 // Needs Playwright: npm install, then npx playwright install chromium.
 //
-//   node test-bm.js <name> [--headed] [--slow-mo <ms>]
-//   node test-bm.js --all [--headed] [--slow-mo <ms>]
+//   node test-bm.js <name> [--headed] [--slow-mo <ms>] [--capture]
+//   node test-bm.js --all [--headed] [--slow-mo <ms>] [--capture]
 //   node test-bm.js --scheduled
 //   node test-bm.js --list
 //   node test-bm.js --sign-in <site>
@@ -18,6 +18,7 @@
 // --sign-in    Ask the sign-in launcher to open <site> for signing in, then exit.
 // --headed     Watch the run in a browser window.
 // --slow-mo    Milliseconds between actions, for the same reason. Neither is ever needed.
+// --capture    Capture every entry the run reaches, as an entry's "capture": true does for itself.
 //
 // Before any browser starts, the file is joined onto one line both ways a browser could join it -
 // every line break replaced by a space, the way bookmarklet.js copy does it, and both characters
@@ -32,6 +33,29 @@
 // An entry's url may be "fixture:<file>.html", which is a page in test/fixtures/pages served from
 // https://fixtures.test/ without a network. A real origin is what makes localStorage, the clipboard
 // and location behave as they do on a site; file:// gives an opaque origin and refuses all three.
+//
+// It may instead name an environment variable, as "$OCTOPRINT_URL", for a page whose address does not
+// belong in the repository. The address is read when the entry runs and never written down: every
+// reason, report.json and summary.txt names the variable in its place, and the address is taken back
+// out of anything the page itself said. An unset variable is a skip, not a failure.
+//
+// --capture, and an entry's "capture": true, write a screenshot of the page either side of the
+// bookmarklet and a video of the whole entry, into test-results/test-bm/<run>/capture/<name>/. Each
+// artifact's path, and the offset into the video at which every step started, go in the report, so a
+// clip can be cut to the moment the bookmarklet ran without anyone scrubbing through it.
+//
+// Two captures of an unchanged bookmarklet are meant to match, so everything this harness decides is
+// fixed: the viewport, the steps and their order, and what reaches the page, which is the bookmarklet
+// and nothing else - no clock, no random value, no mark of its own. A capturing run also starts the
+// browser with hinting, subpixel antialiasing and the colour profile settled, and takes each
+// screenshot with animations stopped and no caret drawn. On a page that holds still that is
+// byte-for-byte: two captures of example.com are the same file. What is left over is Chromium
+// rasterizing the page itself - a handful of pixels either side of a glyph or a rounded border, a
+// channel out by one - and no setting here reaches it.
+//
+// A failure keeps failure.png, the page as it stood when it failed, whether or not the entry was
+// captured - except in an entry with auth, which captures nothing at all, because a signed-in page
+// shows the account and what it holds.
 //
 // TEST_BM_JS_DIR and TEST_BM_CONFIG move the bookmarklet folder and the configuration file, which is
 // how test/harness.test.js runs this harness against its own fixtures. Nothing else sets them.
@@ -108,13 +132,16 @@ var exitConfig = 2;
 
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
- "timeout", "settle", "auth", "signedIn", "network"];
+ "timeout", "settle", "auth", "signedIn", "network", "capture"];
 // A host a network entry names: an exact host, or "*." and a domain for any of its subdomains, as
 // a media server picked per request is.
 var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d+)?$/;
 var stepActions = ["run", "click", "fill", "press", "select", "wait", "expect"];
 var stepExtras = ["value", "text", "selector"];
-var expectKeys = ["selector", "visible", "hidden", "count", "text", "clipboard", "location", "popup"];
+var expectKeys = ["selector", "visible", "hidden", "count", "matches", "text", "clipboard", "location", "popup"];
+
+// A url that names an environment variable holding the address, rather than holding it itself.
+var urlVariablePattern = /^\$[A-Z][A-Z0-9_]*$/;
 
 // A site name is all an entry with auth hands the sign-in launcher, so it is held to a shape that
 // cannot carry anything else.
@@ -125,11 +152,31 @@ var withheldText = "(not recorded on a signed-in page)";
 // How the code gets into the page, worked out once per browser by chooseInjector.
 var injector = "";
 
+// What a browser is started with when the run is going to capture something. Chromium's own text
+// rasterizing is what moves between two runs of an unchanged bookmarklet - a handful of antialiased
+// pixels either side of a glyph - and these three settle it: no hinting, no subpixel antialiasing,
+// one colour profile. A run that captures nothing is started without them, so an ordinary test still
+// meets the browser a reader has.
+var captureArgs = ["--font-render-hinting=none", "--disable-lcd-text", "--force-color-profile=srgb"];
+
+// One folder per run, holding its report and whatever any entry captured. It is made the first time
+// something is written into it, so a run that captures nothing and writes no report leaves none.
+var runStarted = null;
+var runFolder = "";
+
 // A folder named by the environment, read from the repository root when it is relative.
 function fromEnv(name, fallback) {
  var value = process.env[name];
  if (!value || !String(value).trim()) { return fallback; }
  return path.resolve(rootDir, String(value).trim());
+}
+
+function runDir() {
+ if (!runFolder) {
+  runFolder = path.join(resultsRoot, stamp(runStarted || new Date()));
+  fs.mkdirSync(runFolder, { recursive: true });
+ }
+ return runFolder;
 }
 
 function configError(message) {
@@ -196,6 +243,25 @@ function fixtureName(url) {
 function resolveUrl(url) {
  var named = fixtureName(url);
  return named === null ? String(url) : fixtureOrigin + "/" + named.page + named.rest;
+}
+
+// "$OCTOPRINT_URL" -> "$OCTOPRINT_URL", and "" for a url that holds its own address. A page on the
+// maintainer's own network has an address that does not belong in the repository, so the entry names
+// the variable instead and the run reads it.
+function urlVariable(url) {
+ var text = String(url).trim();
+ return urlVariablePattern.test(text) ? text : "";
+}
+
+// Anything written down about an entry whose url came from a variable, with the address the variable
+// held taken out and the variable's name put in its place. A page can say its own address - in a
+// console message, an error, a dialog - so taking it out afterwards is what keeps the guarantee.
+function scrubbed(ctx, text) {
+ var out = String(text);
+ if (!ctx || !ctx.hidden) { return out; }
+ if (ctx.url) { out = out.split(ctx.url).join(ctx.shown); }
+ if (ctx.host) { out = out.split(ctx.host).join(ctx.shown); }
+ return out;
 }
 
 // The file a fixture name is served from, or "" when it climbs out of the fixture folder.
@@ -442,10 +508,13 @@ function validateStep(step, where, problems) {
    problems.push(where + ": popup takes the text the new tab's address holds");
   }
   if (!valueOnly && want.visible === undefined && want.hidden === undefined
-   && want.count === undefined && want.text === undefined) {
-   problems.push(where + ": expect takes visible, hidden, count, text, clipboard, location or popup");
+   && want.count === undefined && want.matches === undefined && want.text === undefined) {
+   problems.push(where + ": expect takes visible, hidden, count, matches, text, clipboard, location or popup");
   }
   if (want.count !== undefined && typeof want.count != "number") { problems.push(where + ": count takes a number"); }
+  if (want.matches !== undefined && (typeof want.matches != "string" || !want.matches.length)) {
+   problems.push(where + ": matches takes the selector to count against");
+  }
   if (want.visible !== undefined && want.visible !== true) { problems.push(where + ": visible takes true - for the other way round, ask for hidden"); }
   if (want.hidden !== undefined && want.hidden !== true) { problems.push(where + ": hidden takes true - for the other way round, ask for visible"); }
  }
@@ -467,7 +536,10 @@ function validateConfig(config, names) {
    if (entryKeys.indexOf(key) < 0) { problems.push(name + ": unknown property " + key); }
   });
   if (entry.url !== undefined && typeof entry.url != "string") { problems.push(name + ": url takes a string"); }
-  if (typeof entry.url == "string") {
+  if (typeof entry.url == "string" && /^\$/.test(entry.url.trim()) && !urlVariable(entry.url)) {
+   problems.push(name + ": a url naming an environment variable is written as $NAME, in upper case");
+  }
+  if (typeof entry.url == "string" && !urlVariable(entry.url)) {
    var fixture = fixtureName(entry.url);
    if (fixture !== null) {
     var page = fixtureFile(fixture.page);
@@ -491,6 +563,10 @@ function validateConfig(config, names) {
   if (entry.signedIn !== undefined && entry.auth === undefined) { problems.push(name + ": signedIn goes with auth"); }
   if (entry.auth !== undefined && entry.scheduled === true) {
    problems.push(name + ": an entry with auth is never scheduled - an unattended run has no one to sign in");
+  }
+  if (entry.capture !== undefined && entry.capture !== true) { problems.push(name + ": capture takes true"); }
+  if (entry.capture === true && entry.auth !== undefined) {
+   problems.push(name + ": an entry with auth captures nothing - a signed-in page shows the account and what it holds");
   }
   if (entry.network !== undefined) {
    if (!Array.isArray(entry.network)) {
@@ -659,6 +735,73 @@ function requirePlaywright() {
 
 function sourceUrl(name) { return "bookmarklet/" + name + ".js"; }
 
+// ----------------------------------------------------------------------------------------------- //
+// Capturing an entry
+// ----------------------------------------------------------------------------------------------- //
+
+// Where this entry's screenshots and video go, made the first time one is written. An entry with
+// auth never gets one: ctx.captures is false for it, and every call here answers to that.
+function captureDir(ctx) {
+ if (!ctx.captureFolder) {
+  ctx.captureFolder = path.join(runDir(), "capture", ctx.name);
+  fs.mkdirSync(ctx.captureFolder, { recursive: true });
+ }
+ return ctx.captureFolder;
+}
+
+// Where in the entry something happened, as milliseconds from the moment the page was opened, which
+// is where the video starts too. It is what lets a clip be cut to the moment the bookmarklet ran
+// rather than to a guess at it.
+function mark(ctx, what) {
+ if (!ctx.captures) { return; }
+ ctx.timeline.push({ at: Date.now() - ctx.clock, what: scrubbed(ctx, what) });
+}
+
+// What a step is, for the timeline: its action, and what it aims at where that is a selector or a key.
+function stepName(step) {
+ for (var i = 0; i < stepActions.length; i++) {
+  var action = stepActions[i];
+  if (step[action] === undefined) { continue; }
+  if (action == "run" || action == "expect") { return action; }
+  var aimed = step[action];
+  if (aimed && typeof aimed == "object") { aimed = aimed.selector; }
+  return action + " " + cut(aimed);
+ }
+ return "step";
+}
+
+// The page as it stands, taken the same way every time so two captures of an unchanged bookmarklet
+// match: the fixed viewport, no animation caught mid-frame, and no caret drawn. A screenshot that
+// cannot be taken - a page already gone, a context already closed - is left out rather than fatal,
+// because it is a record of the run and never the verdict.
+async function shot(page, ctx, what) {
+ if (!ctx.captures) { return; }
+ var file = path.join(captureDir(ctx), what + ".png");
+ try {
+  await page.screenshot({ path: file, animations: "disabled", caret: "hide" });
+ } catch (err) {
+  return;
+ }
+ ctx.shots.push({ what: what, file: shownPath(file), at: Date.now() - ctx.clock });
+}
+
+// The video the context recorded, under a name of this run's choosing. Playwright names the file
+// itself and finishes writing it only once the context has closed, so this runs after that.
+async function saveVideo(page, ctx) {
+ if (!ctx.capture) { return ""; }
+ var video = page.video();
+ if (!video) { return "the browser recorded no video for this entry"; }
+ var file = path.join(captureDir(ctx), "entry.webm");
+ try {
+  await video.saveAs(file);
+  await video.delete();
+ } catch (err) {
+  return "the video could not be saved: " + firstLine(err);
+ }
+ ctx.video = shownPath(file);
+ return "";
+}
+
 // page.evaluate runs the code in the page's own global scope and leaves the page's content security
 // policy to apply to whatever the bookmarklet then adds, which is what a bookmarklet meets. The
 // sourceURL tag has to survive the trip, because the stack it leaves in an error is how the
@@ -812,7 +955,7 @@ function attachListeners(page, result, ctx) {
    return;
   }
   if (result.console.length >= consoleLimit) { return; }
-  result.console.push({ type: type, text: cut(msg.text()) });
+  result.console.push({ type: type, text: cut(scrubbed(ctx, msg.text())) });
  });
 
  // Only the bookmarklet's errors fail the entry. The page's own are recorded and left alone.
@@ -825,8 +968,8 @@ function attachListeners(page, result, ctx) {
   }
   result.errors.push({
    from: from,
-   message: firstLine(err),
-   at: ctx.private ? "" : stack.split("\n").slice(0, 4).join(" | ")
+   message: scrubbed(ctx, firstLine(err)),
+   at: ctx.private ? "" : scrubbed(ctx, stack.split("\n").slice(0, 4).join(" | "))
   });
  });
 
@@ -835,7 +978,7 @@ function attachListeners(page, result, ctx) {
   var accept = !!(answer && answer.accept);
   result.dialogs.push({
    type: dialog.type(),
-   message: ctx.private ? null : cut(dialog.message()),
+   message: ctx.private ? null : cut(scrubbed(ctx, dialog.message())),
    answered: accept ? "accepted" : "dismissed",
    text: answer && answer.text !== undefined ? String(answer.text) : ""
   });
@@ -850,22 +993,30 @@ function attachListeners(page, result, ctx) {
  // is the one the bookmarklet opened.
  page.on("popup", function (popup) {
   ctx.popupUrls.push(popup.url());
-  result.popups.push({ url: ctx.private ? null : popup.url() });
+  result.popups.push({ url: ctx.private ? null : scrubbed(ctx, popup.url()) });
   popup.close().catch(function () { });
  });
 }
 
 async function runBookmarklet(page, ctx) {
  ctx.ran = true;
+ ctx.runs++;
+ // A bookmarklet an entry runs twice, to check that the second run undoes the first, gets a numbered
+ // pair for each run rather than one pair overwritten by the next.
+ var which = ctx.runs > 1 ? "-" + ctx.runs : "";
+ mark(ctx, "the bookmarklet runs");
+ if (ctx.capture) { await shot(page, ctx, "before" + which); }
  try {
   await inject(page, ctx.check.code, ctx.name);
  } catch (err) {
+  if (ctx.capture) { await shot(page, ctx, "after" + which); }
   var stack = String((err && err.stack) || (err && err.message) || err || "");
   if (stack.indexOf(sourceUrl(ctx.name)) >= 0) {
    throw failure("the bookmarklet threw: " + firstLine(err) + atLine(ctx, stack));
   }
   throw failure("the bookmarklet could not be run: " + firstLine(err));
  }
+ if (ctx.capture) { await shot(page, ctx, "after" + which); }
 }
 
 // The line in the formatted file an error came from, read out of the one line the browser ran.
@@ -883,7 +1034,7 @@ async function checkRequires(page, ctx) {
   try {
    await page.waitForSelector(selector, { state: "attached", timeout: Math.min(ctx.timeout, requiresTimeout) });
   } catch (err) {
-   throw failure("site changed: " + selector + " not found on " + ctx.url);
+   throw failure("site changed: " + selector + " not found on " + ctx.shown);
   }
  }
 }
@@ -902,7 +1053,8 @@ async function doExpect(page, ctx, want, where) {
  if (want.location !== undefined) {
   var at = page.url();
   if (at.indexOf(String(want.location)) < 0) {
-   throw failure(where + ": the page is at " + (ctx.private ? withheldText : JSON.stringify(cut(at)))
+   throw failure(where + ": the page is at "
+    + (ctx.private ? withheldText : JSON.stringify(cut(scrubbed(ctx, at))))
     + ", which does not hold " + JSON.stringify(cut(want.location)));
   }
   return;
@@ -942,6 +1094,17 @@ async function doExpect(page, ctx, want, where) {
   var found = await locator.count();
   if (found !== want.count) {
    throw failure(where + ": " + want.selector + " matches " + found + ", not " + want.count);
+  }
+  return;
+ }
+ // Two selectors counted against each other, for one thing per row of something the page lists. The
+ // count a page of its own would give changes whenever the page does, and the relation does not.
+ if (want.matches !== undefined) {
+  var mine = await locator.count();
+  var theirs = await page.locator(want.matches).count();
+  if (mine !== theirs) {
+   throw failure(where + ": " + want.selector + " matches " + mine + ", and " + want.matches
+    + " matches " + theirs);
   }
   return;
  }
@@ -1016,10 +1179,11 @@ async function doStep(page, ctx, step, index) {
 }
 
 async function playEntry(page, ctx) {
+ mark(ctx, "open " + ctx.shown);
  try {
   await page.goto(ctx.url, { waitUntil: "load" });
  } catch (err) {
-  throw failure("could not open " + ctx.url + ": " + firstLine(err));
+  throw failure("could not open " + ctx.shown + ": " + scrubbed(ctx, firstLine(err)));
  }
  if (ctx.private) { await checkSignedIn(page, ctx); }
  await checkRequires(page, ctx);
@@ -1027,6 +1191,7 @@ async function playEntry(page, ctx) {
  // twice, which is how a bookmarklet that turns itself off on the second run is checked.
  if (!ctx.steps.some(function (step) { return step.run === true; })) { await runBookmarklet(page, ctx); }
  for (var i = 0; i < ctx.steps.length; i++) {
+  mark(ctx, "step " + (i + 1) + ": " + stepName(ctx.steps[i]));
   try {
    await doStep(page, ctx, ctx.steps[i], i + 1);
   } catch (err) {
@@ -1037,7 +1202,7 @@ async function playEntry(page, ctx) {
  await page.waitForTimeout(ctx.settle);
 }
 
-async function runOne(browser, name, entry, session) {
+async function runOne(browser, name, entry, session, options) {
  var started = Date.now();
  var result = {
   name: name,
@@ -1056,11 +1221,16 @@ async function runOne(browser, name, entry, session) {
 
  function close(verdict, reason) {
   result.verdict = verdict;
-  result.reason = reason || "";
+  result.reason = scrubbed(ctx, reason || "");
   result.durationMs = Date.now() - started;
   if (result.withheld && (result.withheld.console || result.withheld.pageErrors)) {
    result.notes.push("a signed-in page: " + result.withheld.console + " console messages and "
     + result.withheld.pageErrors + " page errors were counted and not recorded");
+  }
+  // The timeline rides with the artifacts rather than going into every result: an entry that was
+  // captured, and a failing one, have something to point at, and a quiet pass has nothing to cut.
+  if (ctx && (ctx.shots.length || ctx.video)) {
+   result.capture = { video: ctx.video, screenshots: ctx.shots, timeline: ctx.timeline };
   }
   return result;
  }
@@ -1080,28 +1250,60 @@ async function runOne(browser, name, entry, session) {
  result.notes.push("one line: " + check.strictLength + " characters with the breaks taken out, "
   + check.spacedLength + " with each break replaced by a space");
 
+ // The address the entry asks for. A variable that names it is read here and nowhere else, so the
+ // address reaches the browser and nothing that is written down.
+ var asked = (entry && entry.url) || defaultUrl;
+ var named = urlVariable(asked);
+ if (named) {
+  var held = String(process.env[named.slice(1)] || "").trim();
+  if (!held) { return close("skip", "the page comes from " + named + ", which is not set"); }
+  if (!/^https?:\/\//i.test(held)) {
+   return close("fail", named + " holds something other than an http address");
+  }
+  asked = held;
+ }
+
  var ctx = {
   name: name,
   check: check,
-  url: resolveUrl((entry && entry.url) || defaultUrl),
+  url: resolveUrl(asked),
   timeout: (entry && typeof entry.timeout == "number") ? entry.timeout : defaultTimeout,
   settle: (entry && typeof entry.settle == "number") ? entry.settle : defaultSettle,
   requires: (entry && entry.requires) || [],
   steps: (entry && entry.steps) || [],
   dialogs: (entry && entry.dialogs) || [],
   ran: false,
+  runs: 0,
   popupUrls: [],
   network: (entry && entry.network) || [],
   offHosts: [],
   private: !!(entry && entry.auth),
   auth: (entry && entry.auth) || "",
   signedIn: (entry && entry.signedIn) || "",
-  signedInFound: undefined
+  signedInFound: undefined,
+  hidden: !!named,
+  shown: named || resolveUrl(asked),
+  host: "",
+  clock: started,
+  captures: false,
+  capture: false,
+  captureFolder: "",
+  shots: [],
+  timeline: [],
+  video: ""
  };
- result.url = ctx.url;
+ ctx.host = named ? originOf(ctx.url).replace(/^https?:\/\//, "") : "";
+ // An entry with auth is never captured, and nothing else about it is written down either, so the
+ // whole of capturing answers to this one flag. Everything else may keep a failure's screenshot.
+ ctx.captures = !ctx.private;
+ ctx.capture = ctx.captures && !!((options && options.capture) || (entry && entry.capture === true));
+ result.url = ctx.shown;
  if (ctx.private) {
   result.auth = ctx.auth;
   result.withheld = { console: 0, pageErrors: 0 };
+  if (options && options.capture) {
+   result.notes.push("nothing was captured: an entry with auth shows the account and what it holds");
+  }
  }
 
  var context, page;
@@ -1116,14 +1318,18 @@ async function runOne(browser, name, entry, session) {
   } else {
    context = await browser.newContext({
     viewport: viewport,
-    permissions: (entry && entry.permissions) || []
+    permissions: (entry && entry.permissions) || [],
+    recordVideo: ctx.capture ? { dir: captureDir(ctx), size: viewport } : undefined
    });
    page = await context.newPage();
   }
  } catch (err) {
   if (context) { await context.close().catch(function () { }); }
-  return close("fail", "the browser would not open a page for this entry: " + firstLine(err));
+  return close("fail", "the browser would not open a page for this entry: " + scrubbed(ctx, firstLine(err)));
  }
+ // Time zero for the timeline, and where the video starts: the page exists and nothing has happened
+ // on it yet.
+ ctx.clock = Date.now();
  page.setDefaultTimeout(Math.min(ctx.timeout, requiresTimeout));
  attachListeners(page, result, ctx);
  try {
@@ -1146,13 +1352,20 @@ async function runOne(browser, name, entry, session) {
   await withTimeout(playEntry(page, ctx), ctx.timeout + ctx.settle,
    "nothing finished inside the " + ctx.timeout + "ms this entry allows");
  } catch (err) {
+  // The page as it stood when the entry failed, kept whether or not the entry was being captured:
+  // it is the one thing nobody can go back for once the browser has closed.
+  if (!(err && err.skip)) { await shot(page, ctx, "failure"); }
   await context.close().catch(function () { });
+  var lost = await saveVideo(page, ctx);
+  if (lost) { result.notes.push(lost); }
   if (typeof ctx.signedInFound == "boolean") { result.signedIn = ctx.signedInFound; }
   if (err && err.skip) { return close("skip", err.message); }
   if (offHostReason(ctx)) { return close("fail", offHostReason(ctx)); }
-  return close("fail", err && err.expected ? err.message : "the run stopped: " + firstLine(err));
+  return close("fail", err && err.expected ? err.message : "the run stopped: " + scrubbed(ctx, firstLine(err)));
  }
  await context.close().catch(function () { });
+ var unsaved = await saveVideo(page, ctx);
+ if (unsaved) { result.notes.push(unsaved); }
  if (typeof ctx.signedInFound == "boolean") { result.signedIn = ctx.signedInFound; }
 
  if (!ctx.ran) { return close("fail", "the bookmarklet never ran - no step named it and the entry had none"); }
@@ -1198,8 +1411,7 @@ function stamp(when) {
 
 function writeReport(results, mode, started, finished) {
  var counts = countOf(results);
- var dir = path.join(resultsRoot, stamp(started));
- fs.mkdirSync(dir, { recursive: true });
+ var dir = runDir();
 
  fs.writeFileSync(path.join(dir, "report.json"), JSON.stringify({
   tool: "test-bm",
@@ -1235,6 +1447,7 @@ function printList(names, config) {
    extra = (entry.url || defaultUrl)
     + (entry.auth ? "  auth " + entry.auth : "")
     + (entry.scheduled ? "  scheduled" : "")
+    + (entry.capture ? "  capture" : "")
     + (entry.requires && entry.requires.length ? "  requires " + entry.requires.length : "")
     + (entry.steps && entry.steps.length ? "  " + entry.steps.length + " steps" : "");
   }
@@ -1250,6 +1463,11 @@ function printList(names, config) {
 
 function printDetail(result) {
  result.notes.forEach(function (note) { console.log("  note: " + note); });
+ if (result.capture) {
+  result.capture.screenshots.forEach(function (s) { console.log("  " + s.what + ": " + s.file); });
+  if (result.capture.video) { console.log("  video: " + result.capture.video); }
+  result.capture.timeline.forEach(function (t) { console.log("  +" + t.at + "ms  " + t.what); });
+ }
  result.dialogs.forEach(function (d) {
   console.log("  dialog: " + d.type + " " + (d.message === null ? withheldText : JSON.stringify(d.message)) + " " + d.answered);
  });
@@ -1263,7 +1481,7 @@ function printDetail(result) {
 // ----------------------------------------------------------------------------------------------- //
 
 function readOptions(args) {
- var options = { mode: "", name: "", site: "", headed: false, slowMo: 0 };
+ var options = { mode: "", name: "", site: "", headed: false, slowMo: 0, capture: false };
  for (var i = 0; i < args.length; i++) {
   var arg = args[i];
   if (arg == "--all" || arg == "--scheduled" || arg == "--list" || arg == "--sign-in") {
@@ -1277,6 +1495,8 @@ function readOptions(args) {
    }
   } else if (arg == "--headed") {
    options.headed = true;
+  } else if (arg == "--capture") {
+   options.capture = true;
   } else if (arg == "--slow-mo") {
    var ms = Number(args[++i]);
    if (!isFinite(ms) || ms < 0) { configError("--slow-mo takes a number of milliseconds"); }
@@ -1363,6 +1583,7 @@ async function main() {
 
  var batch = options.mode == "all" || options.mode == "scheduled";
  var started = new Date();
+ runStarted = started;
  var results = [];
 
  if (queue.length) {
@@ -1374,12 +1595,21 @@ async function main() {
    chromium: playwright.chromium,
    launcher: needsLauncher ? await loadLauncher() : { api: null, why: "" }
   };
-  var browser = await playwright.chromium.launch({ headless: !options.headed, slowMo: options.slowMo });
+  // Whether anything in this queue is going to be captured decides how the browser is started, so it
+  // is worked out before the launch rather than per entry.
+  var capturing = options.capture || queue.some(function (n) {
+   return config[n] && config[n].capture === true && !config[n].auth;
+  });
+  var browser = await playwright.chromium.launch({
+   headless: !options.headed,
+   slowMo: options.slowMo,
+   args: capturing ? captureArgs : []
+  });
   var width = 0;
   queue.forEach(function (n) { if (n.length > width) { width = n.length; } });
   try {
    for (var i = 0; i < queue.length; i++) {
-    var result = await runOne(browser, queue[i], config[queue[i]] || null, session);
+    var result = await runOne(browser, queue[i], config[queue[i]] || null, session, options);
     results.push(result);
     console.log(summaryLine(result, width));
     if (!batch) { printDetail(result); }
