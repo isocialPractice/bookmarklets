@@ -99,7 +99,7 @@ its README entry linking that gist. Runs post and update gists with
     `summary.txt` or `failure.md`; each names `$OCTOPRINT_URL` in its place,
     so a pasted log or an assistant reading the report never learns it.
   - From: Test Configurations
-- [ ] `siteSpecific_YouTube_WatchRandomVideo.js` finds no videos on the home
+- [x] `siteSpecific_YouTube_WatchRandomVideo.js` finds no videos on the home
   feed, so it opens nothing
   - **Issue**: It reads the home feed through
     `.yt-lockup-view-model__content-image`, which YouTube no longer serves. The
@@ -230,7 +230,7 @@ files its failures here. A fix is finished when its posted gist carries it too.
 
 - [ ] Add an `s, s` key sequence to `siteSpecific_chatGPT_NavigateAnswers.js`
   that returns the page to normal
-- [ ] `siteSpecific_YouTube_WatchRandomVideo.js` finds no videos on the home
+- [x] `siteSpecific_YouTube_WatchRandomVideo.js` finds no videos on the home
   feed, so it opens nothing
   - **Issue**: It reads the home feed through
     `.yt-lockup-view-model__content-image`, which YouTube no longer serves. The
@@ -541,7 +541,7 @@ the bookmarklet has a demo.
     chosen for a request in its own area and not for one in the other's, and
     states nothing about After Effects that the scripting guide or the SDK
     documentation does not.
-- [ ] Write the short script: an ExtendScript (`.jsx`) file kept beside the
+- [x] Write the short script: an ExtendScript (`.jsx`) file kept beside the
   After Effects project, outside version control, that builds one
   bookmarklet's short and queues its renders
   - It takes the bookmarklet's name. `AfterFX.exe -s` runs a script string, so
@@ -558,9 +558,14 @@ the bookmarklet has a demo.
   - The length follows the recording. One shorter than ten seconds sets the
     work area to the recording layer, so the render ends with it. A longer one
     is time-stretched (`layer.stretch`) to end at `0:00:10:00`.
-  - Queue the composition in Adobe Media Encoder
-    (`app.project.renderQueue.queueInAME`) for an H.264 MP4 and an animated
-    GIF, both named after the bookmarklet, then save the project.
+  - Render an H.264 MP4 through After Effects' own output module, at its
+    highest-bitrate H.264 template, then make the animated GIF from that MP4
+    outside After Effects; both are named after the bookmarklet. Save the
+    project. `queueInAME` was the first plan, but Media Encoder gives every
+    item it queues its most recently used preset, so one call cannot make
+    both formats.
+  - The script reports what it did as JSON, which needs After Effects'
+    **Allow Scripts To Write Files And Access Network** preference.
   - Running it again for the same bookmarklet replaces that composition rather
     than adding a second one.
   - Check it against the two shorts already made: `dom_Note_TakePageNotes`, a
@@ -580,6 +585,20 @@ the bookmarklet has a demo.
   - Add the GIF posting the run's constants describe. The key is read from the
     local note at run time and never written into the script.
   - Leave each new video's URL where a run can read it, for the README.
+  - Found posting the first short on 11.10.2026, each worked around for that
+    run only:
+    - The upload takes the video's path with everything up to its first
+      backslash removed, so only a path one folder deep reaches the upload
+      script; a deeper one fails with "Please specify a valid file".
+    - The upload script's error handler is written in Python 2 form, so an
+      API error surfaces as a `NameError` and its real message is lost.
+    - The Python it runs had none of its libraries (`httplib2`,
+      `google-api-python-client`, `oauth2client`), and its saved sign-in had
+      expired. Google ends a refresh token for an app in testing status after
+      seven days, so publishing the app in its Google Cloud project is what
+      keeps the sign-in alive.
+    - A failed upload still reports that the run completed and copies a
+      snippet with an empty link to the clipboard.
 - [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
   and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
   - Builds on `--capture` under `## Test Harness`. Start just before the

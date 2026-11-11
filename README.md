@@ -1064,7 +1064,18 @@ Copy/paste: open [siteSpecific_YouTube_WatchRandomVideo.js](https://raw.githubus
 
 Gist page for [siteSpecific_YouTube_WatchRandomVideo.js](https://gist.github.com/jhauga/c21475673dee3816b6ce3f9ed7fe35ec)
 
-<!-- PASTE VIDEO HERE -->
+<details>
+
+<summary>Show Details</summary>
+
+<br>
+
+<b>Video Demonstration for Use:</b>
+
+- `Ctrl + click` link to view short on YouTube [Short - YouTube - Watch Random Video](https://www.youtube.com/shorts/7begOX2yiC4)
+<!-- - `Ctrl + click` link to view demo on YouTube [Demo - <bookmarklet-sub-category> - <(from.title):bookmarklet-descriptive-name>](<youtube-url) -->
+
+</details>
 
 </dd></dl></dd></dl>
 
