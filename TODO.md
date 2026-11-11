@@ -27,65 +27,118 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] Add `--capture` and a `capture` property: a screenshot before and after
-  the bookmarklet runs, and a video of the whole entry
-  - Fixed viewport, fixed steps, and no clock or random value rendered into the
-    page by the harness, so two captures of an unchanged bookmarklet match.
-  - The report lists each artifact path and the time offset at which every step
-    started, so a clip can be cut to the moment the bookmarklet ran without
-    anyone scrubbing through it.
-  - A failure always keeps its after screenshot, captured or not, except in an
-    entry with `auth`, which captures nothing: a signed-in page shows the
-    account and what it holds.
-  - These captures are also the footage for `## Short Videos`.
-  - From: Test Harness
-- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes only part of the file sizes
-  the first time a directory loads
-  - **Issue**: File size data is sometimes partially written into the updated
-    table, on the first load of a directory. The cause was never found.
-  - **Goal**: Write a `test-bm.json` entry that loads a directory page cold and
-    counts the size cells against the rows, so the partial write is a verdict
-    rather than a sighting. Fix what the entry then shows, and close the issue
-    with `Fixes #1`.
-  - Measured on 11.08.2026, signed out and headless, on this repository's own
-    root: the size column header is added and ten of the twelve rows get a size
-    cell, so the partial write reproduces without a signed-in session.
-  - <https://github.com/isocialPractice/bookmarklets/issues/1>
+- [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
+  and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
+  - Builds on `--capture` under `## Test Harness`. Start just before the
+    bookmarklet runs and stop once its result is on screen.
+  - Write to the folder named by a `TEST_BM_SHORTS_DIR` environment variable,
+    defaulting to `test-results/shorts/`.
+  - Never overwrite a recording that is already there. The maintainer's hand
+    recordings come first.
+  - An entry with `auth` records through its launcher, as its test runs, and
+    its recording stays on the machine until the maintainer has reviewed it.
+  - From: Short Videos
+- [ ] Make a failure report an agent can act on without re-running anything
+  - For a `requires` failure: the missing selector, the lines of the
+    bookmarklet that use it, and an ARIA snapshot (`locator.ariaSnapshot()`)
+    plus trimmed outer HTML of the region where it was expected.
+  - For a thrown error: the message, the stack mapped back to lines in the
+    formatted file, and the after screenshot.
+  - Write it as `failure.md` beside `report.json`, so any assistant reads it as
+    plain text.
+  - For an entry with `auth`, only the selector or the message and the
+    bookmarklet's own lines: no ARIA snapshot, HTML, stack frames from the page
+    or screenshot, because those would hand a signed-in page's content to an
+    assistant.
+  - From: AI-Assisted Verification
+- [ ] Write the triage procedure in a tracked `AGENTS.md` at the repository
+  root
+  - Codex and GitHub Copilot's coding agent read `AGENTS.md` directly. Claude
+    Code reads `CLAUDE.md`, so add one whose only content is `@AGENTS.md`.
+    `.github/` and `.claude/` are hidden by the ignore rules here, so neither
+    is a place for anything another contributor's assistant needs.
+  - The procedure: read `failure.md`; open the page with the browser tool the
+    assistant has; find what replaced the missing selector; make the smallest
+    edit to the bookmarklet; run `node test-bm.js <name>` and report its
+    verdict.
+  - Restate the authoring conventions in the file as well: block comments
+    only, a semicolon after every statement, top-level names suffixed with the
+    file's focus and action, and styling through the CSSOM. The automation's
+    copy of them is in an untracked file, so a contributor's assistant would
+    otherwise never see them.
+  - Hard limits, stated in the file: never sign in, never run
+    `node test-bm.js --sign-in`, never attach a browser tool to a browser that
+    is signed in to anything, never submit a form or send a message, and never
+    loosen a `test-bm.json` expectation to make a test pass unless the
+    bookmarklet's intended behaviour changed, saying so when it did.
+  - From: AI-Assisted Verification
+- [ ] Move `OctoPrint - Change Graph Image`'s older demo link, which sits above
+  its gist paragraph, into a video block's demo line in place of its comment,
+  with the short line commented out until its short exists
+  - The README keeps its CRLF line endings.
+  - From: Short Videos
+
+### UI/UX Override - ShowFileSize size column
+
+#### Resolve Issues
+
+- [ ] Size Column Drop 1
+  - **Issue**: On one walk in five, clicking into `JSFormatted` from the
+    repository root left the tree listing with no `Size` header, no
+    `[data-file-size]` cell in any of its 54 file rows, and the
+    `parent directory ..` row still at `colspan="3"` with no
+    `data-file-size-widened` marker. It stayed that way for the thirty seconds
+    the page was watched, and the address never changed again, so nothing was
+    going to write the column. The other four walks of the same three states
+    were correct in every respect, and the poll does put the column back when
+    the listing is replaced under it, so this is the narrower case where the
+    pass that was meant to write it found the listing mid-replacement.
+  - **Goal**: Resolve to
+    [size-column-drop.prompt.md](.claude/prompts/size-column-drop.prompt.md)
   - From: Existing Bookmarklets `->` From the Open Issues
-- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes no file sizes when the repo
-  root is reached from the navigation path
-  - **Issue**: Viewing the repo root from the tree view and then clicking the
-    repo root link in the navigation path above the table leaves the sizes
-    unloaded. It appears to happen only on the first navigation to the root.
-  - **Goal**: Give the entry a step that clicks the navigation path's root link
-    from a tree view, then expects a size in every row. Fix what it shows, and
-    close the issue with `Fixes #2`.
-  - <https://github.com/isocialPractice/bookmarklets/issues/2>
-  - From: Existing Bookmarklets `->` From the Open Issues
-- [ ] Write entries for the ChatGPT and Gmail bookmarklets, each with `auth`,
-  `signedIn` and `"scheduled": false`, and for the Amazon one as a guest
-  - Three of the five failures the 11.08.2026 `--all` run reported are the
-    ChatGPT and Gmail bookmarklets meeting `https://example.com/`, which is
-    the absence of an entry rather than a fault.
-  - `siteSpecific_Amazon_HideVideoPauseIcon.js` hides the
-    `vjs-big-play-button` a guest meets on any product page with a video, so
-    its entry has no `auth`, lists that class in `requires`, and is scheduled
-    by the rule the other public site-specific entries follow.
-  - For each signed-in site, record whether the run's browser stays signed
-    in; it reports `navigator.webdriver` true. A site that challenges or signs
-    it out is a skip with that reason, not a failure, and the missing sign-in
-    reaches the maintainer through `signInState` alone.
-  - **Goal**: Resolve the sign-ins through
-    [signed-in-sites.prompt.md](.claude/prompts/signed-in-sites.prompt.md).
-  - From: Test Configurations
-- [ ] Let `url` read an environment variable, as in `"url": "$OCTOPRINT_URL"`,
-  and write the OctoPrint entry with it
-  - OctoPrint runs on a printer on the maintainer's own network, so its address
-    does not belong in the repository. An unset variable is a skip.
-  - The address a variable holds never appears in a reason, `report.json`,
-    `summary.txt` or `failure.md`; each names `$OCTOPRINT_URL` in its place,
-    so a pasted log or an assistant reading the report never learns it.
-  - From: Test Configurations
+
+#### Found Issues
+
+- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes an empty Size column once
+  GitHub's API refuses, and keeps it
+  - **Issue**: The API allows a signed-out reader sixty requests an hour and
+    this bookmarklet spends two per directory. Past the limit it answers 403
+    with a JSON object, which `getAPIJSON` parses happily, so `addSizeCol`
+    writes the header and a cell in every row with nothing in any of them.
+    `columnWasDropped` then reads the header's presence as a column that is
+    fine, so the sizes never arrive even after the limit resets. Measured
+    against a faked 403: header present, 54 cells, 0 of 54 filled, unchanged
+    once the API answered again.
+  - **Goal**: Resolve to
+    [size-column-blank-when-api-refuses.prompt.md](.claude/prompts/size-column-blank-when-api-refuses.prompt.md)
+  - From: UI/UX Override - ShowFileSize size column
+- [ ] `siteSpecific_GitHub_ShowFileSize.js` leaves a second poll running when
+  it is pasted twice
+  - **Issue**: Each paste ends with its own `checkForChangeDir()` and nothing
+    stops the one before it. Measured: a directory change costs two requests
+    to `api.github.com` after one paste and three after two. The column itself
+    stays single, which is what this run checked, but the repository's rule is
+    that a second run reuses what the first added rather than stacking a copy,
+    and the extra request brings the hourly limit nearer.
+  - **Goal**: Mark the running poll with a `window` key carrying the file's
+    `--__-unlikely_-_name-__--` infix, the way the other files here mark what
+    they have put on a page, and have a later paste leave it alone. Stated as
+    the last point of
+    [size-column-blank-when-api-refuses.prompt.md](.claude/prompts/size-column-blank-when-api-refuses.prompt.md).
+  - From: UI/UX Override - ShowFileSize size column
+- [ ] `--capture` writes an "after" screenshot taken before the bookmarklet has
+  done anything
+  - **Issue**: `runBookmarklet` in `test-bm.js` takes the after shot the
+    instant the injection call returns. A bookmarklet that works
+    asynchronously has changed nothing by then. For
+    `siteSpecific_GitHub_ShowFileSize`, which waits a second and then fetches,
+    `before.png` and `after.png` are the same file byte for byte, and neither
+    shows the size column. The video of the entry does show it.
+  - **Goal**: Take the after shot once the entry's steps have run rather than
+    when the injection returns, so the pair is worth the bytes it costs. The
+    shots are also what `## Short Videos` draws on, so the one that shows the
+    result is the one worth keeping.
+  - From: UI/UX Override - ShowFileSize size column
 
 ### Create and Deploy GitHub Pages Override
 
@@ -101,17 +154,6 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-- [ ] Add `--capture` and a `capture` property: a screenshot before and after
-  the bookmarklet runs, and a video of the whole entry
-  - Fixed viewport, fixed steps, and no clock or random value rendered into the
-    page by the harness, so two captures of an unchanged bookmarklet match.
-  - The report lists each artifact path and the time offset at which every step
-    started, so a clip can be cut to the moment the bookmarklet ran without
-    anyone scrubbing through it.
-  - A failure always keeps its after screenshot, captured or not, except in an
-    entry with `auth`, which captures nothing: a signed-in page shows the
-    account and what it holds.
-  - These captures are also the footage for `## Short Videos`.
 - [ ] Add `--browser firefox` as a second engine
   - Bookmarklet handling differs between engines, and Firefox is the second
     most likely place a reader pastes one. Chromium stays the default and the
@@ -122,26 +164,6 @@ browser for the same result.
 Entries in `test-bm.json` for the bookmarklets already published. The default
 safe run covers anything without an entry; these entries add the assertions
 that show a bookmarklet did its job, rather than merely not crashing.
-
-- [ ] Write entries for the ChatGPT and Gmail bookmarklets, each with `auth`,
-  `signedIn` and `"scheduled": false`, and for the Amazon one as a guest
-  - `siteSpecific_Amazon_HideVideoPauseIcon.js` hides the
-    `vjs-big-play-button` a guest meets on any product page with a video, so
-    its entry has no `auth`, lists that class in `requires`, and is scheduled
-    by the rule the other public site-specific entries follow.
-  - For each signed-in site, record whether the run's browser stays signed
-    in; it reports `navigator.webdriver` true. A site that challenges or signs
-    it out is a skip with that reason, not a failure, and the missing sign-in
-    reaches the maintainer through `signInState` alone.
-  - **Goal**: Resolve the sign-ins through
-    [signed-in-sites.prompt.md](.claude/prompts/signed-in-sites.prompt.md).
-- [ ] Let `url` read an environment variable, as in `"url": "$OCTOPRINT_URL"`,
-  and write the OctoPrint entry with it
-  - OctoPrint runs on a printer on the maintainer's own network, so its address
-    does not belong in the repository. An unset variable is a skip.
-  - The address a variable holds never appears in a reason, `report.json`,
-    `summary.txt` or `failure.md`; each names `$OCTOPRINT_URL` in its place,
-    so a pasted log or an assistant reading the report never learns it.
 
 ## Existing Bookmarklets
 
@@ -158,27 +180,6 @@ The repository's open GitHub issues, each needing the live site to confirm.
 `## Test Configurations` is what turns each into something a run can judge
 rather than something a person has to reproduce by hand.
 
-- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes only part of the file sizes
-  the first time a directory loads
-  - **Issue**: File size data is sometimes partially written into the updated
-    table, on the first load of a directory. The cause was never found.
-  - **Goal**: Write a `test-bm.json` entry that loads a directory page cold and
-    counts the size cells against the rows, so the partial write is a verdict
-    rather than a sighting. Fix what the entry then shows, and close the issue
-    with `Fixes #1`.
-  - Measured on 11.08.2026, signed out and headless, on this repository's own
-    root: the size column header is added and ten of the twelve rows get a size
-    cell, so the partial write reproduces without a signed-in session.
-  - <https://github.com/isocialPractice/bookmarklets/issues/1>
-- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes no file sizes when the repo
-  root is reached from the navigation path
-  - **Issue**: Viewing the repo root from the tree view and then clicking the
-    repo root link in the navigation path above the table leaves the sizes
-    unloaded. It appears to happen only on the first navigation to the root.
-  - **Goal**: Give the entry a step that clicks the navigation path's root link
-    from a tree view, then expects a size in every row. Fix what it shows, and
-    close the issue with `Fixes #2`.
-  - <https://github.com/isocialPractice/bookmarklets/issues/2>
 - [ ] `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` breaks on an answer
   holding a `\u` sequence
   - **Issue**: An answer containing `\u` is written out without the backslash
@@ -1191,5 +1192,64 @@ roadmap section each one came from.
     pin them with Subresource Integrity hashes, so what runs is what was
     reviewed.
   - From: Test Harness
+- [x] Add `--capture` and a `capture` property: a screenshot before and after
+  the bookmarklet runs, and a video of the whole entry
+  - Fixed viewport, fixed steps, and no clock or random value rendered into the
+    page by the harness, so two captures of an unchanged bookmarklet match.
+  - The report lists each artifact path and the time offset at which every step
+    started, so a clip can be cut to the moment the bookmarklet ran without
+    anyone scrubbing through it.
+  - A failure always keeps its after screenshot, captured or not, except in an
+    entry with `auth`, which captures nothing: a signed-in page shows the
+    account and what it holds.
+  - These captures are also the footage for `## Short Videos`.
+  - From: Test Harness
+- [x] **Size Column Drop**: `siteSpecific_GitHub_ShowFileSize.js` writes only
+  part of the file sizes the first time a directory loads
+  - **Issue**: File size data is sometimes partially written into the updated
+    table, on the first load of a directory. The cause was never found.
+  - **Goal**: Write a `test-bm.json` entry that loads a directory page cold and
+    counts the size cells against the rows, so the partial write is a verdict
+    rather than a sighting. Fix what the entry then shows, and close the issue
+    with `Fixes #1`.
+  - Measured on 11.08.2026, signed out and headless, on this repository's own
+    root: the size column header is added and ten of the twelve rows get a size
+    cell, so the partial write reproduces without a signed-in session.
+  - <https://github.com/isocialPractice/bookmarklets/issues/1>
+  - From: Existing Bookmarklets `->` From the Open Issues
+- [x] `siteSpecific_GitHub_ShowFileSize.js` writes no file sizes when the repo
+  root is reached from the navigation path
+  - **Issue**: Viewing the repo root from the tree view and then clicking the
+    repo root link in the navigation path above the table leaves the sizes
+    unloaded. It appears to happen only on the first navigation to the root.
+  - **Goal**: Give the entry a step that clicks the navigation path's root link
+    from a tree view, then expects a size in every row. Fix what it shows, and
+    close the issue with `Fixes #2`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/2>
+  - From: Existing Bookmarklets `->` From the Open Issues
+- [x] Write entries for the ChatGPT and Gmail bookmarklets, each with `auth`,
+  `signedIn` and `"scheduled": false`, and for the Amazon one as a guest
+  - Three of the five failures the 11.08.2026 `--all` run reported are the
+    ChatGPT and Gmail bookmarklets meeting `https://example.com/`, which is
+    the absence of an entry rather than a fault.
+  - `siteSpecific_Amazon_HideVideoPauseIcon.js` hides the
+    `vjs-big-play-button` a guest meets on any product page with a video, so
+    its entry has no `auth`, lists that class in `requires`, and is scheduled
+    by the rule the other public site-specific entries follow.
+  - For each signed-in site, record whether the run's browser stays signed
+    in; it reports `navigator.webdriver` true. A site that challenges or signs
+    it out is a skip with that reason, not a failure, and the missing sign-in
+    reaches the maintainer through `signInState` alone.
+  - **Goal**: Resolve the sign-ins through
+    [signed-in-sites.prompt.md](.claude/prompts/signed-in-sites.prompt.md).
+  - From: Test Configurations
+- [x] Let `url` read an environment variable, as in `"url": "$OCTOPRINT_URL"`,
+  and write the OctoPrint entry with it
+  - OctoPrint runs on a printer on the maintainer's own network, so its address
+    does not belong in the repository. An unset variable is a skip.
+  - The address a variable holds never appears in a reason, `report.json`,
+    `summary.txt` or `failure.md`; each names `$OCTOPRINT_URL` in its place,
+    so a pasted log or an assistant reading the report never learns it.
+  - From: Test Configurations
 
 </details>
