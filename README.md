@@ -3,6 +3,12 @@
   - **Maintenance**: Automated (*some bookmarklets may still not work*)
   - **New bookmarklets**: Active
 
+### Safety:
+
+  - **Never anything that could pass for malicious**: a bookmarklet here never reads or writes cookies, reads storage it did not write, sends anything from the page to another host, or loads code at run time. Where one needs a site's own API on another host, or a library pinned by its integrity hash, its test entry names that host and why.
+  - **Its own notes and settings** live in the page's `localStorage` or `sessionStorage`, which the site's own scripts can read, so nothing private belongs there.
+  - [test-bm.js](test-bm.js) checks every bookmarklet against this before it is published.
+
 # Browser Bookmarklets ![repo icon](favicon.png)
 <!-- Navigation -->
 <details>
