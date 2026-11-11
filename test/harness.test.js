@@ -4,7 +4,7 @@
 // *********************************************************************************************** //
 // Run with node --test test/harness.test.js, which npm test does ahead of the bookmarklets
 // themselves. The file is named rather than discovered on purpose: node --test treats every .js
-// file under a folder called test as a test file, and test/fixtures/bookmarklets holds eleven that
+// file under a folder called test as a test file, and test/fixtures/bookmarklets holds fourteen that
 // are bookmarklets.
 //
 // No run here ever reaches a real sign-in. Every run clears TEST_BM_AUTH_LAUNCHER unless the test
@@ -72,16 +72,16 @@ function resultFor(name) {
 test("every fixture is listed, and none of them needs a browser to be listed", function () {
  var run = runHarness(["--list"], fixtureEnv());
  assert.strictEqual(run.status, 0, run.err);
- assert.match(run.out, /11 bookmarklets, 11 configured, 0 scheduled, 1 signed in/);
+ assert.match(run.out, /14 bookmarklets, 14 configured, 0 scheduled, 1 signed in/);
  assert.match(run.out, /fixture:article\.html/);
  assert.match(run.out, /fixture_Auth_MarksTheSignedInPage\s+signed in\s+fixture:article\.html  auth fixture-site/);
 });
 
-test("a run of the fixtures ends in failure, because five of them are meant to fail", function () {
+test("a run of the fixtures ends in failure, because eight of them are meant to fail", function () {
  var counts = readReport().counts;
- assert.strictEqual(counts.run, 11);
+ assert.strictEqual(counts.run, 14);
  assert.strictEqual(counts.passed, 5);
- assert.strictEqual(counts.failed, 5);
+ assert.strictEqual(counts.failed, 8);
  assert.strictEqual(counts.skipped, 1);
  assert.strictEqual(readReport().run.status, 1, "a failed run exits 1");
 });
@@ -148,6 +148,91 @@ test("the page's own errors are recorded against the page, and the bookmarklet s
  assert.ok(logged.length >= 1, "the page's console error should be recorded");
  assert.ok(logged.some(function (c) { return /a console error of the page/.test(c.text); }),
   "the page's console error should be the one recorded: " + JSON.stringify(result.console));
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// Nothing that could pass for malicious
+// ----------------------------------------------------------------------------------------------- //
+
+test("a bookmarklet that touches the page's cookies is refused before any browser starts", function () {
+ var result = resultFor("fixture_Cookie_ReadsTheCookies");
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /^unsafe: it touches document\.cookie, and a bookmarklet never reads or writes cookies$/);
+ assert.strictEqual(result.url, "", "a refused file never reaches a page");
+});
+
+test("a bookmarklet that runs a string as code is refused before any browser starts", function () {
+ var result = resultFor("fixture_Eval_RunsAString");
+ assert.strictEqual(result.verdict, "fail");
+ assert.strictEqual(result.reason, "unsafe: it runs a string as code with eval()");
+});
+
+test("a request the bookmarklet sends to another host fails the entry, named by its host", function () {
+ var result = resultFor("fixture_Network_SendsToAnotherHost");
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /^sends a request to ping\.collector\.invalid, a host other than the page's own - /);
+ assert.doesNotMatch(result.reason, /fixtures\.test\/article/, "the reason names the host, not the address it carried");
+});
+
+function runDeclaring(host) {
+ var named = path.join(os.tmpdir(), "test-bm-network-named-" + process.pid + ".json");
+ fs.writeFileSync(named, JSON.stringify({
+  fixture_Network_SendsToAnotherHost: {
+   url: "fixture:article.html",
+   network: [{ host: host, reason: "a fixture showing a named host is allowed" }]
+  }
+ }));
+ try {
+  return runHarness(["fixture_Network_SendsToAnotherHost"], fixtureEnv(named));
+ } finally {
+  fs.rmSync(named, { force: true });
+ }
+}
+
+test("a host the entry names in network, with its reason, is allowed", function () {
+ var run = runDeclaring("ping.collector.invalid");
+ assert.strictEqual(run.status, 0, run.out + run.err);
+ assert.match(run.out, /fixture_Network_SendsToAnotherHost\s+pass/);
+});
+
+test("*. and a domain allows any of its subdomains, and only those", function () {
+ var wide = runDeclaring("*.collector.invalid");
+ assert.strictEqual(wide.status, 0, wide.out + wide.err);
+ var other = runDeclaring("*.elsewhere.invalid");
+ assert.strictEqual(other.status, 1, other.out + other.err);
+ assert.match(other.out, /sends a request to ping\.collector\.invalid/);
+});
+
+test("a host named in network without its reason is a configuration error", function () {
+ var bad = path.join(os.tmpdir(), "test-bm-network-unreasoned-" + process.pid + ".json");
+ fs.writeFileSync(bad, JSON.stringify({ fixture_Network_SendsToAnotherHost: { network: [{ host: "ping.collector.invalid" }] } }));
+ try {
+  var run = runHarness(["--list"], fixtureEnv(bad));
+  assert.strictEqual(run.status, 2, "a configuration error exits 2");
+  assert.match(run.err, /network 1: a host is named only with the reason it is needed/);
+ } finally {
+  fs.rmSync(bad, { force: true });
+ }
+});
+
+test("a <script> loaded by its src without an integrity hash is refused", function () {
+ var js = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-unpinned-"));
+ fs.writeFileSync(path.join(js, "fixture_Script_LoadsUnpinned.js"), [
+  "javascript:(function() {",
+  " /* loads a library from a cdn with nothing pinning the file that runs */",
+  " var scriptFixtureScriptLoadsUnpinned = document.createElement(\"script\");",
+  " scriptFixtureScriptLoadsUnpinned.src = \"https://cdn.invalid/library.js\";",
+  " document.head.appendChild(scriptFixtureScriptLoadsUnpinned);",
+  "})();"
+ ].join("\n"));
+ fs.writeFileSync(path.join(js, "test-bm.json"), "{}");
+ try {
+  var run = runHarness(["fixture_Script_LoadsUnpinned"], { TEST_BM_JS_DIR: js, TEST_BM_CONFIG: path.join(js, "test-bm.json") });
+  assert.strictEqual(run.status, 1, run.out + run.err);
+  assert.match(run.out, /unsafe: it loads a <script> by its src with no integrity hash/);
+ } finally {
+  removeDir(js);
+ }
 });
 
 // ----------------------------------------------------------------------------------------------- //

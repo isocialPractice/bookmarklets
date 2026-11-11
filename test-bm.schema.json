@@ -70,6 +70,19 @@
      "description": "The sign-in this entry needs, by site name. test-bm.js never signs in itself: it asks the launcher module named by TEST_BM_AUTH_LAUNCHER, an absolute path outside the repository, for a signed-in browser context. Without one the entry is a skip. An entry with auth runs read-only, writes down nothing the page shows, names signedIn, and is never scheduled. Entries that share a sign-in share the name.",
      "examples": ["chatgpt", "gmail"]
     },
+    "network": {
+     "type": "array",
+     "description": "The hosts other than the page's own that the bookmarklet may send a request to, each with the reason. A request the bookmarklet makes to any other host fails the entry, because a bookmarklet sends nothing from the page anywhere else. A site's own API on another host, or a library pinned by its integrity hash, is what belongs here.",
+     "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "reason"],
+      "properties": {
+       "host": { "type": "string", "pattern": "^(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\\d+)?$", "description": "An exact host, or *. and a domain for any of its subdomains.", "examples": ["api.github.com", "*.googlevideo.com"] },
+       "reason": { "type": "string", "minLength": 1, "examples": ["the file sizes come from GitHub's own REST API"] }
+      }
+     }
+    },
     "signedIn": {
      "type": "string",
      "minLength": 1,

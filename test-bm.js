@@ -46,6 +46,14 @@
 // acts. Nothing the page shows is written down. When the run ends, the launcher's
 // signInState(states) hears which sites were found signed in. An entry with auth is never scheduled.
 //
+// No bookmarklet may do anything that could pass for malicious. Before any browser starts, a file
+// that touches document.cookie, runs a string as code (eval, new Function, a string handed to
+// setTimeout or setInterval, import()), or loads a <script> by its src without an integrity hash
+// fails. During the run, every request started from the bookmarklet's code is noted, and one to a
+// host other than the page's own fails the entry unless the entry names that host in "network"
+// with the reason. A bookmarklet's own notes and settings in localStorage are
+// its business, and nothing here judges them.
+//
 // Exit 0 nothing failed, 1 something failed, 2 usage or configuration error. A skip never fails a
 // run. --all and --scheduled write test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json and
 // summary.txt.
@@ -100,7 +108,10 @@ var exitConfig = 2;
 
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
- "timeout", "settle", "auth", "signedIn"];
+ "timeout", "settle", "auth", "signedIn", "network"];
+// A host a network entry names: an exact host, or "*." and a domain for any of its subdomains, as
+// a media server picked per request is.
+var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d+)?$/;
 var stepActions = ["run", "click", "fill", "press", "select", "wait", "expect"];
 var stepExtras = ["value", "text", "selector"];
 var expectKeys = ["selector", "visible", "hidden", "count", "text", "clipboard", "location", "popup"];
@@ -281,6 +292,27 @@ function commentNote(lines) {
   + " with a line comment, which swallows everything after it on one line)";
 }
 
+// What in the code could pass for malicious, read off the source with its block comments taken
+// out so a comment that names a thing is not taken for the thing. The empty string when nothing.
+function unsafeNote(code) {
+ var bare = String(code).replace(/\/\*[\s\S]*?\*\//g, " ");
+ if (/\bdocument\s*(\.\s*cookie\b|\[\s*["'`]cookie["'`]\s*\])/.test(bare)) {
+  return "it touches document.cookie, and a bookmarklet never reads or writes cookies";
+ }
+ if (/\beval\s*\(/.test(bare)) { return "it runs a string as code with eval()"; }
+ if (/\bnew\s+Function\s*\(|(^|[^.\w$])Function\s*\(/.test(bare)) { return "it runs a string as code with the Function constructor"; }
+ if (/\bset(Timeout|Interval)\s*\(\s*["'`]/.test(bare)) { return "it runs a string as code by handing one to setTimeout or setInterval"; }
+ if (/(^|[^.\w$])import\s*\(/.test(bare)) { return "it loads code at run time with import()"; }
+ var makesScript = /createElement\s*\(\s*["'`]script["'`]\s*\)/i.test(bare);
+ var setsSrc = /\.src\s*=|setAttribute\s*\(\s*["'`]src["'`]/.test(bare);
+ var pinsIt = /\.integrity\s*=|setAttribute\s*\(\s*["'`]integrity["'`]/.test(bare);
+ if (makesScript && setsSrc && !pinsIt) {
+  return "it loads a <script> by its src with no integrity hash, so the file that runs is not"
+   + " pinned to the file that was reviewed";
+ }
+ return "";
+}
+
 // Everything knowable about a bookmarklet without a browser.
 function checkFile(file, name) {
  var text = fs.readFileSync(file, "utf8").replace(/^﻿/, "");
@@ -314,6 +346,9 @@ function checkFile(file, name) {
     + decodedErr.message };
   }
  }
+
+ var unsafe = unsafeNote(decoded);
+ if (unsafe) { return { ok: false, reason: "unsafe: " + unsafe }; }
 
  return {
   ok: true,
@@ -456,6 +491,27 @@ function validateConfig(config, names) {
   if (entry.signedIn !== undefined && entry.auth === undefined) { problems.push(name + ": signedIn goes with auth"); }
   if (entry.auth !== undefined && entry.scheduled === true) {
    problems.push(name + ": an entry with auth is never scheduled - an unattended run has no one to sign in");
+  }
+  if (entry.network !== undefined) {
+   if (!Array.isArray(entry.network)) {
+    problems.push(name + ": network takes a list of { host, reason }");
+   } else {
+    entry.network.forEach(function (n, i) {
+     if (!n || typeof n != "object" || Array.isArray(n)) {
+      problems.push(name + ": network " + (i + 1) + " is not an object");
+      return;
+     }
+     Object.keys(n).forEach(function (k) {
+      if (k != "host" && k != "reason") { problems.push(name + ": network " + (i + 1) + " has no " + k); }
+     });
+     if (typeof n.host != "string" || !hostPattern.test(n.host)) {
+      problems.push(name + ": network " + (i + 1) + ": host takes a host name such as api.example.com, or *.example.com for its subdomains");
+     }
+     if (typeof n.reason != "string" || !n.reason.trim()) {
+      problems.push(name + ": network " + (i + 1) + ": a host is named only with the reason it is needed");
+     }
+    });
+   }
   }
   if (entry.requires !== undefined && !isStringList(entry.requires)) { problems.push(name + ": requires takes a list of selectors"); }
   if (entry.permissions !== undefined && !isStringList(entry.permissions)) { problems.push(name + ": permissions takes a list of names"); }
@@ -642,6 +698,60 @@ async function inject(page, code, name) {
  } finally {
   await cdp.detach().catch(function () { });
  }
+}
+
+// True when the bookmarklet's own code is anywhere in the synchronous stack that started a request,
+// looking past an async boundary that left a level empty.
+function startedBy(stack, url) {
+ while (stack && !(stack.callFrames && stack.callFrames.length)) { stack = stack.parent; }
+ return !!stack && stack.callFrames.some(function (f) { return f.url === url; });
+}
+
+// Requests started from the bookmarklet's code, told apart from the page's by the stack that started
+// them, the way its errors are told apart. The whole synchronous stack is read rather than its
+// innermost frame, because a site that wraps fetch, as GitHub does, puts its own frame on top of the
+// bookmarklet's call. The price is that a page's own request, set off by a click the bookmarklet
+// makes, counts too; it fails where it can be seen, and the entry can name the host with that
+// reason. Moving the page itself is not counted: that is the reader going somewhere. Chromium's
+// protocol is what carries the initiator, so this reads it directly.
+async function watchRequests(page, ctx) {
+ var allowed = ctx.network.map(function (n) { return n.host; });
+ var session = await page.context().newCDPSession(page);
+ var mainFrame = "";
+ try {
+  mainFrame = (await session.send("Page.getFrameTree")).frameTree.frame.id;
+ } catch (err) {
+  mainFrame = "";
+ }
+ function judge(address, home, initiator) {
+  if (!startedBy(initiator && initiator.stack, sourceUrl(ctx.name))) { return; }
+  var target;
+  try { target = new URL(address); } catch (err) { return; }
+  if (!/^(https?|wss?):$/.test(target.protocol)) { return; }
+  if (target.host === home || allowed.some(function (h) {
+   return h === target.host || (h.indexOf("*.") === 0 && target.host.slice(-(h.length - 1)) === h.slice(1));
+  })) { return; }
+  if (ctx.offHosts.indexOf(target.host) < 0) { ctx.offHosts.push(target.host); }
+ }
+ function hostOf(address) {
+  try { return new URL(address).host; } catch (err) { return ""; }
+ }
+ session.on("Network.requestWillBeSent", function (event) {
+  if (event.type == "Document" && event.frameId == mainFrame) { return; }
+  judge(event.request.url, hostOf(event.documentURL), event.initiator);
+ });
+ session.on("Network.webSocketCreated", function (event) {
+  judge(event.url, hostOf(page.url()), event.initiator);
+ });
+ await session.send("Network.enable");
+ return session;
+}
+
+function offHostReason(ctx) {
+ if (!ctx.offHosts.length) { return ""; }
+ return "sends a request to " + ctx.offHosts.join(", ") + ", " + (ctx.offHosts.length == 1 ? "a host" : "hosts")
+  + " other than the page's own - a bookmarklet sends nothing to another host unless its entry names"
+  + " the host in network with the reason";
 }
 
 // Every request to the fixture origin is answered from test/fixtures/pages, so a fixture entry needs
@@ -981,6 +1091,8 @@ async function runOne(browser, name, entry, session) {
   dialogs: (entry && entry.dialogs) || [],
   ran: false,
   popupUrls: [],
+  network: (entry && entry.network) || [],
+  offHosts: [],
   private: !!(entry && entry.auth),
   auth: (entry && entry.auth) || "",
   signedIn: (entry && entry.signedIn) || "",
@@ -1014,6 +1126,12 @@ async function runOne(browser, name, entry, session) {
  }
  page.setDefaultTimeout(Math.min(ctx.timeout, requiresTimeout));
  attachListeners(page, result, ctx);
+ try {
+  await watchRequests(page, ctx);
+ } catch (err) {
+  await context.close().catch(function () { });
+  return close("fail", "the requests the bookmarklet makes could not be watched: " + firstLine(err));
+ }
 
  if (ctx.url.indexOf(fixtureOrigin + "/") === 0) {
   try {
@@ -1031,12 +1149,14 @@ async function runOne(browser, name, entry, session) {
   await context.close().catch(function () { });
   if (typeof ctx.signedInFound == "boolean") { result.signedIn = ctx.signedInFound; }
   if (err && err.skip) { return close("skip", err.message); }
+  if (offHostReason(ctx)) { return close("fail", offHostReason(ctx)); }
   return close("fail", err && err.expected ? err.message : "the run stopped: " + firstLine(err));
  }
  await context.close().catch(function () { });
  if (typeof ctx.signedInFound == "boolean") { result.signedIn = ctx.signedInFound; }
 
  if (!ctx.ran) { return close("fail", "the bookmarklet never ran - no step named it and the entry had none"); }
+ if (offHostReason(ctx)) { return close("fail", offHostReason(ctx)); }
 
  var thrown = result.errors.filter(function (e) { return e.from == "bookmarklet"; });
  if (thrown.length) {

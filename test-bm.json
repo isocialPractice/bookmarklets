@@ -4,6 +4,7 @@
  "dom_Clipboard_ConvertPageToMarkdown": {
   "url": "fixture:snippet.html",
   "scheduled": false,
+  "network": [{ "host": "unpkg.com", "reason": "loads turndown and its GFM plugin, each pinned by its integrity hash" }],
   "requires": ["h1", "ul li", "table th", "a[href]", "img[src]"],
   "permissions": ["clipboard-read", "clipboard-write"],
   "dialogs": [{ "accept": true }],
@@ -264,6 +265,7 @@
  "siteSpecific_GitHub_ListOldNewestCommits": {
   "url": "https://github.com/isocialPractice/bookmarklets/commits/main",
   "scheduled": true,
+  "network": [{ "host": "api.github.com", "reason": "the oldest and newest commits come from GitHub's own REST API" }],
   "requires": [".tmp-mb-3.prc-Stack-Stack-UQ9k6", "relative-time[datetime]"],
   "timeout": 45000,
   "steps": [
@@ -277,6 +279,7 @@
  "siteSpecific_GitHub_NavigateCommitsSequentially": {
   "url": "https://github.com/isocialPractice/bookmarklets/commit/2f66629eec48980ed9c63d9014bcca716b45b5c2",
   "scheduled": true,
+  "network": [{ "host": "api.github.com", "reason": "the next and previous commits come from GitHub's own REST API" }],
   "requires": ["relative-time[datetime]"],
   "timeout": 45000,
   "steps": [
@@ -304,6 +307,7 @@
  "siteSpecific_GitHub_ShowFileSize": {
   "url": "https://github.com/isocialPractice/bookmarklets",
   "scheduled": true,
+  "network": [{ "host": "api.github.com", "reason": "file sizes come from GitHub's own REST API" }],
   "requires": ["table", "tr", "body"],
   "timeout": 45000,
   "steps": [
@@ -452,6 +456,7 @@
  "siteSpecific_YouTube_SyncAudio": {
   "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
   "scheduled": true,
+  "network": [{ "host": "*.googlevideo.com", "reason": "the quality the bookmarklet picks in the settings menu makes YouTube's own player fetch video from its media servers; no page data leaves" }],
   "requires": [".ytp-button.ytp-settings-button", "video"],
   "timeout": 60000,
   "steps": [
