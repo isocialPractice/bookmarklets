@@ -8,8 +8,37 @@ this file.
 
 ## [11.10.2026]
 
+### Added
+
+- `test-bm.js` runs bookmarklets for signed-in sites without holding any
+  sign-in. An entry with `"auth": "<site>"` gets its browser from a launcher
+  module named by `TEST_BM_AUTH_LAUNCHER`, which must sit outside the
+  repository, and names a `signedIn` selector that tells a signed-in page from
+  a signed-out one. Without a launcher the entry is a skip, and a signed-out
+  page is a skip rather than a `site changed` failure. Such an entry is never
+  scheduled, is refused before any click, fill or key press aimed at a form, a
+  text area, an editable region or a submit control, and writes down nothing
+  the page shows: the page's console and errors are counted, and dialog text,
+  popup addresses and quoted page text are withheld. `--sign-in <site>` asks
+  the launcher to open a site, and at the end of a run the launcher hears which
+  sites were found signed in.
+- `expect.popup` checks where a new tab the bookmarklet opened went. The
+  fixture origin is now routed on the browser context, so a tab opened onto a
+  fixture page is served too.
+- `test/harness.test.js` covers both with eleven more tests, run against a
+  stub launcher written into the temporary folder and a fixture bookmarklet
+  that opens a new tab.
+- `siteSpecific_Amazon_HideVideoPauseIcon` has an entry, as a skip: a headless
+  browser is shown a bot check in place of the product page.
+
 ### Fixed
 
+- `siteSpecific_YouTube_WatchRandomVideo.js` reads the lockup thumbnail class
+  YouTube serves now, with the older class and the search results' thumbnail
+  as fallbacks, and says with an alert when a page lists no videos rather than
+  doing nothing. YouTube's signed-out home feed lists none at all, so its entry
+  runs on a channel's video tab and expects a new tab at a watch address. Its
+  gist carries the fix, and its README entry links its short.
 - The scrolling table boxes on `test/fixtures/pages/table.html` answer three
   things a read-through of the practice pages raised.
   - A scrolling table's title stays readable while the table scrolls under it.
@@ -42,6 +71,8 @@ this file.
 
 ### Changed
 
+- The README's status, and the repository's description, say maintenance is
+  automated and some bookmarklets may still not work.
 - `test/pages.test.js` measures a third viewport, a tablet width of 880x720,
   between the desktop and phone widths it already took. It sits in the band
   between the readout's two breakpoints and is the first width at which the
