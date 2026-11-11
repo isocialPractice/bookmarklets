@@ -134,6 +134,29 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
+- [ ] **Important**: never ship a bookmarklet that does anything that could
+  pass for malicious, and make the harness refuse one that tries
+  - The rule, stated in the README and in `AGENTS.md`: a bookmarklet never
+    reads or writes cookies, never reads storage it did not write itself,
+    never sends anything from the page to another host, and never loads code
+    from anywhere at run time.
+  - Keeping its own data in the page's `localStorage` or `sessionStorage`
+    (notes, settings, column widths) is fine, and 14 bookmarklets do it
+    today. The README says once that the site's own scripts can read that
+    storage, so nothing private belongs in it.
+  - `test-bm.js` fails a bookmarklet that touches `document.cookie`, calls
+    `eval` or `new Function`, adds a `<script>` with a `src`, or makes a
+    request to a host other than the page's own, unless its entry names that
+    host in a new `network` list with the reason. The three GitHub
+    bookmarklets that call `api.github.com` declare it. The source is checked
+    before any browser starts, and the run records every request whose stack
+    passes through the bookmarklet's `sourceURL`, the way its errors are told
+    apart from the page's.
+  - `dom_Clipboard_ConvertPageToMarkdown.js` loads `turndown` and its GFM
+    plugin from unpkg each time it runs. Bundle them into the bookmarklet, or
+    pin them with Subresource Integrity hashes, so what runs is what was
+    reviewed.
+
 - [x] Support bookmarklets for signed-in sites without keeping any sign-in in
   the repository
   - `"auth": "<site>"` names the sign-in an entry needs, such as `"chatgpt"`.
@@ -895,6 +918,29 @@ reuse or record, which makes them a category of their own.
   saved directly
 - [ ] `media_Svg_ExportSvgs.js` - list every inline SVG with a preview, to copy
   or download as a standalone file
+
+## Browser Extensions
+
+Some bookmarklets do more as a browser extension: an extension can run on
+every page load rather than on a click, keep settings in its own storage
+rather than the site's, take keyboard shortcuts the browser registers, and
+inject styles a strict content security policy refuses a bookmarklet.
+Browser plugins in the old sense (NPAPI) are gone from every current browser,
+so a port means a WebExtension: Manifest V3 for Chrome and Edge, and
+Firefox's WebExtensions.
+
+- [ ] Document which bookmarklets, alone or as a set, are worth porting to a
+  browser extension, in `docs/extensions.md` linked from the README
+  - One row per bookmarklet or set: what the port would gain, the permissions
+    it would ask for (`activeTab` rather than broad host permissions wherever
+    it can), what would block it, and whether a userscript is the lighter
+    route.
+  - Sets that belong together, such as the `window_style_` family, the
+    YouTube notes and time-mark bookmarklets, the GitHub repository-table
+    bookmarklets, and the ChatGPT answer bookmarklets.
+  - A port keeps the safety rule under `## Test Harness`, and asks for no
+    permission it does not use.
+  - Nothing is built here; the document decides what would be.
 
 ## User Use Only
 

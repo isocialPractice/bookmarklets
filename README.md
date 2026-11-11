@@ -1,6 +1,6 @@
 ### Status:
 
-  - **Existing bookmarklets**: Low Maintenance (*some may not work*)
+  - **Maintenance**: Automated (*some bookmarklets may still not work*)
   - **New bookmarklets**: Active
 
 # Browser Bookmarklets ![repo icon](favicon.png)
