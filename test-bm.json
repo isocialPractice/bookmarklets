@@ -231,6 +231,13 @@
    { "expect": { "selector": "p.try-styling u", "text": "Six routes cross the town centre" } }
   ]
  },
+ "siteSpecific_Amazon_HideVideoPauseIcon": {
+  "url": "https://www.amazon.com/dp/B09B8V1LZ3",
+  "scheduled": false,
+  "skip": "Amazon serves a headless browser a continue-shopping bot check in place of the product page, and its video.js player only loads once a product video is opened",
+  "requires": [".vjs-big-play-button"],
+  "timeout": 60000
+ },
  "siteSpecific_GitHub_AlternateRowColor": {
   "url": "https://github.com/isocialPractice/bookmarklets",
   "scheduled": true,
