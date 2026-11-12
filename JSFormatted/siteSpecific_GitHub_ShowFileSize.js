@@ -4,9 +4,26 @@ javascript:(function(){
  var onRoot=0,tablePage=1,apiRoot, curAPI, mapAPI;
  /* Switch to prevent new columns being added on navigations */
  var firstLoad = 0, curDir = window.location.href, turnOff, firstRun, fileSizeHasID, reGetAPIJSON, sessionNeedsResetting = 0;
- /* 1 once a listing has had the size column written into it, so a column the page then replaced is
-    told apart from a page that never had one */
- var columnWritten = 0;
+ /* The key the copy that is running puts on the window. A paste made while it runs leaves it to do
+    the work for both: a second poll asks the API again for every directory change, and a reader
+    who is not signed in gets sixty requests an hour. */
+ var pollKey = "showFileSizePoll--__-unlikely_-_name-__--showFileSizePoll";
+ if (window[pollKey] == 1) {
+  console.log("Add file size bookmarklet is already running:");
+  return;
+ }
+ /* When the next request may go out, whether one is out now, and whether the API is refusing. The
+    waits get longer the more answers in a row have been no use, so a listing this cannot write is
+    never turned into a request a second. */
+ var nextTryAt = 0, fetchOut = 0, rateLimited = 0;
+ /* Refusals in a row: a 403 past the hourly limit, a body that is not a listing, or a request that
+    never arrived. The limit lasts until the hour turns over, so these wait a long time and then
+    stop until the address changes. */
+ var refusals = 0, refusalWaits = [5000, 15000, 45000, 135000, 300000];
+ /* Writes in a row that left the listing with no column, which is what a pass that met GitHub
+    replacing the listing leaves behind. The reader is looking at a listing with no sizes in it, so
+    these try again soon, but not for ever. */
+ var writeTries = 0, writeWaits = [1000, 1000, 2000, 5000, 15000, 60000];
  var docBody = document.getElementsByTagName("body");
  /* style td element text color */
  var bookmarkletStyle = document.createElement("style");
@@ -27,7 +44,7 @@ javascript:(function(){
   makeCheckForSessionReset.id = "checkIfSessionNeedsResetting--__-unlikely_-_name-__--checkIfSessionNeedsResetting";
   let findRightTable = document.getElementsByTagName("table");
   let findRightTableLen = findRightTable.length;
-  for (i = 0; i < findRightTableLen; i++) {
+  for (let i = 0; i < findRightTableLen; i++) {
    /* this assumes github will not change html symantics */
    let tablePar = findRightTable[i].parentElement;
    if (findRightTable[i] == "div") {
@@ -70,7 +87,7 @@ javascript:(function(){
  /* What the size column shows for one row, read out of the API data by file name. A folder gets
     nothing: the API gives every folder a size of 0, which would read as "0 B" in the column. */
  var sizeFor = function(cur, fileName) {
-  for (j in cur) {
+  for (let j in cur) {
    if (cur[j].name != fileName || cur[j].type != "file") { continue; }
    let size = cur[j].size;
    if (size < 1024) { return size + " B"; }
@@ -86,6 +103,48 @@ javascript:(function(){
   indexSizeID = 0;
   let written = document.querySelectorAll('[data-file-size]');
   for (let w = written.length - 1; w >= 0; w--) { written[w].remove(); }
+ };
+ /* What the header reads. A refused request otherwise leaves the reader no way to tell a directory
+    of empty files from a limit that has been reached, and the header already on the page carries
+    the reason without anything new being put there. */
+ var headerText = function() {
+  return rateLimited == 1 ? "Size (rate limited)" : "Size";
+ };
+ /* Say in the header what the API is doing, where there is a header to say it in. The row layout
+    the repository root serves has no header row, so there the column simply does not appear. */
+ var sayRateLimited = function() {
+  let header = document.getElementById("sizeCol--__-unlikely_-_name-__--sizeCol");
+  if (header) { header.innerHTML = headerText(); }
+ };
+ /* The rows of the listing as a static copy, leaving out any already taken off the page. A table
+    page's rows come back as a live collection, and GitHub replaces the listing a moment after the
+    address changes, so a loop reading that collection walks rows that are on their way out. */
+ var listingRowsNow = function() {
+  let rows = Array.prototype.slice.call(listingRows());
+  let here = [];
+  for (let r = 0; r < rows.length; r++) {
+   if (document.contains(rows[r])) { here.push(rows[r]); }
+  }
+  return here;
+ };
+ /* Whether any of those rows lists a file or folder, which is whether there is a listing to write
+    a column into at all. */
+ var hasListing = function(rows) {
+  for (let r = 0; r < rows.length; r++) {
+   if (isListingRow(rows[r])) { return 1; }
+  }
+  return 0;
+ };
+ /* Whether the listing on the page wants the column written into it, read off the page every time
+    rather than off what the last pass managed to do. A listing whose rows hold no size cell has
+    either never had the column or had it taken away by GitHub's re-render, and both want the same
+    write; a table page that kept its cells and lost its header wants one too. A page with no
+    listing rows wants nothing, which is what keeps this from asking for data it has no use for. */
+ var columnNeedsWriting = function() {
+  if (hasListing(listingRowsNow()) == 0) { return 0; }
+  if (document.querySelectorAll('[data-file-size]').length == 0) { return 1; }
+  if (tablePage == 1 && !document.getElementById("sizeCol--__-unlikely_-_name-__--sizeCol")) { return 1; }
+  return 0;
  };
  var setGlobals = function() {
    curPage = location.host + location.pathname;
@@ -152,7 +211,7 @@ javascript:(function(){
    if (document.getElementById("sizeCol--__-unlikely_-_name-__--sizeCol")) { return; }
    if (!row || !row.children || !row.children[1]) { return; }
    sizeTH = document.createElement("th");
-   sizeTH.innerHTML = "Size";
+   sizeTH.innerHTML = headerText();
    sizeTH.style.width = "10%";
    sizeTH.id = "sizeCol--__-unlikely_-_name-__--sizeCol";
    row.children[1].insertAdjacentElement("afterend", sizeTH);
@@ -185,39 +244,91 @@ javascript:(function(){
    row.children[1].style.width = "35%";
    row.children[1].insertAdjacentElement("afterend", sizeTD);
   };
-  /* Write the column from scratch each time the data comes back, reading the rows again rather
-     than trusting the count taken when the fetch went out, and telling each row apart by what it
-     holds rather than by its number in the table. */
+  /* The rows this pass walks, decided before anything is taken off the page, and told apart by
+     what each one holds rather than by its number in the table. A pass that arrives while GitHub
+     is replacing the listing finds no listing to write into and clears nothing, so the reader
+     keeps the column they already had and the poll comes back for this directory. */
+  let rows = listingRowsNow();
+  if (hasListing(rows) == 0) { return; }
   clearSizeCells();
-  tableRow = listingRows();
-  tableRowLen = tableRow.length;
-  for (i = 0; i < tableRowLen; i++) {
-   let row = tableRow[i];
+  for (let r = 0; r < rows.length; r++) {
+   let row = rows[r];
+   if (!document.contains(row)) { continue; }
    if (tablePage == 0) { repoRoot(row); continue; }
    if (isHeaderRow(row)) { addSizeHeader(row); continue; }
    if (!isListingRow(row)) { widenSpanningRow(row); continue; }
    addSizeCell(row);
   }
-  /* whether this page had a listing to write a column into, which is what tells a column the page
-     dropped from a column there was never going to be */
-  columnWritten = document.getElementById("sizeCol--__-unlikely_-_name-__--sizeCol") ? 1 : 0;
  };
- /* get api as text, convert to json, then use json to add size col to table */
+ /* How long to wait before asking again: the nth answer of a kind in a row waits the nth time in
+    that kind's list, and past the end of the list nothing asks again until the address changes. */
+ var holdOff = function(waits, n) {
+  let wait = n >= 1 && n <= waits.length ? waits[n - 1] : -1;
+  nextTryAt = wait < 0 ? Infinity : Date.now() + wait;
+ };
+ /* An answer that was not a listing. Sizes already on the page are left exactly as they are, since
+    writing an empty column over them would read as a directory of empty files. Where there is a
+    listing and no column at all - which is where a reader meets the limit, a directory or two in,
+    on a listing GitHub has just replaced - the table layout gets the column with the reason in its
+    heading: a reader cannot otherwise tell a bookmarklet waiting on a limit from one that did not
+    run. The row layout the repository root serves has no header row to say it in, so there nothing
+    is written. */
+ var refused = function() {
+  refusals++;
+  rateLimited = 1;
+  if (
+   tablePage == 1 &&
+   document.querySelectorAll('[data-file-size]').length == 0 &&
+   hasListing(listingRowsNow()) == 1
+  ) {
+   addSizeCol([]);
+  }
+  sayRateLimited();
+  holdOff(refusalWaits, refusals);
+ };
+ /* A listing. Write the column from it, then judge the pass by what is on the page afterwards: one
+    that ended with no column met GitHub replacing the listing, and is tried again soon. */
+ var wrote = function(data) {
+  refusals = 0;
+  rateLimited = 0;
+  addSizeCol(data);
+  sayRateLimited();
+  if (columnNeedsWriting() == 1) {
+   writeTries++;
+   holdOff(writeWaits, writeTries);
+  } else {
+   writeTries = 0;
+   nextTryAt = 0;
+  }
+ };
+ /* The listing for this directory, or nothing. Past the hourly limit the API answers 403 with a
+    JSON object carrying a message, which parses as happily as the data does, so an answer counts
+    only when the request succeeded and the body is the array of entries the API documents. A
+    refusal is not data, and neither is a request that never arrived. */
  var getAPIJSON = async function(api) {
-  let a = await fetch(api);
-  let b = await a.text();
-  let c = await JSON.parse(b);
-  let d = await addSizeCol(c);
+  try {
+   let answer = await fetch(api);
+   let body = await answer.text();
+   let data = answer.ok ? JSON.parse(body) : null;
+   if (!answer.ok || !(data instanceof Array)) {
+    refused();
+   } else {
+    wrote(data);
+   }
+  } catch (err) {
+   refused();
+  } finally {
+   fetchOut = 0;
+  }
  };
  /* run bookmarklet according to current directory */
  var runBookmarklet = function() {
   insertBookmarkletStyle();
   setGlobals();
-  if (turnOff == 0) {
-   setTimeout(function() { getAPIJSON(curAPI); }, 1000);
-  } else {
-   return;
-  }
+  if (turnOff == 1) { return; }
+  /* marked as out before the wait, so the poll does not start a second request inside it */
+  fetchOut = 1;
+  setTimeout(function() { getAPIJSON(curAPI); }, 1000);
  };
  if (firstRun == 1) {
   runBookmarklet();
@@ -226,30 +337,31 @@ javascript:(function(){
    document.getElementById("checkIfSessionNeedsResetting--__-unlikely_-_name-__--checkIfSessionNeedsResetting");
   if (!checkIfSessionNeedsResetting) { sessionNeedsResetting = 1; }
  }
- /* GitHub replaces the listing a moment after the address changes, and the replacement can land
-    after the column was written, taking it with it. A column that was written and is no longer
-    there has been dropped that way rather than never written, so the same poll puts it back.
-    columnWritten is 0 on a page that has no listing to write one into, which is what keeps this
-    from asking for the data again every second on a page that was never going to have a column. */
- var columnWasDropped = function() {
-  if (columnWritten == 0) { return 0; }
-  if (document.getElementById("sizeCol--__-unlikely_-_name-__--sizeCol")) { return 0; }
-  return document.querySelectorAll('[data-file-size]').length == 0 ? 1 : 0;
- };
- /* create or change col with file size */
+ /* Create or change the col with the file size, and put back one the page took away. The poll reads
+    the page rather than what the last pass managed, so a listing that never had the column and one
+    that lost it are the same case and both get written; a refusal is the one state the page cannot
+    be asked about, so it is held to the waits in refusalWaits and still wants a listing on the page
+    to be worth asking for. A GitHub page that is not a file listing, an issues page say, otherwise
+    spends six of the reader's sixty requests an hour on an address no answer writes anything to. */
  var checkForChangeDir = function() {
-  if (curDir !== window.location.href && turnOff == 0) {
-   curDir = window.location.href;
-   runBookmarklet();
-  } else if (turnOff == 0 && columnWasDropped() == 1) {
-   runBookmarklet();
-  }
-  if (turnOff == 0) {
-   setTimeout(checkForChangeDir, 1000);
-  } else {
+  if (turnOff == 1) {
    console.log("Add file size bookmarklet did not run:");
    return;
   }
+  if (curDir !== window.location.href) {
+   curDir = window.location.href;
+   refusals = 0;
+   writeTries = 0;
+   rateLimited = 0;
+   nextTryAt = 0;
+   runBookmarklet();
+  } else if (
+   fetchOut == 0 && Date.now() >= nextTryAt &&
+   ((rateLimited == 1 && hasListing(listingRowsNow()) == 1) || columnNeedsWriting() == 1)
+  ) {
+   runBookmarklet();
+  }
+  setTimeout(checkForChangeDir, 1000);
  };
  if (sessionNeedsResetting == 1) {
   sessionNeedsResetting = 0;
@@ -258,6 +370,7 @@ javascript:(function(){
   runBookmarklet();
  }
  if (turnOff == 0) {
+  window[pollKey] = 1;
   checkForChangeDir();
  } else {
   console.log("Add file size bookmarklet is not running:");

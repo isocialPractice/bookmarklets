@@ -481,9 +481,13 @@ test("--sign-in hands the launcher the site name and nothing else, and needs a l
 
 // One fixture, copied under as many names as the run needs entries, with a configuration of its own.
 // It keeps these runs away from the shared fourteen, whose counts the assertions above pin down.
-function runApart(entries, args, env) {
+// A run of entries nothing else shares, each a copy of one bookmarklet written under the entry's own
+// name. The bookmarklet is the passing fixture unless a test hands over its own source, which is how
+// a test that needs a particular shape of bookmarklet - one that works asynchronously, say - gets one
+// without adding a fifteenth file to test/fixtures/bookmarklets for every other test to count.
+function runApart(entries, args, env, source) {
  var js = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-apart-"));
- var source = fs.readFileSync(path.join(rootDir, jsDir, "fixture_Pass_AddsAPanel.js"));
+ if (source === undefined) { source = fs.readFileSync(path.join(rootDir, jsDir, "fixture_Pass_AddsAPanel.js")); }
  try {
   Object.keys(entries).forEach(function (name) { fs.writeFileSync(path.join(js, name + ".js"), source); });
   var config = path.join(js, "test-bm.json");
@@ -556,6 +560,61 @@ test("a bookmarklet an entry runs twice gets a numbered pair of screenshots for 
  }, ["--all"]);
  assert.deepStrictEqual(onlyResult(answer).capture.screenshots.map(function (s) { return s.what; }),
   ["before", "after", "before-2", "after-2"]);
+});
+
+// A bookmarklet whose work lands after the injection call has returned, which is every bookmarklet
+// that fetches something or waits for the page to settle. Nothing on the page says it ran until the
+// timer fires, so the after shot taken at the old moment was the before shot again.
+var lateFixture = [
+ "javascript:(function() {",
+ " /* A fixture that paints nothing until a wait has passed, so the two shots of it differ only if",
+ "    the after one was taken once the entry's steps had run. */",
+ " var idFixtureLatePaintsAfterAWait = \"panel--__-unlikely_-_name-__--fixtureLatePaintsAfterAWait\";",
+ " setTimeout(function() {",
+ "  var panelFixtureLatePaintsAfterAWait = document.createElement(\"div\");",
+ "  panelFixtureLatePaintsAfterAWait.id = idFixtureLatePaintsAfterAWait;",
+ "  panelFixtureLatePaintsAfterAWait.textContent = \"the fixture ran\";",
+ "  panelFixtureLatePaintsAfterAWait.style.setProperty(\"position\", \"fixed\");",
+ "  panelFixtureLatePaintsAfterAWait.style.setProperty(\"inset\", \"0\");",
+ "  panelFixtureLatePaintsAfterAWait.style.setProperty(\"background\", \"#0b4f9c\");",
+ "  document.body.appendChild(panelFixtureLatePaintsAfterAWait);",
+ " }, 600);",
+ "})();"
+].join("\n");
+
+var lateSelector = "#panel--__-unlikely_-_name-__--fixtureLatePaintsAfterAWait";
+
+test("the after shot waits for the entry's steps, so a bookmarklet that works late is in it", function () {
+ var answer = runApart({
+  fixture_Late_PaintsAfterAWait: {
+   url: "fixture:article.html",
+   capture: true,
+   steps: [{ run: true }, { wait: 1200 }, { expect: { selector: lateSelector, count: 1 } }]
+  }
+ }, ["--all"], null, lateFixture);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ var shots = result.capture.screenshots;
+ assert.deepStrictEqual(shots.map(function (s) { return s.what; }), ["before", "after"]);
+ var before = fs.readFileSync(path.join(rootDir, shots[0].file));
+ var after = fs.readFileSync(path.join(rootDir, shots[1].file));
+ assert.ok(!before.equals(after), "the after shot should show what the bookmarklet did, not the page before it");
+ assert.ok(shots[1].at - shots[0].at >= 600,
+  "the after shot is taken once the steps have run, so it is at least the bookmarklet's own wait later: "
+  + JSON.stringify(shots.map(function (s) { return s.at; })));
+});
+
+test("an entry that fails keeps the page as it failed, and not the same picture under two names", function () {
+ var answer = runApart({
+  fixture_Late_FailsAfterItRan: {
+   url: "fixture:article.html",
+   capture: true,
+   steps: [{ run: true }, { expect: { selector: lateSelector, count: 1 } }]
+  }
+ }, ["--all"], null, lateFixture);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "fail");
+ assert.deepStrictEqual(result.capture.screenshots.map(function (s) { return s.what; }), ["before", "failure"]);
 });
 
 test("a failure keeps a screenshot of the page as it stood, with nothing asking for a capture", function () {

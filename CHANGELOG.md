@@ -6,6 +6,90 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.12.2026]
+
+### Fixed
+
+- `siteSpecific_GitHub_ShowFileSize.js` tells GitHub's refusal apart from its
+  answer. The API allows a reader who is not signed in sixty requests an hour,
+  and past that it answers 403 with a JSON object carrying a message - valid
+  JSON, which parsed as happily as the data did, so the column was written with
+  its header in place and every one of its cells empty. The check that decided
+  whether the column still needed writing read the header's presence as a
+  column that was fine, so the sizes never arrived even after the limit reset.
+  An answer now counts only when the request succeeded and the body is the
+  array of entries the API documents, a refusal leaves the sizes already on the
+  page exactly as they are, and the heading reads `Size (rate limited)` for as
+  long as the refusal lasts - a reader could not otherwise tell a directory of
+  empty files from a limit that had been reached. Asking again backs off, five
+  seconds then fifteen, forty-five, a hundred and thirty-five and three hundred,
+  and then stops until the address changes: the limit lasts until the hour turns
+  over, and nothing about it is fixed by asking every second. A request that
+  never arrived is now caught as well, where before it left a page that was
+  never written to again. Only a page holding a listing is asked again, for the
+  same reason: a GitHub page that is not a file listing - an issues page, say -
+  derives an address the API has nothing at, and asking after a refusal there
+  spent six of the reader's sixty an hour on an answer that writes nothing.
+- `siteSpecific_GitHub_ShowFileSize.js` writes the column whatever state the
+  listing was in when the data came back. The switch that let the recovery run
+  was set from the DOM at the end of each pass, so a pass that wrote no header
+  left it off and the second-by-second check never asked again for that page -
+  which is how one walk in five reached a directory with no header, no size cell
+  in any of its 54 rows, and nothing left that was going to write them. A pass
+  can write no header: the rows of a table page came back as a live
+  collection, and GitHub replaces the listing a moment after the address
+  changes, so a loop reading that collection walked rows that were leaving the
+  page. The recovery condition is now about the page rather than about the last
+  pass - a listing whose rows hold no size cell wants the column, whether or not
+  one was ever written, and so does a table that kept its cells and lost its
+  header - each pass walks a static copy of the rows it decided to walk, skips
+  any already taken off the page, and clears nothing until it has found a
+  listing to write into, so a pass that arrives mid-replacement leaves the
+  reader the column they already had. A page with no listing rows still wants
+  nothing, and a write that leaves no column backs off the same way a refusal
+  does rather than becoming a request a second.
+- `siteSpecific_GitHub_ShowFileSize.js` leaves the running copy alone when it is
+  pasted a second time. Each paste ended with its own check running and nothing
+  stopped the one before it, so a directory change cost two requests to the API
+  after one paste and three after two, bringing the hourly limit nearer for no
+  gain. The copy that is running now marks the window with a key carrying the
+  file's own `--__-unlikely_-_name-__--` infix, the way the other files here
+  mark what they have put on a page, and a later paste finds it and leaves it
+  to do the work for both.
+- `--capture` takes the after screenshot once the entry's steps have run, rather
+  than the instant the injection call returns. A bookmarklet that fetches, or
+  waits, or needs a frame to paint has changed nothing by then: for
+  `siteSpecific_GitHub_ShowFileSize`, which waits a second and then fetches,
+  `before.png` and `after.png` were the same file byte for byte and neither
+  showed the size column. The shot is named when the bookmarklet runs and taken
+  at the next thing that ends its work - the entry's steps having run, or
+  another run of the bookmarklet starting - so a bookmarklet an entry runs
+  twice still gets a numbered pair for each run. An entry that fails keeps
+  `failure.png` at that same moment under a name that says what it is, and
+  drops the pending shot rather than writing the same picture twice.
+- Measured against a faked 403 answered for `api.github.com`, so no real quota
+  was spent: the heading reads `Size (rate limited)`, two requests go out in the
+  twenty-two seconds the refusal lasts rather than one a second, and all 54
+  sizes arrive on their own once the API answers again. Measured by replacing
+  the listing with a copy that has neither size cells nor a header row, which is
+  the state that used to latch the old switch off for good: the column returns
+  as soon as the header row is back. Measured by pasting twice: a directory
+  change costs one request, where it cost three. Measured against a 404 for a
+  GitHub page holding no file listing: one request goes out, where three went
+  out in the same thirty seconds and six over the whole back-off. The entry for
+  this bookmarklet passes against the live site, and its gist goes up with the
+  commit that carries the file.
+
+### Changed
+
+- `test/harness.test.js` can hand a run its own bookmarklet source rather than
+  the passing fixture, which is how a test that needs a bookmarklet of a
+  particular shape - one that works asynchronously, say - gets one without
+  adding a fifteenth file to `test/fixtures/bookmarklets` for every other test
+  to count. Two tests use it: the after shot differing from the before shot for
+  a bookmarklet that paints late, and a failing entry of the same bookmarklet
+  keeping `before` and `failure` and nothing else.
+
 ## [11.11.2026]
 
 ### Added

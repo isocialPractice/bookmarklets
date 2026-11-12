@@ -42,7 +42,10 @@
 // --capture, and an entry's "capture": true, write a screenshot of the page either side of the
 // bookmarklet and a video of the whole entry, into test-results/test-bm/<run>/capture/<name>/. Each
 // artifact's path, and the offset into the video at which every step started, go in the report, so a
-// clip can be cut to the moment the bookmarklet ran without anyone scrubbing through it.
+// clip can be cut to the moment the bookmarklet ran without anyone scrubbing through it. The after
+// shot waits for the entry's steps to have run rather than for the injection call to return: a
+// bookmarklet that fetches, or waits, or needs a frame to paint has changed nothing by the time the
+// call returns, and a shot taken there is the before shot again under another name.
 //
 // Two captures of an unchanged bookmarklet are meant to match, so everything this harness decides is
 // fixed: the viewport, the steps and their order, and what reaches the page, which is the bookmarklet
@@ -998,12 +1001,27 @@ function attachListeners(page, result, ctx) {
  });
 }
 
+// The after shot a run of the bookmarklet has asked for, taken at the next moment that ends its
+// work: the entry's steps having run, or another run of the bookmarklet starting. A bookmarklet that
+// works asynchronously has done nothing at the instant the injection call returns, so a shot taken
+// there shows the page the before shot already showed. An entry that fails takes failure.png at that
+// same moment under a name that says what it is, and drops whatever was pending rather than writing
+// the same picture twice.
+async function takePendingShot(page, ctx) {
+ if (!ctx.pendingShot) { return; }
+ var what = ctx.pendingShot;
+ ctx.pendingShot = "";
+ await shot(page, ctx, what);
+}
+
 async function runBookmarklet(page, ctx) {
  ctx.ran = true;
  ctx.runs++;
  // A bookmarklet an entry runs twice, to check that the second run undoes the first, gets a numbered
  // pair for each run rather than one pair overwritten by the next.
  var which = ctx.runs > 1 ? "-" + ctx.runs : "";
+ // Whatever the run before this one was waiting to show, this is the end of it.
+ await takePendingShot(page, ctx);
  mark(ctx, "the bookmarklet runs");
  if (ctx.capture) { await shot(page, ctx, "before" + which); }
  try {
@@ -1016,7 +1034,7 @@ async function runBookmarklet(page, ctx) {
   }
   throw failure("the bookmarklet could not be run: " + firstLine(err));
  }
- if (ctx.capture) { await shot(page, ctx, "after" + which); }
+ if (ctx.capture) { ctx.pendingShot = "after" + which; }
 }
 
 // The line in the formatted file an error came from, read out of the one line the browser ran.
@@ -1200,6 +1218,8 @@ async function playEntry(page, ctx) {
   }
  }
  await page.waitForTimeout(ctx.settle);
+ // The page with everything the entry asked for done, which is what the after shot is of.
+ await takePendingShot(page, ctx);
 }
 
 async function runOne(browser, name, entry, session, options) {
@@ -1288,6 +1308,7 @@ async function runOne(browser, name, entry, session, options) {
   captures: false,
   capture: false,
   captureFolder: "",
+  pendingShot: "",
   shots: [],
   timeline: [],
   video: ""
@@ -1354,6 +1375,7 @@ async function runOne(browser, name, entry, session, options) {
  } catch (err) {
   // The page as it stood when the entry failed, kept whether or not the entry was being captured:
   // it is the one thing nobody can go back for once the browser has closed.
+  ctx.pendingShot = "";
   if (!(err && err.skip)) { await shot(page, ctx, "failure"); }
   await context.close().catch(function () { });
   var lost = await saveVideo(page, ctx);
