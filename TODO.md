@@ -78,67 +78,49 @@ its README entry linking that gist. Runs post and update gists with
   - The README keeps its CRLF line endings.
   - From: Short Videos
 
-### UI/UX Override - ShowFileSize size column
-
-#### Resolve Issues
-
-- [ ] Size Column Drop 1
-  - **Issue**: On one walk in five, clicking into `JSFormatted` from the
-    repository root left the tree listing with no `Size` header, no
-    `[data-file-size]` cell in any of its 54 file rows, and the
-    `parent directory ..` row still at `colspan="3"` with no
-    `data-file-size-widened` marker. It stayed that way for the thirty seconds
-    the page was watched, and the address never changed again, so nothing was
-    going to write the column. The other four walks of the same three states
-    were correct in every respect, and the poll does put the column back when
-    the listing is replaced under it, so this is the narrower case where the
-    pass that was meant to write it found the listing mid-replacement.
-  - **Goal**: Resolve to
-    [size-column-drop.prompt.md](.claude/prompts/size-column-drop.prompt.md)
-  - From: Existing Bookmarklets `->` From the Open Issues
+### UI/UX Override - ShowFileSize headerless listing
 
 #### Found Issues
 
-- [ ] `siteSpecific_GitHub_ShowFileSize.js` writes an empty Size column once
-  GitHub's API refuses, and keeps it
-  - **Issue**: The API allows a signed-out reader sixty requests an hour and
-    this bookmarklet spends two per directory. Past the limit it answers 403
-    with a JSON object, which `getAPIJSON` parses happily, so `addSizeCol`
-    writes the header and a cell in every row with nothing in any of them.
-    `columnWasDropped` then reads the header's presence as a column that is
-    fine, so the sizes never arrive even after the limit resets. Measured
-    against a faked 403: header present, 54 cells, 0 of 54 filled, unchanged
-    once the API answered again.
-  - **Goal**: Resolve to
-    [size-column-blank-when-api-refuses.prompt.md](.claude/prompts/size-column-blank-when-api-refuses.prompt.md)
-  - From: UI/UX Override - ShowFileSize size column
-- [ ] `siteSpecific_GitHub_ShowFileSize.js` leaves a second poll running when
-  it is pasted twice
-  - **Issue**: Each paste ends with its own `checkForChangeDir()` and nothing
-    stops the one before it. Measured: a directory change costs two requests
-    to `api.github.com` after one paste and three after two. The column itself
-    stays single, which is what this run checked, but the repository's rule is
-    that a second run reuses what the first added rather than stacking a copy,
-    and the extra request brings the hourly limit nearer.
-  - **Goal**: Mark the running poll with a `window` key carrying the file's
-    `--__-unlikely_-_name-__--` infix, the way the other files here mark what
-    they have put on a page, and have a later paste leave it alone. Stated as
-    the last point of
-    [size-column-blank-when-api-refuses.prompt.md](.claude/prompts/size-column-blank-when-api-refuses.prompt.md).
-  - From: UI/UX Override - ShowFileSize size column
-- [ ] `--capture` writes an "after" screenshot taken before the bookmarklet has
-  done anything
-  - **Issue**: `runBookmarklet` in `test-bm.js` takes the after shot the
-    instant the injection call returns. A bookmarklet that works
-    asynchronously has changed nothing by then. For
-    `siteSpecific_GitHub_ShowFileSize`, which waits a second and then fetches,
-    `before.png` and `after.png` are the same file byte for byte, and neither
-    shows the size column. The video of the entry does show it.
-  - **Goal**: Take the after shot once the entry's steps have run rather than
-    when the injection returns, so the pair is worth the bytes it costs. The
-    shots are also what `## Short Videos` draws on, so the one that shows the
-    result is the one worth keeping.
-  - From: UI/UX Override - ShowFileSize size column
+- [ ] A table listing with no header row gets size cells and no heading
+  - **Issue**: `addSizeCol` gives every listing row a size cell whether or not
+    the rows it was handed include a header row, so a table listing whose
+    header row is missing ends up with a column and nothing naming it. With
+    `api.github.com` answered 403, `refused()` writes 54 empty cells and no
+    heading - measured `{"headings":0,"cells":54,"filled":0}`, unchanged over
+    44 seconds - which is the unexplained blank column the `Size (rate limited)`
+    heading was added to remove, back in the one state with no heading to put it
+    in. With the API answering, the sizes are written and
+    `columnNeedsWriting()` keeps reading the missing heading as a listing that
+    needs fetching again: 7 requests to `api.github.com` in 92 seconds for a
+    directory already on the page and already written into it. `writeWaits`
+    then runs out and `nextTryAt` becomes `Infinity`, so putting the header row
+    back never brings the heading back - measured 0 headings for a further 60
+    seconds, until the address changed. Put the header row back inside those 92
+    seconds and the column does return on its own, which is the case this run's
+    repair was raised about and which passes.
+  - **Goal**: Resolve to [size-column-headerless-listing.prompt.md](.claude/prompts/size-column-headerless-listing.prompt.md)
+  - From: UI/UX Override - ShowFileSize headerless listing
+- [ ] Let an entry answer a host with a chosen status and body, and edit the
+  page mid-run, so these states stop needing a person
+  - **Issue**: none of what this run verified is reachable by
+    `node test-bm.js`. The harness cannot make `api.github.com` refuse and
+    cannot replace a listing while an entry runs, so the refusal heading, the
+    wait schedule, the replaced listing and the double paste were all checked
+    with a scratch Playwright driver that no suite runs. The entry passes
+    either side of the defect above.
+  - **Goal**: the mechanism is already in the tree - `page.route` fulfilled
+    from local files serves the `fixture:` pages under `## Test Harness`. Aim it
+    at a named host from a step that takes the status, the content type and the
+    body, and add a step that evaluates a page edit so a listing can be
+    replaced. The host stays named in the entry's `network` with its reason, as
+    now. With both, the entry asserts: the heading reads `Size (rate limited)`
+    while the answer is 403 and `Size` once it is good again, with the sizes
+    filling in and no further paste; the column returns within two seconds of a
+    listing replaced without it; no size cells are written into a listing with
+    no header row; and a directory change costs one request to `api.github.com`
+    whether the bookmarklet was pasted once or twice.
+  - From: UI/UX Override - ShowFileSize headerless listing
 
 ### Create and Deploy GitHub Pages Override
 
@@ -457,6 +439,11 @@ the bookmarklet has a demo.
   - The same steps. A site that blocks a headless recording is listed for a
     hand recording rather than skipped without a word. OctoPrint needs the
     printer's address, as its test does.
+  - `siteSpecific_GitHub_ShowFileSize` is made and waiting on the posting:
+    `.videos/support/record-show-file-size.mjs` shot the 7.5 second recording
+    on 11.12.2026, `make-short.jsx` built the composition and rendered the
+    MP4, and the GIF is beside it. Only the YouTube upload, the Giphy post and
+    the README video block are left, and they wait on the item above.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the
@@ -1251,5 +1238,59 @@ roadmap section each one came from.
     `summary.txt` or `failure.md`; each names `$OCTOPRINT_URL` in its place,
     so a pasted log or an assistant reading the report never learns it.
   - From: Test Configurations
+- [x] Size Column Drop 1
+  - **Issue**: On one walk in five, clicking into `JSFormatted` from the
+    repository root left the tree listing with no `Size` header, no
+    `[data-file-size]` cell in any of its 54 file rows, and the
+    `parent directory ..` row still at `colspan="3"` with no
+    `data-file-size-widened` marker. It stayed that way for the thirty seconds
+    the page was watched, and the address never changed again, so nothing was
+    going to write the column. The other four walks of the same three states
+    were correct in every respect, and the poll does put the column back when
+    the listing is replaced under it, so this is the narrower case where the
+    pass that was meant to write it found the listing mid-replacement.
+  - **Goal**: Resolve to
+    [size-column-drop.prompt.md](.claude/prompts/size-column-drop.prompt.md)
+  - From: Existing Bookmarklets `->` From the Open Issues
+- [x] `siteSpecific_GitHub_ShowFileSize.js` writes an empty Size column once
+  GitHub's API refuses, and keeps it
+  - **Issue**: The API allows a signed-out reader sixty requests an hour and
+    this bookmarklet spends two per directory. Past the limit it answers 403
+    with a JSON object, which `getAPIJSON` parses happily, so `addSizeCol`
+    writes the header and a cell in every row with nothing in any of them.
+    `columnWasDropped` then reads the header's presence as a column that is
+    fine, so the sizes never arrive even after the limit resets. Measured
+    against a faked 403: header present, 54 cells, 0 of 54 filled, unchanged
+    once the API answered again.
+  - **Goal**: Resolve to
+    [size-column-blank-when-api-refuses.prompt.md](.claude/prompts/size-column-blank-when-api-refuses.prompt.md)
+  - From: UI/UX Override - ShowFileSize size column
+- [x] `siteSpecific_GitHub_ShowFileSize.js` leaves a second poll running when
+  it is pasted twice
+  - **Issue**: Each paste ends with its own `checkForChangeDir()` and nothing
+    stops the one before it. Measured: a directory change costs two requests
+    to `api.github.com` after one paste and three after two. The column itself
+    stays single, which is what this run checked, but the repository's rule is
+    that a second run reuses what the first added rather than stacking a copy,
+    and the extra request brings the hourly limit nearer.
+  - **Goal**: Mark the running poll with a `window` key carrying the file's
+    `--__-unlikely_-_name-__--` infix, the way the other files here mark what
+    they have put on a page, and have a later paste leave it alone. Stated as
+    the last point of
+    [size-column-blank-when-api-refuses.prompt.md](.claude/prompts/size-column-blank-when-api-refuses.prompt.md).
+  - From: UI/UX Override - ShowFileSize size column
+- [x] `--capture` writes an "after" screenshot taken before the bookmarklet has
+  done anything
+  - **Issue**: `runBookmarklet` in `test-bm.js` takes the after shot the
+    instant the injection call returns. A bookmarklet that works
+    asynchronously has changed nothing by then. For
+    `siteSpecific_GitHub_ShowFileSize`, which waits a second and then fetches,
+    `before.png` and `after.png` are the same file byte for byte, and neither
+    shows the size column. The video of the entry does show it.
+  - **Goal**: Take the after shot once the entry's steps have run rather than
+    when the injection returns, so the pair is worth the bytes it costs. The
+    shots are also what `## Short Videos` draws on, so the one that shows the
+    result is the one worth keeping.
+  - From: UI/UX Override - ShowFileSize size column
 
 </details>
