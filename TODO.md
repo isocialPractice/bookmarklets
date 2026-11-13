@@ -376,15 +376,27 @@ the bookmarklet has a demo.
   its gist paragraph, into a video block's demo line in place of its comment,
   with the short line commented out until its short exists
   - The README keeps its CRLF line endings.
-- [ ] Let `gitHubTask` (on `PATH`, outside this repository) post a short
+- [x] Let `gitHubTask` (on `PATH`, outside this repository) post a short
   without prompts
+  - **Done 11.13.2026, in `gitHubTask` itself.** Called with all five
+    arguments, `gitHubTask /V "<path>" "<title>" "<description>" "<tags>"
+    "public"` uploads with no prompt, from any path however deep, and a video
+    without `_Demo` in its name goes to the `Bookmarklet Shorts` playlist,
+    found on the channel by its title. It prints `Video:` and `Short:` links
+    and writes `VIDEO_ID`, `URL`, `SHORT` and `PLAYLIST` lines to
+    `.tmp/youtube-last-upload.txt` in this folder, which is where the README's
+    video block takes its link from. A failed upload prints `YouTube upload
+    FAILED`, writes no file and copies nothing - `gitHubTask` still exits 0
+    either way, so read the words and the file, not the exit code.
+  - **One sign-in, by the maintainer, at a desktop:** `gitHubTask /V
+    --sign-in`. Without it an upload stops at once with `YouTube sign-in
+    needed` rather than waiting on a browser; that is the correct end of a run,
+    and the short stays owed.
   - `gitHubTask /v` uploads unattended when it is given the title,
     description, tags and privacy, but its only playlist is the demo playlist,
     picked by a `_Demo` file-name prefix. Give it the shorts playlist.
   - Passing its tags argument through to the upload is already planned on the
     `gitHubTask` side.
-  - Add the GIF posting the run's constants describe. The key is read from the
-    local note at run time and never written into the script.
   - Leave each new video's URL where a run can read it, for the README.
   - Found posting the first short on 11.10.2026, each worked around for that
     run only:
@@ -400,6 +412,11 @@ the bookmarklet has a demo.
       keeps the sign-in alive.
     - A failed upload still reports that the run completed and copies a
       snippet with an empty link to the clipboard.
+- [ ] Post each short's GIF to Giphy, as `## Social Media Posting` in the
+  constants describes, after its YouTube upload
+  - Split from the `gitHubTask` item above, which no longer waits on it. The
+    key is read from the local note at run time and never written into a
+    script, a log or a commit.
 - [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
   and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
   - Builds on `--capture` under `## Test Harness`. Start just before the
