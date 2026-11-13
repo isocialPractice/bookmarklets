@@ -78,49 +78,28 @@ its README entry linking that gist. Runs post and update gists with
   - The README keeps its CRLF line endings.
   - From: Short Videos
 
-### UI/UX Override - ShowFileSize headerless listing
+### UI/UX Override - ShowFileSize heading visibility
 
 #### Found Issues
 
-- [ ] A table listing with no header row gets size cells and no heading
-  - **Issue**: `addSizeCol` gives every listing row a size cell whether or not
-    the rows it was handed include a header row, so a table listing whose
-    header row is missing ends up with a column and nothing naming it. With
-    `api.github.com` answered 403, `refused()` writes 54 empty cells and no
-    heading - measured `{"headings":0,"cells":54,"filled":0}`, unchanged over
-    44 seconds - which is the unexplained blank column the `Size (rate limited)`
-    heading was added to remove, back in the one state with no heading to put it
-    in. With the API answering, the sizes are written and
-    `columnNeedsWriting()` keeps reading the missing heading as a listing that
-    needs fetching again: 7 requests to `api.github.com` in 92 seconds for a
-    directory already on the page and already written into it. `writeWaits`
-    then runs out and `nextTryAt` becomes `Infinity`, so putting the header row
-    back never brings the heading back - measured 0 headings for a further 60
-    seconds, until the address changed. Put the header row back inside those 92
-    seconds and the column does return on its own, which is the case this run's
-    repair was raised about and which passes.
-  - **Goal**: Resolve to [size-column-headerless-listing.prompt.md](.claude/prompts/size-column-headerless-listing.prompt.md)
-  - From: UI/UX Override - ShowFileSize headerless listing
-- [ ] Let an entry answer a host with a chosen status and body, and edit the
-  page mid-run, so these states stop needing a person
-  - **Issue**: none of what this run verified is reachable by
-    `node test-bm.js`. The harness cannot make `api.github.com` refuse and
-    cannot replace a listing while an entry runs, so the refusal heading, the
-    wait schedule, the replaced listing and the double paste were all checked
-    with a scratch Playwright driver that no suite runs. The entry passes
-    either side of the defect above.
-  - **Goal**: the mechanism is already in the tree - `page.route` fulfilled
-    from local files serves the `fixture:` pages under `## Test Harness`. Aim it
-    at a named host from a step that takes the status, the content type and the
-    body, and add a step that evaluates a page edit so a listing can be
-    replaced. The host stays named in the entry's `network` with its reason, as
-    now. With both, the entry asserts: the heading reads `Size (rate limited)`
-    while the answer is 403 and `Size` once it is good again, with the sizes
-    filling in and no further paste; the column returns within two seconds of a
-    listing replaced without it; no size cells are written into a listing with
-    no header row; and a directory change costs one request to `api.github.com`
-    whether the bookmarklet was pasted once or twice.
-  - From: UI/UX Override - ShowFileSize headerless listing
+- [ ] The `Size` heading renders at zero height, so the rate limit reason
+  reaches no one looking at the page
+  - **Issue**: The heading the bookmarklet inserts carries its text in the DOM
+    and in the accessibility tree, but it is 90x0 on screen: GitHub's header
+    row sets `font-size: 0` and `line-height: 0`, and the inserted `th`
+    inherits both, as GitHub's own `Name`, `Last commit message` and
+    `Last commit date` headings do at 271x0, 405x0 and 136x0. With the API
+    refusing and the header row present, a reader meets 18 empty cells in an
+    unnamed gutter between the file name and the commit message and no reason
+    anywhere on the page, which is the unexplained blank column the heading was
+    written to remove. Measured signed out at 1280x720; the committed copy and
+    the working copy measure identically, so it is not new with the headerless
+    repair. Everything else about the column is right: 90px, 10% of the table,
+    directly after the name cell, its band `304..394` over the centre of all 18
+    cells, inside the viewport.
+  - **Goal**: Resolve to
+    [size-heading-never-shows.prompt.md](.claude/prompts/size-heading-never-shows.prompt.md)
+  - From: UI/UX Override - ShowFileSize heading visibility
 
 ### Create and Deploy GitHub Pages Override
 
@@ -1292,5 +1271,44 @@ roadmap section each one came from.
     shots are also what `## Short Videos` draws on, so the one that shows the
     result is the one worth keeping.
   - From: UI/UX Override - ShowFileSize size column
+- [x] A table listing with no header row gets size cells and no heading
+  - **Issue**: `addSizeCol` gives every listing row a size cell whether or not
+    the rows it was handed include a header row, so a table listing whose
+    header row is missing ends up with a column and nothing naming it. With
+    `api.github.com` answered 403, `refused()` writes 54 empty cells and no
+    heading - measured `{"headings":0,"cells":54,"filled":0}`, unchanged over
+    44 seconds - which is the unexplained blank column the `Size (rate limited)`
+    heading was added to remove, back in the one state with no heading to put it
+    in. With the API answering, the sizes are written and
+    `columnNeedsWriting()` keeps reading the missing heading as a listing that
+    needs fetching again: 7 requests to `api.github.com` in 92 seconds for a
+    directory already on the page and already written into it. `writeWaits`
+    then runs out and `nextTryAt` becomes `Infinity`, so putting the header row
+    back never brings the heading back - measured 0 headings for a further 60
+    seconds, until the address changed. Put the header row back inside those 92
+    seconds and the column does return on its own, which is the case this run's
+    repair was raised about and which passes.
+  - **Goal**: Resolve to [size-column-headerless-listing.prompt.md](.claude/prompts/size-column-headerless-listing.prompt.md)
+  - From: UI/UX Override - ShowFileSize headerless listing
+- [x] Let an entry answer a host with a chosen status and body, and edit the
+  page mid-run, so these states stop needing a person
+  - **Issue**: none of what this run verified is reachable by
+    `node test-bm.js`. The harness cannot make `api.github.com` refuse and
+    cannot replace a listing while an entry runs, so the refusal heading, the
+    wait schedule, the replaced listing and the double paste were all checked
+    with a scratch Playwright driver that no suite runs. The entry passes
+    either side of the defect above.
+  - **Goal**: the mechanism is already in the tree - `page.route` fulfilled
+    from local files serves the `fixture:` pages under `## Test Harness`. Aim it
+    at a named host from a step that takes the status, the content type and the
+    body, and add a step that evaluates a page edit so a listing can be
+    replaced. The host stays named in the entry's `network` with its reason, as
+    now. With both, the entry asserts: the heading reads `Size (rate limited)`
+    while the answer is 403 and `Size` once it is good again, with the sizes
+    filling in and no further paste; the column returns within two seconds of a
+    listing replaced without it; no size cells are written into a listing with
+    no header row; and a directory change costs one request to `api.github.com`
+    whether the bookmarklet was pasted once or twice.
+  - From: UI/UX Override - ShowFileSize headerless listing
 
 </details>
