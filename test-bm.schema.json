@@ -102,7 +102,7 @@
   },
   "step": {
    "type": "object",
-   "description": "One thing to do. Exactly one of run, click, fill, press, select, wait or expect.",
+   "description": "One thing to do. Exactly one of run, click, fill, press, select, wait, answer, detach, attach or expect.",
    "additionalProperties": false,
    "properties": {
     "run": {
@@ -145,6 +145,25 @@
      "description": "Milliseconds to wait, or a selector to wait for.",
      "oneOf": [{ "type": "number" }, { "type": "string", "minLength": 1 }]
     },
+    "answer": { "$ref": "#/definitions/answer" },
+    "detach": {
+     "type": "string",
+     "minLength": 1,
+     "description": "A selector whose matches are taken off the page and kept, so a state a site produces for a moment - a listing replaced header row and all - lasts long enough to assert against. An attach step puts them back where they came from. The nodes are held in a handle rather than anywhere on the page, so nothing the harness does reaches the page's own scope. A selector matching nothing fails the entry.",
+     "examples": ["table:has(a[href*='/blob/']) tr:has(th)"]
+    },
+    "attach": {
+     "type": "string",
+     "minLength": 1,
+     "description": "The name an earlier detach step gave what it took off the page, put back where it came from. A name nothing earlier in the entry detached is a configuration error, and a place that is itself gone by then fails the entry.",
+     "examples": ["headerRow"]
+    },
+    "as": {
+     "type": "string",
+     "minLength": 1,
+     "description": "The name a detach step gives what it took, for an entry that detaches more than one thing. Without it the selector is the name.",
+     "examples": ["headerRow"]
+    },
     "expect": { "$ref": "#/definitions/expect" },
     "selector": {
      "type": "string",
@@ -163,7 +182,7 @@
   },
   "expect": {
    "type": "object",
-   "description": "What should be true. A selector that is visible or hidden, matches a count, matches as many elements as another selector, or holds some text; or a clipboard value; or where the page is; or where a new tab went.",
+   "description": "What should be true. A selector that is visible or hidden, matches a count, matches as many elements as another selector, or holds some text; or a clipboard value; or where the page is; or where a new tab went; or how many requests the bookmarklet sent to a host.",
    "additionalProperties": false,
    "properties": {
     "selector": { "type": "string", "minLength": 1, "description": "The elements to look at." },
@@ -174,17 +193,38 @@
     "text": { "type": "string", "description": "Text the first match holds somewhere in it." },
     "clipboard": { "type": "string", "description": "What the clipboard holds, trimmed at both ends. The whole value, not a part of it. Needs clipboard-read in permissions." },
     "location": { "type": "string", "description": "Text the page's address holds somewhere in it, for a bookmarklet that navigates. Chromium keeps a text fragment directive out of the address, so a bookmarklet that writes one is read off the page it moved instead." },
-    "popup": { "type": "string", "minLength": 1, "description": "Text the address of a new tab the bookmarklet opened holds somewhere in it, for a bookmarklet that opens a link in a new tab. Waits for the tab, up to the entry's timeout or ten seconds." }
+    "popup": { "type": "string", "minLength": 1, "description": "Text the address of a new tab the bookmarklet opened holds somewhere in it, for a bookmarklet that opens a link in a new tab. Waits for the tab, up to the entry's timeout or ten seconds." },
+    "requests": { "type": "string", "pattern": "^(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\\d+)?$", "description": "A host, counted against how many requests the bookmarklet made to it since the last expect that counted the same host, or since the page opened. Takes count for an exact number or atMost for a bound, and no selector. It is what says a directory change costs one request rather than seven, which is a thing no selector on the page can show. A host answered by the entry is counted the same way a host answered by the network is.", "examples": ["api.example.com"] },
+    "atMost": { "type": "number", "description": "A bound on a count of requests rather than an exact number, for a span a site's own re-render can legitimately add one to." }
    },
    "anyOf": [
     { "required": ["clipboard"] },
     { "required": ["location"] },
     { "required": ["popup"] },
+    { "required": ["requests", "count"] },
+    { "required": ["requests", "atMost"] },
     { "required": ["selector", "visible"] },
     { "required": ["selector", "hidden"] },
     { "required": ["selector", "count"] },
     { "required": ["selector", "matches"] },
     { "required": ["selector", "text"] }
+   ]
+  },
+  "answer": {
+   "type": "object",
+   "description": "A host answered by the entry rather than by the network, so a state only the site's own server produces - the 403 an API gives past its hourly limit, say - is one a run can put the page in. Every request to the host is answered this way until a later step hands it back with pass: true. The answer carries access-control-allow-origin, as a site's own API does, so it reaches the bookmarklet's own code rather than being refused by the browser first. The host is still named in the entry's network with the reason, and its requests are still counted and still judged: a host answered and not named there is a configuration error. The answer is the network's for as long as it stands, so the page's own requests to the host are answered too; what a requests expect counts is still only what the bookmarklet sent.",
+   "additionalProperties": false,
+   "required": ["host"],
+   "properties": {
+    "host": { "type": "string", "pattern": "^(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\\d+)?$", "description": "An exact host, or *. and a domain for any of its subdomains.", "examples": ["api.example.com"] },
+    "status": { "type": "number", "minimum": 100, "maximum": 599, "description": "The status to answer with.", "examples": [403, 500] },
+    "contentType": { "type": "string", "minLength": 1, "description": "The media type of the body. Defaults to text/plain; charset=utf-8.", "examples": ["application/json; charset=utf-8"] },
+    "body": { "type": "string", "description": "The body to answer with. Defaults to nothing.", "examples": ["{\"message\":\"API rate limit exceeded\"}"] },
+    "pass": { "const": true, "description": "Hand the host back to the network, for the other half of a state: refusing, then answering again. A host nothing earlier in the entry answers is a configuration error." }
+   },
+   "oneOf": [
+    { "required": ["status"], "not": { "required": ["pass"] } },
+    { "required": ["pass"], "not": { "anyOf": [{ "required": ["status"] }, { "required": ["body"] }, { "required": ["contentType"] }] } }
    ]
   },
   "dialog": {

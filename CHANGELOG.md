@@ -6,6 +6,62 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.13.2026]
+
+### Fixed
+
+- `siteSpecific_GitHub_ShowFileSize.js` writes nothing into a table listing that has no header
+  row. The column was decided by whether there was a listing to write into, and a listing with
+  rows is not the same thing as a listing with somewhere to put the heading - GitHub serves the
+  difference for a moment every time it replaces a listing after a soft navigation. With the API
+  refusing, that wrote 54 empty cells under no heading at all, which is the unexplained blank
+  column the `Size (rate limited)` heading was added to remove, back in the one state with no
+  heading to put it in. With the API answering, the sizes went in and the heading did not, so the
+  check that decides whether the column still wants writing kept returning yes and the whole
+  backing-off budget was spent re-fetching a directory already on the page and already written
+  into: seven requests in ninety-two seconds, out of the sixty an hour a reader who is not signed
+  in has. Both now read the header row as well as the rows, and neither writes nor asks where
+  there is nothing an answer could be written into.
+- The heading comes back on its own when the header row returns, which it did not before. Running
+  out of waits set the next attempt to never, so a header row put back after that left the sizes
+  on the page under no heading until the address changed. The listing the API last gave is now
+  kept until the address changes, and the poll writes the column from it the moment there is a
+  header row to write into - ahead of asking for anything, so it is reached however long the waits
+  have run on, and without a request, because the heading is the one thing no answer carries. A
+  refusal puts its reason back the same way.
+
+### Added
+
+- `test-bm.js` takes an `answer` step, which answers every request to a host from the entry
+  itself, with a status, a content type and a body, until a later step hands the host back with
+  `pass`. A state only a site's own server produces - the 403 an API gives past its hourly limit -
+  is now something a run can put a page in, rather than something a person has to wait for. The
+  answer carries `access-control-allow-origin`, as a site's own API does, so it reaches the
+  bookmarklet's own code instead of being refused by the browser first, which would leave every
+  status reading to the bookmarklet as a request that never arrived.
+- `test-bm.js` takes `detach` and `attach` steps, which take the elements a selector matches off
+  the page and put them back where they came from, so a listing a site replaces for a moment is
+  held in that state long enough to assert against. The nodes are held in a handle rather than
+  anywhere on the page, so nothing the harness does reaches the page's own scope: the bookmarklet
+  meets a page that lost something, which is what it meets on a site. `as` names what was taken,
+  for an entry that detaches more than one thing.
+- `test-bm.js` takes `expect` on `requests`, a count of what the bookmarklet sent to a host since
+  the last count of the same host, with `atMost` for a bound rather than an exact number. A
+  directory change costing one request rather than seven is a thing no selector on the page can
+  show, and it was the half of the defect above that nothing could have failed on. A name standing
+  for subdomains counts every host it stands for, as the entry's `network` and an `answer` step
+  both read one.
+- Nothing in any of that loosens what a bookmarklet may reach. A host an entry answers is still
+  named in its `network` with the reason, and answering one the entry does not name is a
+  configuration error before any browser starts. The requests are still watched, still counted and
+  still judged by where they went.
+- The entry for `siteSpecific_GitHub_ShowFileSize` asserts the four states the fix is about: no
+  cells and no heading written into a listing with no header row; the heading reading
+  `Size (rate limited)` once the header row is back, with no request for it; the sizes surviving a
+  header row taken away while the API is answering, with no request while it is missing; and the
+  column returning from the answer already in hand when the row comes back. It also pastes the
+  bookmarklet twice, which is how one request rather than two polls' worth is held to.
+
 ## [11.12.2026]
 
 ### Fixed

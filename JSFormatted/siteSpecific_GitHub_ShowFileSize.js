@@ -24,6 +24,12 @@ javascript:(function(){
     replacing the listing leaves behind. The reader is looking at a listing with no sizes in it, so
     these try again soon, but not for ever. */
  var writeTries = 0, writeWaits = [1000, 1000, 2000, 5000, 15000, 60000];
+ /* The listing the API last gave for this directory. GitHub replaces a listing header row and all,
+    and a pass that lands while the header row is missing has nowhere to put the heading; when the
+    row comes back, this is what writes the column from the answer already in hand rather than
+    asking for the same data twice. Cleared when the address changes, since it describes the
+    directory it came from and no other. */
+ var heldListing = null;
  var docBody = document.getElementsByTagName("body");
  /* style td element text color */
  var bookmarkletStyle = document.createElement("style");
@@ -135,13 +141,34 @@ javascript:(function(){
   }
   return 0;
  };
+ /* Whether any of those rows is the header row, which is whether there is anywhere to put the
+    heading. A table listing GitHub has taken the header row out of still has rows to write sizes
+    into and nowhere to name the column: that there is a listing and that there is somewhere the
+    heading goes are two questions, and reading the first as both is what left a reader with a
+    column of empty cells and nothing saying why. */
+ var hasHeaderRow = function(rows) {
+  for (let r = 0; r < rows.length; r++) {
+   if (isHeaderRow(rows[r])) { return 1; }
+  }
+  return 0;
+ };
+ /* Whether this page has anywhere a pass could write at all: a listing, and on a table page the
+    header row the heading goes in. The row layout the repository root serves has no header row by
+    design, so it is not held to one. */
+ var canWriteColumn = function() {
+  let rows = listingRowsNow();
+  if (hasListing(rows) == 0) { return 0; }
+  return (tablePage == 1 && hasHeaderRow(rows) == 0) ? 0 : 1;
+ };
  /* Whether the listing on the page wants the column written into it, read off the page every time
     rather than off what the last pass managed to do. A listing whose rows hold no size cell has
     either never had the column or had it taken away by GitHub's re-render, and both want the same
     write; a table page that kept its cells and lost its header wants one too. A page with no
-    listing rows wants nothing, which is what keeps this from asking for data it has no use for. */
+    listing rows wants nothing, and neither does a table listing with no header row: both are states
+    no answer the API could give resolves, which is what keeps this from spending a reader's requests
+    on data there is nowhere to write. */
  var columnNeedsWriting = function() {
-  if (hasListing(listingRowsNow()) == 0) { return 0; }
+  if (canWriteColumn() == 0) { return 0; }
   if (document.querySelectorAll('[data-file-size]').length == 0) { return 1; }
   if (tablePage == 1 && !document.getElementById("sizeCol--__-unlikely_-_name-__--sizeCol")) { return 1; }
   return 0;
@@ -247,9 +274,12 @@ javascript:(function(){
   /* The rows this pass walks, decided before anything is taken off the page, and told apart by
      what each one holds rather than by its number in the table. A pass that arrives while GitHub
      is replacing the listing finds no listing to write into and clears nothing, so the reader
-     keeps the column they already had and the poll comes back for this directory. */
+     keeps the column they already had and the poll comes back for this directory. A table listing
+     with its header row missing is the same case: there is nowhere to put the heading, and a column
+     of cells no heading names is worse for the reader than no column at all. */
   let rows = listingRowsNow();
   if (hasListing(rows) == 0) { return; }
+  if (tablePage == 1 && hasHeaderRow(rows) == 0) { return; }
   clearSizeCells();
   for (let r = 0; r < rows.length; r++) {
    let row = rows[r];
@@ -258,6 +288,27 @@ javascript:(function(){
    if (isHeaderRow(row)) { addSizeHeader(row); continue; }
    if (!isListingRow(row)) { widenSpanningRow(row); continue; }
    addSizeCell(row);
+  }
+ };
+ /* Whether the column can go back without asking the API again, which is every state where the
+    answer is already in hand. The sizes are either still on the page or still in heldListing, and
+    only the heading was ever missing - no answer carries one, so a request for it spends a reader's
+    quota on the one thing another copy of the same data cannot fix. A refusal has its reason to put
+    back on the same terms. */
+ var columnGoesBackFree = function() {
+  if (tablePage != 1 || columnNeedsWriting() == 0) { return 0; }
+  if (heldListing !== null) { return 1; }
+  return (rateLimited == 1 && document.querySelectorAll('[data-file-size]').length == 0) ? 1 : 0;
+ };
+ /* Write the column from the answer in hand, or empty cells carrying the reason while the API is
+    refusing, and judge the pass the way wrote() judges its own. A refusal keeps its wait: the
+    heading is back, and the sizes behind it still want the limit to turn over. */
+ var writeHeldColumn = function() {
+  addSizeCol(heldListing === null ? [] : heldListing);
+  sayRateLimited();
+  if (columnNeedsWriting() == 0) {
+   writeTries = 0;
+   if (rateLimited == 0) { nextTryAt = 0; }
   }
  };
  /* How long to wait before asking again: the nth answer of a kind in a row waits the nth time in
@@ -271,8 +322,9 @@ javascript:(function(){
     listing and no column at all - which is where a reader meets the limit, a directory or two in,
     on a listing GitHub has just replaced - the table layout gets the column with the reason in its
     heading: a reader cannot otherwise tell a bookmarklet waiting on a limit from one that did not
-    run. The row layout the repository root serves has no header row to say it in, so there nothing
-    is written. */
+    run. A listing with no header row to say it in - the row layout the repository root serves, or a
+    table listing GitHub has taken the header row out of - gets nothing written into it, and the
+    reason goes on as soon as the row is back. */
  var refused = function() {
   refusals++;
   rateLimited = 1;
@@ -286,11 +338,13 @@ javascript:(function(){
   sayRateLimited();
   holdOff(refusalWaits, refusals);
  };
- /* A listing. Write the column from it, then judge the pass by what is on the page afterwards: one
-    that ended with no column met GitHub replacing the listing, and is tried again soon. */
+ /* A listing. Keep it, write the column from it, then judge the pass by what is on the page
+    afterwards: one that ended with no column met GitHub replacing the listing, and is tried again
+    soon. Keeping it is what makes a header row taken out and put back cost no second request. */
  var wrote = function(data) {
   refusals = 0;
   rateLimited = 0;
+  heldListing = data;
   addSizeCol(data);
   sayRateLimited();
   if (columnNeedsWriting() == 1) {
@@ -340,9 +394,12 @@ javascript:(function(){
  /* Create or change the col with the file size, and put back one the page took away. The poll reads
     the page rather than what the last pass managed, so a listing that never had the column and one
     that lost it are the same case and both get written; a refusal is the one state the page cannot
-    be asked about, so it is held to the waits in refusalWaits and still wants a listing on the page
-    to be worth asking for. A GitHub page that is not a file listing, an issues page say, otherwise
-    spends six of the reader's sixty requests an hour on an address no answer writes anything to. */
+    be asked about, so it is held to the waits in refusalWaits and still wants somewhere on the page
+    to write before it is worth asking for. A GitHub page that is not a file listing, an issues page
+    say, otherwise spends six of the reader's sixty requests an hour on an address no answer writes
+    anything to. What can be written from the answer already in hand is written first and without a
+    request, which is how a heading that went with a replaced header row comes back however long the
+    waits have run on. */
  var checkForChangeDir = function() {
   if (turnOff == 1) {
    console.log("Add file size bookmarklet did not run:");
@@ -350,14 +407,17 @@ javascript:(function(){
   }
   if (curDir !== window.location.href) {
    curDir = window.location.href;
+   heldListing = null;
    refusals = 0;
    writeTries = 0;
    rateLimited = 0;
    nextTryAt = 0;
    runBookmarklet();
+  } else if (fetchOut == 0 && columnGoesBackFree() == 1) {
+   writeHeldColumn();
   } else if (
    fetchOut == 0 && Date.now() >= nextTryAt &&
-   ((rateLimited == 1 && hasListing(listingRowsNow()) == 1) || columnNeedsWriting() == 1)
+   ((rateLimited == 1 && canWriteColumn() == 1) || columnNeedsWriting() == 1)
   ) {
    runBookmarklet();
   }

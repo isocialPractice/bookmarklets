@@ -34,6 +34,32 @@
 // https://fixtures.test/ without a network. A real origin is what makes localStorage, the clipboard
 // and location behave as they do on a site; file:// gives an opaque origin and refuses all three.
 //
+// A state only the site's own server can put the page in is reachable without waiting for the site
+// to produce it. An "answer" step answers every request to a host from the entry itself, with a
+// status, a content type and a body, until a later step hands the host back with "pass": true -
+// which is how a bookmarklet is met with the 403 an API gives past its hourly limit. The answer
+// carries access-control-allow-origin, as a site's own API does, so it reaches the bookmarklet's own
+// code rather than being refused by the browser before the bookmarklet sees it. A host answered this
+// way is still named in "network" with the reason, and still counted and judged like any other: a
+// run that answers a host the entry does not name is a configuration error before any browser
+// starts, so nothing here is a way around what a bookmarklet may reach. The answer is the network's
+// for as long as it stands, so the page's own requests to that host are answered too, and a site
+// that calls its own API says so in the console; what is counted is still only what the bookmarklet
+// sent.
+//
+// A "detach" step takes the elements a selector matches off the page and keeps them, and "attach"
+// puts them back where they came from, which is how a listing a site replaces for a moment is held
+// in that state long enough for an entry to assert against it. Neither reaches the page's own scope:
+// the nodes are held in a handle rather than anywhere on the page, so the bookmarklet meets a page
+// that lost something, which is exactly what it meets on a site. "as" names what was taken, for an
+// entry that detaches more than one thing; without it the selector is the name.
+//
+// expect { "requests": "<host>", "count": n } is how many requests the bookmarklet made to that
+// host since the last expect that counted them, or since the page opened, and "atMost" bounds that
+// count rather than fixing it, for a span a site's own re-render can legitimately add one to. It is
+// what says a directory change costs one request rather than seven, which is a thing no selector on
+// the page can show.
+//
 // It may instead name an environment variable, as "$OCTOPRINT_URL", for a page whose address does not
 // belong in the repository. The address is read when the entry runs and never written down: every
 // reason, report.json and summary.txt names the variable in its place, and the address is taken back
@@ -139,9 +165,12 @@ var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permission
 // A host a network entry names: an exact host, or "*." and a domain for any of its subdomains, as
 // a media server picked per request is.
 var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d+)?$/;
-var stepActions = ["run", "click", "fill", "press", "select", "wait", "expect"];
-var stepExtras = ["value", "text", "selector"];
-var expectKeys = ["selector", "visible", "hidden", "count", "matches", "text", "clipboard", "location", "popup"];
+var stepActions = ["run", "click", "fill", "press", "select", "wait", "answer", "detach", "attach",
+ "expect"];
+var stepExtras = ["value", "text", "selector", "as"];
+var expectKeys = ["selector", "visible", "hidden", "count", "matches", "text", "clipboard", "location",
+ "popup", "requests", "atMost"];
+var answerKeys = ["host", "status", "contentType", "body", "pass"];
 
 // A url that names an environment variable holding the address, rather than holding it itself.
 var urlVariablePattern = /^\$[A-Z][A-Z0-9_]*$/;
@@ -206,6 +235,14 @@ function cut(text) {
 }
 
 function escapeRegExp(text) { return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+// A host an entry names, read against a host a request went to: an exact name, or "*." and a domain
+// for any of its subdomains. The entry's network, an answer step and the request watcher all ask
+// this one question, so a wildcard means the same thing in all three.
+function hostNamed(named, host) {
+ if (named === host) { return true; }
+ return named.indexOf("*.") === 0 && host.slice(-(named.length - 1)) === named.slice(1);
+}
 
 // A failure the run reports as it stands, rather than wrapping it again.
 function failure(message) {
@@ -485,6 +522,44 @@ function validateStep(step, where, problems) {
  if (action == "wait" && typeof step.wait != "number" && typeof step.wait != "string") {
   problems.push(where + ": wait takes milliseconds or a selector");
  }
+ if (action == "detach" && (typeof step.detach != "string" || !step.detach.length)) {
+  problems.push(where + ": detach takes a selector");
+ }
+ if (action == "attach" && (typeof step.attach != "string" || !step.attach.length)) {
+  problems.push(where + ": attach takes the name a detach step gave what it took off the page");
+ }
+ if (step.as !== undefined) {
+  if (step.detach === undefined) { problems.push(where + ": as names what a detach step took, and goes with one"); }
+  if (typeof step.as != "string" || !step.as.length) { problems.push(where + ": as takes a name"); }
+ }
+ if (action == "answer") {
+  var said = step.answer;
+  if (!said || typeof said != "object" || Array.isArray(said)) {
+   problems.push(where + ": answer takes { host, status } or { host, pass: true }");
+  } else {
+   Object.keys(said).forEach(function (k) {
+    if (answerKeys.indexOf(k) < 0) { problems.push(where + ": answer has no " + k); }
+   });
+   if (typeof said.host != "string" || !hostPattern.test(said.host)) {
+    problems.push(where + ": answer takes a host name such as api.example.com, or *.example.com for its subdomains");
+   }
+   if (said.pass !== undefined && said.pass !== true) { problems.push(where + ": pass takes true"); }
+   if (said.pass === true && (said.status !== undefined || said.body !== undefined || said.contentType !== undefined)) {
+    problems.push(where + ": answer either hands the host back to the network or answers it, never both");
+   }
+   if (said.pass === undefined) {
+    if (typeof said.status != "number" || said.status < 100 || said.status > 599) {
+     problems.push(where + ": answer takes the status to answer with, from 100 to 599, or pass: true to hand the host back to the network");
+    }
+    if (said.body !== undefined && typeof said.body != "string") {
+     problems.push(where + ": body takes the text to answer with");
+    }
+    if (said.contentType !== undefined && (typeof said.contentType != "string" || !said.contentType.trim())) {
+     problems.push(where + ": contentType takes a media type such as application/json");
+    }
+   }
+  }
+ }
  if (action == "fill") {
   var selector = typeof step.fill == "string" ? step.fill : (step.fill && step.fill.selector);
   var value = typeof step.fill == "string"
@@ -502,9 +577,25 @@ function validateStep(step, where, problems) {
   Object.keys(want).forEach(function (k) {
    if (expectKeys.indexOf(k) < 0) { problems.push(where + ": expect has no " + k); }
   });
-  var valueOnly = want.clipboard !== undefined || want.location !== undefined || want.popup !== undefined;
+  var valueOnly = want.clipboard !== undefined || want.location !== undefined || want.popup !== undefined
+   || want.requests !== undefined;
   if (!valueOnly && typeof want.selector != "string") {
-   problems.push(where + ": expect takes a selector, a clipboard value, a location, or a popup");
+   problems.push(where + ": expect takes a selector, a clipboard value, a location, a popup, or a count of requests");
+  }
+  if (want.requests !== undefined) {
+   if (typeof want.requests != "string" || !hostPattern.test(want.requests)) {
+    problems.push(where + ": requests takes a host name such as api.example.com");
+   }
+   if (want.selector !== undefined) {
+    problems.push(where + ": requests counts what the bookmarklet sent, and takes no selector");
+   }
+   if ((want.count === undefined) === (want.atMost === undefined)) {
+    problems.push(where + ": requests takes count, the number of requests to that host, or atMost, a bound on it");
+   }
+  }
+  if (want.atMost !== undefined && typeof want.atMost != "number") { problems.push(where + ": atMost takes a number"); }
+  if (want.atMost !== undefined && want.requests === undefined) {
+   problems.push(where + ": atMost bounds a count of requests, and goes with requests");
   }
   if (want.location !== undefined && typeof want.location != "string") { problems.push(where + ": location takes a string"); }
   if (want.popup !== undefined && (typeof want.popup != "string" || !want.popup.length)) {
@@ -512,7 +603,7 @@ function validateStep(step, where, problems) {
   }
   if (!valueOnly && want.visible === undefined && want.hidden === undefined
    && want.count === undefined && want.matches === undefined && want.text === undefined) {
-   problems.push(where + ": expect takes visible, hidden, count, matches, text, clipboard, location or popup");
+   problems.push(where + ": expect takes visible, hidden, count, matches, text, clipboard, location, popup or requests");
   }
   if (want.count !== undefined && typeof want.count != "number") { problems.push(where + ": count takes a number"); }
   if (want.matches !== undefined && (typeof want.matches != "string" || !want.matches.length)) {
@@ -616,7 +707,45 @@ function validateConfig(config, names) {
    if (!Array.isArray(entry.steps)) {
     problems.push(name + ": steps takes a list");
    } else {
-    entry.steps.forEach(function (step, i) { validateStep(step, name + " step " + (i + 1), problems); });
+    // Each step on its own, then the three things only the whole list can say: that an attach has
+    // something to put back, that a host handed to the network was being answered, and that a host
+    // the entry answers is a host the entry owns up to reaching.
+    var detached = [];
+    var answering = [];
+    var named = ((entry.network || []).map(function (n) { return n && n.host; }))
+     .filter(function (h) { return typeof h == "string"; });
+    entry.steps.forEach(function (step, i) {
+     var where = name + " step " + (i + 1);
+     validateStep(step, where, problems);
+     if (!step || typeof step != "object") { return; }
+     if (typeof step.detach == "string" && step.detach.length) {
+      var slot = typeof step.as == "string" && step.as.length ? step.as : step.detach;
+      if (detached.indexOf(slot) < 0) { detached.push(slot); }
+     }
+     if (typeof step.attach == "string" && step.attach.length) {
+      var held = detached.indexOf(step.attach);
+      if (held < 0) {
+       problems.push(where + ": nothing earlier in this entry detached " + step.attach);
+      } else {
+       detached.splice(held, 1);
+      }
+     }
+     if (!step.answer || typeof step.answer != "object" || typeof step.answer.host != "string") { return; }
+     if (step.answer.pass === true) {
+      var answered = answering.indexOf(step.answer.host);
+      if (answered < 0) {
+       problems.push(where + ": nothing earlier in this entry answers " + step.answer.host);
+      } else {
+       answering.splice(answered, 1);
+      }
+     } else if (answering.indexOf(step.answer.host) < 0) {
+      answering.push(step.answer.host);
+     }
+     if (!named.some(function (h) { return hostNamed(h, step.answer.host); })) {
+      problems.push(where + ": " + step.answer.host + " is answered by this entry and not named in its"
+       + " network - a host the bookmarklet reaches is named with the reason whoever answers it");
+     }
+    });
    }
   }
  });
@@ -767,6 +896,9 @@ function stepName(step) {
   if (step[action] === undefined) { continue; }
   if (action == "run" || action == "expect") { return action; }
   var aimed = step[action];
+  if (action == "answer") {
+   return "answer " + cut(aimed && aimed.host) + (aimed && aimed.pass === true ? " from the network" : " " + (aimed && aimed.status));
+  }
   if (aimed && typeof aimed == "object") { aimed = aimed.selector; }
   return action + " " + cut(aimed);
  }
@@ -874,9 +1006,11 @@ async function watchRequests(page, ctx) {
   var target;
   try { target = new URL(address); } catch (err) { return; }
   if (!/^(https?|wss?):$/.test(target.protocol)) { return; }
-  if (target.host === home || allowed.some(function (h) {
-   return h === target.host || (h.indexOf("*.") === 0 && target.host.slice(-(h.length - 1)) === h.slice(1));
-  })) { return; }
+  // Counted before it is judged, and whoever answers it: an entry answering a host itself still
+  // wants to know how many times the bookmarklet asked, which is the whole of what a backing-off
+  // retry can be seen by.
+  ctx.requestCounts[target.host] = (ctx.requestCounts[target.host] || 0) + 1;
+  if (target.host === home || allowed.some(function (h) { return hostNamed(h, target.host); })) { return; }
   if (ctx.offHosts.indexOf(target.host) < 0) { ctx.offHosts.push(target.host); }
  }
  function hostOf(address) {
@@ -925,6 +1059,85 @@ async function serveFixtures(page) {
    body: fs.readFileSync(file)
   }).catch(function () { });
  });
+}
+
+// A host answered by the entry rather than by the network, so a state only the site's own server
+// produces - the 403 an API gives past its hourly limit, say - is one a run can put the page in. The
+// route is the context's, as the fixture pages' is, because a tab the bookmarklet opens makes its
+// first request before any route of its own could be added. The answer carries
+// access-control-allow-origin, as a site's own API does: without it the browser refuses the answer
+// before the bookmarklet's own code sees it, and every status would read to the bookmarklet as a
+// request that never arrived. Answering a host changes nothing about how its requests are judged.
+async function answerHost(page, ctx, said) {
+ await passHost(page, ctx, said.host);
+ var predicate = function (url) { return hostNamed(said.host, url.host); };
+ var handler = async function (route) {
+  await route.fulfill({
+   status: said.status,
+   contentType: said.contentType || "text/plain; charset=utf-8",
+   headers: { "access-control-allow-origin": "*" },
+   body: said.body === undefined ? "" : said.body
+  }).catch(function () { });
+ };
+ await page.context().route(predicate, handler);
+ ctx.answers[said.host] = { predicate: predicate, handler: handler };
+}
+
+// The host handed back to the network, which is the other half of a state: refusing, then answering
+// again, without the entry having to carry a copy of what the site would have said.
+async function passHost(page, ctx, host) {
+ var held = ctx.answers[host];
+ if (!held) { return; }
+ delete ctx.answers[host];
+ await page.context().unroute(held.predicate, held.handler).catch(function () { });
+}
+
+// A piece of the page taken off it and kept, so a state a site produces for a moment - a listing
+// replaced header row and all - lasts long enough for an entry to assert against it. The nodes are
+// held in a handle rather than anywhere on the page, so nothing the harness does reaches the page's
+// own scope: the bookmarklet meets a page that lost something, which is what it meets on a site.
+// Each is remembered with the parent it hung from and the node it sat before, which is what attach
+// puts it back by.
+async function detachFrom(page, ctx, selector, slot) {
+ var handle = await page.evaluateHandle(function (sel) {
+  var held = [];
+  var found = Array.prototype.slice.call(document.querySelectorAll(sel));
+  for (var i = 0; i < found.length; i++) {
+   if (!found[i].parentNode) { continue; }
+   held.push({ node: found[i], parent: found[i].parentNode, next: found[i].nextSibling });
+   found[i].parentNode.removeChild(found[i]);
+  }
+  return held;
+ }, selector);
+ var took = await handle.evaluate(function (held) { return held.length; });
+ if (!took) {
+  await handle.dispose().catch(function () { });
+  throw failure("nothing to detach: " + selector + " matches nothing on the page");
+ }
+ if (ctx.detached[slot]) { await ctx.detached[slot].dispose().catch(function () { }); }
+ ctx.detached[slot] = handle;
+}
+
+// What a detach took off, put back where it came from. A place that is itself gone - the whole table
+// replaced since, say - is nowhere to put anything back, and that fails rather than passing quietly:
+// an entry asserting what a page does once something is back wants to know the something is back.
+async function attachTo(page, ctx, slot) {
+ var handle = ctx.detached[slot];
+ if (!handle) { throw failure("nothing is detached as " + slot); }
+ var back = await handle.evaluate(function (held) {
+  var put = 0;
+  for (var i = held.length - 1; i >= 0; i--) {
+   var parent = held[i].parent, next = held[i].next;
+   if (!parent || !parent.isConnected) { continue; }
+   if (next && next.parentNode === parent) { parent.insertBefore(held[i].node, next); }
+   else { parent.appendChild(held[i].node); }
+   put++;
+  }
+  return put;
+ });
+ delete ctx.detached[slot];
+ await handle.dispose().catch(function () { });
+ if (!back) { throw failure("nothing went back: where " + slot + " came from is no longer on the page"); }
 }
 
 // The whole entry inside its own time limit, so a page that never settles cannot hold up a
@@ -1058,6 +1271,28 @@ async function checkRequires(page, ctx) {
 }
 
 async function doExpect(page, ctx, want, where) {
+ // What the bookmarklet sent, which is the one thing about a pass that is nowhere on the page. The
+ // span is since the last count of the same host, so a step list reads as a request per directory
+ // rather than as a running total nobody can work out by hand. The counts are kept under the host
+ // each request went to, so a name standing for several - "*." and a domain, as the entry's network
+ // and an answer step both read it - is the sum of the hosts it stands for rather than a host of
+ // its own that nothing ever reaches.
+ if (want.requests !== undefined) {
+  var counted = 0;
+  Object.keys(ctx.requestCounts).forEach(function (h) {
+   if (hostNamed(want.requests, h)) { counted += ctx.requestCounts[h]; }
+  });
+  var asked = Object.prototype.hasOwnProperty.call(ctx.requestMarks, want.requests);
+  var made = counted - (asked ? ctx.requestMarks[want.requests] : 0);
+  ctx.requestMarks[want.requests] = counted;
+  var bounded = want.atMost !== undefined;
+  if (bounded ? made > want.atMost : made !== want.count) {
+   throw failure(where + ": the bookmarklet made " + made + " request" + (made == 1 ? "" : "s")
+    + " to " + want.requests + " since " + (asked ? "the last count" : "the page opened") + ", "
+    + (bounded ? "more than the " + want.atMost + " this allows" : "not " + want.count));
+  }
+  return;
+ }
  if (want.popup !== undefined) {
   var holds = function (u) { return String(u).indexOf(String(want.popup)) >= 0; };
   var until = Date.now() + Math.min(ctx.timeout, requiresTimeout);
@@ -1193,6 +1428,15 @@ async function doStep(page, ctx, step, index) {
   if (typeof step.wait == "number") { return page.waitForTimeout(step.wait); }
   return page.waitForSelector(step.wait, { state: "attached" });
  }
+ if (step.answer !== undefined) {
+  if (step.answer.pass === true) { return passHost(page, ctx, step.answer.host); }
+  return answerHost(page, ctx, step.answer);
+ }
+ if (step.detach !== undefined) {
+  return detachFrom(page, ctx, step.detach,
+   typeof step.as == "string" && step.as.length ? step.as : step.detach);
+ }
+ if (step.attach !== undefined) { return attachTo(page, ctx, step.attach); }
  return doExpect(page, ctx, step.expect, where);
 }
 
@@ -1297,6 +1541,10 @@ async function runOne(browser, name, entry, session, options) {
   popupUrls: [],
   network: (entry && entry.network) || [],
   offHosts: [],
+  requestCounts: {},
+  requestMarks: {},
+  answers: {},
+  detached: {},
   private: !!(entry && entry.auth),
   auth: (entry && entry.auth) || "",
   signedIn: (entry && entry.signedIn) || "",

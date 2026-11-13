@@ -757,3 +757,244 @@ test("a url that opens with a dollar but is not a variable name is a configurati
   fs.rmSync(bad, { force: true });
  }
 });
+
+// ----------------------------------------------------------------------------------------------- //
+// A host the entry answers, and a page the entry takes apart
+// ----------------------------------------------------------------------------------------------- //
+
+// A bookmarklet that asks a host for something and writes what it was told onto the page, so an
+// entry answering that host can be seen to have been the one that answered. The .invalid name never
+// resolves, so a run with nothing answering it reaches no network and says so on the page, which is
+// what makes handing the host back something an assertion can see. It writes into one element
+// rather than appending, so a second paste overwrites the first answer rather than sitting under it.
+var askingSource = [
+ "javascript:(function() {",
+ " var sayFixtureAnswerReadsIt = function(text) {",
+ "  var panelFixtureAnswerReadsIt = document.getElementById(\"answer--__-unlikely_-_name-__--answer\");",
+ "  if (!panelFixtureAnswerReadsIt) {",
+ "   panelFixtureAnswerReadsIt = document.createElement(\"p\");",
+ "   panelFixtureAnswerReadsIt.id = \"answer--__-unlikely_-_name-__--answer\";",
+ "   document.body.appendChild(panelFixtureAnswerReadsIt);",
+ "  }",
+ "  panelFixtureAnswerReadsIt.textContent = text;",
+ " };",
+ " fetch(\"https://api.collector.invalid/thing\").then(function(answer) {",
+ "  return answer.text().then(function(body) {",
+ "   sayFixtureAnswerReadsIt(answer.status + \" \" + body);",
+ "  });",
+ " }).catch(function() { sayFixtureAnswerReadsIt(\"nothing arrived\"); });",
+ "})();"
+].join("\n");
+
+var askedHost = "api.collector.invalid";
+var askedNetwork = [{ host: askedHost, reason: "a fixture showing a host the entry answers itself" }];
+var answerPanel = "#answer--__-unlikely_-_name-__--answer";
+
+function runAsking(entries) {
+ return runApart(entries, ["--all"], undefined, askingSource);
+}
+
+var refusals = 0;
+
+function refuses(config, expected) {
+ var bad = path.join(os.tmpdir(), "test-bm-refused-" + (++refusals) + "-" + process.pid + ".json");
+ fs.writeFileSync(bad, JSON.stringify(config));
+ try {
+  var run = runHarness(["--list"], fixtureEnv(bad));
+  assert.strictEqual(run.status, 2, "a configuration error exits 2:\n" + run.out + run.err);
+  assert.match(run.err, expected);
+ } finally {
+  fs.rmSync(bad, { force: true });
+ }
+}
+
+test("a host the entry answers is answered by the entry, with the status and the body it names", function () {
+ var answer = runAsking({
+  fixture_Answer_ReadsIt: {
+   url: "fixture:article.html",
+   network: askedNetwork,
+   steps: [
+    { answer: { host: askedHost, status: 403, contentType: "application/json; charset=utf-8",
+     body: "{\"message\":\"API rate limit exceeded\"}" } },
+    { run: true },
+    { wait: 1500 },
+    { expect: { selector: answerPanel, text: "403 {\"message\":\"API rate limit exceeded\"}" } }
+   ]
+  }
+ });
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+test("a host handed back to the network is no longer answered by the entry", function () {
+ var answer = runAsking({
+  fixture_Answer_HandsItBack: {
+   url: "fixture:article.html",
+   network: askedNetwork,
+   steps: [
+    { answer: { host: askedHost, status: 200, body: "a listing" } },
+    { run: true },
+    { wait: 1500 },
+    { expect: { selector: answerPanel, text: "200 a listing" } },
+    { answer: { host: askedHost, pass: true } },
+    { run: true },
+    { wait: 3000 },
+    { expect: { selector: answerPanel, text: "nothing arrived" } }
+   ]
+  }
+ });
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+test("requests counts what the bookmarklet sent to a host, since the last count of the same host", function () {
+ var answer = runAsking({
+  fixture_Answer_CountsThem: {
+   url: "fixture:article.html",
+   network: askedNetwork,
+   steps: [
+    { answer: { host: askedHost, status: 200, body: "a listing" } },
+    { run: true },
+    { wait: 1500 },
+    { expect: { requests: askedHost, count: 1 } },
+    { run: true },
+    { wait: 1500 },
+    { expect: { requests: askedHost, count: 1 } },
+    { expect: { requests: askedHost, count: 0 } },
+    { expect: { requests: askedHost, atMost: 2 } }
+   ]
+  }
+ });
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+// A name standing for several hosts counts every host it stands for. The entry's network and an
+// answer step both read "*." and a domain that way, so a count that read it as a host of its own
+// would say nothing was sent while the same name was answering the requests.
+test("a name standing for subdomains counts the requests sent to each of them", function () {
+ var answer = runAsking({
+  fixture_Answer_CountsSubdomains: {
+   url: "fixture:article.html",
+   network: [{ host: "*.collector.invalid", reason: "a fixture showing a host the entry answers itself" }],
+   steps: [
+    { answer: { host: "*.collector.invalid", status: 200, body: "a listing" } },
+    { run: true },
+    { wait: 1500 },
+    { expect: { selector: answerPanel, text: "200 a listing" } },
+    { expect: { requests: "*.collector.invalid", count: 1 } },
+    { expect: { requests: "*.collector.invalid", count: 0 } }
+   ]
+  }
+ });
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+test("a count of requests that is wrong fails, naming what was sent and what was wanted", function () {
+ var answer = runAsking({
+  fixture_Answer_CountsWrong: {
+   url: "fixture:article.html",
+   network: askedNetwork,
+   steps: [
+    { answer: { host: askedHost, status: 200, body: "a listing" } },
+    { run: true },
+    { wait: 1500 },
+    { expect: { requests: askedHost, count: 3 } }
+   ]
+  }
+ });
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /made 1 request to api\.collector\.invalid since the page opened, not 3$/);
+});
+
+test("atMost bounds a count rather than fixing it, and says so when the bound is passed", function () {
+ var answer = runAsking({
+  fixture_Answer_BoundsThem: {
+   url: "fixture:article.html",
+   network: askedNetwork,
+   steps: [
+    { answer: { host: askedHost, status: 200, body: "a listing" } },
+    { run: true },
+    { run: true },
+    { wait: 2000 },
+    { expect: { requests: askedHost, atMost: 1 } }
+   ]
+  }
+ });
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /made 2 requests to api\.collector\.invalid since the page opened, more than the 1 this allows$/);
+});
+
+test("a detached piece of the page goes back where it came from, not merely back on the page", function () {
+ var answer = runApart({
+  fixture_Detach_PutsItBack: {
+   url: "fixture:article.html",
+   steps: [
+    { run: true },
+    { detach: "h2#routes", as: "routes" },
+    { expect: { selector: "h2#routes", count: 0 } },
+    { attach: "routes" },
+    { expect: { selector: "h2#routes", count: 1 } },
+    { expect: { selector: "h2#routes + p.try-styling", count: 1 } }
+   ]
+  }
+ }, ["--all"]);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+test("a detach that matches nothing fails the entry rather than passing quietly", function () {
+ var answer = runApart({
+  fixture_Detach_MatchesNothing: {
+   url: "fixture:article.html",
+   steps: [{ run: true }, { detach: "#no-such-thing-is-here" }]
+  }
+ }, ["--all"]);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /nothing to detach: #no-such-thing-is-here matches nothing on the page$/);
+});
+
+test("an attach naming nothing an earlier step detached is a configuration error", function () {
+ refuses({ fixture_Pass_AddsAPanel: { steps: [{ attach: "routes" }] } },
+  /nothing earlier in this entry detached routes/);
+});
+
+test("a host handed back that nothing earlier answered is a configuration error", function () {
+ refuses({
+  fixture_Pass_AddsAPanel: {
+   network: [{ host: "api.collector.invalid", reason: "a fixture" }],
+   steps: [{ answer: { host: "api.collector.invalid", pass: true } }]
+  }
+ }, /nothing earlier in this entry answers api\.collector\.invalid/);
+});
+
+test("answering a host the entry does not name in its network is a configuration error", function () {
+ refuses({
+  fixture_Pass_AddsAPanel: { steps: [{ answer: { host: "api.collector.invalid", status: 403 } }] }
+ }, /api\.collector\.invalid is answered by this entry and not named in its network/);
+});
+
+test("an answer that both answers a host and hands it back is a configuration error", function () {
+ refuses({
+  fixture_Pass_AddsAPanel: {
+   network: [{ host: "api.collector.invalid", reason: "a fixture" }],
+   steps: [{ answer: { host: "api.collector.invalid", status: 403, pass: true } }]
+  }
+ }, /answer either hands the host back to the network or answers it, never both/);
+});
+
+test("a count of requests aimed at a selector is a configuration error", function () {
+ refuses({
+  fixture_Pass_AddsAPanel: { steps: [{ expect: { requests: "api.collector.invalid", selector: "p", count: 1 } }] }
+ }, /requests counts what the bookmarklet sent, and takes no selector/);
+});
+
+test("a count of requests with neither a count nor a bound is a configuration error", function () {
+ refuses({
+  fixture_Pass_AddsAPanel: { steps: [{ expect: { requests: "api.collector.invalid" } }] }
+ }, /requests takes count, the number of requests to that host, or atMost, a bound on it/);
+});

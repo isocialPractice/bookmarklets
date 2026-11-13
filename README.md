@@ -610,7 +610,7 @@ GitHub - Show File Size:
 ----
 <dl><dd><dl><dd>
 
-When viewing files in repo add a column showing file size. Activate in repo root and file viewing. Sizes come from GitHub's own API, which allows a reader who is not signed in sixty requests an hour; past that the column heading reads `Size (rate limited)` where the listing has one, and the sizes arrive on their own if the hour turns over within the few minutes it keeps asking - after that, the next directory opened is what asks again. Works with:
+When viewing files in repo add a column showing file size. Activate in repo root and file viewing. Sizes come from GitHub's own API, which allows a reader who is not signed in sixty requests an hour; past that the column heading reads `Size (rate limited)` where the listing has one, and the sizes arrive on their own if the hour turns over within the few minutes it keeps asking - after that, the next directory opened is what asks again. A listing GitHub is part way through replacing has its rows and not its heading row, and the column waits for that row rather than appearing without one; it goes in by itself as soon as the row is there, and nothing is asked of the API for it. Works with:
 
 1. GitHub - Alternate Row Color
 2. GitHub - Commit Date Timestamp
