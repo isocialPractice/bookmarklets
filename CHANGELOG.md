@@ -6,6 +6,50 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.14.2026]
+
+### Fixed
+
+- `siteSpecific_GitHub_ShowFileSize.js` puts its `Size` heading on screen at the repository
+  root. The heading has carried its text in the DOM and in the accessibility tree since it was
+  added, and at the root has never been visible to anyone looking at the page: the header row
+  GitHub serves there sets `font-size: 0` and `line-height: 0`, and the inserted `th` inherited
+  both, measuring 90x0 exactly as GitHub's own `Name`, `Last commit message` and `Last commit
+  date` headings do on that page. GitHub keeps that row for assistive technology and draws the
+  commit bar where a visible header would go, so nothing in it was ever drawn. The cost was the
+  one state where the heading is the only explanation on the page: with the API refusing, a
+  reader met empty cells in an unnamed gutter and no reason anywhere, which is the unexplained
+  blank column the heading was written to remove, reached by a different road. The heading now
+  sets its own `font-size`, `line-height` and `color` through the CSSOM, and holds to one line -
+  `Size (rate limited)` is wider than the tenth of the table the column takes, and left to wrap
+  it broke in two and read as two things. Held to one line it runs over the headings either side
+  of it, which at the root are the blank ones GitHub draws nothing in. The row is as tall as its
+  tallest cell, so the heading brings the row with it at the height GitHub's own listings use,
+  and the cells beside it are untouched. A screen reader announced the column correctly
+  throughout; only the visual side was missing.
+
+### Testing
+
+- The `siteSpecific_GitHub_ShowFileSize` entry asserts the heading is `visible`, in both of the
+  header's text states at the repository root, rather than only that its text is right. `wait`
+  and `expect ... text` both run against an attached node, and a zero-height node is attached,
+  which is why the entry passed for as long as the heading was invisible. Playwright's visible
+  state counts a zero-height box as hidden, so the new assertion fails on the file as it stood
+  and passes on the fix - checked both ways before it was kept. The entry's later steps reach a
+  folder page and the root again, and assert the heading is there without asserting it is
+  visible; no expectation the harness has reads geometry, so nothing in the suite pins where the
+  heading's text lands.
+
+### Notes
+
+- A folder page is not served the way the root is, and the entry above describes the root only.
+  There GitHub draws its own header row at `font-size: 12px; line-height: 18px`, its three
+  headings paint real text, and the heading was already visible before this change. The
+  `white-space: nowrap` that holds the heading to one line stops it wrapping inside its own
+  cell, so with the API refusing `Size (rate limited)` runs over `Last commit message` at every
+  width under 1366px. Found by the same verification, with its measurements, and queued under
+  `### UI/UX Override - ShowFileSize heading on folder pages` in `TODO.md`.
+
 ## [11.13.2026]
 
 ### Fixed

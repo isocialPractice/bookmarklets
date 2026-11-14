@@ -240,6 +240,26 @@ javascript:(function(){
    sizeTH = document.createElement("th");
    sizeTH.innerHTML = headerText();
    sizeTH.style.width = "10%";
+   /* The header row GitHub serves at the repository root sets font-size and line-height to 0,
+      and a th put into it inherits both, so there the heading was on the page at 90x0 and no
+      reader ever saw it. GitHub keeps that row for assistive technology and draws the commit
+      bar where a visible header would go, which is why its own three headings measure the same
+      on that page. Giving this one cell its own type is what puts the word on screen, and with
+      it the reason a refusal leaves behind; the row is as tall as its tallest cell, so the
+      heading brings the row with it and the cells beside it stay exactly as GitHub drew them.
+      The longer of the two strings is wider than the tenth of the table this column takes, and
+      left to wrap it breaks across two lines and reads as two things; held to one line it runs
+      over the headings either side of it, which at the root are the blank ones GitHub draws
+      nothing in.
+      A folder page is served differently, and none of the above holds there: GitHub draws that
+      header row at font-size 12px and line-height 18px, its own three headings paint real text,
+      and the heading was already visible before these four properties were set. The one line
+      nowrap holds the heading to then runs over "Last commit message" at every width under
+      1366px, which is a known defect of this block and not what it was written to do. */
+   sizeTH.style.setProperty("font-size", "12px");
+   sizeTH.style.setProperty("line-height", "32px");
+   sizeTH.style.setProperty("white-space", "nowrap");
+   sizeTH.style.setProperty("color", "#9198a1");
    sizeTH.id = "sizeCol--__-unlikely_-_name-__--sizeCol";
    row.children[1].insertAdjacentElement("afterend", sizeTH);
    row.children[1].style.width = "30%";
