@@ -78,28 +78,84 @@ its README entry linking that gist. Runs post and update gists with
   - The README keeps its CRLF line endings.
   - From: Short Videos
 
-### UI/UX Override - ShowFileSize heading visibility
+### Found Issue - the README video block breaks `verify`
 
 #### Found Issues
 
-- [ ] The `Size` heading renders at zero height, so the rate limit reason
-  reaches no one looking at the page
-  - **Issue**: The heading the bookmarklet inserts carries its text in the DOM
-    and in the accessibility tree, but it is 90x0 on screen: GitHub's header
-    row sets `font-size: 0` and `line-height: 0`, and the inserted `th`
-    inherits both, as GitHub's own `Name`, `Last commit message` and
-    `Last commit date` headings do at 271x0, 405x0 and 136x0. With the API
-    refusing and the header row present, a reader meets 18 empty cells in an
-    unnamed gutter between the file name and the commit message and no reason
-    anywhere on the page, which is the unexplained blank column the heading was
-    written to remove. Measured signed out at 1280x720; the committed copy and
-    the working copy measure identically, so it is not new with the headerless
-    repair. Everything else about the column is right: 90px, 10% of the table,
-    directly after the name cell, its band `304..394` over the centre of all 18
-    cells, inside the viewport.
+- [ ] `node ._bookmarklet.js verify` fails on every entry that has a video
+  block, and each short posted adds two more failures
+  - **Issue**: The video block `## Short Videos` prescribes opens with
+    `<details>` and `<summary>Show Details</summary>`, and the README entry
+    splitter reads that summary as the start of an entry. The three entries
+    that carry one today - `dom_Note_TakePageNotes`,
+    `siteSpecific_YouTube_WatchRandomVideo` and
+    `siteSpecific_chatGPT_PasteReadyBookmarkResponse` - each report both
+    `has 0 entries, expected 1` and `entry names a missing file: Show
+    Details`, so `verify` ends `54 entries, 6 error(s)`. `._bookmarklet.js`
+    also carries a `drop-details` command and errors on `<details> left in
+    the entry`, so the element the block reintroduces is the one an earlier
+    migration was written to take out. Found by running `verify` on an
+    unchanged `README.md`; it is not new with any one run, and it grows by
+    two errors per short posted.
+  - **Goal**: Settle which of the two is wrong and change that one. Either
+    give the video block a shape that carries no `<details>`, updating the
+    template in `## Short Videos` and the three entries already using it, or
+    teach the entry splitter and `drop-details` to pass over a video block
+    while still rejecting a stray `<details>`. `verify` ending with no errors
+    on an unchanged README is what finishes it.
+  - From: Found Issue - the README video block breaks `verify`
+
+### UI/UX Override - ShowFileSize heading on folder pages
+
+#### Resolve Issues
+
+- [ ] Size Heading Type 1: the heading is now set `nowrap`, and on a folder
+  page it runs out of its cell and over GitHub's own `Last commit message`
+  - **Issue**: The four properties the heading sets are right for the
+    repository root, where GitHub serves the header row at `font-size: 0` and
+    nothing in it is drawn. A folder page is served at `font-size: 12px;
+    line-height: 18px`, its three headings paint real text, and the heading was
+    already visible there before this change. `white-space: nowrap` stops it
+    wrapping inside its own cell, so on
+    `/tree/main/JSFormatted` with the API refusing, `Size (rate limited)`
+    paints 99.98px of text in a 92.5px cell and covers the first 7.48px of
+    `Last commit message` at 1280 wide, 20.30px at 1152 and 33.09px at 1024;
+    `elementFromPoint` at the tail of the heading returns GitHub's own `span`.
+    It comes clear at 1366 and wider. The committed copy wrapped inside its own
+    cell at every width below 1600 - three lines at 1024, two from 1152 to
+    1440 - and covered nothing at any width. The root
+    is unaffected and keeps what it gained - 90.19x0 to 90.19x32, hidden to
+    visible, one line, nothing else moved - and the comment in the file and the
+    `## [11.14.2026]` changelog entry both state the never-visible premise as
+    though it held everywhere, which is why the folder page went unconsidered.
+    Measured signed out at 1280x720 and five other widths, committed copy and
+    working copy on the same page.
   - **Goal**: Resolve to
-    [size-heading-never-shows.prompt.md](.claude/prompts/size-heading-never-shows.prompt.md)
+    [size-heading-covers-commit-heading.prompt.md](.claude/prompts/size-heading-covers-commit-heading.prompt.md)
   - From: UI/UX Override - ShowFileSize heading visibility
+
+#### Found Issues
+
+- [ ] An entry cannot assert that an element's text stays inside its own box,
+  so nothing in the suite can pin the collision above
+  - **Issue**: `expect` takes `selector`, `visible`, `hidden`, `count`,
+    `matches`, `text`, `clipboard`, `location`, `popup`, `requests` and
+    `atMost`. Every one of them is satisfied by a heading that paints its text
+    straight over the heading beside it, which is how the
+    `siteSpecific_GitHub_ShowFileSize` entry passes at 1280 today with the two
+    `visible` assertions in place. The same gap let the zero-height heading
+    pass for as long as it did: `visible` was the answer that time, and there
+    is no equivalent answer for overflow.
+  - **Goal**: Give `expect` a geometry answer - an element's painted text
+    staying within its own border box. `scrollWidth` against `clientWidth` is
+    enough to see it, and reports 26px of overflow at the root and 23px on the
+    folder page; a `Range` over the text nodes is the stronger form, because it
+    also says whether the cell the text runs into paints anything, which is the
+    difference between the root and a folder page. Then add a step to the
+    `siteSpecific_GitHub_ShowFileSize` entry that reaches
+    `/tree/main/JSFormatted` with the API refusing and asserts it, at the 1280
+    viewport the harness already runs.
+  - From: UI/UX Override - ShowFileSize heading on folder pages
 
 ### Create and Deploy GitHub Pages Override
 
@@ -376,42 +432,6 @@ the bookmarklet has a demo.
   its gist paragraph, into a video block's demo line in place of its comment,
   with the short line commented out until its short exists
   - The README keeps its CRLF line endings.
-- [x] Let `gitHubTask` (on `PATH`, outside this repository) post a short
-  without prompts
-  - **Done 11.13.2026, in `gitHubTask` itself.** Called with all five
-    arguments, `gitHubTask /V "<path>" "<title>" "<description>" "<tags>"
-    "public"` uploads with no prompt, from any path however deep, and a video
-    without `_Demo` in its name goes to the `Bookmarklet Shorts` playlist,
-    found on the channel by its title. It prints `Video:` and `Short:` links
-    and writes `VIDEO_ID`, `URL`, `SHORT` and `PLAYLIST` lines to
-    `.tmp/youtube-last-upload.txt` in this folder, which is where the README's
-    video block takes its link from. A failed upload prints `YouTube upload
-    FAILED`, writes no file and copies nothing - `gitHubTask` still exits 0
-    either way, so read the words and the file, not the exit code.
-  - **One sign-in, by the maintainer, at a desktop:** `gitHubTask /V
-    --sign-in`. Without it an upload stops at once with `YouTube sign-in
-    needed` rather than waiting on a browser; that is the correct end of a run,
-    and the short stays owed.
-  - `gitHubTask /v` uploads unattended when it is given the title,
-    description, tags and privacy, but its only playlist is the demo playlist,
-    picked by a `_Demo` file-name prefix. Give it the shorts playlist.
-  - Passing its tags argument through to the upload is already planned on the
-    `gitHubTask` side.
-  - Leave each new video's URL where a run can read it, for the README.
-  - Found posting the first short on 11.10.2026, each worked around for that
-    run only:
-    - The upload takes the video's path with everything up to its first
-      backslash removed, so only a path one folder deep reaches the upload
-      script; a deeper one fails with "Please specify a valid file".
-    - The upload script's error handler is written in Python 2 form, so an
-      API error surfaces as a `NameError` and its real message is lost.
-    - The Python it runs had none of its libraries (`httplib2`,
-      `google-api-python-client`, `oauth2client`), and its saved sign-in had
-      expired. Google ends a refresh token for an app in testing status after
-      seven days, so publishing the app in its Google Cloud project is what
-      keeps the sign-in alive.
-    - A failed upload still reports that the run completed and copies a
-      snippet with an empty link to the clipboard.
 - [ ] Post each short's GIF to Giphy, as `## Social Media Posting` in the
   constants describes, after its YouTube upload
   - Split from the `gitHubTask` item above, which no longer waits on it. The
@@ -435,11 +455,21 @@ the bookmarklet has a demo.
   - The same steps. A site that blocks a headless recording is listed for a
     hand recording rather than skipped without a word. OctoPrint needs the
     printer's address, as its test does.
-  - `siteSpecific_GitHub_ShowFileSize` is made and waiting on the posting:
-    `.videos/support/record-show-file-size.mjs` shot the 7.5 second recording
-    on 11.12.2026, `make-short.jsx` built the composition and rendered the
-    MP4, and the GIF is beside it. Only the YouTube upload, the Giphy post and
-    the README video block are left, and they wait on the item above.
+  - `siteSpecific_GitHub_ShowFileSize` has a recording and is waiting on the
+    render and the posting. `.videos/support/record-show-file-size.mjs` shot
+    it again on 11.14.2026, this time dressing the page: the listing's folders
+    and files take cliche names on the page and in the API's answer together,
+    every avatar and person's name that is not the organization's becomes a
+    placeholder, the breadcrumb's folder is dressed with the rest, and the
+    profile card GitHub raises on hover is stopped before it is asked for. The
+    script checks all three beats and refuses to write a recording it could
+    not dress. That recording also shows the `Size` heading, which was never
+    on screen before 11.14.2026.
+  - **The MP4 and the GIF beside it are the older, undressed recording**, so
+    they are not what gets posted. `make-short.jsx` has to build the
+    composition again from the new source GIF, with After Effects open, before
+    the YouTube upload and the Giphy post. The README comment stays until a
+    dressed video is up, per `## Video Masking`.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the
@@ -1327,5 +1357,60 @@ roadmap section each one came from.
     no header row; and a directory change costs one request to `api.github.com`
     whether the bookmarklet was pasted once or twice.
   - From: UI/UX Override - ShowFileSize headerless listing
+- [x] **Size Heading Type**: The `Size` heading renders at zero height, so the
+  rate limit reason reaches no one looking at the page
+  - **Issue**: The heading the bookmarklet inserts carries its text in the DOM
+    and in the accessibility tree, but it is 90x0 on screen: GitHub's header
+    row sets `font-size: 0` and `line-height: 0`, and the inserted `th`
+    inherits both, as GitHub's own `Name`, `Last commit message` and
+    `Last commit date` headings do at 271x0, 405x0 and 136x0. With the API
+    refusing and the header row present, a reader meets 18 empty cells in an
+    unnamed gutter between the file name and the commit message and no reason
+    anywhere on the page, which is the unexplained blank column the heading was
+    written to remove. Measured signed out at 1280x720; the committed copy and
+    the working copy measure identically, so it is not new with the headerless
+    repair. Everything else about the column is right: 90px, 10% of the table,
+    directly after the name cell, its band `304..394` over the centre of all 18
+    cells, inside the viewport.
+  - **Goal**: Resolve to
+    [size-heading-never-shows.prompt.md](.claude/prompts/size-heading-never-shows.prompt.md)
+  - From: UI/UX Override - ShowFileSize heading visibility
+- [x] Let `gitHubTask` (on `PATH`, outside this repository) post a short
+  without prompts
+  - **Done 11.13.2026, in `gitHubTask` itself.** Called with all five
+    arguments, `gitHubTask /V "<path>" "<title>" "<description>" "<tags>"
+    "public"` uploads with no prompt, from any path however deep, and a video
+    without `_Demo` in its name goes to the `Bookmarklet Shorts` playlist,
+    found on the channel by its title. It prints `Video:` and `Short:` links
+    and writes `VIDEO_ID`, `URL`, `SHORT` and `PLAYLIST` lines to
+    `.tmp/youtube-last-upload.txt` in this folder, which is where the README's
+    video block takes its link from. A failed upload prints `YouTube upload
+    FAILED`, writes no file and copies nothing - `gitHubTask` still exits 0
+    either way, so read the words and the file, not the exit code.
+  - **One sign-in, by the maintainer, at a desktop:** `gitHubTask /V
+    --sign-in`. Without it an upload stops at once with `YouTube sign-in
+    needed` rather than waiting on a browser; that is the correct end of a run,
+    and the short stays owed.
+  - `gitHubTask /v` uploads unattended when it is given the title,
+    description, tags and privacy, but its only playlist is the demo playlist,
+    picked by a `_Demo` file-name prefix. Give it the shorts playlist.
+  - Passing its tags argument through to the upload is already planned on the
+    `gitHubTask` side.
+  - Leave each new video's URL where a run can read it, for the README.
+  - Found posting the first short on 11.10.2026, each worked around for that
+    run only:
+    - The upload takes the video's path with everything up to its first
+      backslash removed, so only a path one folder deep reaches the upload
+      script; a deeper one fails with "Please specify a valid file".
+    - The upload script's error handler is written in Python 2 form, so an
+      API error surfaces as a `NameError` and its real message is lost.
+    - The Python it runs had none of its libraries (`httplib2`,
+      `google-api-python-client`, `oauth2client`), and its saved sign-in had
+      expired. Google ends a refresh token for an app in testing status after
+      seven days, so publishing the app in its Google Cloud project is what
+      keeps the sign-in alive.
+    - A failed upload still reports that the run completed and copies a
+      snippet with an empty link to the clipboard.
+  - From: Short Videos
 
 </details>
