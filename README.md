@@ -608,7 +608,10 @@ Copy/paste: open [siteSpecific_GitHub_ShowFileSize.js](https://raw.githubusercon
 
 Gist page for [siteSpecific_GitHub_ShowFileSize.js](https://gist.github.com/jhauga/247e43f74af2f196309d5746710899ae)
 
-<!-- PASTE VIDEO HERE -->
+<b>Video Demonstration for Use:</b>
+
+- `Ctrl + click` link to view short on YouTube [Short - GitHub - Show File Size](https://www.youtube.com/shorts/cTCOnRGBT-0)
+<!-- - `Ctrl + click` link to view demo on YouTube [Demo - GitHub - Show File Size](https://www.youtube.com/watch?v=<id>) -->
 
 </dd></dl></dd></dl>
 

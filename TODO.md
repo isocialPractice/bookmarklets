@@ -393,25 +393,15 @@ the bookmarklet has a demo.
   - The same steps. A site that blocks a headless recording is listed for a
     hand recording rather than skipped without a word. OctoPrint needs the
     printer's address, as its test does.
-  - `siteSpecific_GitHub_ShowFileSize` has a recording and is waiting on the
-    render and the posting. `.videos/support/record-show-file-size.mjs` shot
-    it again on 11.14.2026, this time dressing the page: the listing's folders
-    and files take cliche names on the page and in the API's answer together,
-    every avatar and person's name that is not the organization's becomes a
-    placeholder, the breadcrumb's folder is dressed with the rest, and the
-    profile card GitHub raises on hover is stopped before it is asked for. The
-    script checks all three beats and refuses to write a recording it could
-    not dress. That recording also shows the `Size` heading, which was never
-    on screen before 11.14.2026. It was shot again on 11.15.2026, because the
-    heading's type is now set only where GitHub leaves the header row untyped
-    and the third beat - the folder's own listing - draws that row the way
-    GitHub draws it rather than at the taller line height the 11.14.2026
-    recording shows.
-  - **The MP4 and the GIF beside it are the older, undressed recording**, so
-    they are not what gets posted. `make-short.jsx` has to build the
-    composition again from the new source GIF, with After Effects open, before
-    the YouTube upload and the Giphy post. The README comment stays until a
-    dressed video is up, per `## Video Masking`.
+  - `siteSpecific_GitHub_ShowFileSize` is posted, 11.15.2026:
+    [Short - GitHub - Show File Size](https://www.youtube.com/shorts/cTCOnRGBT-0),
+    public, in the `Bookmarklet Shorts` playlist, and its README entry links
+    it in place of the comment. `.videos/support/record-show-file-size.mjs`
+    dresses the page per `## Video Masking` (since 11.14.2026) and shot the
+    recording again on 11.15.2026; `make-short.jsx` then built and rendered
+    the MP4 from it, replacing the undressed 11.12.2026 render, and every beat
+    was checked against the masking table before the upload. Its GIF is made
+    and waits on the Giphy item above.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the
