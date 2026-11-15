@@ -370,11 +370,18 @@ the bookmarklet has a demo.
   its gist paragraph, into a video block's demo line in place of its comment,
   with the short line commented out until its short exists
   - The README keeps its CRLF line endings.
-- [ ] Post each short's GIF to Giphy, as `## Social Media Posting` in the
+- [x] Post each short's GIF to Giphy, as `## Social Media Posting` in the
   constants describes, after its YouTube upload
   - Split from the `gitHubTask` item above, which no longer waits on it. The
     key is read from the local note at run time and never written into a
     script, a log or a commit.
+  - Done 11.15.2026. The poster is `.videos/support/post-giphy.mjs`, local
+    and never committed: it reads the key itself, posts the GIF with the
+    short's URL as its source, and confirms it on Giphy. The ShowFileSize
+    short's GIF is posted with it, and the run's constants now make a Giphy
+    post part of every short, right after its YouTube upload. Adding each GIF
+    to the `Bookmarklets` collection stays with the maintainer, since the
+    upload API cannot.
 - [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
   and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
   - Builds on `--capture` under `## Test Harness`. Start just before the
@@ -400,8 +407,8 @@ the bookmarklet has a demo.
     dresses the page per `## Video Masking` (since 11.14.2026) and shot the
     recording again on 11.15.2026; `make-short.jsx` then built and rendered
     the MP4 from it, replacing the undressed 11.12.2026 render, and every beat
-    was checked against the masking table before the upload. Its GIF is made
-    and waits on the Giphy item above.
+    was checked against the masking table before the upload. Its GIF is
+    posted to Giphy, 11.15.2026, with the short as its source.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the
