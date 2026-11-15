@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Self-test page: text that runs out of its own cell</title>
+ <meta name="description" content="A self-test page holding one heading per state a clear expectation has to tell apart: text that fits its cell, text that runs out of it over a heading that paints its own words, text that runs out of it over a heading served at font-size 0, and a heading with no text at all.">
+ <style>
+  /* No fixture.css here. The four states below are decided by a handful of lengths, and a
+     stylesheet shared with the practice pages would move them the next time it was edited. */
+  body { margin: 0; font-family: -apple-system, "Segoe UI", sans-serif; }
+  /* The fixture bookmarklet the harness runs on this page puts a fixed panel in the top left
+     corner. The probes start below it, so nothing it draws is ever under a measured run. */
+  main { padding: 120px 40px 60px; max-width: 900px; }
+  h1 { font-size: 20px; }
+  p { font-size: 13px; line-height: 18px; max-width: 60ch; }
+  table.probe { table-layout: fixed; width: 520px; border-collapse: collapse; margin: 0 0 32px; }
+  table.probe th { font-size: 12px; line-height: 18px; text-align: left; font-weight: 400;
+   color: #57606a; padding: 0; }
+  table.probe th.narrow { width: 60px; }
+  table.probe th.wide { width: 460px; }
+  /* One line, as a heading too long for its column is held when it must not wrap. */
+  table.probe th.held { white-space: nowrap; }
+  /* A header row a site keeps for assistive technology and draws nowhere, which is the state the
+     overflow above lands on harmlessly. The selector carries table.probe for a reason: th.unpainted
+     alone is the less specific of the two and loses its font-size to the rule above, which leaves
+     the cell painting its heading at 12px and this page saying the opposite of what it means. */
+  table.probe th.unpainted { font-size: 0; line-height: 0; }
+ </style>
+</head>
+<body>
+ <main>
+  <h1>Text that runs out of its own cell</h1>
+  <p>This one is for the harness, not for practice. Each table below holds one state a
+   <code>clear</code> expectation has to tell apart, and the cells are sized so the answer does not
+   depend on the font the machine happens to have.</p>
+
+  <h2>Text that fits its cell</h2>
+  <table class="probe">
+   <tr>
+    <th id="fitsInside" class="wide held">Size</th>
+    <th class="narrow">Date</th>
+   </tr>
+  </table>
+
+  <h2>Text that runs out of its cell, over a heading that paints its own words</h2>
+  <table class="probe">
+   <tr>
+    <th id="runsOverPainted" class="narrow held">Size (rate limited)</th>
+    <th class="wide">Last commit message</th>
+   </tr>
+  </table>
+
+  <h2>Text that runs out of its cell, over a heading that paints nothing</h2>
+  <table class="probe">
+   <tr>
+    <th id="runsOverBlank" class="narrow held">Size (rate limited)</th>
+    <th class="wide unpainted">Last commit message</th>
+   </tr>
+  </table>
+
+  <h2>A heading with no text at all</h2>
+  <table class="probe">
+   <tr>
+    <th id="paintsNothing" class="narrow held"></th>
+    <th class="wide">Last commit message</th>
+   </tr>
+  </table>
+ </main>
+</body>
+</html>

@@ -244,22 +244,31 @@ javascript:(function(){
       and a th put into it inherits both, so there the heading was on the page at 90x0 and no
       reader ever saw it. GitHub keeps that row for assistive technology and draws the commit
       bar where a visible header would go, which is why its own three headings measure the same
-      on that page. Giving this one cell its own type is what puts the word on screen, and with
-      it the reason a refusal leaves behind; the row is as tall as its tallest cell, so the
-      heading brings the row with it and the cells beside it stay exactly as GitHub drew them.
+      at the repository root. Giving this one cell its own type is what puts the word on screen,
+      and with it the reason a refusal leaves behind; the row is as tall as its tallest cell, so
+      the heading brings the row with it and the cells beside it stay exactly as GitHub drew them.
       The longer of the two strings is wider than the tenth of the table this column takes, and
       left to wrap it breaks across two lines and reads as two things; held to one line it runs
-      over the headings either side of it, which at the root are the blank ones GitHub draws
+      past its own cell, which at the repository root lands on the blank headings GitHub draws
       nothing in.
-      A folder page is served differently, and none of the above holds there: GitHub draws that
-      header row at font-size 12px and line-height 18px, its own three headings paint real text,
-      and the heading was already visible before these four properties were set. The one line
-      nowrap holds the heading to then runs over "Last commit message" at every width under
-      1366px, which is a known defect of this block and not what it was written to do. */
-   sizeTH.style.setProperty("font-size", "12px");
-   sizeTH.style.setProperty("line-height", "32px");
-   sizeTH.style.setProperty("white-space", "nowrap");
-   sizeTH.style.setProperty("color", "#9198a1");
+      A folder page is served differently and needs none of it: GitHub draws that header row at
+      font-size 12px and line-height 18px, its own three headings paint real text, and the heading
+      was already visible there, wrapping inside its own cell, before any of these four properties
+      existed. The one line nowrap held it to then ran out of the cell and over "Last commit
+      message" at every width under 1366px. So the type is set where GitHub left the row untyped
+      and nowhere else, read off the row the heading is going into rather than off the address: a
+      page served with a drawn header row keeps exactly what it already had. */
+   let cellFontSize = function(cell) {
+    if (!window.getComputedStyle || !cell) { return -1; }
+    let read = parseFloat(window.getComputedStyle(cell).fontSize);
+    return isNaN(read) ? -1 : read;
+   };
+   if (cellFontSize(row.children[1]) === 0 || cellFontSize(row) === 0) {
+    sizeTH.style.setProperty("font-size", "12px");
+    sizeTH.style.setProperty("line-height", "32px");
+    sizeTH.style.setProperty("white-space", "nowrap");
+    sizeTH.style.setProperty("color", "#9198a1");
+   }
    sizeTH.id = "sizeCol--__-unlikely_-_name-__--sizeCol";
    row.children[1].insertAdjacentElement("afterend", sizeTH);
    row.children[1].style.width = "30%";

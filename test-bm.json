@@ -309,7 +309,7 @@
   "scheduled": true,
   "network": [{ "host": "api.github.com", "reason": "file sizes come from GitHub's own REST API" }],
   "requires": ["table", "tr", "body"],
-  "timeout": 120000,
+  "timeout": 150000,
   "steps": [
    { "answer": { "host": "api.github.com", "status": 403, "contentType": "application/json; charset=utf-8", "body": "{\"message\":\"API rate limit exceeded for 203.0.113.1. (But here's the good news: Authenticated requests get a higher rate limit.)\",\"documentation_url\":\"https://docs.github.com/rest/overview/rate-limits-for-the-rest-api\"}" } },
    { "wait": "table:has(a[href*='/blob/']) tr:has(th)" },
@@ -325,6 +325,7 @@
    { "wait": "#sizeCol--__-unlikely_-_name-__--sizeCol" },
    { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "text": "Size (rate limited)" } },
    { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "visible": true } },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "clear": true } },
    { "expect": { "requests": "api.github.com", "count": 0 } },
    { "answer": { "host": "api.github.com", "pass": true } },
    { "wait": 4000 },
@@ -353,6 +354,13 @@
    { "wait": 6000 },
    { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "count": 1 } },
    { "expect": { "selector": "td[id^='fileSize-__-unlikely-name-__-fileSize']", "matches": "table tr:has(a[href*='/blob/'])" } },
+   { "expect": { "requests": "api.github.com", "atMost": 2 } },
+   { "answer": { "host": "api.github.com", "status": 403, "contentType": "application/json; charset=utf-8", "body": "{\"message\":\"API rate limit exceeded for 203.0.113.1. (But here's the good news: Authenticated requests get a higher rate limit.)\",\"documentation_url\":\"https://docs.github.com/rest/overview/rate-limits-for-the-rest-api\"}" } },
+   { "click": "table tr a[href$='/tree/main/JSFormatted']:visible" },
+   { "wait": 8000 },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "text": "Size (rate limited)" } },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "visible": true } },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "clear": true } },
    { "expect": { "requests": "api.github.com", "atMost": 2 } }
   ]
  },

@@ -195,18 +195,10 @@ Copy/paste: open [dom_Note_TakePageNotes.js](https://raw.githubusercontent.com/i
 
 Gist page for [dom_Note_TakePageNotes.js](https://gist.github.com/jhauga/52661cda4f5340a8023ffee94ece792b)
 
-<details>
-
-<summary>Show Details</summary>
-
-<br>
-
 <b>Video Demonstration for Use:</b>
 
 - `Ctrl + click` link to view short on YouTube [Short - Note - Take Page Notes](https://www.youtube.com/shorts/DhY7vYrhl5g)
 <!-- - `Ctrl + click` link to view demo on YouTube [Demo - <bookmarklet-sub-category> - <(from.title):bookmarklet-descriptive-name>](<youtube-url) -->
-
-</details>
 
 </dd></dl></dd></dl>
 
@@ -459,18 +451,10 @@ Copy/paste: open [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://ra
 
 Gist page for [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2).
 
-<details>
-
-<summary>Show Details</summary>
-
-<br>
-
 <b>Video Demonstration for Use:</b>
 
 - `Ctrl + click` link to view short on YouTube [Short - ChatGPT - Paste Ready Bookmark Response](https://www.youtube.com/shorts/iXENQRIalRo)
 - `Ctrl + click` link to view demo on YouTube [Demo - ChatGPT - Paste Ready Bookmark Response](https://youtu.be/0aGQyrg7vo0)
-
-</details>
 
 </dd></dl></dd></dl>
 
@@ -1073,18 +1057,10 @@ Copy/paste: open [siteSpecific_YouTube_WatchRandomVideo.js](https://raw.githubus
 
 Gist page for [siteSpecific_YouTube_WatchRandomVideo.js](https://gist.github.com/jhauga/c21475673dee3816b6ce3f9ed7fe35ec)
 
-<details>
-
-<summary>Show Details</summary>
-
-<br>
-
 <b>Video Demonstration for Use:</b>
 
 - `Ctrl + click` link to view short on YouTube [Short - YouTube - Watch Random Video](https://www.youtube.com/shorts/7begOX2yiC4)
 <!-- - `Ctrl + click` link to view demo on YouTube [Demo - <bookmarklet-sub-category> - <(from.title):bookmarklet-descriptive-name>](<youtube-url) -->
-
-</details>
 
 </dd></dl></dd></dl>
 

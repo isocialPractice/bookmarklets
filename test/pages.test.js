@@ -5,7 +5,7 @@
 // Run with node --test test/pages.test.js, which npm test does between harness.test.js and the
 // bookmarklets themselves. The file is named rather than discovered, for the reason harness.test.js
 // is: node --test treats every .js file under a folder called test as a test file, and
-// test/fixtures/bookmarklets holds nine that are bookmarklets.
+// test/fixtures/bookmarklets holds fourteen that are bookmarklets.
 //
 // These pages are two things at once - the fixtures test-bm.js runs against, and the practice pages
 // the deployed site links to. test-bm.js proves the bookmarklets still work on them, and
@@ -37,8 +37,11 @@ var types = {
  ".png": "image/png"
 };
 
-// The nine pages a reader is shown. self-test-noisy.html sits in the same folder and is not one of
-// them: it logs a console error and throws on purpose, for harness.test.js to read.
+// The nine pages a reader is shown. Two more sit in the same folder and are not among them, both
+// for harness.test.js to read rather than for anyone to practise on: self-test-noisy.html logs a
+// console error and throws on purpose, and self-test-overflow.html paints a heading out of its own
+// cell on purpose, over a heading that paints its words in one table and over one served at
+// font-size 0 in the next.
 var PAGES = ["index.html", "article.html", "table.html", "form.html", "sidebar.html",
  "video.html", "lazy.html", "scroll.html", "snippet.html"];
 

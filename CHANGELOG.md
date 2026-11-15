@@ -6,6 +6,64 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.15.2026]
+
+### Fixed
+
+- `siteSpecific_GitHub_ShowFileSize.js` types its `Size` heading only where GitHub left the
+  header row untyped. The four properties the heading took on 11.14.2026 are right for the
+  repository root, where the row is served at `font-size: 0` and nothing in it is drawn, and wrong
+  everywhere else: a folder page is served at `font-size: 12px; line-height: 18px`, its own three
+  headings paint real text, and the heading was already visible there. The `white-space: nowrap`
+  stopped it wrapping inside its own cell, so with the API refusing `Size (rate limited)` ran out
+  of a 92.50px cell and over `Last commit message` by 7.48px at 1280 wide, 20.30px at 1152 and
+  33.09px at 1024, coming clear only at 1366 and wider. The heading now reads the computed
+  `font-size` of the row it is going into and sets its own type when that reads `0px`, and not
+  otherwise. The root keeps exactly what it gained; a folder page keeps the wrapped two-line
+  heading it had before, which covered nothing at any width.
+- The README's video blocks carry no `<details>` and no `<summary>`. The entry splitter reads a
+  `<summary>` as the name of the file an entry is for, so each of the three entries with a video
+  reported both `has 0 entries, expected 1` and `entry names a missing file: Show Details`, and
+  `verify` ended `54 entries, 6 error(s)` on a README nobody had touched, with two more errors due
+  for every short posted. The `<details>` wrapper was taken out of every entry in an earlier
+  migration, which still rejects one left behind, so the block now reads inline the way the gist
+  paragraph above it does. `verify` ends with no errors.
+
+### Added
+
+- An `expect` in `test-bm.json` takes `clear`, the first expectation here that reads geometry: the
+  element's painted text stays inside its own border box, and where it runs past, nothing under
+  the overflow paints text of its own. Every other expectation is satisfied by an element painting
+  its text straight over the element beside it, which is how the heading above passed for a day
+  while covering GitHub's own. Text is measured as glyph runs through `Range.getClientRects`
+  rather than as element boxes, and what an overflow lands on is read with `elementFromPoint`,
+  because the overflow alone cannot tell the two pages apart: the 26px at the repository root
+  falls on a cell painting nothing and is no defect at all. A pixel of overlap is a rounding edge,
+  as it already is for the overlays `test/pages.test.js` measures. The failure names what is
+  covered, by how much, and how much of its width the box holds.
+
+### Testing
+
+- The `siteSpecific_GitHub_ShowFileSize` entry reaches a folder page with the API refusing and
+  asserts the heading is `clear` there, at the 1280 viewport the harness runs. The assertion fails
+  on the file as it stood - `paints 23.48px of text past its own box, over span by 7x16 ("Last
+  commit message")` - and passes on the fix, checked both ways before it was kept. A second
+  `clear` pins the repository root in the same state, where the heading runs past its own cell by
+  more and covers nothing, which is the distinction the expectation exists to draw.
+- `test/fixtures/pages/self-test-overflow.html` holds one heading per state `clear` has to tell
+  apart: text that fits its cell, text that runs out of it over a heading painting its own words,
+  the same overflow over a heading served at `font-size: 0`, and a heading with no text at all.
+  The two overflowing cases are identical but for what they land on. It is a page for the harness
+  rather than one a reader is shown, as `self-test-noisy.html` is, so the nine practice pages
+  `test/pages.test.js` measures are unchanged.
+
+### Notes
+
+- The three open GitHub issues were read against the code again and all three still stand: the
+  backslash is doubled on one encoding path only, and the short-date bookmarklet has nothing that
+  reads the viewer discretion notice. Each is already filed under `### From the Open Issues` in
+  `TODO.md` with its issue link, so none was closed.
+
 ## [11.14.2026]
 
 ### Fixed

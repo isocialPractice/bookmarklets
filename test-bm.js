@@ -60,6 +60,16 @@
 // what says a directory change costs one request rather than seven, which is a thing no selector on
 // the page can show.
 //
+// expect { "selector": "<sel>", "clear": true } is the one expectation that reads geometry: the
+// element's painted text stays inside its own border box, and where it runs past, nothing under the
+// overflow paints text of its own. Every other expectation here is satisfied by an element that
+// paints its text straight over the element beside it, which is how a heading held to one line in a
+// cell too narrow for it passed while covering the heading next to it. Text is measured as glyph
+// runs, through Range.getClientRects, rather than as element boxes, and what the overflow lands on
+// is read with elementFromPoint: a cell served at font-size 0 paints nothing and is clear, and the
+// same overflow onto a cell that paints its own text is not. A run of a pixel or less is a rounding
+// edge rather than text a reader cannot read.
+//
 // It may instead name an environment variable, as "$OCTOPRINT_URL", for a page whose address does not
 // belong in the repository. The address is read when the entry runs and never written down: every
 // reason, report.json and summary.txt names the variable in its place, and the address is taken back
@@ -168,8 +178,8 @@ var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a
 var stepActions = ["run", "click", "fill", "press", "select", "wait", "answer", "detach", "attach",
  "expect"];
 var stepExtras = ["value", "text", "selector", "as"];
-var expectKeys = ["selector", "visible", "hidden", "count", "matches", "text", "clipboard", "location",
- "popup", "requests", "atMost"];
+var expectKeys = ["selector", "visible", "hidden", "clear", "count", "matches", "text", "clipboard",
+ "location", "popup", "requests", "atMost"];
 var answerKeys = ["host", "status", "contentType", "body", "pass"];
 
 // A url that names an environment variable holding the address, rather than holding it itself.
@@ -601,9 +611,9 @@ function validateStep(step, where, problems) {
   if (want.popup !== undefined && (typeof want.popup != "string" || !want.popup.length)) {
    problems.push(where + ": popup takes the text the new tab's address holds");
   }
-  if (!valueOnly && want.visible === undefined && want.hidden === undefined
+  if (!valueOnly && want.visible === undefined && want.hidden === undefined && want.clear === undefined
    && want.count === undefined && want.matches === undefined && want.text === undefined) {
-   problems.push(where + ": expect takes visible, hidden, count, matches, text, clipboard, location, popup or requests");
+   problems.push(where + ": expect takes visible, hidden, clear, count, matches, text, clipboard, location, popup or requests");
   }
   if (want.count !== undefined && typeof want.count != "number") { problems.push(where + ": count takes a number"); }
   if (want.matches !== undefined && (typeof want.matches != "string" || !want.matches.length)) {
@@ -611,6 +621,12 @@ function validateStep(step, where, problems) {
   }
   if (want.visible !== undefined && want.visible !== true) { problems.push(where + ": visible takes true - for the other way round, ask for hidden"); }
   if (want.hidden !== undefined && want.hidden !== true) { problems.push(where + ": hidden takes true - for the other way round, ask for visible"); }
+  if (want.clear !== undefined && want.clear !== true) {
+   problems.push(where + ": clear takes true - text that runs over its neighbour is a defect, and there is nothing to assert in it");
+  }
+  if (want.clear !== undefined && want.hidden !== undefined) {
+   problems.push(where + ": clear reads where an element's text is painted, and a hidden element paints none");
+  }
  }
 }
 
@@ -1270,6 +1286,108 @@ async function checkRequires(page, ctx) {
  }
 }
 
+// Where an element's painted text lands, and what it lands on. Runs in the page, for a "clear"
+// expectation.
+//
+// The text is measured as glyph runs, through Range.getClientRects, rather than as the element's
+// box: a cell wider than its words is not a collision and a box reads as one. Where a run leaves the
+// element's own border box, elementFromPoint says what sits under the overflow, and that element's
+// own glyph runs are measured against this one's. Reading the overflow alone would be wrong in both
+// directions at once on the page this was written for: at a repository root GitHub serves the header
+// row at font-size 0, so the overflow covers nothing a reader can see, and on a folder page the same
+// row paints its three headings and the same overflow covers one of them.
+//
+// A pixel of run, or of overlap, is a rounding edge rather than text a reader cannot read, which is
+// the measure test/pages.test.js already uses for the overlays a page floats over itself.
+//
+// It is handed the element rather than the selector, because an entry's selector is Playwright's
+// and not always the page's: "a:visible" is a selector the harness resolves and document
+// .querySelector throws on.
+function readPaintedClear(el) {
+ var edge = 1;
+
+ // Every glyph run inside a node, with the text they carry, leaving out anything not rendered.
+ function paintedRuns(node) {
+  var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
+  var runs = [], words = [], at = null;
+  while ((at = walker.nextNode())) {
+   if (!at.nodeValue || !at.nodeValue.trim()) { continue; }
+   var owner = at.parentElement;
+   if (owner) {
+    var style = getComputedStyle(owner);
+    if (style.visibility === "hidden" || style.display === "none") { continue; }
+   }
+   var range = document.createRange();
+   range.selectNodeContents(at);
+   var rects = range.getClientRects();
+   var painted = false;
+   for (var i = 0; i < rects.length; i++) {
+    if (!(rects[i].width > edge && rects[i].height > edge)) { continue; }
+    runs.push({ left: rects[i].left, right: rects[i].right, top: rects[i].top, bottom: rects[i].bottom });
+    painted = true;
+   }
+   if (painted) { words.push(at.nodeValue.trim()); }
+  }
+  return { runs: runs, text: words.join(" ").slice(0, 120) };
+ }
+
+ var mine = paintedRuns(el);
+ var box = el.getBoundingClientRect();
+ var measured = {
+  runs: mine.runs.length, text: mine.text, past: 0, over: null,
+  scrollWidth: Math.round(el.scrollWidth), clientWidth: Math.round(el.clientWidth)
+ };
+ if (!mine.runs.length) { return measured; }
+
+ // The points inside a run that fall outside the element's own box, plus each run's two tails,
+ // which are the furthest its text reaches.
+ var points = [], past = 0, step = 2;
+ for (var r = 0; r < mine.runs.length; r++) {
+  var run = mine.runs[r];
+  var sides = [run.right - box.right, box.left - run.left, run.bottom - box.bottom, box.top - run.top];
+  for (var s = 0; s < sides.length; s++) { if (sides[s] > past) { past = sides[s]; } }
+  if (Math.max(sides[0], sides[1], sides[2], sides[3]) <= edge) { continue; }
+  var middle = (run.top + run.bottom) / 2;
+  points.push([run.right - 0.5, middle]);
+  points.push([run.left + 0.5, middle]);
+  for (var y = run.top + 1; y < run.bottom; y += step) {
+   for (var x = run.left + 0.5; x < run.right; x += step) {
+    var inside = x > box.left + edge && x < box.right - edge && y > box.top + edge && y < box.bottom - edge;
+    if (!inside) { points.push([x, y]); }
+   }
+  }
+ }
+ measured.past = Math.round(past * 100) / 100;
+ if (!points.length) { return measured; }
+ if (points.length > 600) { points = points.slice(0, 600); }
+
+ var hits = [], seen = [];
+ for (var p = 0; p < points.length; p++) {
+  var under = document.elementFromPoint(points[p][0], points[p][1]);
+  // The element itself, anything inside it and anything holding it are all its own text.
+  if (!under || under === el || el.contains(under) || under.contains(el)) { continue; }
+  if (seen.indexOf(under) > -1) { continue; }
+  seen.push(under);
+  var theirs = paintedRuns(under);
+  var worst = null;
+  for (var t = 0; t < theirs.runs.length; t++) {
+   for (var m = 0; m < mine.runs.length; m++) {
+    var w = Math.min(theirs.runs[t].right, mine.runs[m].right) - Math.max(theirs.runs[t].left, mine.runs[m].left);
+    var h = Math.min(theirs.runs[t].bottom, mine.runs[m].bottom) - Math.max(theirs.runs[t].top, mine.runs[m].top);
+    if (w > edge && h > edge && (!worst || w > worst.w)) { worst = { w: w, h: h }; }
+   }
+  }
+  if (!worst) { continue; }
+  hits.push({
+   element: under.tagName.toLowerCase() + (under.id ? "#" + under.id : ""),
+   overlap: Math.round(worst.w) + "x" + Math.round(worst.h),
+   text: theirs.text
+  });
+ }
+ if (hits.length) { measured.over = hits.slice(0, 3); }
+ return measured;
+}
+
 async function doExpect(page, ctx, want, where) {
  // What the bookmarklet sent, which is the one thing about a pass that is nowhere on the page. The
  // span is since the last count of the same host, so a step list reads as a request per directory
@@ -1340,6 +1458,30 @@ async function doExpect(page, ctx, want, where) {
    await locator.first().waitFor({ state: "visible" });
   } catch (err) {
    throw failure(where + ": " + want.selector + " is not showing");
+  }
+  return;
+ }
+ // Geometry, which no other expectation here reads: the element's painted text inside its own
+ // border box, and where it runs past, over nothing that paints text of its own.
+ if (want.clear) {
+  try {
+   await locator.first().waitFor({ state: "attached" });
+  } catch (err) {
+   throw failure(where + ": " + want.selector + " is not on the page to measure");
+  }
+  var painted = await locator.first().evaluate(readPaintedClear);
+  if (!painted.runs) {
+   throw failure(where + ": " + want.selector + " paints no text, so where its text lands is not a"
+    + " question the page answers - ask for visible instead");
+  }
+  if (painted.over) {
+   var covered = painted.over.map(function (hit) {
+    return hit.element + " by " + hit.overlap
+     + (ctx.private || !hit.text ? "" : " (" + JSON.stringify(cut(hit.text)) + ")");
+   }).join(", ");
+   throw failure(where + ": " + want.selector + " paints " + painted.past
+    + "px of text past its own box, over " + covered
+    + " (the box holds " + painted.clientWidth + "px of the " + painted.scrollWidth + "px it needs)");
   }
   return;
  }

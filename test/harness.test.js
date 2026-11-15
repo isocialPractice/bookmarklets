@@ -715,6 +715,80 @@ test("matches with nothing to count against is a configuration error", function 
 });
 
 // ----------------------------------------------------------------------------------------------- //
+// Where an element's painted text lands
+// ----------------------------------------------------------------------------------------------- //
+
+// The one expectation that reads geometry. Every other one here is satisfied by an element that
+// paints its text straight over the element beside it, which is how siteSpecific_GitHub_ShowFileSize
+// passed for a day while its Size heading covered GitHub's own Last commit message heading on every
+// folder page under 1366px wide.
+//
+// The four states are on test/fixtures/pages/self-test-overflow.html, sized there rather than here
+// so the answers do not move with the font the machine has. Two of them overflow by the same amount
+// and differ only in what the overflow lands on: a heading painting its own words, and a heading a
+// site serves at font-size 0. Reading the overflow alone would call both of them a defect, and the
+// second is the state the repository root is in.
+function runOverflow(name, want) {
+ var entry = {};
+ entry[name] = {
+  url: "fixture:self-test-overflow.html",
+  steps: [{ run: true }, { wait: 500 }, { expect: want }]
+ };
+ return onlyResult(runApart(entry, ["--all"]));
+}
+
+test("clear passes for text that stays inside its own box", function () {
+ var result = runOverflow("fixture_Clear_FitsInside", { selector: "#fitsInside", clear: true });
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+test("clear fails for text that runs out of its box over a heading painting its own words", function () {
+ var result = runOverflow("fixture_Clear_RunsOverPainted", { selector: "#runsOverPainted", clear: true });
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /#runsOverPainted paints [\d.]+px of text past its own box, over th/);
+ assert.match(result.reason, /"Last commit message"/);
+ assert.match(result.reason, /the box holds \d+px of the \d+px it needs/);
+});
+
+test("clear passes for the same overflow onto a heading the page paints nothing in", function () {
+ var result = runOverflow("fixture_Clear_RunsOverBlank", { selector: "#runsOverBlank", clear: true });
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+test("clear on an element that paints no text says so rather than passing quietly", function () {
+ var result = runOverflow("fixture_Clear_PaintsNothing", { selector: "#paintsNothing", clear: true });
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /#paintsNothing paints no text, so where its text lands is not a question the page answers/);
+});
+
+// The element is handed to the measurement rather than the selector, so a selector Playwright
+// resolves and the page does not - ":visible", which the ShowFileSize entry already uses on its own
+// steps - measures rather than throwing a SyntaxError out of document.querySelector.
+test("clear takes a selector Playwright resolves and the page would refuse", function () {
+ var result = runOverflow("fixture_Clear_PlaywrightSelector",
+  { selector: "#runsOverPainted:visible", clear: true });
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /paints [\d.]+px of text past its own box, over th/);
+ assert.doesNotMatch(result.reason, /SyntaxError|not a valid selector/);
+});
+
+test("clear on a selector that matches nothing fails rather than reading as clear air", function () {
+ var result = runOverflow("fixture_Clear_MatchesNothing", { selector: "#no-such-heading", clear: true });
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /#no-such-heading is not on the page to measure$/);
+});
+
+test("clear the other way round is a configuration error, since covered text is the defect", function () {
+ refuses({ fixture_Pass_AddsAPanel: { steps: [{ expect: { selector: "p", clear: false } }] } },
+  /clear takes true - text that runs over its neighbour is a defect/);
+});
+
+test("clear asked of a hidden element is a configuration error, because it paints nothing", function () {
+ refuses({ fixture_Pass_AddsAPanel: { steps: [{ expect: { selector: "p", clear: true, hidden: true } }] } },
+  /clear reads where an element's text is painted, and a hidden element paints none/);
+});
+
+// ----------------------------------------------------------------------------------------------- //
 // A url the environment holds
 // ----------------------------------------------------------------------------------------------- //
 
