@@ -573,6 +573,11 @@ here lists its selectors in `requires`.
   the current playback time, with its title, as Markdown
 - [ ] `siteSpecific_YouTube_TranscriptToMarkdown.js` - open the transcript
   panel and copy it as Markdown, each line linked to its timestamp
+- [ ] `siteSpecific_YouTube_AddTimeMarkAnchors.js` - similar to
+  [`siteSpecific_YouTube_AddTimeMarks.js`](JSFormatted/siteSpecific_YouTube_AddTimeMarks.js)
+  but instead of `href` links for each time mark; use **as if** anchors links, where
+  if clicked video goes to where the time mark label points without refreshing
+  the page
 - [ ] `siteSpecific_Stackoverflow_CopyAnswerAsMarkdown.js` - copy one answer as
   Markdown with its code blocks intact, plus the author, a link and the CC BY-SA
   attribution the license requires
