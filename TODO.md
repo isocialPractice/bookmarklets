@@ -408,7 +408,8 @@ the bookmarklet has a demo.
     recording again on 11.15.2026; `make-short.jsx` then built and rendered
     the MP4 from it, replacing the undressed 11.12.2026 render, and every beat
     was checked against the masking table before the upload. Its GIF is
-    posted to Giphy, 11.15.2026, with the short as its source.
+    posted to Giphy, 11.15.2026, with the short as its source, and is in the
+    `Bookmarklets` collection, 11.15.2026.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the
