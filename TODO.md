@@ -78,85 +78,6 @@ its README entry linking that gist. Runs post and update gists with
   - The README keeps its CRLF line endings.
   - From: Short Videos
 
-### Found Issue - the README video block breaks `verify`
-
-#### Found Issues
-
-- [ ] `node ._bookmarklet.js verify` fails on every entry that has a video
-  block, and each short posted adds two more failures
-  - **Issue**: The video block `## Short Videos` prescribes opens with
-    `<details>` and `<summary>Show Details</summary>`, and the README entry
-    splitter reads that summary as the start of an entry. The three entries
-    that carry one today - `dom_Note_TakePageNotes`,
-    `siteSpecific_YouTube_WatchRandomVideo` and
-    `siteSpecific_chatGPT_PasteReadyBookmarkResponse` - each report both
-    `has 0 entries, expected 1` and `entry names a missing file: Show
-    Details`, so `verify` ends `54 entries, 6 error(s)`. `._bookmarklet.js`
-    also carries a `drop-details` command and errors on `<details> left in
-    the entry`, so the element the block reintroduces is the one an earlier
-    migration was written to take out. Found by running `verify` on an
-    unchanged `README.md`; it is not new with any one run, and it grows by
-    two errors per short posted.
-  - **Goal**: Settle which of the two is wrong and change that one. Either
-    give the video block a shape that carries no `<details>`, updating the
-    template in `## Short Videos` and the three entries already using it, or
-    teach the entry splitter and `drop-details` to pass over a video block
-    while still rejecting a stray `<details>`. `verify` ending with no errors
-    on an unchanged README is what finishes it.
-  - From: Found Issue - the README video block breaks `verify`
-
-### UI/UX Override - ShowFileSize heading on folder pages
-
-#### Resolve Issues
-
-- [ ] Size Heading Type 1: the heading is now set `nowrap`, and on a folder
-  page it runs out of its cell and over GitHub's own `Last commit message`
-  - **Issue**: The four properties the heading sets are right for the
-    repository root, where GitHub serves the header row at `font-size: 0` and
-    nothing in it is drawn. A folder page is served at `font-size: 12px;
-    line-height: 18px`, its three headings paint real text, and the heading was
-    already visible there before this change. `white-space: nowrap` stops it
-    wrapping inside its own cell, so on
-    `/tree/main/JSFormatted` with the API refusing, `Size (rate limited)`
-    paints 99.98px of text in a 92.5px cell and covers the first 7.48px of
-    `Last commit message` at 1280 wide, 20.30px at 1152 and 33.09px at 1024;
-    `elementFromPoint` at the tail of the heading returns GitHub's own `span`.
-    It comes clear at 1366 and wider. The committed copy wrapped inside its own
-    cell at every width below 1600 - three lines at 1024, two from 1152 to
-    1440 - and covered nothing at any width. The root
-    is unaffected and keeps what it gained - 90.19x0 to 90.19x32, hidden to
-    visible, one line, nothing else moved - and the comment in the file and the
-    `## [11.14.2026]` changelog entry both state the never-visible premise as
-    though it held everywhere, which is why the folder page went unconsidered.
-    Measured signed out at 1280x720 and five other widths, committed copy and
-    working copy on the same page.
-  - **Goal**: Resolve to
-    [size-heading-covers-commit-heading.prompt.md](.claude/prompts/size-heading-covers-commit-heading.prompt.md)
-  - From: UI/UX Override - ShowFileSize heading visibility
-
-#### Found Issues
-
-- [ ] An entry cannot assert that an element's text stays inside its own box,
-  so nothing in the suite can pin the collision above
-  - **Issue**: `expect` takes `selector`, `visible`, `hidden`, `count`,
-    `matches`, `text`, `clipboard`, `location`, `popup`, `requests` and
-    `atMost`. Every one of them is satisfied by a heading that paints its text
-    straight over the heading beside it, which is how the
-    `siteSpecific_GitHub_ShowFileSize` entry passes at 1280 today with the two
-    `visible` assertions in place. The same gap let the zero-height heading
-    pass for as long as it did: `visible` was the answer that time, and there
-    is no equivalent answer for overflow.
-  - **Goal**: Give `expect` a geometry answer - an element's painted text
-    staying within its own border box. `scrollWidth` against `clientWidth` is
-    enough to see it, and reports 26px of overflow at the root and 23px on the
-    folder page; a `Range` over the text nodes is the stronger form, because it
-    also says whether the cell the text runs into paints anything, which is the
-    difference between the root and a folder page. Then add a step to the
-    `siteSpecific_GitHub_ShowFileSize` entry that reaches
-    `/tree/main/JSFormatted` with the API refusing and asserts it, at the 1280
-    viewport the harness already runs.
-  - From: UI/UX Override - ShowFileSize heading on folder pages
-
 ### Create and Deploy GitHub Pages Override
 
 - No site
@@ -175,6 +96,23 @@ browser for the same result.
   - Bookmarklet handling differs between engines, and Firefox is the second
     most likely place a reader pastes one. Chromium stays the default and the
     only engine `--scheduled` uses unless an entry asks for more.
+
+- [ ] Add a `viewport` step to `test-bm.json`, so an entry can assert at a
+  width other than the 1280x720 every run uses
+  - `clear` is the one expectation that reads geometry, and the defect it was
+    written for was width-dependent. Measured on 11.15.2026 against the copy
+    of `siteSpecific_GitHub_ShowFileSize` this run replaced, `clear` fails it
+    on the folder page at 1024, 1152 and 1280 and passes it at 1366, 1440 and
+    1600. The default width does catch it, but by a 7x16px overlap, the
+    narrowest of the three: one notch wider and the entry would have passed a
+    heading that covered GitHub's own `Last commit message` for every reader
+    at a smaller window.
+  - `{ "viewport": { "width": 1024, "height": 720 } }` as a step, holding for
+    the steps after it, with the default restored when the entry ends.
+  - `siteSpecific_GitHub_ShowFileSize` then asserts `clear` at 1024 as well as
+    at the default, on the folder page with the API refusing, which is the
+    state and the width the collision lived at.
+  - From: UI/UX verification, 11.15.2026
 
 ## Test Configurations
 
@@ -409,19 +347,19 @@ Each README entry links its videos from a block that takes the place of its
 `<!-- PASTE VIDEO HERE -->` comment, below the gist paragraph:
 
 ```html
-<details>
-
-<summary>Show Details</summary>
-
-<br>
-
 <b>Video Demonstration for Use:</b>
 
 - `Ctrl + click` link to view short on YouTube [Short - <Focus> - <What It Does>](https://www.youtube.com/shorts/<id>)
 <!-- - `Ctrl + click` link to view demo on YouTube [Demo - <Focus> - <What It Does>](https://www.youtube.com/watch?v=<id>) -->
-
-</details>
 ```
+
+The block carries no `<details>` and no `<summary>`. The README entry splitter
+reads a `<summary>` as the name of the file an entry is for, so a block holding
+one reported the entry as naming a missing file and the file as having no entry
+at all, two `verify` errors per entry carrying a video. `._bookmarklet.js` took
+the `<details>` wrapper out of every entry in an earlier migration and still
+rejects one left behind, so the block reads inline, as the gist paragraph above
+it does.
 
 `<Focus>` and `<What It Does>` are the second and third parts of the file name,
 spelled the way the entry's heading spells them: `dom_Note_TakePageNotes` links
@@ -464,7 +402,11 @@ the bookmarklet has a demo.
     profile card GitHub raises on hover is stopped before it is asked for. The
     script checks all three beats and refuses to write a recording it could
     not dress. That recording also shows the `Size` heading, which was never
-    on screen before 11.14.2026.
+    on screen before 11.14.2026. It was shot again on 11.15.2026, because the
+    heading's type is now set only where GitHub leaves the header row untyped
+    and the third beat - the folder's own listing - draws that row the way
+    GitHub draws it rather than at the taller line height the 11.14.2026
+    recording shows.
   - **The MP4 and the GIF beside it are the older, undressed recording**, so
     they are not what gets posted. `make-short.jsx` has to build the
     composition again from the new source GIF, with After Effects open, before
@@ -1412,5 +1354,71 @@ roadmap section each one came from.
     - A failed upload still reports that the run completed and copies a
       snippet with an empty link to the clipboard.
   - From: Short Videos
+- [x] `node ._bookmarklet.js verify` fails on every entry that has a video
+  block, and each short posted adds two more failures
+  - **Issue**: The video block `## Short Videos` prescribes opens with
+    `<details>` and `<summary>Show Details</summary>`, and the README entry
+    splitter reads that summary as the start of an entry. The three entries
+    that carry one today - `dom_Note_TakePageNotes`,
+    `siteSpecific_YouTube_WatchRandomVideo` and
+    `siteSpecific_chatGPT_PasteReadyBookmarkResponse` - each report both
+    `has 0 entries, expected 1` and `entry names a missing file: Show
+    Details`, so `verify` ends `54 entries, 6 error(s)`. `._bookmarklet.js`
+    also carries a `drop-details` command and errors on `<details> left in
+    the entry`, so the element the block reintroduces is the one an earlier
+    migration was written to take out. Found by running `verify` on an
+    unchanged `README.md`; it is not new with any one run, and it grows by
+    two errors per short posted.
+  - **Goal**: Settle which of the two is wrong and change that one. Either
+    give the video block a shape that carries no `<details>`, updating the
+    template in `## Short Videos` and the three entries already using it, or
+    teach the entry splitter and `drop-details` to pass over a video block
+    while still rejecting a stray `<details>`. `verify` ending with no errors
+    on an unchanged README is what finishes it.
+  - From: Found Issue - the README video block breaks `verify`
+- [x] Size Heading Type 1: the heading is now set `nowrap`, and on a folder
+  page it runs out of its cell and over GitHub's own `Last commit message`
+  - **Issue**: The four properties the heading sets are right for the
+    repository root, where GitHub serves the header row at `font-size: 0` and
+    nothing in it is drawn. A folder page is served at `font-size: 12px;
+    line-height: 18px`, its three headings paint real text, and the heading was
+    already visible there before this change. `white-space: nowrap` stops it
+    wrapping inside its own cell, so on
+    `/tree/main/JSFormatted` with the API refusing, `Size (rate limited)`
+    paints 99.98px of text in a 92.5px cell and covers the first 7.48px of
+    `Last commit message` at 1280 wide, 20.30px at 1152 and 33.09px at 1024;
+    `elementFromPoint` at the tail of the heading returns GitHub's own `span`.
+    It comes clear at 1366 and wider. The committed copy wrapped inside its own
+    cell at every width below 1600 - three lines at 1024, two from 1152 to
+    1440 - and covered nothing at any width. The root
+    is unaffected and keeps what it gained - 90.19x0 to 90.19x32, hidden to
+    visible, one line, nothing else moved - and the comment in the file and the
+    `## [11.14.2026]` changelog entry both state the never-visible premise as
+    though it held everywhere, which is why the folder page went unconsidered.
+    Measured signed out at 1280x720 and five other widths, committed copy and
+    working copy on the same page.
+  - **Goal**: Resolve to
+    [size-heading-covers-commit-heading.prompt.md](.claude/prompts/size-heading-covers-commit-heading.prompt.md)
+  - From: UI/UX Override - ShowFileSize heading visibility
+- [x] An entry cannot assert that an element's text stays inside its own box,
+  so nothing in the suite can pin the collision above
+  - **Issue**: `expect` takes `selector`, `visible`, `hidden`, `count`,
+    `matches`, `text`, `clipboard`, `location`, `popup`, `requests` and
+    `atMost`. Every one of them is satisfied by a heading that paints its text
+    straight over the heading beside it, which is how the
+    `siteSpecific_GitHub_ShowFileSize` entry passes at 1280 today with the two
+    `visible` assertions in place. The same gap let the zero-height heading
+    pass for as long as it did: `visible` was the answer that time, and there
+    is no equivalent answer for overflow.
+  - **Goal**: Give `expect` a geometry answer - an element's painted text
+    staying within its own border box. `scrollWidth` against `clientWidth` is
+    enough to see it, and reports 26px of overflow at the root and 23px on the
+    folder page; a `Range` over the text nodes is the stronger form, because it
+    also says whether the cell the text runs into paints anything, which is the
+    difference between the root and a folder page. Then add a step to the
+    `siteSpecific_GitHub_ShowFileSize` entry that reaches
+    `/tree/main/JSFormatted` with the API refusing and asserts it, at the 1280
+    viewport the harness already runs.
+  - From: UI/UX Override - ShowFileSize heading on folder pages
 
 </details>
