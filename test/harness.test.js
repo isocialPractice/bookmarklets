@@ -298,7 +298,7 @@ var stubSource = [
  "export async function launch(options) {",
  " if (known.indexOf(options.site) < 0) { return null; }",
  " var profile = fs.mkdtempSync(path.join(here, \"profile-\"));",
- " return options.chromium.launchPersistentContext(profile, { headless: true });",
+ " return options.chromium.launchPersistentContext(profile, { headless: true, recordVideo: options.recordVideo });",
  "}",
  "export async function signIn(options) { fs.writeFileSync(path.join(here, \"signed-in.txt\"), options.site); }",
  "export async function signInState(states) { fs.writeFileSync(path.join(here, \"states.json\"), JSON.stringify(states)); }"
@@ -545,7 +545,8 @@ test("the report says where in the video every step started, so a clip can be cu
   "step 1: wait 400",
   "step 2: run",
   "the bookmarklet runs",
-  "step 3: expect"
+  "step 3: expect",
+  "the result is on screen"
  ]);
  for (var i = 1; i < timeline.length; i++) {
   assert.ok(timeline[i].at >= timeline[i - 1].at, "the offsets should run forwards: " + JSON.stringify(timeline));
@@ -672,6 +673,313 @@ test("an entry asking to capture a signed-in page is a configuration error", fun
  } finally {
   fs.rmSync(bad, { force: true });
  }
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// Recording a short
+// ----------------------------------------------------------------------------------------------- //
+
+// ffmpeg writes the GIF, and nothing in this repository installs it. Without it there is no GIF to
+// assert anything about, so the tests that need one say why they stopped rather than failing a
+// suite over a tool the harness is right not to require.
+function hasFfmpeg() {
+ var answer = child.spawnSync("ffmpeg", ["-version"], { encoding: "utf8" });
+ return !answer.error && answer.status === 0;
+}
+
+// A shorts folder of this run's own, so an assertion about what is in it is not an assertion about
+// what the maintainer has recorded.
+function shortsFolder() {
+ return fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-shorts-"));
+}
+
+var sizeSelector = "#size--__-unlikely_-_name-__--sizeShowsTheViewport";
+
+// A bookmarklet that writes the viewport it ran in onto the page, which is how an entry asserts the
+// frame a short was recorded in rather than taking the flag's word for it.
+var sizeSource = [
+ "javascript:(function() {",
+ " /* A fixture that shows the viewport, so an entry can assert the frame it ran in. */",
+ " var panelSizeShowsTheViewport = document.createElement(\"div\");",
+ " panelSizeShowsTheViewport.id = \"size--__-unlikely_-_name-__--sizeShowsTheViewport\";",
+ " panelSizeShowsTheViewport.textContent = window.innerWidth + \"x\" + window.innerHeight;",
+ " document.body.appendChild(panelSizeShowsTheViewport);",
+ "})();"
+].join("\n") + "\n";
+
+test("--short records the entry at 648x648 and writes a 10 fps GIF where the pipeline reads it", function (t) {
+ if (!hasFfmpeg()) {
+  t.skip("ffmpeg is not on the PATH, so there is no GIF to read");
+  return;
+ }
+ var shorts = shortsFolder();
+ try {
+  var answer = runApart({
+   fixture_Short_Square: {
+    url: "fixture:article.html",
+    steps: [{ run: true }, { expect: { selector: sizeSelector, text: "648x648" } }]
+   }
+  }, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts }, sizeSource);
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "pass", result.reason);
+  assert.ok(result.short, "a short run reports the recording it wrote: " + JSON.stringify(result.notes));
+  assert.strictEqual(result.short.fps, 10);
+  assert.ok(result.short.seconds > 0 && result.short.seconds < 10,
+   "a short runs for less than ten seconds, not " + result.short.seconds);
+
+  var gif = path.join(shorts, "fixture_Short_Square.gif");
+  assert.ok(fs.existsSync(gif), "there should be a GIF at " + gif);
+  assert.ok(fs.statSync(gif).size > 0, "the GIF should not be empty");
+  assert.strictEqual(fs.readFileSync(gif).slice(0, 6).toString("latin1"), "GIF89a",
+   "the file should be a GIF, whatever it is named");
+ } finally {
+  removeDir(shorts);
+ }
+});
+
+test("a recording already there is kept, and the entry is not recorded again for it", function () {
+ var shorts = shortsFolder();
+ var mine = path.join(shorts, "fixture_Short_Kept.gif");
+ try {
+  fs.writeFileSync(mine, "a recording made by hand");
+  var answer = runApart({
+   fixture_Short_Kept: { url: "fixture:article.html", steps: [{ run: true }] }
+  }, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts });
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "pass", result.reason);
+  assert.strictEqual(result.short, undefined, "nothing was recorded, so there is no short to report");
+  assert.ok(result.notes.some(function (n) { return /a recording is already there/.test(n); }),
+   "the run says why it recorded nothing: " + JSON.stringify(result.notes));
+  assert.strictEqual(fs.readFileSync(mine, "utf8"), "a recording made by hand",
+   "the recording that was there should be untouched");
+ } finally {
+  removeDir(shorts);
+ }
+});
+
+// A launcher that recorded only the first second of the entry: it plants a one second webm where
+// the harness told it to record and opens a context that records nothing itself, which is a
+// launcher free to ignore recordVideo doing exactly that. The clip then starts past the end of
+// what there is, which is the one way an unattended run meets an ffmpeg that writes nothing.
+var partialStubSource = [
+ "import fs from \"node:fs\";",
+ "import path from \"node:path\";",
+ "import { fileURLToPath } from \"node:url\";",
+ "var here = path.dirname(fileURLToPath(import.meta.url));",
+ "export async function launch(options) {",
+ " if (options.site !== \"fixture-site\") { return null; }",
+ " if (options.recordVideo && options.recordVideo.dir) {",
+ "  fs.mkdirSync(options.recordVideo.dir, { recursive: true });",
+ "  fs.copyFileSync(path.join(here, \"partial.webm\"), path.join(options.recordVideo.dir, \"partial.webm\"));",
+ " }",
+ " var profile = fs.mkdtempSync(path.join(here, \"profile-\"));",
+ " return options.chromium.launchPersistentContext(profile, { headless: true });",
+ "}",
+ "export async function signIn() { }",
+ "export async function signInState() { }"
+].join("\n") + "\n";
+
+// The one second recording that stub plants. ffmpeg writes it, and a build of ffmpeg without the
+// webm encoder says so rather than being worked around: the test that needs it skips instead.
+function makePartialStub() {
+ var dir = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-partial-launcher-"));
+ var made = child.spawnSync("ffmpeg", ["-hide_banner", "-nostdin", "-loglevel", "error", "-n",
+  "-f", "lavfi", "-i", "testsrc=duration=1:size=64x64:rate=10",
+  "-c:v", "libvpx", path.join(dir, "partial.webm")], { encoding: "utf8" });
+ if (made.error || made.status !== 0 || !fs.existsSync(path.join(dir, "partial.webm"))) {
+  removeDir(dir);
+  return null;
+ }
+ var file = path.join(dir, "partial-launcher.mjs");
+ fs.writeFileSync(file, partialStubSource);
+ return { dir: dir, file: file };
+}
+
+test("a GIF ffmpeg did not write is taken away, so the next run is not told one is already there", function (t) {
+ if (!hasFfmpeg()) {
+  t.skip("ffmpeg is not on the PATH, so there is no failed write to read");
+  return;
+ }
+ var stub = makePartialStub();
+ if (!stub) {
+  t.skip("this ffmpeg writes no webm, so there is no partial recording to plant");
+  return;
+ }
+ var shorts = shortsFolder();
+ try {
+  var answer = runApart({
+   fixture_Short_Unwritten: {
+    url: "fixture:article.html", auth: "fixture-site", signedIn: "main",
+    timeout: 20000, steps: [{ wait: 2500 }, { run: true }]
+   }
+  }, ["--all", "--short"], { TEST_BM_AUTH_LAUNCHER: stub.file, TEST_BM_SHORTS_DIR: shorts });
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "pass", result.reason);
+  assert.strictEqual(result.short, undefined, "no GIF was written, so there is no short to report");
+  assert.ok(result.notes.some(function (n) { return /^no short: ffmpeg wrote no GIF/.test(n); }),
+   "the run says ffmpeg wrote nothing, in ffmpeg's own words: " + JSON.stringify(result.notes));
+  assert.deepStrictEqual(fs.readdirSync(shorts), [],
+   "an attempt that wrote no bytes is taken away, or every later run reads it as the recording");
+ } finally {
+  removeDir(shorts);
+  removeDir(stub.dir);
+ }
+});
+
+test("a failing entry gets no short, because that recording is not the bookmarklet's", function () {
+ var shorts = shortsFolder();
+ try {
+  var answer = runApart({
+   fixture_Short_Failed: {
+    url: "fixture:article.html",
+    requires: ["#no-such-thing-on-this-page"],
+    timeout: 3000
+   }
+  }, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts });
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "fail");
+  assert.strictEqual(result.short, undefined);
+  assert.ok(result.notes.some(function (n) { return /no short: the entry did not pass/.test(n); }),
+   "the run says why it wrote no short: " + JSON.stringify(result.notes));
+  assert.deepStrictEqual(fs.readdirSync(shorts), [], "nothing should have been written");
+ } finally {
+  removeDir(shorts);
+ }
+});
+
+test("an entry with auth records its short through the launcher, and it waits to be reviewed", function (t) {
+ if (!hasFfmpeg()) {
+  t.skip("ffmpeg is not on the PATH, so there is no GIF to read");
+  return;
+ }
+ var stub = makeStub();
+ var shorts = shortsFolder();
+ try {
+  var answer = runApart({
+   fixture_Short_SignedIn: {
+    url: "fixture:article.html", auth: "fixture-site", signedIn: "main",
+    steps: [{ run: true }]
+   }
+  }, ["--all", "--short"], { TEST_BM_AUTH_LAUNCHER: stub.file, TEST_BM_SHORTS_DIR: shorts });
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "pass", result.reason);
+  assert.ok(result.short, "the launcher was handed recordVideo, so there is a short: "
+   + JSON.stringify(result.notes));
+  assert.strictEqual(result.short.review, true, "a short of a signed-in page waits to be reviewed");
+  assert.strictEqual(result.capture, undefined, "a signed-in page is still captured not at all");
+  assert.ok(result.notes.some(function (n) { return /stays on this machine until it has been reviewed/.test(n); }),
+   "the run says the short is waiting: " + JSON.stringify(result.notes));
+  assert.ok(fs.existsSync(path.join(shorts, "fixture_Short_SignedIn.gif")));
+ } finally {
+  removeDir(shorts);
+  removeDir(stub.dir);
+ }
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// failure.md
+// ----------------------------------------------------------------------------------------------- //
+
+function failureFileOf(run) {
+ var named = /^failures: (.+)$/m.exec(run.out);
+ assert.ok(named, "the run should name the failure report it wrote:\n" + run.out + run.err);
+ return fs.readFileSync(path.join(rootDir, named[1].replace(/\//g, path.sep)), "utf8");
+}
+
+// One bookmarklet's part of the report, which is its level 2 heading down to the next one.
+function sectionOf(text, name) {
+ var parts = String(text).split(/^## /m);
+ for (var i = 1; i < parts.length; i++) {
+  if (parts[i].split("\n")[0].trim() === name) { return parts[i]; }
+ }
+ assert.fail(name + " should have a section in the failure report:\n" + text);
+}
+
+test("a failing run writes failure.md beside its report, one section per failing bookmarklet", function () {
+ var text = failureFileOf(readReport().run);
+ assert.match(text, /^# test-bm failures$/m);
+ assert.match(text, /8 of 14 entries failed in the --all run that finished /);
+ assert.match(text, /Read `AGENTS\.md` at the repository root/);
+ var sections = text.match(/^## /gm) || [];
+ assert.strictEqual(sections.length, 8, "a section for each of the eight failures");
+});
+
+test("a bookmarklet that threw is written up with its message and the lines it threw at", function () {
+ var section = sectionOf(failureFileOf(readReport().run), "fixture_Throw_ReadsAMissingThing");
+ assert.match(section, /### What it threw/);
+ assert.match(section, /### Where it threw, in the formatted file/);
+ assert.match(section, /4  document\.title = missingFixtureThrowReadsAMissingThing\.textContent;/,
+  "the stack maps back onto the line of the formatted file:\n" + section);
+ assert.match(section, /### The page when it failed/);
+ assert.match(section, /failure\.png/);
+});
+
+test("a missing requires selector is written up with the lines using it and the region it was in", function () {
+ var answer = runApart({
+  fixture_Failure_Requires: {
+   url: "fixture:table.html",
+   requires: ["div.table_scroll table thead tr.header-row"],
+   timeout: 3000
+  }
+ }, ["--all"], null, [
+  "javascript:(function() {",
+  " /* A fixture that reads the row an entry says must be there. */",
+  " var rowsFixtureFailureRequires = document.querySelectorAll(\"div.table_scroll table thead tr.header-row\");",
+  " document.title = \"rows: \" + rowsFixtureFailureRequires.length;",
+  "})();"
+ ].join("\n") + "\n");
+ assert.strictEqual(onlyResult(answer).verdict, "fail");
+ var section = sectionOf(failureFileOf(answer.run), "fixture_Failure_Requires");
+ assert.match(section, /### The selector that is gone/);
+ assert.match(section, /div\.table_scroll table thead tr\.header-row/);
+ assert.match(section, /### Where the bookmarklet uses it/);
+ assert.match(section, / 3  var rowsFixtureFailureRequires = document\.querySelectorAll/,
+  "the line of the file that names the selector:\n" + section);
+ assert.match(section, /### The region it was expected in/);
+ assert.match(section, /`div\.table_scroll table thead` - the longest part of the selector still on the page\./);
+ assert.match(section, /<thead/, "the region's markup is in the report:\n" + section);
+});
+
+test("a failing entry with auth gives the selector and its own lines, and nothing the page showed", function () {
+ var stub = makeStub();
+ try {
+  var answer = runApart({
+   fixture_Failure_SignedIn: {
+    url: "fixture:article.html", auth: "fixture-site", signedIn: "main",
+    requires: ["main .byline-that-went"], timeout: 3000
+   }
+  }, ["--all"], { TEST_BM_AUTH_LAUNCHER: stub.file });
+  assert.strictEqual(onlyResult(answer).verdict, "fail", onlyResult(answer).reason);
+  var section = sectionOf(failureFileOf(answer.run), "fixture_Failure_SignedIn");
+  assert.match(section, /\*\*Signed in\*\*: fixture-site - nothing this page showed is in this report/);
+  assert.match(section, /### The selector that is gone/);
+  assert.match(section, /byline-that-went/);
+  assert.doesNotMatch(section, /### The region it was expected in/,
+   "a signed-in page gives no snapshot and no markup:\n" + section);
+  assert.doesNotMatch(section, /### The page when it failed/,
+   "a signed-in page gives no screenshot:\n" + section);
+ } finally {
+  removeDir(stub.dir);
+ }
+});
+
+test("a run of one failing bookmarklet writes failure.md too, which is how an agent reads its verdict", function () {
+ var run = runHarness(["fixture_Throw_ReadsAMissingThing"], fixtureEnv());
+ assert.strictEqual(run.status, 1);
+ var text = failureFileOf(run);
+ assert.match(text, /1 of 1 entry failed in the single run that finished /);
+ assert.match(text, /^## fixture_Throw_ReadsAMissingThing$/m);
+});
+
+test("a run that fails nothing writes no failure report at all", function () {
+ var answer = runApart({
+  fixture_Failure_None: { url: "fixture:article.html", steps: [{ run: true }] }
+ }, ["--all"]);
+ assert.strictEqual(onlyResult(answer).verdict, "pass");
+ assert.doesNotMatch(answer.run.out, /^failures: /m);
+ var named = /^report: (.+)$/m.exec(answer.run.out);
+ assert.ok(named);
+ assert.strictEqual(fs.existsSync(path.join(rootDir, named[1].replace(/\//g, path.sep), "failure.md")), false);
 });
 
 // ----------------------------------------------------------------------------------------------- //

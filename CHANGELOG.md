@@ -6,6 +6,96 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.16.2026]
+
+### Added
+
+- `test-bm.js --short` records every entry it reaches as the bookmarklet's own recording. The
+  viewport is 648x648, so the page itself lays out square rather than a wide page being squeezed
+  into the frame afterwards, and the clip is cut from a little before the bookmarklet ran through
+  to its result being on screen, written as a 10 fps GIF of under ten seconds. It goes to the
+  folder `TEST_BM_SHORTS_DIR` names, `test-results/shorts/` without one, as `<name>.gif`. A
+  recording already there is kept and the entry is not recorded again for it, because the hand
+  recordings come first. Only an entry that passed gets one: a recording of a bookmarklet that
+  did not work is not the bookmarklet's recording, and the note on the result says so when that
+  is why there is none. ffmpeg on the `PATH` writes the GIF, with the same palette filter the
+  video work here already uses, so a recording made this way matches one made by hand; a machine
+  without ffmpeg leaves every short owed rather than failing the run. A GIF ffmpeg did not write
+  is taken away again, and the note carries ffmpeg's own reason: ffmpeg opens the output before it
+  encodes, and a clip starting past the end of the recording writes no bytes at all without
+  exiting on it, so an attempt left where it fell would be read by every run after it as the
+  recording that is already there and the short would be owed for good.
+- An entry with `auth` records its short through the sign-in launcher, which is handed
+  `recordVideo` with the same `{ dir, size }` a context takes. A launcher is free to ignore it,
+  and then it records nothing and the short is left to be made by hand. The recording stays on
+  the machine until it has been reviewed, and nothing about the page goes into the report with
+  it: the entry still captures nothing at all, and the timeline the clip is cut by stays in
+  memory. Picking the file up needed a second route as well, because `video.saveAs` asks the
+  browser for it and a launcher's persistent context closes its browser with itself, so the
+  folder it recorded into is read when the ask comes back closed.
+- A run that failed writes `failure.md` beside `report.json`, holding what an agent needs to act
+  on each failure without running anything again. For a missing `requires` selector that is the
+  selector, the lines of the formatted file that use it, and an ARIA snapshot and trimmed markup
+  of the longest part of the selector still on the page, which is where the missing thing was
+  expected. For a bookmarklet that threw it is the message and the lines of the formatted file
+  its stack came from, innermost first, read back through the one line the browser ran. A file
+  holding a percent escape says that instead, because the URL field changed the code before it
+  ran and the columns no longer name lines. A run of a single bookmarklet writes the file too,
+  since a run of one is how an agent checks the fix it has just made.
+- An entry with `auth` gives that report the selector or the message and the bookmarklet's own
+  lines, and nothing else: no ARIA snapshot, no markup, no frames from the page, no screenshot.
+  Everything left out is the signed-in page's content, which is the one thing this harness never
+  writes down.
+- `AGENTS.md` carries the triage procedure for a failing test: read `failure.md`, open the page
+  with whatever browser tool the assistant has and a browser signed in to nothing, find what
+  replaced what is missing, make the smallest edit to the bookmarklet, and run
+  `node test-bm.js <name>` for the verdict. It restates the authoring conventions, which until
+  now were only in a file the ignore rules hide, and states the hard limits: never sign in, never
+  run `--sign-in`, never attach a browser tool to a browser that is signed in to anything, never
+  submit a form or send a message, and never loosen a `test-bm.json` expectation to make a test
+  pass. Codex and GitHub Copilot's coding agent read `AGENTS.md` directly, and the new
+  `CLAUDE.md`, whose only content is `@AGENTS.md`, points Claude Code at the same file.
+
+### Changed
+
+- `OctoPrint - Change Graph Image` carries its demo in a video block, in place of the
+  `<!-- PASTE VIDEO HERE -->` comment below its gist paragraph, rather than in a paragraph of its
+  own above it. The link is the one that was already there. Its short line sits commented out
+  until the short exists, which is how the entry waits for one.
+- An entry's timeline ends with `the result is on screen`, the moment its steps are done and the
+  page has settled. It is what a short's clip is cut to, and it is also the offset a capture was
+  missing: the timeline said where every step started and nothing said where the entry's work
+  ended.
+
+### Testing
+
+- Eleven tests in `test/harness.test.js`, which now runs 79. Five cover `--short`: a passing entry
+  writes a GIF at 648x648 and reports it under ten seconds at 10 fps, asserted against a
+  bookmarklet that writes the viewport it ran in onto the page rather than against the flag's
+  word for it; a recording already on disk comes back byte for byte unchanged; a failing entry
+  writes nothing at all; an entry with `auth` records through the stub launcher, which passes
+  `recordVideo` on as a real launcher would, and comes back marked as waiting to be reviewed; and
+  a GIF ffmpeg did not write leaves the folder empty, run against a launcher that plants a one
+  second recording the clip starts past the end of. The three that need a GIF skip themselves with
+  a reason where ffmpeg is not on the `PATH`, because a tool the harness is right not to require
+  should not fail a suite.
+- Six cover `failure.md`: a failing run writes one section per failing bookmarklet; a thrown error
+  is written up with its message and the line of the formatted file it threw at; a missing
+  `requires` selector is written up with the line that uses it, the region it was expected in and
+  that region's markup; an entry with `auth` gives the selector and its own lines and neither a
+  region nor a screenshot; a run of one failing bookmarklet writes the file as well; and a run
+  that fails nothing writes none.
+
+### Notes
+
+- The three open GitHub issues were read against the code again and all three still stand. The
+  backslash is doubled on one encoding path only, and the short-date bookmarklet still has
+  nothing that reads a viewer discretion notice. Each is filed under `### From the Open Issues`
+  in `TODO.md` with its issue link, so none was closed.
+- A line of the bookmarklet that merely names a tag from the selector is not reported as using
+  it. `div.listing` would otherwise point at every `createElement("div")` in the file and say
+  nothing about the listing, so a tag name is read only where the selector names nothing else.
+
 ## [11.15.2026]
 
 ### Fixed

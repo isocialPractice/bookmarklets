@@ -4,8 +4,8 @@
 // *********************************************************************************************** //
 // Needs Playwright: npm install, then npx playwright install chromium.
 //
-//   node test-bm.js <name> [--headed] [--slow-mo <ms>] [--capture]
-//   node test-bm.js --all [--headed] [--slow-mo <ms>] [--capture]
+//   node test-bm.js <name> [--headed] [--slow-mo <ms>] [--capture] [--short]
+//   node test-bm.js --all [--headed] [--slow-mo <ms>] [--capture] [--short]
 //   node test-bm.js --scheduled
 //   node test-bm.js --list
 //   node test-bm.js --sign-in <site>
@@ -19,6 +19,8 @@
 // --headed     Watch the run in a browser window.
 // --slow-mo    Milliseconds between actions, for the same reason. Neither is ever needed.
 // --capture    Capture every entry the run reaches, as an entry's "capture": true does for itself.
+// --short      Record every entry the run reaches as a short: the bookmarklet's own recording, a
+//              GIF in the square frame the video pipeline wants.
 //
 // Before any browser starts, the file is joined onto one line both ways a browser could join it -
 // every line break replaced by a space, the way bookmarklet.js copy does it, and both characters
@@ -92,16 +94,40 @@
 // rasterizing the page itself - a handful of pixels either side of a glyph or a rounded border, a
 // channel out by one - and no setting here reaches it.
 //
+// --short records what --capture records and turns it into the recording a short is made from: the
+// viewport is 648x648, so the page itself lays out square rather than a wide page being squeezed
+// into the frame afterwards, and the clip is cut to a little before the bookmarklet ran through to
+// its result being on screen, at 10 fps and under ten seconds. The GIF goes to the folder
+// TEST_BM_SHORTS_DIR names, test-results/shorts/ without one, as <name>.gif. A recording already
+// there is kept and the entry is not recorded again for it, because the maintainer's own recordings
+// come first. Only an entry that passed gets one: a recording of a bookmarklet that did not work is
+// not the bookmarklet's recording. ffmpeg on the PATH is what writes the GIF, and a machine without
+// it leaves every short owed rather than failing the run.
+//
+// An entry with auth records its short through the sign-in launcher, which is handed recordVideo
+// with the same { dir, size } a context takes; a launcher that ignores it records nothing, and the
+// short is left to be made by hand. That recording stays on this machine for the maintainer to
+// review, and nothing about the page goes into the report with it.
+//
 // A failure keeps failure.png, the page as it stood when it failed, whether or not the entry was
 // captured - except in an entry with auth, which captures nothing at all, because a signed-in page
 // shows the account and what it holds.
+//
+// A run that failed also writes failure.md beside report.json: one section per failing bookmarklet,
+// holding what an agent needs to act on it without running anything again. For a missing "requires"
+// selector that is the selector, the lines of the formatted file that use it, and an ARIA snapshot
+// and trimmed markup of the part of the page it was expected in. For a bookmarklet that threw it is
+// the message and the lines of the formatted file its stack came from. An entry with auth gives the
+// selector or the message and the bookmarklet's own lines, and nothing the page said: no snapshot,
+// no markup, no frames from the page, no screenshot.
 //
 // TEST_BM_JS_DIR and TEST_BM_CONFIG move the bookmarklet folder and the configuration file, which is
 // how test/harness.test.js runs this harness against its own fixtures. Nothing else sets them.
 //
 // An entry with "auth": "<site>" needs a signed-in browser, and this harness never signs in or
 // starts one itself. It loads the module TEST_BM_AUTH_LAUNCHER names, an absolute path outside the
-// repository, and asks it for a Playwright BrowserContext with launch({ chromium, site }). Without a
+// repository, and asks it for a Playwright BrowserContext with launch({ chromium, site, recordVideo })
+// - recordVideo being set only for a short, and a launcher free to ignore it. Without a
 // launcher, or with one that has no sign-in for the site, the entry is a skip. The entry also names
 // "signedIn", a selector only a signed-in page has, and a page without it, or one that lands on
 // another origin, is a skip reading "signed out of <site>". It runs read-only: a click, fill or
@@ -125,6 +151,7 @@ var fs = require("fs");
 var path = require("path");
 var nodeUrl = require("url");
 var vm = require("vm");
+var child = require("child_process");
 
 // Repo layout. The two folders a run reads can be moved, which is how the self-test points this
 // harness at test/fixtures and checks the harness itself rather than a copy of it.
@@ -132,6 +159,9 @@ var rootDir = __dirname;
 var jsDir = fromEnv("TEST_BM_JS_DIR", path.join(rootDir, "JSFormatted"));
 var configFile = fromEnv("TEST_BM_CONFIG", path.join(rootDir, "test-bm.json"));
 var resultsRoot = path.join(rootDir, "test-results", "test-bm");
+// Where a short run leaves its recordings. It is not under the run folder: a recording is the one
+// thing a run makes that outlives the run, and the pipeline that makes a short reads it by name.
+var shortsDir = fromEnv("TEST_BM_SHORTS_DIR", path.join(rootDir, "test-results", "shorts"));
 
 // Local pages, served from an origin of their own rather than opened as file:// - an opaque origin
 // refuses localStorage, the clipboard and a same-document navigation, so a bookmarklet that uses one
@@ -201,10 +231,38 @@ var injector = "";
 // meets the browser a reader has.
 var captureArgs = ["--font-render-hinting=none", "--disable-lcd-text", "--force-color-profile=srgb"];
 
+// A short's frame, and what is cut out of the recording to fill it. The viewport is the frame, so
+// the page lays out square and nothing is scaled afterwards. The lead is how long before the
+// bookmarklet ran the clip starts, which is what shows a reader the page it ran on; the length is
+// under ten seconds with that lead counted, because a short that reaches ten is not one.
+var shortViewport = { width: 648, height: 648 };
+var shortFps = 10;
+var shortSeconds = 9.5;
+var shortLead = 400;
+// The mark the clip runs to: the entry's steps done and the page settled, which is the moment the
+// bookmarklet's result is on screen.
+var shortEndMark = "the result is on screen";
+// A palette built from the clip rather than the colours a GIF defaults to, which is what keeps the
+// page's text readable at ten frames a second. It is the filter the video pipeline on this machine
+// already uses, so a recording made here matches one made by hand.
+var gifFilter = "fps=" + shortFps + ",split[s0][s1];[s0]palettegen=stats_mode=diff[p];"
+ + "[s1][p]paletteuse=dither=bayer:bayer_scale=4";
+
+// How much of a failing page goes into failure.md. Enough to recognize what replaced a selector,
+// and not so much that the file stops being something an agent reads in one go.
+var usesLimit = 6;
+var ariaLimit = 4000;
+var htmlLimit = 4000;
+
 // One folder per run, holding its report and whatever any entry captured. It is made the first time
 // something is written into it, so a run that captures nothing and writes no report leaves none.
 var runStarted = null;
 var runFolder = "";
+
+// What was read off a failing page while it was still open, by the name of the bookmarklet it
+// belongs to. It is kept here rather than on the result because failure.md is where it is written:
+// report.json stays the run's verdicts, and a snapshot of a page is not one.
+var diagnoses = {};
 
 // A folder named by the environment, read from the repository root when it is relative.
 function fromEnv(name, fallback) {
@@ -245,6 +303,25 @@ function cut(text) {
 }
 
 function escapeRegExp(text) { return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+// Every match of a global pattern, handed over one at a time. A zero-width match would otherwise
+// sit on the same index forever, so the index is moved past it.
+function eachMatch(text, pattern, take) {
+ var m;
+ pattern.lastIndex = 0;
+ while ((m = pattern.exec(String(text))) !== null) {
+  take(m);
+  if (m.index === pattern.lastIndex) { pattern.lastIndex++; }
+ }
+}
+
+// A block of text held to a length, saying how much was left out rather than ending mid-word with
+// nothing to say it did.
+function cutText(text, limit) {
+ var s = String(text === undefined || text === null ? "" : text);
+ if (s.length <= limit) { return s; }
+ return s.slice(0, limit) + "\n... " + (s.length - limit) + " more characters";
+}
 
 // A host an entry names, read against a host a request went to: an exact name, or "*." and a domain
 // for any of its subdomains. The entry's network, an answer step and the request watcher all ask
@@ -470,6 +547,9 @@ function checkFile(file, name) {
   ok: true,
   code: decoded,
   decodeChanged: changed,
+  // The file as it reads, which is what a failure report quotes: the browser ran one line, and
+  // nobody debugging a bookmarklet reads that line.
+  lines: lines,
   starts: startsOf(lines),
   offset: strict.offset,
   spacedLength: spaced.code.length,
@@ -801,12 +881,18 @@ async function loadLauncher() {
  return { api: api, why: "" };
 }
 
-// A signed-in context for one site, or the reason there is none.
-async function openSignedIn(session, site) {
+// A signed-in context for one site, or the reason there is none. recordVideo is the { dir, size } a
+// context takes, handed over only for a short the maintainer asked for; a launcher that ignores it
+// returns a context that records nothing, and the short is left to be made by hand.
+async function openSignedIn(session, site, recordVideo) {
  if (!session.launcher.api) { return { context: null, why: session.launcher.why }; }
  var context = null;
  try {
-  context = await session.launcher.api.launch({ chromium: session.chromium, site: site });
+  context = await session.launcher.api.launch({
+   chromium: session.chromium,
+   site: site,
+   recordVideo: recordVideo || undefined
+  });
  } catch (err) {
   return { context: null, why: "the sign-in launcher could not open " + site + ": " + firstLine(err) };
  }
@@ -900,8 +986,11 @@ function captureDir(ctx) {
 // Where in the entry something happened, as milliseconds from the moment the page was opened, which
 // is where the video starts too. It is what lets a clip be cut to the moment the bookmarklet ran
 // rather than to a guess at it.
+// A short is cut by these offsets as well, so an entry being recorded keeps a timeline even where it
+// captures nothing else. Where the entry has auth the timeline stays in memory: close() hands it to
+// the report only alongside an artifact, and an entry with auth has none.
 function mark(ctx, what) {
- if (!ctx.captures) { return; }
+ if (!ctx.captures && !ctx.short) { return; }
  ctx.timeline.push({ at: Date.now() - ctx.clock, what: scrubbed(ctx, what) });
 }
 
@@ -936,21 +1025,173 @@ async function shot(page, ctx, what) {
  ctx.shots.push({ what: what, file: shownPath(file), at: Date.now() - ctx.clock });
 }
 
-// The video the context recorded, under a name of this run's choosing. Playwright names the file
-// itself and finishes writing it only once the context has closed, so this runs after that.
-async function saveVideo(page, ctx) {
- if (!ctx.capture) { return ""; }
- var video = page.video();
- if (!video) { return "the browser recorded no video for this entry"; }
- var file = path.join(captureDir(ctx), "entry.webm");
+// The webm a context left in the folder it was told to record into, whatever Playwright named it.
+function foundRecording(dir) {
+ var found = [];
  try {
-  await video.saveAs(file);
-  await video.delete();
+  found = fs.readdirSync(dir).filter(function (f) { return /\.webm$/i.test(f); });
  } catch (err) {
-  return "the video could not be saved: " + firstLine(err);
+  return "";
  }
- ctx.video = shownPath(file);
+ return found.length ? path.join(dir, found[0]) : "";
+}
+
+// The video the context recorded, under a name of this run's choosing. Playwright names the file
+// itself and finishes writing it only once the context has closed, so this runs after that. An
+// entry recorded only for its short keeps the video out of the capture folder and out of the
+// report: it is working material, and makeShort takes it away once the GIF is written.
+//
+// saveAs is the way to pick the file up, and it asks the browser for it - which a launcher's
+// persistent context cannot answer, because closing that context closes the browser with it. So the
+// folder it recorded into is read as well, which reaches the same file by another route.
+async function saveVideo(page, ctx) {
+ if (!ctx.capture && !ctx.short) { return ""; }
+ var dir = ctx.capture ? captureDir(ctx) : shortWork(ctx);
+ var file = path.join(dir, "entry.webm");
+ var video = page.video();
+ var lost = "";
+ if (video) {
+  try {
+   await video.saveAs(file);
+   await video.delete();
+  } catch (err) {
+   lost = firstLine(err);
+  }
+ }
+ if (!fs.existsSync(file)) {
+  var recorded = foundRecording(dir);
+  if (recorded) {
+   try {
+    fs.renameSync(recorded, file);
+   } catch (err) {
+    file = recorded;
+   }
+  }
+ }
+ if (!fs.existsSync(file)) {
+  if (!video) { return ctx.capture ? "the browser recorded no video for this entry" : ""; }
+  return "the video could not be saved" + (lost ? ": " + lost : "");
+ }
+ ctx.videoFile = file;
+ if (ctx.capture) { ctx.video = shownPath(file); }
  return "";
+}
+
+// ----------------------------------------------------------------------------------------------- //
+// Recording a short
+// ----------------------------------------------------------------------------------------------- //
+
+// Where this entry's raw recording is kept while it is being turned into a GIF, inside the run
+// folder rather than beside the finished recordings.
+function shortWork(ctx) {
+ if (!ctx.shortFolder) {
+  ctx.shortFolder = path.join(runDir(), "shorts", ctx.name);
+  fs.mkdirSync(ctx.shortFolder, { recursive: true });
+ }
+ return ctx.shortFolder;
+}
+
+// The one file a short run leaves for this bookmarklet, which is what the pipeline that makes the
+// short reads.
+function shortFile(name) { return path.join(shortsDir, name + ".gif"); }
+
+// Where in the recording the clip starts and how long it runs, in seconds: a little before the
+// bookmarklet ran, through to its result being on screen, and never as long as ten seconds. The
+// offsets are the timeline's, which starts where the video starts.
+function shortClip(ctx) {
+ var ran = 0;
+ var found = false;
+ var done = 0;
+ for (var i = 0; i < ctx.timeline.length; i++) {
+  if (!found && ctx.timeline[i].what == "the bookmarklet runs") {
+   ran = ctx.timeline[i].at;
+   found = true;
+  }
+  if (ctx.timeline[i].what == shortEndMark) { done = ctx.timeline[i].at; }
+ }
+ var from = Math.max(0, ran - shortLead);
+ var span = done > from ? done - from : shortLead;
+ return { from: from / 1000, span: Math.min(span, shortSeconds * 1000) / 1000 };
+}
+
+// The recording as a GIF, cut to the moment the bookmarklet ran. ffmpeg is what writes it, as the
+// video pipeline on this machine already does, and -n is how an unattended run refuses to overwrite
+// a recording rather than stopping at a prompt about it. The empty string when it worked, and the
+// reason it did not otherwise.
+//
+// A GIF ffmpeg did not write is taken away again, because the next run reads whatever is at this
+// name as the recording that is already there and records nothing for it. ffmpeg opens the output
+// before it encodes and leaves the file behind when the encode fails - a clip starting past the end
+// of the recording exits 0 and writes no bytes at all - so an attempt left where it fell would be
+// read as the finished recording by every run after it, and the short would be owed for good.
+function writeShortGif(source, dest, clip) {
+ if (fs.existsSync(dest)) { return "a recording is already there, and it is kept: " + shownPath(dest); }
+ fs.mkdirSync(path.dirname(dest), { recursive: true });
+ var answer = child.spawnSync("ffmpeg", ["-hide_banner", "-nostdin", "-loglevel", "error", "-n",
+  "-ss", clip.from.toFixed(3), "-t", clip.span.toFixed(3), "-i", source,
+  "-vf", gifFilter, "-loop", "0", dest], { encoding: "utf8" });
+ // ffmpeg names the files it was given the way they were given, as absolute paths. A note reads
+ // the way the rest of the report does, so they are put back the way this file shows a path.
+ var said = String((answer && answer.stderr) || "").trim().split("\n")[0]
+  .split(dest).join(shownPath(dest))
+  .split(source).join(shownPath(source));
+ if (answer.error) { return dropShortGif(dest, "ffmpeg could not be run: " + firstLine(answer.error)); }
+ if (answer.status !== 0) {
+  return dropShortGif(dest, "ffmpeg would not write the GIF: "
+   + (said || "it exited " + answer.status));
+ }
+ if (!fs.existsSync(dest) || !fs.statSync(dest).size) {
+  return dropShortGif(dest, "ffmpeg wrote no GIF" + (said ? ": " + said : ""));
+ }
+ return "";
+}
+
+// The output of an attempt that did not work, taken away so the name is free for the next run, and
+// the reason handed back whether or not there was anything to take away.
+function dropShortGif(dest, why) {
+ try {
+  if (fs.existsSync(dest)) { fs.unlinkSync(dest); }
+ } catch (err) {
+  return why + ", and what it did write is still at " + shownPath(dest);
+ }
+ return why;
+}
+
+// The short for an entry that passed. A failing entry never gets one, which is why this is called
+// where the verdict is known and nowhere else.
+function makeShort(ctx, result) {
+ if (!ctx.short) { return; }
+ if (!ctx.videoFile) {
+  result.notes.push("no short: " + (ctx.private
+   ? "the sign-in launcher opened a browser that records no video, so this short is made by hand"
+   : "the browser recorded nothing for this entry"));
+  return;
+ }
+ var clip = shortClip(ctx);
+ var lost = writeShortGif(ctx.videoFile, shortFile(ctx.name), clip);
+ if (lost) {
+  result.notes.push("no short: " + lost);
+  return;
+ }
+ result.short = {
+  file: shownPath(shortFile(ctx.name)),
+  seconds: Number(clip.span.toFixed(2)),
+  fps: shortFps
+ };
+ // The recording is in the GIF now, so the working copy goes - unless the entry was captured too,
+ // where the same file is an artifact the report points at.
+ if (!ctx.capture) {
+  try {
+   fs.unlinkSync(ctx.videoFile);
+  } catch (err) {
+   result.notes.push("the recording this short was cut from is still at " + shownPath(ctx.videoFile));
+  }
+ }
+ if (ctx.private) {
+  result.short.review = true;
+  result.notes.push("this short was recorded on a signed-in page: it stays on this machine until it"
+   + " has been reviewed, and nothing the page showed is written down");
+ }
 }
 
 // page.evaluate runs the code in the page's own global scope and leaves the page's content security
@@ -1198,6 +1439,9 @@ function attachListeners(page, result, ctx) {
    result.withheld.pageErrors++;
    return;
   }
+  // The whole stack stays in memory for the failure report to map back to lines of the file. What
+  // is written down is the four frames below, which is what a reader of the report wants.
+  if (from == "bookmarklet") { ctx.thrownStacks.push(stack); }
   result.errors.push({
    from: from,
    message: scrubbed(ctx, firstLine(err)),
@@ -1259,8 +1503,10 @@ async function runBookmarklet(page, ctx) {
   if (ctx.capture) { await shot(page, ctx, "after" + which); }
   var stack = String((err && err.stack) || (err && err.message) || err || "");
   if (stack.indexOf(sourceUrl(ctx.name)) >= 0) {
+   ctx.diagnosis = threwDiagnosis(ctx, firstLine(err), stack);
    throw failure("the bookmarklet threw: " + firstLine(err) + atLine(ctx, stack));
   }
+  ctx.diagnosis = threwDiagnosis(ctx, firstLine(err), "");
   throw failure("the bookmarklet could not be run: " + firstLine(err));
  }
  if (ctx.capture) { ctx.pendingShot = "after" + which; }
@@ -1275,12 +1521,228 @@ function atLine(ctx, stack) {
  return line ? " (line " + line + ")" : "";
 }
 
+// ----------------------------------------------------------------------------------------------- //
+// Reading a failure
+// ----------------------------------------------------------------------------------------------- //
+
+// Every frame of a stack that lands in the bookmarklet, as lines of the formatted file. The browser
+// ran the whole bookmarklet as one line, so a frame's column is what says where in the file it was.
+// A file holding a percent escape has no such mapping - the URL field changed the code before it ran
+// - and that is the one case this answers with nothing.
+function linesOfStack(ctx, stack) {
+ var out = [];
+ if (ctx.check.decodeChanged) { return out; }
+ var pattern = new RegExp(escapeRegExp(sourceUrl(ctx.name)) + ":1:(\\d+)", "g");
+ eachMatch(stack, pattern, function (m) {
+  var line = lineOfColumn(ctx.check, Number(m[1]));
+  if (!line) { return; }
+  if (out.some(function (f) { return f.line === line; })) { return; }
+  out.push({ line: line, text: String(ctx.check.lines[line - 1] || "").trim() });
+ });
+ return out;
+}
+
+// The names inside a selector that a line of the bookmarklet would hold: ids, classes, attribute
+// names and values, and tag names. The punctuation goes, because a bookmarklet rarely writes a
+// selector the way an entry does - it builds it, or reads one part of it at a time.
+//
+// A tag name is only read where the selector names nothing else, because it is a word any file is
+// full of: "div.listing" would otherwise point at every createElement("div") in the bookmarklet and
+// say nothing about the listing.
+function selectorParts(selector) {
+ var text = String(selector);
+ var named = {};
+ var tags = {};
+ function add(into, name) {
+  var word = String(name || "").trim();
+  if (word.length > 1) { into[word] = true; }
+ }
+ eachMatch(text, /#([A-Za-z][\w-]*)/g, function (m) { add(named, m[1]); });
+ eachMatch(text, /\.([A-Za-z][\w-]*)/g, function (m) { add(named, m[1]); });
+ eachMatch(text, /\[\s*([A-Za-z][\w-]*)(?:[^=\]]*=\s*["']?([^"'\]]*))?/g, function (m) {
+  add(named, m[1]);
+  add(named, m[2]);
+ });
+ eachMatch(text, /(?:^|[\s>+~(,])([A-Za-z][a-zA-Z0-9-]*)/g, function (m) { add(tags, m[1]); });
+ var strong = Object.keys(named);
+ return strong.length ? strong : Object.keys(tags);
+}
+
+// Where in the formatted file a selector is used. The whole selector first, because a bookmarklet
+// usually holds it as one string; failing that, the lines that name most of its parts. It is a
+// reader's answer rather than a parser's, and its job is to put an agent on the right lines without
+// it having to open the file.
+function linesUsing(check, selector) {
+ var lines = (check && check.lines) || [];
+ var whole = String(selector).trim();
+ var out = [];
+ var i;
+ for (i = 0; i < lines.length; i++) {
+  if (whole && lines[i].indexOf(whole) >= 0) { out.push({ line: i + 1, text: lines[i].trim() }); }
+ }
+ if (out.length) { return out.slice(0, usesLimit); }
+
+ var parts = selectorParts(whole);
+ if (!parts.length) { return []; }
+ var scored = [];
+ for (i = 0; i < lines.length; i++) {
+  var line = lines[i];
+  var named = parts.filter(function (part) { return line.indexOf(part) >= 0; });
+  if (named.length) { scored.push({ line: i + 1, text: line.trim(), named: named }); }
+ }
+ scored.sort(function (a, b) { return b.named.length - a.named.length || a.line - b.line; });
+ return scored.slice(0, usesLimit)
+  .sort(function (a, b) { return a.line - b.line; })
+  .map(function (s) { return { line: s.line, text: s.text, named: s.named.join(" ") }; });
+}
+
+// A selector split into its steps, at the whitespace and the combinators outside any bracket, quote
+// or parenthesis. Each step carries the characters that join it to the one before, so the steps put
+// back together are the selector again: an attribute value holding a space, or a :has() holding a
+// combinator, is why this is read rather than split on a pattern.
+function selectorSteps(selector) {
+ var text = String(selector);
+ var out = [];
+ var piece = "";
+ var join = "";
+ var depth = 0;
+ var quote = "";
+ for (var i = 0; i < text.length; i++) {
+  var ch = text[i];
+  if (quote) {
+   piece += ch;
+   if (ch === quote && text[i - 1] !== "\\") { quote = ""; }
+   continue;
+  }
+  if (ch === "\"" || ch === "'") { quote = ch; piece += ch; continue; }
+  if (ch === "[" || ch === "(") { depth++; piece += ch; continue; }
+  if (ch === "]" || ch === ")") { depth = Math.max(0, depth - 1); piece += ch; continue; }
+  if (depth > 0) { piece += ch; continue; }
+  if (/\s/.test(ch) || ch === ">" || ch === "+" || ch === "~") {
+   if (piece) { out.push({ join: join, sel: piece }); piece = ""; join = ""; }
+   join += ch;
+   continue;
+  }
+  piece += ch;
+ }
+ if (piece) { out.push({ join: join, sel: piece }); }
+ return out;
+}
+
+// The part of a missing selector that is still on the page, which is where the thing it names was
+// expected: "div.listing table.files" with no table left answers "div.listing". A selector whose
+// first step is gone too answers the body, because the page is the region then.
+async function nearestRegion(page, selector) {
+ var steps = selectorSteps(selector);
+ for (var i = steps.length - 1; i > 0; i--) {
+  var prefix = "";
+  for (var j = 0; j < i; j++) { prefix += steps[j].join + steps[j].sel; }
+  var count = 0;
+  try {
+   count = await page.locator(prefix).count();
+  } catch (err) {
+   count = 0;
+  }
+  if (count) { return { selector: prefix, why: "the longest part of the selector still on the page" }; }
+ }
+ return { selector: "body", why: "no part of the selector is on the page" };
+}
+
+// The region's markup, cut down to something a reader takes in at once: four levels deep, six
+// children a level, and a line of any text or attribute value. It runs in the page against the live
+// element, and it is written to be sent there as source, so it uses nothing from this file.
+function readTrimmedHtml(el) {
+ var maxDepth = 4;
+ var maxChildren = 6;
+ var maxText = 80;
+
+ function shorten(text) {
+  var s = String(text === undefined || text === null ? "" : text);
+  return s.length > maxText ? s.slice(0, maxText) + "..." : s;
+ }
+
+ function copy(node, depth) {
+  if (node.nodeType === 3) { return document.createTextNode(shorten(node.nodeValue)); }
+  if (node.nodeType !== 1) { return null; }
+  var made;
+  try {
+   made = document.createElement(String(node.tagName || "span").toLowerCase());
+  } catch (err) {
+   return null;
+  }
+  var attrs = node.attributes || [];
+  for (var a = 0; a < attrs.length; a++) {
+   try {
+    made.setAttribute(attrs[a].name, shorten(attrs[a].value));
+   } catch (err) {
+    /* an attribute name the copy will not take says nothing a reader needs */
+   }
+  }
+  var kids = node.childNodes || [];
+  if (depth >= maxDepth) {
+   if (kids.length) { made.appendChild(document.createComment(" " + kids.length + " nodes deeper ")); }
+   return made;
+  }
+  var kept = 0;
+  for (var k = 0; k < kids.length; k++) {
+   if (kids[k].nodeType === 3 && !String(kids[k].nodeValue || "").trim()) { continue; }
+   if (kept >= maxChildren) {
+    made.appendChild(document.createComment(" and more "));
+    break;
+   }
+   var child = copy(kids[k], depth + 1);
+   if (child) {
+    made.appendChild(child);
+    kept++;
+   }
+  }
+  return made;
+ }
+
+ var copied = copy(el, 0);
+ return copied ? copied.outerHTML : "";
+}
+
+// What an agent needs about a selector that is not on the page any more, read while the page is
+// still open. A signed-in page gives the selector and the bookmarklet's own lines and nothing else:
+// a snapshot and the markup are the account's content as much as the page's.
+async function diagnoseMissing(page, ctx, selector) {
+ var found = { kind: "requires", selector: selector, uses: linesUsing(ctx.check, selector) };
+ if (ctx.private) { return found; }
+ var region = await nearestRegion(page, selector);
+ found.region = { selector: region.selector, why: region.why, aria: "", html: "" };
+ try {
+  found.region.aria = cutText(await page.locator(region.selector).first().ariaSnapshot(), ariaLimit);
+ } catch (err) {
+  found.region.aria = "";
+ }
+ try {
+  found.region.html = cutText(await page.locator(region.selector).first().evaluate(readTrimmedHtml), htmlLimit);
+ } catch (err) {
+  found.region.html = "";
+ }
+ return found;
+}
+
+// What an agent needs about a bookmarklet that threw: the message, and the lines of the formatted
+// file the stack came from. Only the frames that land in the bookmarklet are kept, which is both
+// what is worth reading and all a signed-in page may give.
+function threwDiagnosis(ctx, message, stack) {
+ return {
+  kind: "threw",
+  message: scrubbed(ctx, message),
+  frames: linesOfStack(ctx, stack),
+  mapped: !ctx.check.decodeChanged
+ };
+}
+
 async function checkRequires(page, ctx) {
  for (var i = 0; i < ctx.requires.length; i++) {
   var selector = ctx.requires[i];
   try {
    await page.waitForSelector(selector, { state: "attached", timeout: Math.min(ctx.timeout, requiresTimeout) });
   } catch (err) {
+   ctx.diagnosis = await diagnoseMissing(page, ctx, selector);
    throw failure("site changed: " + selector + " not found on " + ctx.shown);
   }
  }
@@ -1604,6 +2066,8 @@ async function playEntry(page, ctx) {
   }
  }
  await page.waitForTimeout(ctx.settle);
+ // Where the entry's work ended, which is where a short's clip is cut to.
+ mark(ctx, shortEndMark);
  // The page with everything the entry asked for done, which is what the after shot is of.
  await takePendingShot(page, ctx);
 }
@@ -1638,6 +2102,9 @@ async function runOne(browser, name, entry, session, options) {
   if (ctx && (ctx.shots.length || ctx.video)) {
    result.capture = { video: ctx.video, screenshots: ctx.shots, timeline: ctx.timeline };
   }
+  // What was read off the page while it was still open goes to failure.md rather than into the
+  // report, so it is held by name until the run writes that file.
+  if (ctx && ctx.diagnosis && verdict == "fail") { diagnoses[name] = ctx.diagnosis; }
   return result;
  }
 
@@ -1695,19 +2162,34 @@ async function runOne(browser, name, entry, session, options) {
   shown: named || resolveUrl(asked),
   host: "",
   clock: started,
+  viewport: (options && options.short) ? shortViewport : viewport,
   captures: false,
   capture: false,
   captureFolder: "",
   pendingShot: "",
   shots: [],
   timeline: [],
-  video: ""
+  video: "",
+  short: false,
+  shortFolder: "",
+  videoFile: "",
+  thrownStacks: [],
+  diagnosis: null
  };
  ctx.host = named ? originOf(ctx.url).replace(/^https?:\/\//, "") : "";
  // An entry with auth is never captured, and nothing else about it is written down either, so the
  // whole of capturing answers to this one flag. Everything else may keep a failure's screenshot.
  ctx.captures = !ctx.private;
  ctx.capture = ctx.captures && !!((options && options.capture) || (entry && entry.capture === true));
+ // A short is the entry's own recording, and it is the one artifact an entry with auth does make:
+ // the maintainer asked for it, reviews it, and it never leaves this machine. A recording already
+ // on disk is kept as it is, so the entry is not recorded again for one.
+ ctx.short = !!(options && options.short);
+ if (ctx.short && fs.existsSync(shortFile(name))) {
+  ctx.short = false;
+  result.notes.push("no short: a recording is already there, and it is kept: "
+   + shownPath(shortFile(name)));
+ }
  result.url = ctx.shown;
  if (ctx.private) {
   result.auth = ctx.auth;
@@ -1720,17 +2202,20 @@ async function runOne(browser, name, entry, session, options) {
  var context, page;
  try {
   if (ctx.private) {
-   var opened = await openSignedIn(session, ctx.auth);
+   var opened = await openSignedIn(session, ctx.auth,
+    ctx.short ? { dir: shortWork(ctx), size: ctx.viewport } : undefined);
    if (!opened.context) { return close("skip", opened.why); }
    context = opened.context;
    if (entry.permissions && entry.permissions.length) { await context.grantPermissions(entry.permissions); }
    page = await context.newPage();
-   await page.setViewportSize(viewport);
+   await page.setViewportSize(ctx.viewport);
   } else {
    context = await browser.newContext({
-    viewport: viewport,
+    viewport: ctx.viewport,
     permissions: (entry && entry.permissions) || [],
-    recordVideo: ctx.capture ? { dir: captureDir(ctx), size: viewport } : undefined
+    recordVideo: (ctx.capture || ctx.short)
+     ? { dir: ctx.capture ? captureDir(ctx) : shortWork(ctx), size: ctx.viewport }
+     : undefined
    });
    page = await context.newPage();
   }
@@ -1770,6 +2255,12 @@ async function runOne(browser, name, entry, session, options) {
   await context.close().catch(function () { });
   var lost = await saveVideo(page, ctx);
   if (lost) { result.notes.push(lost); }
+  if (ctx.short) {
+   result.notes.push(err && err.skip
+    ? "no short: the entry was skipped, so the bookmarklet never ran"
+    : "no short: the entry did not pass, and a recording of a bookmarklet that did not work is"
+    + " not the bookmarklet's recording");
+  }
   if (typeof ctx.signedInFound == "boolean") { result.signedIn = ctx.signedInFound; }
   if (err && err.skip) { return close("skip", err.message); }
   if (offHostReason(ctx)) { return close("fail", offHostReason(ctx)); }
@@ -1785,8 +2276,10 @@ async function runOne(browser, name, entry, session, options) {
 
  var thrown = result.errors.filter(function (e) { return e.from == "bookmarklet"; });
  if (thrown.length) {
+  ctx.diagnosis = threwDiagnosis(ctx, thrown[0].message, ctx.thrownStacks[0] || "");
   return close("fail", "the bookmarklet threw after it returned: " + thrown[0].message);
  }
+ makeShort(ctx, result);
  return close("pass", "");
 }
 
@@ -1844,6 +2337,138 @@ function writeReport(results, mode, started, finished) {
  return dir;
 }
 
+// ----------------------------------------------------------------------------------------------- //
+// failure.md
+// ----------------------------------------------------------------------------------------------- //
+
+// A fenced block whose fence is longer than anything inside it, so a snapshot or a line of markup
+// holding three backticks cannot end the block early.
+function fence(language, text) {
+ var body = String(text === undefined || text === null ? "" : text).replace(/\s+$/, "");
+ var wall = "```";
+ while (body.indexOf(wall) >= 0) { wall += "`"; }
+ return [wall + language, body, wall, ""];
+}
+
+// Lines of a formatted file as they read in the report, each with its own number, which is what an
+// agent needs to find them again.
+function quotedLines(uses) {
+ return uses.map(function (use) {
+  return (use.line < 10 ? "  " : use.line < 100 ? " " : "") + use.line + "  " + use.text;
+ }).join("\n");
+}
+
+// The screenshot of the page as it stood when the entry failed, where there is one. An entry with
+// auth never has one.
+function failureShot(result) {
+ if (!result.capture || !result.capture.screenshots) { return ""; }
+ var found = result.capture.screenshots.filter(function (s) { return s.what == "failure"; });
+ return found.length ? found[0].file : "";
+}
+
+// One failing bookmarklet, as much of it as is knowable without running anything again.
+function failureSection(result, diagnosis) {
+ var out = ["## " + result.name, ""];
+ out.push("- **Verdict**: " + (result.reason || "fail"));
+ out.push("- **Page**: " + (result.url || defaultUrl));
+ out.push("- **File**: `" + shownPath(bookmarkletFile(result.name)) + "`");
+ if (result.auth) {
+  out.push("- **Signed in**: " + result.auth + " - nothing this page showed is in this report");
+ }
+ out.push("");
+
+ if (diagnosis && diagnosis.kind == "requires") {
+  out.push("### The selector that is gone", "");
+  out = out.concat(fence("", diagnosis.selector));
+  out.push("### Where the bookmarklet uses it", "");
+  if (diagnosis.uses.length) {
+   out = out.concat(fence("javascript", quotedLines(diagnosis.uses)));
+   if (diagnosis.uses[0].named) {
+    out.push("Those lines name parts of the selector rather than the whole of it, so read them as"
+     + " where it is built rather than as where it is written.", "");
+   }
+  } else {
+   out.push("No line of the file holds the selector or any part of it, so the entry asks for"
+    + " something the bookmarklet does not name. Read the entry's `requires` before the file.", "");
+  }
+  if (diagnosis.region) {
+   out.push("### The region it was expected in", "");
+   out.push("`" + diagnosis.region.selector + "` - " + diagnosis.region.why + ".", "");
+   if (diagnosis.region.aria) {
+    out.push("What a reader of that region hears:", "");
+    out = out.concat(fence("yaml", diagnosis.region.aria));
+   }
+   if (diagnosis.region.html) {
+    out.push("What it is made of, trimmed:", "");
+    out = out.concat(fence("html", diagnosis.region.html));
+   }
+   if (!diagnosis.region.aria && !diagnosis.region.html) {
+    out.push("The page would not say: it had gone by the time the region was read.", "");
+   }
+  }
+ } else if (diagnosis && diagnosis.kind == "threw") {
+  out.push("### What it threw", "");
+  out = out.concat(fence("", diagnosis.message));
+  out.push("### Where it threw, in the formatted file", "");
+  if (diagnosis.frames.length) {
+   out = out.concat(fence("javascript", quotedLines(diagnosis.frames)));
+   out.push("Innermost frame first.", "");
+  } else if (!diagnosis.mapped) {
+   out.push("A percent escape in this file decodes on the way into the URL field, so the one line"
+    + " the browser ran is not the file's lines and the stack cannot be mapped onto them.", "");
+  } else {
+   out.push("The stack named no line of this file, so the throw came from the page's own code"
+    + " reached through the bookmarklet.", "");
+  }
+ } else {
+  out.push("### What the run said", "");
+  out = out.concat(fence("", result.reason || "fail"));
+  out.push("Nothing was read off the page for this one: the entry got past what it `requires` and"
+   + " the bookmarklet did not throw, so what failed is one of the entry's own expectations or"
+   + " steps. The reason above names it.", "");
+ }
+
+ var shot = failureShot(result);
+ if (shot) {
+  out.push("### The page when it failed", "");
+  out.push("`" + shot + "`", "");
+ }
+ result.errors.filter(function (e) { return e.from == "page"; }).slice(0, 3).forEach(function (e, i) {
+  if (!i) { out.push("### What the page itself logged", ""); }
+  out.push("- " + e.message);
+  if (i == 2) { out.push(""); }
+ });
+ if (out[out.length - 1] !== "") { out.push(""); }
+ return out;
+}
+
+// Everything that failed, in one file beside the report, written as text so any assistant reads it
+// without a tool. It is written for a run of one bookmarklet as readily as for a run of all of
+// them, because a run of one is how an agent checks the fix it just made.
+function writeFailureReport(results, mode, finished) {
+ var failed = results.filter(function (r) { return r.verdict == "fail"; });
+ var out = [
+  "# test-bm failures",
+  "",
+  failed.length + " of " + results.length + " "
+   + (results.length == 1 ? "entry" : "entries") + " failed in the "
+   + (mode ? "--" + mode : "single") + " run that finished " + finished.toISOString() + ".",
+  "",
+  "Everything needed to act on them is in this file, so nothing here needs the run again. Read"
+   + " `AGENTS.md` at the repository root for what to do with it: the short of it is to find what"
+   + " replaced what is missing, make the smallest edit to the bookmarklet, and run"
+   + " `node test-bm.js <name>` for the verdict. Never loosen an expectation in `test-bm.json` to"
+   + " make a test pass.",
+  ""
+ ];
+ failed.forEach(function (result) {
+  out = out.concat(failureSection(result, diagnoses[result.name] || null));
+ });
+ var file = path.join(runDir(), "failure.md");
+ fs.writeFileSync(file, out.join("\n").replace(/\n+$/, "") + "\n");
+ return file;
+}
+
 function printList(names, config) {
  var width = 0;
  names.forEach(function (n) { if (n.length > width) { width = n.length; } });
@@ -1880,6 +2505,10 @@ function printDetail(result) {
   if (result.capture.video) { console.log("  video: " + result.capture.video); }
   result.capture.timeline.forEach(function (t) { console.log("  +" + t.at + "ms  " + t.what); });
  }
+ if (result.short) {
+  console.log("  short: " + result.short.file + "  " + result.short.seconds + "s at "
+   + result.short.fps + " fps" + (result.short.review ? "  waiting to be reviewed" : ""));
+ }
  result.dialogs.forEach(function (d) {
   console.log("  dialog: " + d.type + " " + (d.message === null ? withheldText : JSON.stringify(d.message)) + " " + d.answered);
  });
@@ -1893,7 +2522,7 @@ function printDetail(result) {
 // ----------------------------------------------------------------------------------------------- //
 
 function readOptions(args) {
- var options = { mode: "", name: "", site: "", headed: false, slowMo: 0, capture: false };
+ var options = { mode: "", name: "", site: "", headed: false, slowMo: 0, capture: false, short: false };
  for (var i = 0; i < args.length; i++) {
   var arg = args[i];
   if (arg == "--all" || arg == "--scheduled" || arg == "--list" || arg == "--sign-in") {
@@ -1909,6 +2538,8 @@ function readOptions(args) {
    options.headed = true;
   } else if (arg == "--capture") {
    options.capture = true;
+  } else if (arg == "--short") {
+   options.short = true;
   } else if (arg == "--slow-mo") {
    var ms = Number(args[++i]);
    if (!isFinite(ms) || ms < 0) { configError("--slow-mo takes a number of milliseconds"); }
@@ -2009,7 +2640,7 @@ async function main() {
   };
   // Whether anything in this queue is going to be captured decides how the browser is started, so it
   // is worked out before the launch rather than per entry.
-  var capturing = options.capture || queue.some(function (n) {
+  var capturing = options.capture || options.short || queue.some(function (n) {
    return config[n] && config[n].capture === true && !config[n].auth;
   });
   var browser = await playwright.chromium.launch({
@@ -2037,6 +2668,11 @@ async function main() {
   var dir = writeReport(results, options.mode, started, new Date());
   console.log(tally(counts));
   console.log("report: " + shownPath(dir));
+ }
+ // A run of one bookmarklet writes this too: a run of one is how an agent checks the fix it has
+ // just made, and it is the run that most needs somewhere to read the answer.
+ if (counts.failed) {
+  console.log("failures: " + shownPath(writeFailureReport(results, options.mode, new Date())));
  }
  process.exit(counts.failed ? exitFailed : exitOk);
 }
