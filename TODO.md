@@ -70,13 +70,15 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-- [ ] Add `--browser firefox` as a second engine
+- [ ] **Pause**: Add `--browser firefox` as a second engine
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - Bookmarklet handling differs between engines, and Firefox is the second
     most likely place a reader pastes one. Chromium stays the default and the
     only engine `--scheduled` uses unless an entry asks for more.
 
-- [ ] Add a `viewport` step to `test-bm.json`, so an entry can assert at a
+- [ ] **Pause**: Add a `viewport` step to `test-bm.json`, so an entry can assert at a
   width other than the 1280x720 every run uses
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - `clear` is the one expectation that reads geometry, and the defect it was
     written for was width-dependent. Measured on 11.15.2026 against the copy
     of `siteSpecific_GitHub_ShowFileSize` this run replaced, `clear` fails it
@@ -98,6 +100,10 @@ Entries in `test-bm.json` for the bookmarklets already published. The default
 safe run covers anything without an entry; these entries add the assertions
 that show a bookmarklet did its job, rather than merely not crashing.
 
+- [ ] **Pause**: Run `siteSpecific_OctoPrint_ChangeGraphImage`'s entry against a live OctoPrint, signed in through `auth`, on both paths: as published, which removes the graph's image, and with `img` set to a file served from `webassets/img`
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
+  - No printer needs to be connected: the entry asserts the graph element and its style only.
+
 ## Existing Bookmarklets
 
 Fixes and changes to bookmarklets already published. The first full test run
@@ -113,8 +119,9 @@ The repository's open GitHub issues, each needing the live site to confirm.
 `## Test Configurations` is what turns each into something a run can judge
 rather than something a person has to reproduce by hand.
 
-- [ ] `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` breaks on an answer
+- [ ] **Pause**: `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` breaks on an answer
   holding a `\u` sequence
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - **Issue**: An answer containing `\u` is written out without the backslash
     being doubled, so the pasted bookmarklet carries a broken escape.
   - **Goal**: Escape the sequence where the answer is encoded. The file already
@@ -123,15 +130,17 @@ rather than something a person has to reproduce by hand.
     path needs its own. The entry for this bookmarklet needs an answer holding
     `\u` to paste. Close the issue with `Fixes #4`.
   - <https://github.com/isocialPractice/bookmarklets/issues/4>
-- [ ] `siteSpecific_YouTube_ShowShortReleaseDate.js` breaks on a short behind a
+- [ ] **Pause**: `siteSpecific_YouTube_ShowShortReleaseDate.js` breaks on a short behind a
   viewer discretion notice
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - **Issue**: A short that opens with an approval request has a different DOM,
     and the bookmarklet breaks on it rather than skipping it.
   - **Goal**: Read the DOM of a short behind the notice, and leave that short
     alone instead of breaking. Close the issue with `Fixes #11`.
   - <https://github.com/isocialPractice/bookmarklets/issues/11>
-- [ ] `siteSpecific_YouTube_ShowShortReleaseDate.js` renders nothing on the
+- [ ] **Pause**: `siteSpecific_YouTube_ShowShortReleaseDate.js` renders nothing on the
   first visit to YouTube
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - **Issue**: Running it on a first visit to the site renders no data, because
     the markup it reads is not the markup a first visit serves.
   - **Goal**: Wait for, or read, whatever the first visit does serve. An entry
@@ -149,7 +158,8 @@ proposes, and `test-bm.js` decides.
 Everything here is tool-neutral. The procedure is written once, in a tracked
 file every assistant reads, rather than once per assistant.
 
-- [ ] Document how each assistant gets a browser
+- [ ] **Pause**: Document how each assistant gets a browser
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - The Playwright MCP server (`@playwright/mcp`) works with Claude Code,
     GitHub Copilot in VS Code, and Codex. Each tool registers MCP servers in its
     own config file, and those locations change between releases, so link each
@@ -188,8 +198,9 @@ from here carry `From: version.control = null`.
   `test:harness`, `test:pages` and `test:bookmarklets`, what each one proves,
   and that `test/pages.test.js` is what keeps the practice pages fit to show
   a reader
-- [ ] Add a short Testing paragraph to the README intro linking
+- [ ] **Pause**: Add a short Testing paragraph to the README intro linking
   `docs/testing.md`
+  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
 
 ## Improve GitHub Pages Site
 
