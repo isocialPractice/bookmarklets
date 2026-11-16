@@ -370,18 +370,6 @@ the bookmarklet has a demo.
   its gist paragraph, into a video block's demo line in place of its comment,
   with the short line commented out until its short exists
   - The README keeps its CRLF line endings.
-- [x] Post each short's GIF to Giphy, as `## Social Media Posting` in the
-  constants describes, after its YouTube upload
-  - Split from the `gitHubTask` item above, which no longer waits on it. The
-    key is read from the local note at run time and never written into a
-    script, a log or a commit.
-  - Done 11.15.2026. The poster is `.videos/support/post-giphy.mjs`, local
-    and never committed: it reads the key itself, posts the GIF with the
-    short's URL as its source, and confirms it on Giphy. The ShowFileSize
-    short's GIF is posted with it, and the run's constants now make a Giphy
-    post part of every short, right after its YouTube upload. Adding each GIF
-    to the `Bookmarklets` collection stays with the maintainer, since the
-    upload API cannot.
 - [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
   and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
   - Builds on `--capture` under `## Test Harness`. Start just before the
@@ -1423,5 +1411,19 @@ roadmap section each one came from.
     `/tree/main/JSFormatted` with the API refusing and asserts it, at the 1280
     viewport the harness already runs.
   - From: UI/UX Override - ShowFileSize heading on folder pages
+- [x] Post each short's GIF to Giphy, as `## Social Media Posting` in the
+  constants describes, after its YouTube upload
+  - Split from the `gitHubTask` item above, which no longer waits on it. The
+    key is read from the local note at run time and never written into a
+    script, a log or a commit.
+  - Done 11.15.2026. The poster is `.videos/support/post-giphy.mjs`, local
+    and never committed: it reads the key itself, posts the GIF with the
+    short's URL as its source, and confirms it on Giphy. The ShowFileSize
+    short's GIF is posted with it, and the run's constants now make a Giphy
+    post part of every short, right after its YouTube upload. Adding each GIF
+    to the `Bookmarklets` collection stays with the maintainer, since the
+    upload API cannot.
+  - **User Note**: Adding each GIF to the `Bookmarklets` collection has been
+    marked to handle autonomously, and no longer handled by the maintainer.
 
 </details>
