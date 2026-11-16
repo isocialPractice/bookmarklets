@@ -27,56 +27,34 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
-  and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
-  - Builds on `--capture` under `## Test Harness`. Start just before the
-    bookmarklet runs and stop once its result is on screen.
-  - Write to the folder named by a `TEST_BM_SHORTS_DIR` environment variable,
-    defaulting to `test-results/shorts/`.
-  - Never overwrite a recording that is already there. The maintainer's hand
-    recordings come first.
-  - An entry with `auth` records through its launcher, as its test runs, and
-    its recording stays on the machine until the maintainer has reviewed it.
-  - From: Short Videos
-- [ ] Make a failure report an agent can act on without re-running anything
-  - For a `requires` failure: the missing selector, the lines of the
-    bookmarklet that use it, and an ARIA snapshot (`locator.ariaSnapshot()`)
-    plus trimmed outer HTML of the region where it was expected.
-  - For a thrown error: the message, the stack mapped back to lines in the
-    formatted file, and the after screenshot.
-  - Write it as `failure.md` beside `report.json`, so any assistant reads it as
-    plain text.
-  - For an entry with `auth`, only the selector or the message and the
-    bookmarklet's own lines: no ARIA snapshot, HTML, stack frames from the page
-    or screenshot, because those would hand a signed-in page's content to an
-    assistant.
-  - From: AI-Assisted Verification
-- [ ] Write the triage procedure in a tracked `AGENTS.md` at the repository
-  root
-  - Codex and GitHub Copilot's coding agent read `AGENTS.md` directly. Claude
-    Code reads `CLAUDE.md`, so add one whose only content is `@AGENTS.md`.
-    `.github/` and `.claude/` are hidden by the ignore rules here, so neither
-    is a place for anything another contributor's assistant needs.
-  - The procedure: read `failure.md`; open the page with the browser tool the
-    assistant has; find what replaced the missing selector; make the smallest
-    edit to the bookmarklet; run `node test-bm.js <name>` and report its
-    verdict.
-  - Restate the authoring conventions in the file as well: block comments
-    only, a semicolon after every statement, top-level names suffixed with the
-    file's focus and action, and styling through the CSSOM. The automation's
-    copy of them is in an untracked file, so a contributor's assistant would
-    otherwise never see them.
-  - Hard limits, stated in the file: never sign in, never run
-    `node test-bm.js --sign-in`, never attach a browser tool to a browser that
-    is signed in to anything, never submit a form or send a message, and never
-    loosen a `test-bm.json` expectation to make a test pass unless the
-    bookmarklet's intended behaviour changed, saying so when it did.
-  - From: AI-Assisted Verification
-- [ ] Move `OctoPrint - Change Graph Image`'s older demo link, which sits above
-  its gist paragraph, into a video block's demo line in place of its comment,
-  with the short line commented out until its short exists
-  - The README keeps its CRLF line endings.
-  - From: Short Videos
+- [ ] Write `docs/testing.md`: install (`npm install`, then
+  `npx playwright install chromium`), run one, run all, run the scheduled set,
+  the flags, the exit codes, and where the report is written
+  - From: Testing Documentation
+- [ ] Add a configuration reference to `docs/testing.md`: every property with
+  an example, what the default safe run does and does not prove, fixture
+  pages, and `auth`
+  - Describe `auth`, `signedIn` and `TEST_BM_AUTH_LAUNCHER` by contract alone:
+    what a launcher's three functions take and return, that an entry without
+    one is a skip, and that no sign-in or session is ever in the repository.
+    No launcher, browser profile or account is described.
+  - Examples use `example.com`, `example.org` and placeholder bookmarklet
+    names only.
+  - From: Testing Documentation
+- [ ] Add a scheduling section to `docs/testing.md`: a Windows Task Scheduler
+  example (`schtasks /Create ... /TR "node test-bm.js --scheduled"` with a
+  placeholder path), a cron line for the same, and how to key a notification on
+  the exit code
+  - From: Testing Documentation
+- [ ] Document the three stages `npm test` runs in `docs/testing.md`:
+  `test:harness`, `test:pages` and `test:bookmarklets`, what each one proves,
+  and that `test/pages.test.js` is what keeps the practice pages fit to show
+  a reader
+  - From: Testing Documentation
+- [ ] Add an AI-assisted section to `docs/testing.md` that points at
+  `AGENTS.md`, and name Claude Code, Codex and GitHub Copilot as the
+  assistants it has been written for
+  - From: Testing Documentation
 
 ### Create and Deploy GitHub Pages Override
 
@@ -171,38 +149,6 @@ proposes, and `test-bm.js` decides.
 Everything here is tool-neutral. The procedure is written once, in a tracked
 file every assistant reads, rather than once per assistant.
 
-- [ ] Make a failure report an agent can act on without re-running anything
-  - For a `requires` failure: the missing selector, the lines of the
-    bookmarklet that use it, and an ARIA snapshot (`locator.ariaSnapshot()`)
-    plus trimmed outer HTML of the region where it was expected.
-  - For a thrown error: the message, the stack mapped back to lines in the
-    formatted file, and the after screenshot.
-  - Write it as `failure.md` beside `report.json`, so any assistant reads it as
-    plain text.
-  - For an entry with `auth`, only the selector or the message and the
-    bookmarklet's own lines: no ARIA snapshot, HTML, stack frames from the page
-    or screenshot, because those would hand a signed-in page's content to an
-    assistant.
-- [ ] Write the triage procedure in a tracked `AGENTS.md` at the repository
-  root
-  - Codex and GitHub Copilot's coding agent read `AGENTS.md` directly. Claude
-    Code reads `CLAUDE.md`, so add one whose only content is `@AGENTS.md`.
-    `.github/` and `.claude/` are hidden by the ignore rules here, so neither
-    is a place for anything another contributor's assistant needs.
-  - The procedure: read `failure.md`; open the page with the browser tool the
-    assistant has; find what replaced the missing selector; make the smallest
-    edit to the bookmarklet; run `node test-bm.js <name>` and report its
-    verdict.
-  - Restate the authoring conventions in the file as well: block comments
-    only, a semicolon after every statement, top-level names suffixed with the
-    file's focus and action, and styling through the CSSOM. The automation's
-    copy of them is in an untracked file, so a contributor's assistant would
-    otherwise never see them.
-  - Hard limits, stated in the file: never sign in, never run
-    `node test-bm.js --sign-in`, never attach a browser tool to a browser that
-    is signed in to anything, never submit a form or send a message, and never
-    loosen a `test-bm.json` expectation to make a test pass unless the
-    bookmarklet's intended behaviour changed, saying so when it did.
 - [ ] Document how each assistant gets a browser
   - The Playwright MCP server (`@playwright/mcp`) works with Claude Code,
     GitHub Copilot in VS Code, and Codex. Each tool registers MCP servers in its
@@ -366,20 +312,6 @@ spelled the way the entry's heading spells them: `dom_Note_TakePageNotes` links
 as `Short - Note - Take Page Notes`. The demo line stays commented out until
 the bookmarklet has a demo.
 
-- [ ] Move `OctoPrint - Change Graph Image`'s older demo link, which sits above
-  its gist paragraph, into a video block's demo line in place of its comment,
-  with the short line commented out until its short exists
-  - The README keeps its CRLF line endings.
-- [ ] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
-  and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
-  - Builds on `--capture` under `## Test Harness`. Start just before the
-    bookmarklet runs and stop once its result is on screen.
-  - Write to the folder named by a `TEST_BM_SHORTS_DIR` environment variable,
-    defaulting to `test-results/shorts/`.
-  - Never overwrite a recording that is already there. The maintainer's hand
-    recordings come first.
-  - An entry with `auth` records through its launcher, as its test runs, and
-    its recording stays on the machine until the maintainer has reviewed it.
 - [ ] Make and post the shorts for the bookmarklets that work on any page:
   `dom_`, `nav_`, `style_` and `window_`
   - For each: the recording, the short script, the posts the run's constants
@@ -1425,5 +1357,55 @@ roadmap section each one came from.
     upload API cannot.
   - **User Note**: Adding each GIF to the `Bookmarklets` collection has been
     marked to handle autonomously, and no longer handled by the maintainer.
+- [x] Add `--short` to `test-bm.js`: run an entry's steps at a 648x648 viewport
+  and save a 10 fps GIF of under ten seconds as the bookmarklet's recording
+  - Builds on `--capture` under `## Test Harness`. Start just before the
+    bookmarklet runs and stop once its result is on screen.
+  - Write to the folder named by a `TEST_BM_SHORTS_DIR` environment variable,
+    defaulting to `test-results/shorts/`.
+  - Never overwrite a recording that is already there. The maintainer's hand
+    recordings come first.
+  - An entry with `auth` records through its launcher, as its test runs, and
+    its recording stays on the machine until the maintainer has reviewed it.
+  - From: Short Videos
+- [x] Make a failure report an agent can act on without re-running anything
+  - For a `requires` failure: the missing selector, the lines of the
+    bookmarklet that use it, and an ARIA snapshot (`locator.ariaSnapshot()`)
+    plus trimmed outer HTML of the region where it was expected.
+  - For a thrown error: the message, the stack mapped back to lines in the
+    formatted file, and the after screenshot.
+  - Write it as `failure.md` beside `report.json`, so any assistant reads it as
+    plain text.
+  - For an entry with `auth`, only the selector or the message and the
+    bookmarklet's own lines: no ARIA snapshot, HTML, stack frames from the page
+    or screenshot, because those would hand a signed-in page's content to an
+    assistant.
+  - From: AI-Assisted Verification
+- [x] Write the triage procedure in a tracked `AGENTS.md` at the repository
+  root
+  - Codex and GitHub Copilot's coding agent read `AGENTS.md` directly. Claude
+    Code reads `CLAUDE.md`, so add one whose only content is `@AGENTS.md`.
+    `.github/` and `.claude/` are hidden by the ignore rules here, so neither
+    is a place for anything another contributor's assistant needs.
+  - The procedure: read `failure.md`; open the page with the browser tool the
+    assistant has; find what replaced the missing selector; make the smallest
+    edit to the bookmarklet; run `node test-bm.js <name>` and report its
+    verdict.
+  - Restate the authoring conventions in the file as well: block comments
+    only, a semicolon after every statement, top-level names suffixed with the
+    file's focus and action, and styling through the CSSOM. The automation's
+    copy of them is in an untracked file, so a contributor's assistant would
+    otherwise never see them.
+  - Hard limits, stated in the file: never sign in, never run
+    `node test-bm.js --sign-in`, never attach a browser tool to a browser that
+    is signed in to anything, never submit a form or send a message, and never
+    loosen a `test-bm.json` expectation to make a test pass unless the
+    bookmarklet's intended behaviour changed, saying so when it did.
+  - From: AI-Assisted Verification
+- [x] Move `OctoPrint - Change Graph Image`'s older demo link, which sits above
+  its gist paragraph, into a video block's demo line in place of its comment,
+  with the short line commented out until its short exists
+  - The README keeps its CRLF line endings.
+  - From: Short Videos
 
 </details>

@@ -719,13 +719,12 @@ Copy/paste: open [siteSpecific_OctoPrint_ChangeGraphImage.js](https://raw.github
     - Make a new directory called "img".
     - Store images to use for background here.
 
-<strong>Video Demonstration for Optional Use:</strong>
-
-`Ctrl + click` link to view demo on YouTube [OctoPrint - Change Graph Image Demo](https://youtu.be/Fb8SSQmgs4Y)
-
 Gist page for [siteSpecific_OctoPrint_ChangeGraphImage.js](https://gist.github.com/jhauga/f853e5427458c9e065695e32e4a8ed4f)
 
-<!-- PASTE VIDEO HERE -->
+<b>Video Demonstration for Use:</b>
+
+<!-- - `Ctrl + click` link to view short on YouTube [Short - OctoPrint - Change Graph Image](https://www.youtube.com/shorts/<id>) -->
+- `Ctrl + click` link to view demo on YouTube [Demo - OctoPrint - Change Graph Image](https://youtu.be/Fb8SSQmgs4Y)
 
 </dd></dl></dd></dl>
 

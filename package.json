@@ -8,7 +8,8 @@
     "test:harness": "node --test test/harness.test.js",
     "test:pages": "node --test test/pages.test.js",
     "test:bookmarklets": "node test-bm.js --all",
-    "test:scheduled": "node test-bm.js --scheduled"
+    "test:scheduled": "node test-bm.js --scheduled",
+    "shorts": "node test-bm.js --all --short"
   },
   "devDependencies": {
     "playwright": "1.65.0"
