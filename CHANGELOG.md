@@ -66,6 +66,14 @@ this file.
   page has settled. It is what a short's clip is cut to, and it is also the offset a capture was
   missing: the timeline said where every step started and nothing said where the entry's work
   ended.
+- The `siteSpecific_OctoPrint_ChangeGraphImage` entry signs in through `"auth": "octoprint"`,
+  with `"signedIn": "#tabs"`, the tab bar of OctoPrint's main page. OctoPrint with access control
+  on sends a signed-out browser to its separate `/login/` page, which has no `#tabs`, so the
+  selector tells the two apart without leaning on `#temperature-graph`, which stays the entry's
+  `requires`. Run against a live OctoPrint at the address `OCTOPRINT_URL` names, the published
+  path passes: the graph's image is removed and the `expect` on its style holds as it was. The
+  entry stays `scheduled: false`, and no printer needs to be connected. The path with `img` set
+  is still to come.
 
 ### Testing
 

@@ -688,6 +688,8 @@
  "siteSpecific_OctoPrint_ChangeGraphImage": {
   "url": "$OCTOPRINT_URL",
   "scheduled": false,
+  "auth": "octoprint",
+  "signedIn": "#tabs",
   "requires": ["#temperature-graph"],
   "timeout": 45000,
   "steps": [

@@ -103,6 +103,7 @@ that show a bookmarklet did its job, rather than merely not crashing.
 - [ ] **Pause**: Run `siteSpecific_OctoPrint_ChangeGraphImage`'s entry against a live OctoPrint, signed in through `auth`, on both paths: as published, which removes the graph's image, and with `img` set to a file served from `webassets/img`
   - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - No printer needs to be connected: the entry asserts the graph element and its style only.
+  - The published path passes as of 11.16.2026: signed in through `"auth": "octoprint"`, with `"signedIn": "#tabs"`, the graph's image is removed. The path with `img` set is next.
 
 ## Existing Bookmarklets
 
