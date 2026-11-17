@@ -100,10 +100,24 @@ Entries in `test-bm.json` for the bookmarklets already published. The default
 safe run covers anything without an entry; these entries add the assertions
 that show a bookmarklet did its job, rather than merely not crashing.
 
-- [ ] **Pause**: Run `siteSpecific_OctoPrint_ChangeGraphImage`'s entry against a live OctoPrint, signed in through `auth`, on both paths: as published, which removes the graph's image, and with `img` set to a file served from `webassets/img`
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
+- [x] Run `siteSpecific_OctoPrint_ChangeGraphImage`'s entry against a live OctoPrint, signed in through `auth`, on both paths: as published, which removes the graph's image, and with `img` set to a file served from `webassets/img`
   - No printer needs to be connected: the entry asserts the graph element and its style only.
-  - The published path passes as of 11.16.2026: signed in through `"auth": "octoprint"`, with `"signedIn": "#tabs"`, the graph's image is removed. The path with `img` set is next.
+  - The published path passes as of 11.16.2026: signed in through `"auth": "octoprint"`, with `"signedIn": "#tabs"`, the graph's image is removed.
+  - The path with `img` set passes as of 11.16.2026, through a second `run` step with `"set": { "img": "test-bm-graph.png" }`: the graph's style holds `/static/webassets/img/test-bm-graph.png`. That proves the address the bookmarklet writes, not that the file is on the host.
+  - Whether a file placed in `webassets/img` is served and shown moved to `## User - Resolve Test Procedures`.
+
+## User - Resolve Test Procedures
+
+Tests the automated runs could not finish. Each item is the maintainer's to
+resolve; a run never works one.
+
+- [ ] **User todo**: Confirm that `siteSpecific_OctoPrint_ChangeGraphImage`, with `img` set, shows an image placed in OctoPrint's `webassets/img` folder as the graph's background
+  - Not tested: whether the file is served and shown. The automated run checked only that the bookmarklet writes `/static/webassets/img/<img>` into the graph's style, and the test image's address answers 404 because no file is there.
+  - Why: placing the file needs a shell on the OctoPrint host, which the automated run does not have.
+  - Ways an AI-safe automated procedure could resolve it:
+    - key-based SSH with a key restricted to one command and one folder (`authorized_keys` `restrict,command=`), which copies only the test image into `webassets/img`, so no password is ever handled;
+    - a local fixture page with OctoPrint's `#temperature-graph` and a test image served at `/static/webassets/img/`, so the image path is checked end to end without the host.
+  - Done when the test image's address answers 200 signed out, and the entry asserts the image is shown.
 
 ## Existing Bookmarklets
 

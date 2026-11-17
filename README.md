@@ -701,8 +701,12 @@ OctoPrint - Change Graph Image:
 
 Change or remove the main image displayed in the graph when using [OctoPrint](https://github.com/OctoPrint/OctoPrint). If uses as is then image is removed.
 
-<strong>IMPORTANT NOTE</strong> - this has only been tested via Unix like OS (Raspberry Pi)
-and has not been tested using OctoPrint via OctoPi OS.
+<strong>IMPORTANT NOTE</strong> - this has been tested via Unix like OS (Raspberry Pi), and on
+OctoPrint 1.11.5 via OctoPi OS on 11.16.2026. Used as is, the graph's image was removed. With the
+optional change, the graph's style pointed to the image's address in the "img" folder; that checked
+the address the bookmarklet writes, not an image on the OctoPi host. No printer needs to be connected.
+
+To reach the page, open it with [to-explorer](https://github.com/jhauga/to-explorer): `to-explorer --chrome [0-9]+ http://octopi.local/?#temp`, where `[0-9]+` is the browser profile's number.
 
 <strong>USE - ready to use</strong>
 

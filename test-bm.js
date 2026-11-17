@@ -77,6 +77,17 @@
 // reason, report.json and summary.txt names the variable in its place, and the address is taken back
 // out of anything the page itself said. An unset variable is a skip, not a failure.
 //
+// A run step may set variables first: { "run": { "set": { "img": "pic.png" } } } runs the bookmarklet
+// with the one var img = "..." its file declares holding "pic.png" instead, which is the edit a reader
+// makes to a bookmarklet that asks to be changed before it is saved. The value goes in as a string
+// literal, so a quote or a backslash in it stays inside the string, and the file so changed is checked
+// again the way the file itself was: both joins, the URL field's decoding, and nothing that could pass
+// for malicious. A name the file does not declare exactly once as var <name> = "<string>", a value
+// that is not a string, set anywhere but inside run, or a value that fails that check is a
+// configuration error before any browser starts. The report names each variable set and its value,
+// and a line an error is read back to is a line of the file with the value in. { "run": true } runs
+// the file as it is, and nothing is ever written back to it.
+//
 // --capture, and an entry's "capture": true, write a screenshot of the page either side of the
 // bookmarklet and a video of the whole entry, into test-results/test-bm/<run>/capture/<name>/. Each
 // artifact's path, and the offset into the video at which every step started, go in the report, so a
@@ -508,7 +519,10 @@ function unsafeNote(code) {
 
 // Everything knowable about a bookmarklet without a browser.
 function checkFile(file, name) {
- var text = fs.readFileSync(file, "utf8").replace(/^﻿/, "");
+ return checkText(fs.readFileSync(file, "utf8").replace(/^﻿/, ""), name);
+}
+
+function checkText(text, name) {
  var lines = text.split(/\r?\n/);
 
  var spaced = stripScheme(text.replace(/\s*\r?\n\s*/g, " ").trim());
@@ -567,6 +581,87 @@ function lineOfColumn(check, column) {
  return line;
 }
 
+// A run step that sets variables first, { "run": { "set": { "img": "pic.png" } } }, runs the file with
+// the one string it declares as var img = "..." holding the entry's value instead, which is the edit
+// a reader makes before saving a bookmarklet that asks to be changed. The value goes in as a string
+// literal, so a quote or a backslash in it stays inside the string, and the file so changed is checked
+// again from the top. Nothing is ever written back to the file.
+var setNamePattern = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+var stringLiteralSource = /"(?:[^"\\\r\n]|\\.)*"|'(?:[^'\\\r\n]|\\.)*'/.source;
+
+// The variables a run step sets, or null for a plain { "run": true }.
+function setOf(step) {
+ var run = step && step.run;
+ return run && typeof run == "object" && run.set && typeof run.set == "object" ? run.set : null;
+}
+
+// How a set reads in a note or a reason: img set to "pic.png".
+function setText(set) {
+ return Object.keys(set).map(function (n) { return n + " set to " + JSON.stringify(set[n]); }).join(", ");
+}
+
+// Where a file declares a name, read with its block comments blanked rather than removed, so a comment
+// that shows a declaration is not taken for one and every offset still points into the file. Every
+// var, let and const of the name is counted; the string a set replaces is the one declared as
+// var <name> = "<string>", with nothing after the string but the end of the declaration.
+function declarationsOf(text, name) {
+ var bare = String(text).replace(/\/\*[\s\S]*?\*\//g, function (c) { return c.replace(/[^\r\n]/g, " "); });
+ var word = escapeRegExp(name);
+ var all = 0;
+ var strings = [];
+ eachMatch(bare, new RegExp("(^|[^\\w$.])(var|let|const)\\s+" + word + "(?![\\w$])", "g"), function () { all++; });
+ var declared = new RegExp("(^|[^\\w$.])var\\s+" + word + "\\s*=\\s*(" + stringLiteralSource + ")(?=\\s*[;,])", "g");
+ eachMatch(bare, declared, function (m) {
+  var end = m.index + m[0].length;
+  strings.push({ start: end - m[2].length, end: end });
+ });
+ return { all: all, strings: strings };
+}
+
+// The file's text with each variable a set names holding the entry's value, or the reason it cannot.
+function textWithSet(text, set) {
+ var out = text;
+ var names = Object.keys(set);
+ for (var i = 0; i < names.length; i++) {
+  var name = names[i];
+  var found = declarationsOf(out, name);
+  if (!found.all) { return { reason: "set names " + name + ", which the bookmarklet never declares" }; }
+  if (found.all > 1) {
+   return { reason: "set names " + name + ", which the bookmarklet declares " + found.all + " times, and set"
+    + " changes the one declaration a reader would edit" };
+  }
+  if (found.strings.length != 1) {
+   return { reason: "set names " + name + ", which the bookmarklet does not declare as var " + name
+    + " = \"a string\"" };
+  }
+  var at = found.strings[0];
+  out = out.slice(0, at.start) + JSON.stringify(String(set[name])) + out.slice(at.end);
+ }
+ return { text: out };
+}
+
+// What a run step that sets variables runs: the file with the values in, checked again exactly as the
+// file itself was - both joins, the URL field's decoding, and nothing that could pass for malicious.
+// The lines and where they start come from the changed file, so a line an error is read back to is
+// still the line it came from, however much longer the value made the line it went into.
+function checkWithSet(file, name, set) {
+ var changed = textWithSet(fs.readFileSync(file, "utf8").replace(/^﻿/, ""), set);
+ if (changed.reason) { return { ok: false, reason: changed.reason }; }
+ var check = checkText(changed.text, name);
+ if (!check.ok) { return { ok: false, reason: "with " + setText(set) + ", " + check.reason }; }
+ check.set = set;
+ return check;
+}
+
+// Why a run step's set is refused before any browser starts, or "" when it is not. A file that fails
+// its own check is left to the run, which says what is wrong with the file itself.
+function setRefusal(name, set) {
+ var file = bookmarkletFile(name);
+ if (!checkFile(file, name).ok) { return ""; }
+ var check = checkWithSet(file, name, set);
+ return check.ok ? "" : check.reason;
+}
+
 // ----------------------------------------------------------------------------------------------- //
 // test-bm.json
 // ----------------------------------------------------------------------------------------------- //
@@ -591,21 +686,49 @@ function isStringList(value) {
  return Array.isArray(value) && value.every(function (v) { return typeof v == "string" && v.length; });
 }
 
+// A run step that is not { "run": true }: an object holding set, and set holding variable names, each
+// with a string. Whether the bookmarklet declares them is read from its file by validateConfig.
+function validateRunSet(run, where, problems) {
+ if (!run || typeof run != "object" || Array.isArray(run)) {
+  problems.push(where + ": run takes true, or { \"set\": { \"<name>\": \"<value>\" } } to run it with variables set");
+  return;
+ }
+ Object.keys(run).forEach(function (k) {
+  if (k != "set") { problems.push(where + ": run has no " + k + " - it takes set, or true"); }
+ });
+ var set = run.set;
+ if (!set || typeof set != "object" || Array.isArray(set) || !Object.keys(set).length) {
+  problems.push(where + ": set takes the variables to set and their values, such as { \"img\": \"pic.png\" }");
+  return;
+ }
+ Object.keys(set).forEach(function (n) {
+  if (!setNamePattern.test(n)) {
+   problems.push(where + ": set takes variable names, and " + JSON.stringify(n) + " is not one");
+  }
+  if (typeof set[n] != "string") {
+   problems.push(where + ": set takes a string for " + n + ", the text a reader would type between its quotes");
+  }
+ });
+}
+
 function validateStep(step, where, problems) {
  if (!step || typeof step != "object" || Array.isArray(step)) {
   problems.push(where + " is not an object");
   return;
  }
  var actions = Object.keys(step).filter(function (k) { return stepActions.indexOf(k) >= 0; });
+ if (step.set !== undefined) {
+  problems.push(where + ": set goes inside a run step, as { \"run\": { \"set\": { \"<name>\": \"<value>\" } } }");
+ }
  Object.keys(step).forEach(function (k) {
-  if (stepActions.indexOf(k) < 0 && stepExtras.indexOf(k) < 0) { problems.push(where + ": unknown property " + k); }
+  if (k != "set" && stepActions.indexOf(k) < 0 && stepExtras.indexOf(k) < 0) { problems.push(where + ": unknown property " + k); }
  });
  if (actions.length != 1) {
   problems.push(where + " needs exactly one of " + stepActions.join(", ") + ", and carries " + actions.length);
   return;
  }
  var action = actions[0];
- if (action == "run" && step.run !== true) { problems.push(where + ": run takes true"); }
+ if (action == "run" && step.run !== true) { validateRunSet(step.run, where, problems); }
  if (action == "click" && typeof step.click != "string") { problems.push(where + ": click takes a selector"); }
  if (action == "press" && typeof step.press != "string") { problems.push(where + ": press takes a key"); }
  if (action == "select" && typeof step.select != "string") { problems.push(where + ": select takes a selector"); }
@@ -812,8 +935,15 @@ function validateConfig(config, names) {
      .filter(function (h) { return typeof h == "string"; });
     entry.steps.forEach(function (step, i) {
      var where = name + " step " + (i + 1);
+     var before = problems.length;
      validateStep(step, where, problems);
      if (!step || typeof step != "object") { return; }
+     // A set that is well formed is read against the file it changes, so a name the bookmarklet does
+     // not declare, or a value that would break it, stops the run here rather than in a browser.
+     if (problems.length == before && setOf(step)) {
+      var refused = setRefusal(name, setOf(step));
+      if (refused) { problems.push(where + ": " + refused); }
+     }
      if (typeof step.detach == "string" && step.detach.length) {
       var slot = typeof step.as == "string" && step.as.length ? step.as : step.detach;
       if (detached.indexOf(slot) < 0) { detached.push(slot); }
@@ -999,6 +1129,7 @@ function stepName(step) {
  for (var i = 0; i < stepActions.length; i++) {
   var action = stepActions[i];
   if (step[action] === undefined) { continue; }
+  if (action == "run" && setOf(step)) { return "run with " + cut(setText(setOf(step))); }
   if (action == "run" || action == "expect") { return action; }
   var aimed = step[action];
   if (action == "answer") {
@@ -1487,9 +1618,13 @@ async function takePendingShot(page, ctx) {
  await shot(page, ctx, what);
 }
 
-async function runBookmarklet(page, ctx) {
+async function runBookmarklet(page, ctx, index) {
  ctx.ran = true;
  ctx.runs++;
+ // The code this run injects: the file as it is, or the file with a step's variables set. Whatever
+ // ran last is what a stack is read against, because a value moves every column after it.
+ ctx.check = (index && ctx.setChecks[index]) || ctx.baseCheck;
+ if (ctx.check.set) { ctx.notes.push("step " + index + " ran it with " + setText(ctx.check.set)); }
  // A bookmarklet an entry runs twice, to check that the second run undoes the first, gets a numbered
  // pair for each run rather than one pair overwritten by the next.
  var which = ctx.runs > 1 ? "-" + ctx.runs : "";
@@ -2014,7 +2149,7 @@ async function doStep(page, ctx, step, index) {
   var hit = await writesTo(page, aimed);
   if (hit) { throw failure("refused: " + where + " would " + verb + " " + hit + " on a signed-in page"); }
  }
- if (step.run) { return runBookmarklet(page, ctx); }
+ if (step.run) { return runBookmarklet(page, ctx, index); }
  if (step.click !== undefined) { return page.click(step.click); }
  if (step.fill !== undefined) {
   var selector = typeof step.fill == "string" ? step.fill : step.fill.selector;
@@ -2054,8 +2189,9 @@ async function playEntry(page, ctx) {
  if (ctx.private) { await checkSignedIn(page, ctx); }
  await checkRequires(page, ctx);
  // The bookmarklet runs after load when no step names it. A step that names it twice runs it
- // twice, which is how a bookmarklet that turns itself off on the second run is checked.
- if (!ctx.steps.some(function (step) { return step.run === true; })) { await runBookmarklet(page, ctx); }
+ // twice, which is how a bookmarklet that turns itself off on the second run is checked. A run that
+ // sets variables names it too.
+ if (!ctx.steps.some(function (step) { return step.run !== undefined; })) { await runBookmarklet(page, ctx); }
  for (var i = 0; i < ctx.steps.length; i++) {
   mark(ctx, "step " + (i + 1) + ": " + stepName(ctx.steps[i]));
   try {
@@ -2123,6 +2259,18 @@ async function runOne(browser, name, entry, session, options) {
  result.notes.push("one line: " + check.strictLength + " characters with the breaks taken out, "
   + check.spacedLength + " with each break replaced by a space");
 
+ // Each run step that sets variables runs the file with the values in, checked here as the
+ // configuration check already did before the browser started, and held by the step's number.
+ var setChecks = {};
+ var listed = (entry && entry.steps) || [];
+ for (var s = 0; s < listed.length; s++) {
+  var set = setOf(listed[s]);
+  if (!set) { continue; }
+  var variant = checkWithSet(file, name, set);
+  if (!variant.ok) { return close("fail", "step " + (s + 1) + ": " + variant.reason); }
+  setChecks[s + 1] = variant;
+ }
+
  // The address the entry asks for. A variable that names it is read here and nowhere else, so the
  // address reaches the browser and nothing that is written down.
  var asked = (entry && entry.url) || defaultUrl;
@@ -2139,6 +2287,9 @@ async function runOne(browser, name, entry, session, options) {
  var ctx = {
   name: name,
   check: check,
+  baseCheck: check,
+  setChecks: setChecks,
+  notes: result.notes,
   url: resolveUrl(asked),
   timeout: (entry && typeof entry.timeout == "number") ? entry.timeout : defaultTimeout,
   settle: (entry && typeof entry.settle == "number") ? entry.settle : defaultSettle,

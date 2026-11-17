@@ -694,7 +694,9 @@
   "timeout": 45000,
   "steps": [
    { "run": true },
-   { "expect": { "selector": "#temperature-graph[style*='background']", "count": 1 } }
+   { "expect": { "selector": "#temperature-graph[style*='background']", "count": 1 } },
+   { "run": { "set": { "img": "test-bm-graph.png" } } },
+   { "expect": { "selector": "#temperature-graph[style*='/static/webassets/img/test-bm-graph.png']", "count": 1 } }
   ]
  }
 }

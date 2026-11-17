@@ -106,8 +106,24 @@
    "additionalProperties": false,
    "properties": {
     "run": {
-     "const": true,
-     "description": "Run the bookmarklet here, rather than after load. A second run step runs it again, which is how a bookmarklet that turns itself off on the second run is checked."
+     "description": "Run the bookmarklet here, rather than after load. A second run step runs it again, which is how a bookmarklet that turns itself off on the second run is checked. An object with set runs it with variables set first.",
+     "oneOf": [
+      { "const": true },
+      {
+       "type": "object",
+       "additionalProperties": false,
+       "required": ["set"],
+       "properties": {
+        "set": {
+         "type": "object",
+         "description": "Variables to set before this run, each to a string. The file has to declare each name exactly once, as var <name> = \"<string>\"; the value replaces that string, written as a string literal, and the file so changed is checked again before any browser starts. Nothing is written back to the file.",
+         "minProperties": 1,
+         "propertyNames": { "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*$" },
+         "additionalProperties": { "type": "string" }
+        }
+       }
+      }
+     ]
     },
     "click": {
      "type": "string",

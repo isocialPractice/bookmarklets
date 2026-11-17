@@ -55,6 +55,22 @@ this file.
   submit a form or send a message, and never loosen a `test-bm.json` expectation to make a test
   pass. Codex and GitHub Copilot's coding agent read `AGENTS.md` directly, and the new
   `CLAUDE.md`, whose only content is `@AGENTS.md`, points Claude Code at the same file.
+- A `run` step can set variables first: `{ "run": { "set": { "img": "pic.png" } } }` runs the
+  bookmarklet with the one `var img = "..."` its file declares holding the entry's value instead,
+  which is the edit a reader makes to a bookmarklet that asks to be changed before it is saved.
+  The value goes in as a string literal, written with `JSON.stringify`, so a quote or a backslash
+  in it stays inside the string, and the file so changed is checked again the way the file itself
+  is: both joins, the URL field's decoding, and nothing that could pass for malicious. A name the
+  file does not declare exactly once as `var <name> = "<string>"`, a value that is not a string,
+  `set` anywhere but inside `run`, or a value that fails that check is a configuration error
+  before any browser starts. The report notes each variable set and its value, and a line an
+  error is read back to is a line of the file with the value in, however much longer the value
+  made its line. `{ "run": true }` still runs the file as it is, nothing is ever written back to
+  the file, and `test-bm.schema.json` takes either form.
+- `TODO.md` has a `## User - Resolve Test Procedures` section, after `## Test Configurations`, for
+  tests the automated runs could not finish. Each item opens with `**User todo**:`, so no run
+  works it, says in general terms what was not tested and why, and proposes one to three ways an
+  automated procedure could resolve it without handling a password.
 
 ### Changed
 
@@ -72,10 +88,27 @@ this file.
   selector tells the two apart without leaning on `#temperature-graph`, which stays the entry's
   `requires`. Run against a live OctoPrint at the address `OCTOPRINT_URL` names, the published
   path passes: the graph's image is removed and the `expect` on its style holds as it was. The
-  entry stays `scheduled: false`, and no printer needs to be connected. The path with `img` set
-  is still to come.
+  entry stays `scheduled: false`, and no printer needs to be connected.
+- The same entry runs the optional path as well: a second `run` sets `img` to
+  `test-bm-graph.png`, and an `expect` finds `/static/webassets/img/test-bm-graph.png` in the
+  graph's style. That proves the address the bookmarklet writes, and not that the image is on the
+  host, where no file has been placed and its address answers 404. Whether a placed file is
+  served and shown is the first item under `## User - Resolve Test Procedures`.
+- The README's `OctoPrint - Change Graph Image` entry says it was tested on OctoPrint 1.11.5 via
+  OctoPi OS, what each path showed, that no printer needs to be connected, and how to open the
+  page, in place of saying it had not been tested on OctoPi OS.
 
 ### Testing
+
+- Ten tests in a new section of `test/harness.test.js`, which now runs 89, cover a `run` that
+  sets variables, each through a bookmarklet of its own that asks to be edited. A set value is
+  what the run uses, and a plain run before and after it still runs the file as it is; a value
+  holding quotes, a backslash and a comment's end stays one string; and a bookmarklet that throws
+  with a long value set is read back to the line it threw at, which the columns of the file as
+  it stands would place a line too low. Seven are refused before any browser starts: a name the
+  file never declares, one it declares twice, one it declares as something other than a string,
+  a value that is not a string, `set` outside a `run`, a `run` that is neither `true` nor an
+  object holding `set`, and a value that would make the file unsafe.
 
 - Eleven tests in `test/harness.test.js`, which now runs 79. Five cover `--short`: a passing entry
   writes a GIF at 648x648 and reports it under ten seconds at 10 fps, asserted against a

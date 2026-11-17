@@ -1141,6 +1141,136 @@ test("a url that opens with a dollar but is not a variable name is a configurati
 });
 
 // ----------------------------------------------------------------------------------------------- //
+// A run with variables set
+// ----------------------------------------------------------------------------------------------- //
+
+// A bookmarklet that asks to be edited before it is saved, the way one with var img = "CHANGE_IMAGE"
+// does, and writes the value it ran with onto the page. The comment on its first line shows the same
+// declaration again, which is not one. It throws on a line below the declaration when the value says
+// so, which is how a set value that makes that line longer is seen to leave the line an error is read
+// back to where it was.
+var setSource = [
+ "javascript:(function() {",
+ " var labelFixtureSetsIt = \"as published\"; /* var labelFixtureSetsIt = \"in a comment\"; */",
+ " var panelFixtureSetsIt = document.getElementById(\"set--__-unlikely_-_name-__--set\");",
+ " if (!panelFixtureSetsIt) {",
+ "  panelFixtureSetsIt = document.createElement(\"p\");",
+ "  panelFixtureSetsIt.id = \"set--__-unlikely_-_name-__--set\";",
+ "  document.body.appendChild(panelFixtureSetsIt);",
+ " }",
+ " panelFixtureSetsIt.textContent = \"label: \" + labelFixtureSetsIt;",
+ " if (labelFixtureSetsIt.indexOf(\"throw\") === 0) { null.thrownFixtureSetsIt; }",
+ "})();"
+].join("\n");
+
+var setPanel = "#set--__-unlikely_-_name-__--set";
+var setQuoted = "a \"quoted\" word, it's a back\\slash, and */ a comment's end";
+var setLong = "throw, with a value long enough to move every column after it well past the end of its line";
+
+function setEntry(steps) { return { url: "fixture:article.html", steps: steps }; }
+
+// The passing and throwing entries run together, so the suite pays for one browser rather than three.
+var setRun = null;
+
+function setResult(name) {
+ if (!setRun) {
+  setRun = runApart({
+   fixture_Set_WritesTheValue: setEntry([
+    { run: true },
+    { expect: { selector: setPanel, text: "label: as published" } },
+    { run: { set: { labelFixtureSetsIt: "from the entry" } } },
+    { expect: { selector: setPanel, text: "label: from the entry" } },
+    { run: true },
+    { expect: { selector: setPanel, text: "label: as published" } }
+   ]),
+   fixture_Set_KeepsItAString: setEntry([
+    { run: { set: { labelFixtureSetsIt: setQuoted } } },
+    { expect: { selector: setPanel, text: "label: " + setQuoted } }
+   ]),
+   fixture_Set_ThrowsAtItsLine: setEntry([{ run: { set: { labelFixtureSetsIt: setLong } } }])
+  }, ["--all"], undefined, setSource);
+ }
+ assert.ok(setRun.report, "the run should have written a report:\n" + setRun.run.out + setRun.run.err);
+ var found = setRun.report.results.filter(function (r) { return r.name === name; });
+ assert.strictEqual(found.length, 1, name + " should appear once in the report");
+ return found[0];
+}
+
+// A configuration of entries on the set fixture, which has to be refused before any browser starts.
+function refusesSet(entries, expected) {
+ var answer = runApart(entries, ["--list"], undefined, setSource);
+ assert.strictEqual(answer.run.status, 2, "a configuration error exits 2:\n" + answer.run.out + answer.run.err);
+ assert.strictEqual(answer.run.out, "", "nothing is listed, and nothing is run, once the configuration is refused");
+ assert.match(answer.run.err, expected);
+}
+
+test("a run that sets a variable runs the file with the value in, and a plain run the file as it is", function () {
+ var result = setResult("fixture_Set_WritesTheValue");
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.ok(result.notes.indexOf("step 3 ran it with labelFixtureSetsIt set to \"from the entry\"") >= 0,
+  "the report names the variable set and its value:\n" + result.notes.join("\n"));
+ assert.strictEqual(result.notes.filter(function (n) { return / ran it with /.test(n); }).length, 1,
+  "a plain run sets nothing, so only the run that set a value says it did");
+});
+
+test("a value goes in as a string literal, so its quotes, backslashes and comment marks stay inside it", function () {
+ var result = setResult("fixture_Set_KeepsItAString");
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.ok(result.notes.indexOf("step 1 ran it with labelFixtureSetsIt set to " + JSON.stringify(setQuoted)) >= 0,
+  result.notes.join("\n"));
+});
+
+test("a bookmarklet that throws with a value set is read back to the line it threw at", function () {
+ var result = setResult("fixture_Set_ThrowsAtItsLine");
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /^the bookmarklet threw: .*\(line 10\)$/,
+  "the value made the declaration longer, and the line is still the one that threw");
+});
+
+test("set on a name the bookmarklet never declares is refused before any browser starts", function () {
+ refusesSet({ fixture_Set_Undeclared: setEntry([{ run: { set: { colourFixtureSetsIt: "red" } } }]) },
+  /fixture_Set_Undeclared step 1: set names colourFixtureSetsIt, which the bookmarklet never declares/);
+});
+
+test("set on a name the bookmarklet declares twice is refused, since one edit could not reach both", function () {
+ var twice = setSource.replace(" var panelFixtureSetsIt", " var labelFixtureSetsIt = \"again\";\n var panelFixtureSetsIt");
+ var answer = runApart({ fixture_Set_Twice: setEntry([{ run: { set: { labelFixtureSetsIt: "red" } } }]) },
+  ["--list"], undefined, twice);
+ assert.strictEqual(answer.run.status, 2, answer.run.out + answer.run.err);
+ assert.match(answer.run.err, /set names labelFixtureSetsIt, which the bookmarklet declares 2 times/);
+});
+
+test("set on a name the bookmarklet declares as anything but a string is refused", function () {
+ refusesSet({ fixture_Set_NotAString: setEntry([{ run: { set: { panelFixtureSetsIt: "red" } } }]) },
+  /set names panelFixtureSetsIt, which the bookmarklet does not declare as var panelFixtureSetsIt = "a string"/);
+});
+
+test("set with a value that is not a string is refused", function () {
+ refusesSet({ fixture_Set_Number: setEntry([{ run: { set: { labelFixtureSetsIt: 5 } } }]) },
+  /fixture_Set_Number step 1: set takes a string for labelFixtureSetsIt/);
+});
+
+test("set anywhere but inside a run step is refused", function () {
+ refusesSet({
+  fixture_Set_OnAClick: setEntry([{ click: "body", set: { labelFixtureSetsIt: "red" } }]),
+  fixture_Set_OnItsOwn: setEntry([{ set: { labelFixtureSetsIt: "red" } }])
+ }, /fixture_Set_OnAClick step 1: set goes inside a run step[\s\S]*fixture_Set_OnItsOwn step 1: set goes inside a run step/);
+});
+
+test("a run that is neither true nor an object holding set is refused", function () {
+ refusesSet({
+  fixture_Set_Word: setEntry([{ run: "yes" }]),
+  fixture_Set_Extra: setEntry([{ run: { set: { labelFixtureSetsIt: "red" }, also: true } }]),
+  fixture_Set_Empty: setEntry([{ run: { set: {} } }])
+ }, /fixture_Set_Word step 1: run takes true, or[\s\S]*fixture_Set_Extra step 1: run has no also[\s\S]*fixture_Set_Empty step 1: set takes the variables to set/);
+});
+
+test("a value that would make the file fail its own check is refused, unsafe code included", function () {
+ refusesSet({ fixture_Set_Unsafe: setEntry([{ run: { set: { labelFixtureSetsIt: "eval(1)" } } }]) },
+  /fixture_Set_Unsafe step 1: with labelFixtureSetsIt set to "eval\(1\)", unsafe: it runs a string as code with eval\(\)/);
+});
+
+// ----------------------------------------------------------------------------------------------- //
 // A host the entry answers, and a page the entry takes apart
 // ----------------------------------------------------------------------------------------------- //
 
