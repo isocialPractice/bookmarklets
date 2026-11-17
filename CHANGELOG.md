@@ -106,6 +106,21 @@ this file.
   A short is recorded in Chromium only, so `--short` takes no other engine. Firefox is a local
   install step, `npx playwright install firefox`, which the scheduled set never runs, and a run
   that needs it where it is missing stops with exit 2 naming that step.
+- `docs/testing.md`, how to install, run, configure and schedule `test-bm.js`. It covers the
+  install (`npm install`, then `npx playwright install chromium`, with Firefox and ffmpeg as the
+  two optional steps), running one bookmarklet, all of them and the scheduled set, every flag,
+  the exit codes, and where `report.json`, `summary.txt`, `failure.md`, captures and shorts are
+  written. Its configuration reference gives every entry property, step and expectation with an
+  example, what the default safe run does and does not prove, fixture pages, a url held in an
+  environment variable, and `auth`, `signedIn` and `TEST_BM_AUTH_LAUNCHER` by contract alone:
+  what a launcher's `launch`, `signIn` and `signInState` take and return, that an entry with no
+  sign-in is a skip, and that no sign-in or session is ever in the repository. A scheduling
+  section gives a Windows Task Scheduler command and a cron line for `--scheduled`, with a
+  wrapper for each that sends a notification keyed on the exit code. It then says what each of
+  the three stages `npm test` runs proves, including that `test/pages.test.js` is what keeps the
+  practice pages fit to show a reader, and ends with a section pointing at `AGENTS.md` for
+  Claude Code, Codex and GitHub Copilot. Every example uses placeholder names and `example.com`
+  or `example.org`.
 
 ### Changed
 

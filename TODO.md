@@ -27,35 +27,6 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] Write `docs/testing.md`: install (`npm install`, then
-  `npx playwright install chromium`), run one, run all, run the scheduled set,
-  the flags, the exit codes, and where the report is written
-  - From: Testing Documentation
-- [ ] Add a configuration reference to `docs/testing.md`: every property with
-  an example, what the default safe run does and does not prove, fixture
-  pages, and `auth`
-  - Describe `auth`, `signedIn` and `TEST_BM_AUTH_LAUNCHER` by contract alone:
-    what a launcher's three functions take and return, that an entry without
-    one is a skip, and that no sign-in or session is ever in the repository.
-    No launcher, browser profile or account is described.
-  - Examples use `example.com`, `example.org` and placeholder bookmarklet
-    names only.
-  - From: Testing Documentation
-- [ ] Add a scheduling section to `docs/testing.md`: a Windows Task Scheduler
-  example (`schtasks /Create ... /TR "node test-bm.js --scheduled"` with a
-  placeholder path), a cron line for the same, and how to key a notification on
-  the exit code
-  - From: Testing Documentation
-- [ ] Document the three stages `npm test` runs in `docs/testing.md`:
-  `test:harness`, `test:pages` and `test:bookmarklets`, what each one proves,
-  and that `test/pages.test.js` is what keeps the practice pages fit to show
-  a reader
-  - From: Testing Documentation
-- [ ] Add an AI-assisted section to `docs/testing.md` that points at
-  `AGENTS.md`, and name Claude Code, Codex and GitHub Copilot as the
-  assistants it has been written for
-  - From: Testing Documentation
-
 ### Create and Deploy GitHub Pages Override
 
 - No site
@@ -70,55 +41,11 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-- [x] Add `--browser firefox` as a second engine
-  - Bookmarklet handling differs between engines, and Firefox is the second
-    most likely place a reader pastes one. Chromium stays the default and the
-    only engine `--scheduled` uses unless an entry asks for more.
-  - Done 11.16.2026: `--browser firefox` runs every entry in Firefox, and an
-    entry's `"browsers": ["chromium", "firefox"]` asks for both when the run
-    names no engine. No entry asks for Firefox yet, so `--scheduled` still runs
-    Chromium alone.
-  - Firefox does not say which code started a request, so there every request
-    to another host after the bookmarklet first ran is judged as its own, and
-    an entry that counts requests, or has `auth`, is a skip.
-  - Firefox is a local install step, `npx playwright install firefox`, which
-    the scheduled set never runs. The harness names it when Firefox is
-    missing, and `--help` says so; the install section of `docs/testing.md`
-    is where it belongs once that page exists.
-
-- [x] Add a `viewport` step to `test-bm.json`, so an entry can assert at a
-  width other than the 1280x720 every run uses
-  - `clear` is the one expectation that reads geometry, and the defect it was
-    written for was width-dependent. Measured on 11.15.2026 against the copy
-    of `siteSpecific_GitHub_ShowFileSize` this run replaced, `clear` fails it
-    on the folder page at 1024, 1152 and 1280 and passes it at 1366, 1440 and
-    1600. The default width does catch it, but by a 7x16px overlap, the
-    narrowest of the three: one notch wider and the entry would have passed a
-    heading that covered GitHub's own `Last commit message` for every reader
-    at a smaller window.
-  - `{ "viewport": { "width": 1024, "height": 720 } }` as a step, holding for
-    the steps after it, with the default restored when the entry ends.
-  - `siteSpecific_GitHub_ShowFileSize` then asserts `clear` at 1024 as well as
-    at the default, on the folder page with the API refusing, which is the
-    state and the width the collision lived at.
-  - Done 11.16.2026: the step holds for the steps after it, and the entry's
-    own size comes back when it ends. `siteSpecific_GitHub_ShowFileSize`
-    passes `clear` at 1024 on that page in that state, and the copy from
-    before the 11.15.2026 fix fails the same check, its heading painting past
-    its box over `Last commit message`.
-  - From: UI/UX verification, 11.15.2026
-
 ## Test Configurations
 
 Entries in `test-bm.json` for the bookmarklets already published. The default
 safe run covers anything without an entry; these entries add the assertions
 that show a bookmarklet did its job, rather than merely not crashing.
-
-- [x] Run `siteSpecific_OctoPrint_ChangeGraphImage`'s entry against a live OctoPrint, signed in through `auth`, on both paths: as published, which removes the graph's image, and with `img` set to a file served from `webassets/img`
-  - No printer needs to be connected: the entry asserts the graph element and its style only.
-  - The published path passes as of 11.16.2026: signed in through `"auth": "octoprint"`, with `"signedIn": "#tabs"`, the graph's image is removed.
-  - The path with `img` set passes as of 11.16.2026, through a second `run` step with `"set": { "img": "test-bm-graph.png" }`: the graph's style holds `/static/webassets/img/test-bm-graph.png`. That proves the address the bookmarklet writes, not that the file is on the host.
-  - Whether a file placed in `webassets/img` is served and shown moved to `## User - Resolve Test Procedures`.
 
 ## User - Resolve Test Procedures
 
@@ -179,24 +106,6 @@ The repository's open GitHub issues, each needing the live site to confirm.
 rather than something a person has to reproduce by hand. The `\u` item (#4)
 and the viewer discretion item (#11) moved to
 `## User - Resolve Test Procedures` on 11.16.2026.
-
-- [x] `siteSpecific_YouTube_ShowShortReleaseDate.js` renders nothing on the
-  first visit to YouTube
-  - **Issue**: Running it on a first visit to the site renders no data, because
-    the markup it reads is not the markup a first visit serves.
-  - **Goal**: Wait for, or read, whatever the first visit does serve. An entry
-    with a fresh context is a first visit every time, so this one is testable
-    without any sign-in. Close the issue with `Fixes #14`.
-  - <https://github.com/isocialPractice/bookmarklets/issues/14>
-  - Done 11.16.2026: a first visit does serve the short's description, a
-    moment after the page. The first run no longer alerts that it is not
-    initialized and reloads the page; it waits for the description and the
-    action bar, checking every half second for up to ten seconds, and leaves
-    the short alone if they never come. In a narrow window, where the action
-    bar sits on the video, the date is lifted above the bar instead of being
-    drawn under its first button. The entry runs on one of the maintainer's
-    own shorts and passes; on the unchanged file it failed, the page reloading
-    before any date was drawn.
 
 ## AI-Assisted Verification
 
@@ -1493,5 +1402,94 @@ roadmap section each one came from.
   with the short line commented out until its short exists
   - The README keeps its CRLF line endings.
   - From: Short Videos
+- [x] Write `docs/testing.md`: install (`npm install`, then
+  `npx playwright install chromium`), run one, run all, run the scheduled set,
+  the flags, the exit codes, and where the report is written
+  - From: Testing Documentation
+- [x] Add a configuration reference to `docs/testing.md`: every property with
+  an example, what the default safe run does and does not prove, fixture
+  pages, and `auth`
+  - Describe `auth`, `signedIn` and `TEST_BM_AUTH_LAUNCHER` by contract alone:
+    what a launcher's three functions take and return, that an entry without
+    one is a skip, and that no sign-in or session is ever in the repository.
+    No launcher, browser profile or account is described.
+  - Examples use `example.com`, `example.org` and placeholder bookmarklet
+    names only.
+  - From: Testing Documentation
+- [x] Add a scheduling section to `docs/testing.md`: a Windows Task Scheduler
+  example (`schtasks /Create ... /TR "node test-bm.js --scheduled"` with a
+  placeholder path), a cron line for the same, and how to key a notification on
+  the exit code
+  - From: Testing Documentation
+- [x] Document the three stages `npm test` runs in `docs/testing.md`:
+  `test:harness`, `test:pages` and `test:bookmarklets`, what each one proves,
+  and that `test/pages.test.js` is what keeps the practice pages fit to show
+  a reader
+  - From: Testing Documentation
+- [x] Add an AI-assisted section to `docs/testing.md` that points at
+  `AGENTS.md`, and name Claude Code, Codex and GitHub Copilot as the
+  assistants it has been written for
+  - From: Testing Documentation
+- [x] Add `--browser firefox` as a second engine
+  - Bookmarklet handling differs between engines, and Firefox is the second
+    most likely place a reader pastes one. Chromium stays the default and the
+    only engine `--scheduled` uses unless an entry asks for more.
+  - Done 11.16.2026: `--browser firefox` runs every entry in Firefox, and an
+    entry's `"browsers": ["chromium", "firefox"]` asks for both when the run
+    names no engine. No entry asks for Firefox yet, so `--scheduled` still runs
+    Chromium alone.
+  - Firefox does not say which code started a request, so there every request
+    to another host after the bookmarklet first ran is judged as its own, and
+    an entry that counts requests, or has `auth`, is a skip.
+  - Firefox is a local install step, `npx playwright install firefox`, which
+    the scheduled set never runs. The harness names it when Firefox is
+    missing, and `--help` says so; the install section of `docs/testing.md`
+    is where it belongs once that page exists.
+  - From: Test Harness
+- [x] Add a `viewport` step to `test-bm.json`, so an entry can assert at a
+  width other than the 1280x720 every run uses
+  - `clear` is the one expectation that reads geometry, and the defect it was
+    written for was width-dependent. Measured on 11.15.2026 against the copy
+    of `siteSpecific_GitHub_ShowFileSize` this run replaced, `clear` fails it
+    on the folder page at 1024, 1152 and 1280 and passes it at 1366, 1440 and
+    1600. The default width does catch it, but by a 7x16px overlap, the
+    narrowest of the three: one notch wider and the entry would have passed a
+    heading that covered GitHub's own `Last commit message` for every reader
+    at a smaller window.
+  - `{ "viewport": { "width": 1024, "height": 720 } }` as a step, holding for
+    the steps after it, with the default restored when the entry ends.
+  - `siteSpecific_GitHub_ShowFileSize` then asserts `clear` at 1024 as well as
+    at the default, on the folder page with the API refusing, which is the
+    state and the width the collision lived at.
+  - Done 11.16.2026: the step holds for the steps after it, and the entry's
+    own size comes back when it ends. `siteSpecific_GitHub_ShowFileSize`
+    passes `clear` at 1024 on that page in that state, and the copy from
+    before the 11.15.2026 fix fails the same check, its heading painting past
+    its box over `Last commit message`.
+  - From: UI/UX verification, 11.15.2026
+- [x] Run `siteSpecific_OctoPrint_ChangeGraphImage`'s entry against a live OctoPrint, signed in through `auth`, on both paths: as published, which removes the graph's image, and with `img` set to a file served from `webassets/img`
+  - No printer needs to be connected: the entry asserts the graph element and its style only.
+  - The published path passes as of 11.16.2026: signed in through `"auth": "octoprint"`, with `"signedIn": "#tabs"`, the graph's image is removed.
+  - The path with `img` set passes as of 11.16.2026, through a second `run` step with `"set": { "img": "test-bm-graph.png" }`: the graph's style holds `/static/webassets/img/test-bm-graph.png`. That proves the address the bookmarklet writes, not that the file is on the host.
+  - Whether a file placed in `webassets/img` is served and shown moved to `## User - Resolve Test Procedures`.
+  - From: Test Configurations
+- [x] `siteSpecific_YouTube_ShowShortReleaseDate.js` renders nothing on the
+  first visit to YouTube
+  - **Issue**: Running it on a first visit to the site renders no data, because
+    the markup it reads is not the markup a first visit serves.
+  - **Goal**: Wait for, or read, whatever the first visit does serve. An entry
+    with a fresh context is a first visit every time, so this one is testable
+    without any sign-in. Close the issue with `Fixes #14`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/14>
+  - Done 11.16.2026: a first visit does serve the short's description, a
+    moment after the page. The first run no longer alerts that it is not
+    initialized and reloads the page; it waits for the description and the
+    action bar, checking every half second for up to ten seconds, and leaves
+    the short alone if they never come. In a narrow window, where the action
+    bar sits on the video, the date is lifted above the bar instead of being
+    drawn under its first button. The entry runs on one of the maintainer's
+    own shorts and passes; on the unchanged file it failed, the page reloading
+    before any date was drawn.
+  - From: Existing Bookmarklets `->` From the Open Issues
 
 </details>
