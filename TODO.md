@@ -160,49 +160,11 @@ proposes, and `test-bm.js` decides.
 Everything here is tool-neutral. The procedure is written once, in a tracked
 file every assistant reads, rather than once per assistant.
 
-- [ ] **Pause**: Document how each assistant gets a browser
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
-  - The Playwright MCP server (`@playwright/mcp`) works with Claude Code,
-    GitHub Copilot in VS Code, and Codex. Each tool registers MCP servers in its
-    own config file, and those locations change between releases, so link each
-    tool's documentation rather than restating a path.
-  - Run it with an isolated profile (`--isolated`), never in a mode that
-    connects it to the reader's own browser, which carries their sign-ins.
-  - Config files such as `.mcp.json` start with a dot and are hidden by the
-    ignore rules here, so this is documentation, not a committed config.
-
 ## Testing Documentation
 
 How to install, run, configure and schedule `test-bm.js`, written in
 `docs/testing.md` and linked from the README. Documentation only: items pulled
 from here carry `From: version.control = null`.
-
-- [ ] Write `docs/testing.md`: install (`npm install`, then
-  `npx playwright install chromium`), run one, run all, run the scheduled set,
-  the flags, the exit codes, and where the report is written
-- [ ] Add a configuration reference to `docs/testing.md`: every property with
-  an example, what the default safe run does and does not prove, fixture
-  pages, and `auth`
-  - Describe `auth`, `signedIn` and `TEST_BM_AUTH_LAUNCHER` by contract alone:
-    what a launcher's three functions take and return, that an entry without
-    one is a skip, and that no sign-in or session is ever in the repository.
-    No launcher, browser profile or account is described.
-  - Examples use `example.com`, `example.org` and placeholder bookmarklet
-    names only.
-- [ ] Add a scheduling section to `docs/testing.md`: a Windows Task Scheduler
-  example (`schtasks /Create ... /TR "node test-bm.js --scheduled"` with a
-  placeholder path), a cron line for the same, and how to key a notification on
-  the exit code
-- [ ] Add an AI-assisted section to `docs/testing.md` that points at
-  `AGENTS.md`, and name Claude Code, Codex and GitHub Copilot as the
-  assistants it has been written for
-- [ ] Document the three stages `npm test` runs in `docs/testing.md`:
-  `test:harness`, `test:pages` and `test:bookmarklets`, what each one proves,
-  and that `test/pages.test.js` is what keeps the practice pages fit to show
-  a reader
-- [ ] **Pause**: Add a short Testing paragraph to the README intro linking
-  `docs/testing.md`
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
 
 ## Improve GitHub Pages Site
 
@@ -1534,5 +1496,25 @@ roadmap section each one came from.
     own shorts and passes; on the unchanged file it failed, the page reloading
     before any date was drawn.
   - From: Existing Bookmarklets `->` From the Open Issues
+- [x] Document how each assistant gets a browser
+  - The Playwright MCP server (`@playwright/mcp`) works with Claude Code,
+    GitHub Copilot in VS Code, and Codex. Each tool registers MCP servers in its
+    own config file, and those locations change between releases, so link each
+    tool's documentation rather than restating a path.
+  - Run it with an isolated profile (`--isolated`), never in a mode that
+    connects it to the reader's own browser, which carries their sign-ins.
+  - Config files such as `.mcp.json` start with a dot and are hidden by the
+    ignore rules here, so this is documentation, not a committed config.
+  - Done 11.16.2026: `docs/testing.md` `## Giving an assistant a browser`,
+    beside the AI-assisted section, gives the server's command with
+    `--isolated`, rules out `--extension` and `--cdp-endpoint`, and links each
+    tool's own MCP documentation. The AI-assisted section now says which
+    Copilot surfaces read `AGENTS.md`, with each tool's documentation linked.
+  - From: AI-Assisted Verification
+- [x] Add a short Testing paragraph to the README intro linking
+  `docs/testing.md`
+  - Done 11.16.2026: the paragraph closes the README's intro, after the blank
+    canvas bookmarklet. The README keeps its CRLF line endings.
+  - From: Testing Documentation
 
 </details>

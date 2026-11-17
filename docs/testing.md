@@ -18,6 +18,7 @@ harness does.
 - [Scheduling a run](#scheduling-a-run)
 - [What `npm test` runs](#what-npm-test-runs)
 - [Working with an AI assistant](#working-with-an-ai-assistant)
+- [Giving an assistant a browser](#giving-an-assistant-a-browser)
 
 ## Install
 
@@ -427,6 +428,65 @@ default export or as named exports:
   module that will not load, or one with no `launch`. `--sign-in` also needs
   `signIn`.
 
+### A signed-in page on the reader's own network
+
+A page on the reader's own network can need a sign-in too. The two sections
+above fit together: the address comes from a url variable, and the sign-in from
+`auth`. The entry for `siteSpecific_OctoPrint_ChangeGraphImage`, which changes
+the temperature graph's image in [OctoPrint](https://github.com/OctoPrint/OctoPrint),
+does both:
+
+```json
+"siteSpecific_OctoPrint_ChangeGraphImage": {
+ "url": "$OCTOPRINT_URL",
+ "scheduled": false,
+ "auth": "octoprint",
+ "signedIn": "#tabs",
+ "requires": ["#temperature-graph"],
+ "timeout": 45000,
+ "steps": [
+  { "run": true },
+  { "expect": { "selector": "#temperature-graph[style*='background']", "count": 1 } },
+  { "run": { "set": { "img": "test-bm-graph.png" } } },
+  { "expect": { "selector": "#temperature-graph[style*='/static/webassets/img/test-bm-graph.png']", "count": 1 } }
+ ]
+}
+```
+
+- **The address.** `OCTOPRINT_URL` holds the OctoPrint page. Its usual address
+  on OctoPi is `http://octopi.local/?#temp`, which opens the Temperature tab:
+
+  ```bat
+  setx OCTOPRINT_URL "http://octopi.local/?#temp"
+  ```
+
+  ```sh
+  export OCTOPRINT_URL='http://octopi.local/?#temp'
+  ```
+
+  `setx` sets it for the shells opened after it. With it unset, the entry is a
+  skip.
+- **The sign-in.** `launch` is handed the site name, `octoprint`, and no
+  address, so a launcher that signs in to it has to find the address itself;
+  reading the same variable keeps it out of the launcher too. With no launcher,
+  or one that has no sign-in for `octoprint`, the entry is a skip. A page that
+  comes up at OctoPrint's sign-in form has no `#tabs`, so a signed-out run is a
+  skip reading `signed out of octoprint`, never a failure.
+- **No printer needs to be connected.** OctoPrint shows the temperature graph
+  without one, and the entry asserts only `#temperature-graph` and its style.
+  Nothing in it connects a printer, sends a printer command or starts a print.
+- **The two paths.** The first `run` is the bookmarklet as published, which
+  takes the graph's image away. The second sets `img`, as a reader would before
+  saving the bookmark, and the last `expect` checks the address the bookmarklet
+  writes into the graph's style, not that a file is served there.
+- **Never scheduled.** `scheduled` stays `false`, because an entry with `auth`
+  is never scheduled.
+
+To open the same page by hand, in a chosen Chrome profile, use
+[to-explorer](https://github.com/jhauga/to-explorer):
+`to-explorer --chrome [0-9]+ http://octopi.local/?#temp`, where `[0-9]+` is the
+profile's number.
+
 ## Scheduling a run
 
 `node test-bm.js --scheduled` is the whole of what a scheduled job calls. It
@@ -569,9 +629,15 @@ report folder as any `--all` run does.
 
 [`AGENTS.md`](../AGENTS.md), at the repository root, is the procedure for any
 coding assistant working here. It has been written for **Claude Code**,
-**Codex** and **GitHub Copilot**. Codex and GitHub Copilot's coding agent read
-`AGENTS.md` directly, and Claude Code reads `CLAUDE.md`, which holds only
-`@AGENTS.md`, so all three read the same file.
+**Codex** and **GitHub Copilot**, and all three read the same file:
+
+- [Codex](https://learn.chatgpt.com/docs/agent-configuration/agents-md) reads
+  `AGENTS.md` directly.
+- [GitHub Copilot](https://docs.github.com/en/copilot/reference/custom-instructions-support)
+  reads it directly too: its cloud agent (formerly its coding agent), Copilot
+  CLI, and Copilot Chat in VS Code.
+- [Claude Code](https://code.claude.com/docs/en/memory) reads `CLAUDE.md`,
+  which here holds only `@AGENTS.md`, an import of the same file.
 
 It holds:
 
@@ -583,3 +649,39 @@ It holds:
 
 Read it there rather than here. The run stays the judge: an assistant proposes
 an edit, and `node test-bm.js <name>` decides.
+
+## Giving an assistant a browser
+
+Step 2 of the triage in `AGENTS.md` opens the failing page in a browser. An
+assistant gets one through the
+[Playwright MCP server](https://github.com/microsoft/playwright-mcp),
+[`@playwright/mcp`](https://www.npmjs.com/package/@playwright/mcp), which works
+with Claude Code, GitHub Copilot in VS Code and Codex alike. Each registers it
+with the same command and arguments:
+
+```sh
+npx @playwright/mcp@latest --isolated
+```
+
+**Always pass `--isolated`.** It keeps the browser's profile in memory and never
+saves it to disk, so every session starts signed in to nothing, and everything
+it stored is gone once the browser closes. Without it the server keeps a
+persistent profile, which holds every sign-in made in it from then on. Never
+sign in to anything in it either.
+
+**Never connect it to the reader's own browser.** `--extension` and
+`--cdp-endpoint` attach the server to a browser that is already running, with
+every sign-in that browser carries, and a bookmarklet is not the only thing on
+a page that can read them. `AGENTS.md` rules that out in its hard limits.
+
+Each tool keeps its MCP servers in its own configuration, and where that lives
+changes between releases, so follow the tool's own documentation for it:
+
+| Assistant | Where it registers MCP servers |
+| --- | --- |
+| Claude Code | [Connect Claude Code to tools via MCP](https://code.claude.com/docs/en/mcp) |
+| GitHub Copilot in VS Code | [Add and use MCP servers in VS Code](https://code.visualstudio.com/docs/agent-customization/mcp-servers) |
+| Codex | [Model Context Protocol](https://learn.chatgpt.com/docs/extend/mcp), one configuration for the CLI and the IDE extension |
+
+This repository commits no MCP configuration. Each reader registers the server
+in their own tool, in the place its documentation names.

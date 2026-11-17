@@ -121,6 +121,18 @@ this file.
   practice pages fit to show a reader, and ends with a section pointing at `AGENTS.md` for
   Claude Code, Codex and GitHub Copilot. Every example uses placeholder names and `example.com`
   or `example.org`.
+- `docs/testing.md` says how an assistant gets a browser, and the README links the file. Its
+  new last section registers the Playwright MCP server (`@playwright/mcp`) with `--isolated`, so
+  the browser an assistant opens keeps its profile in memory and starts signed in to nothing. It
+  rules out the two modes that attach the server to a browser already running, and links Claude
+  Code's, VS Code's and Codex's own documentation for where each registers MCP servers rather
+  than restating a path that changes between releases. The configuration reference gains a
+  signed-in page on the reader's own network, with the OctoPrint entry as its example: the
+  address comes from `OCTOPRINT_URL`, the sign-in from `auth`, and no printer needs to be
+  connected. The AI-assisted section now says which GitHub Copilot surfaces read `AGENTS.md`
+  directly (its cloud agent, formerly its coding agent, Copilot CLI and Copilot Chat in VS
+  Code), with each tool's documentation linked. The README's intro ends with a Testing
+  paragraph linking `docs/testing.md`.
 
 ### Changed
 

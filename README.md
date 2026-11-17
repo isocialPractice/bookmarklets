@@ -124,6 +124,13 @@ javascript:(function(){
   Name then paste the JavaScript in lieu of URL
 */ })();
 ```
+
+<strong>Testing:</strong> [test-bm.js](test-bm.js) runs each bookmarklet in a
+real browser, the way clicking the bookmark would, checks it against its
+entry in `test-bm.json`, and refuses anything that could pass for malicious.
+[docs/testing.md](docs/testing.md) covers installing, running, configuring
+and scheduling the tests.
+
 </div>
 <hr><br>
 <!-- START BOOKMARKLETS -->
