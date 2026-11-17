@@ -935,19 +935,22 @@ YouTube - Show Short Release Date:
 ----
 <dl><dd><dl><dd>
 
-Quickly getting the release of a YouTube short. NOTE - after 1st scroll down and back up to get short date. <br><br>
+Quickly getting the release of a YouTube short. <br><br>
 
 <strong>USE - ready to use</strong>
 
 Copy/paste: open [siteSpecific_YouTube_ShowShortReleaseDate.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_YouTube_ShowShortReleaseDate.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-<strong>NOTE</strong> - after 1st short has loaded, scroll down and back up, then click in white space to get release date.
+<strong>NOTE</strong> - the release date is added once the short's description has loaded, a first visit to YouTube included.
 
-<strong>NOTE</strong> - delay of 1/2 second before release date is added to top of right-most action widgets.
+<strong>NOTE</strong> - the release date is added to top of right-most action widgets, or just above them in a narrow window.
 
 Gist page for [siteSpecific_YouTube_ShowShortReleaseDate.js](https://gist.github.com/jhauga/6924dfc7556ae2c9e2a9c6ea57231d45)
 
-<!-- PASTE VIDEO HERE -->
+<b>Video Demonstration for Use:</b>
+
+- `Ctrl + click` link to view short on YouTube [Short - YouTube - Show Short Release Date](https://www.youtube.com/shorts/wSBBxlRVyKs)
+<!-- - `Ctrl + click` link to view demo on YouTube [Demo - <bookmarklet-sub-category> - <(from.title):bookmarklet-descriptive-name>](<youtube-url) -->
 
 </dd></dl></dd></dl>
 

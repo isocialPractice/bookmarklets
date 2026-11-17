@@ -132,6 +132,36 @@ resolve; a run never works one.
     - key-based SSH with a key restricted to one command and one folder (`authorized_keys` `restrict,command=`), which copies only the test image into `webassets/img`, so no password is ever handled;
     - a local fixture page with OctoPrint's `#temperature-graph` and a test image served at `/static/webassets/img/`, so the image path is checked end to end without the host.
   - Done when the test image's address answers 200 signed out, and the entry asserts the image is shown.
+- [ ] **User todo**: `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` breaks on an answer
+  holding a `\u` sequence
+  - **Issue**: An answer containing `\u` is written out without the backslash
+    being doubled, so the pasted bookmarklet carries a broken escape.
+  - **Goal**: Escape the sequence where the answer is encoded. The file already
+    turns a backslash into `&#x5c;` when it encodes a code block, so decide
+    whether that path is the one missing the case, or whether the plain text
+    path needs its own. The entry for this bookmarklet needs an answer holding
+    `\u` to paste. Close the issue with `Fixes #4`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/4>
+  - Not tested: the bookmarklet on an answer holding `\u`, in plain text and in a code block. The code as it stands writes a backslash in a code block as `&#x5c;`, and one in plain text as `&#92;` through its `RUNNING_FIX` list; whether either still lets `\u` through is what the test would show.
+  - Why: the check that confirms a change here is the entry's signed-in run, and on 11.16.2026 the site was signed out for the automated run, which never signs in. The run also never sends a prompt, so it has no answer of its own holding `\u` to copy.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a local fixture page with the site's answer markup as the bookmarklet reads it, holding placeholder answers with `\u` in plain text and in a code block, so the encoding is checked without the site;
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, with a saved conversation that already holds such an answer, so the signed-in run copies it and no prompt is ever sent.
+  - Done when an entry with an answer holding `\u` passes in both places, the signed-in entry still passes, and the issue is closed with `Fixes #4`.
+- [ ] **User todo**: `siteSpecific_YouTube_ShowShortReleaseDate.js` breaks on a short behind a
+  viewer discretion notice
+  - **Issue**: A short that opens with an approval request has a different DOM,
+    and the bookmarklet breaks on it rather than skipping it.
+  - **Goal**: Read the DOM of a short behind the notice, and leave that short
+    alone instead of breaking. Close the issue with `Fixes #11`.
+  - <https://github.com/isocialPractice/bookmarklets/issues/11>
+  - Not tested: the bookmarklet on a short behind a viewer discretion notice. One signed-out search on 11.16.2026 found no such short to read, so no fixture page holds the notice's structure.
+  - Why: no short behind the notice could be reached signed out, and the automated run never signs in.
+  - Since the first visit fix of 11.16.2026 the bookmarklet waits up to ten seconds for the short's description and action bar, and leaves the short alone when they never come rather than throwing. Whether that is enough behind the notice is what this test would show.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a local fixture page that reproduces a notice short's structure, the description and action bar markup the bookmarklet reads, filled with placeholder text and graphics;
+    - a recorded page state of a short behind the notice, saved once and replayed offline, with its content replaced by placeholders.
+  - Done when an entry for the notice's structure passes and the issue is closed with `Fixes #11`.
 
 ## Existing Bookmarklets
 
@@ -146,36 +176,27 @@ files its failures here. A fix is finished when its posted gist carries it too.
 The repository's open GitHub issues, each needing the live site to confirm.
 `test-bm.js` reaches every one of these pages, so an entry under
 `## Test Configurations` is what turns each into something a run can judge
-rather than something a person has to reproduce by hand.
+rather than something a person has to reproduce by hand. The `\u` item (#4)
+and the viewer discretion item (#11) moved to
+`## User - Resolve Test Procedures` on 11.16.2026.
 
-- [ ] **Pause**: `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` breaks on an answer
-  holding a `\u` sequence
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
-  - **Issue**: An answer containing `\u` is written out without the backslash
-    being doubled, so the pasted bookmarklet carries a broken escape.
-  - **Goal**: Escape the sequence where the answer is encoded. The file already
-    turns a backslash into `&#x5c;` when it encodes a code block, so decide
-    whether that path is the one missing the case, or whether the plain text
-    path needs its own. The entry for this bookmarklet needs an answer holding
-    `\u` to paste. Close the issue with `Fixes #4`.
-  - <https://github.com/isocialPractice/bookmarklets/issues/4>
-- [ ] **Pause**: `siteSpecific_YouTube_ShowShortReleaseDate.js` breaks on a short behind a
-  viewer discretion notice
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
-  - **Issue**: A short that opens with an approval request has a different DOM,
-    and the bookmarklet breaks on it rather than skipping it.
-  - **Goal**: Read the DOM of a short behind the notice, and leave that short
-    alone instead of breaking. Close the issue with `Fixes #11`.
-  - <https://github.com/isocialPractice/bookmarklets/issues/11>
-- [ ] **Pause**: `siteSpecific_YouTube_ShowShortReleaseDate.js` renders nothing on the
+- [x] `siteSpecific_YouTube_ShowShortReleaseDate.js` renders nothing on the
   first visit to YouTube
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - **Issue**: Running it on a first visit to the site renders no data, because
     the markup it reads is not the markup a first visit serves.
   - **Goal**: Wait for, or read, whatever the first visit does serve. An entry
     with a fresh context is a first visit every time, so this one is testable
     without any sign-in. Close the issue with `Fixes #14`.
   - <https://github.com/isocialPractice/bookmarklets/issues/14>
+  - Done 11.16.2026: a first visit does serve the short's description, a
+    moment after the page. The first run no longer alerts that it is not
+    initialized and reloads the page; it waits for the description and the
+    action bar, checking every half second for up to ten seconds, and leaves
+    the short alone if they never come. In a narrow window, where the action
+    bar sits on the video, the date is lifted above the bar instead of being
+    drawn under its first button. The entry runs on one of the maintainer's
+    own shorts and passes; on the unchanged file it failed, the page reloading
+    before any date was drawn.
 
 ## AI-Assisted Verification
 
@@ -372,6 +393,16 @@ the bookmarklet has a demo.
     was checked against the masking table before the upload. Its GIF is
     posted to Giphy, 11.15.2026, with the short as its source, and is in the
     `Bookmarklets` collection, 11.15.2026.
+  - `siteSpecific_YouTube_ShowShortReleaseDate` is posted, 11.16.2026:
+    [Short - YouTube - Show Short Release Date](https://www.youtube.com/shorts/wSBBxlRVyKs),
+    public, in the `Bookmarklet Shorts` playlist, and its README entry links
+    it in place of the comment. Recorded with `test-bm.js --short` on one of
+    the maintainer's own shorts, signed out, with the channel's name and
+    avatar and the page's sign-in button taken off the page before the
+    recording; it runs 7.8 seconds, so it is one video. Every frame was
+    checked against the masking table and for a login screen before the
+    upload. Its GIF is posted to Giphy, 11.16.2026, with the short as its
+    source, and is in the `Bookmarklets` collection, 11.16.2026.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the

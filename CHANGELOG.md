@@ -8,6 +8,20 @@ this file.
 
 ## [11.16.2026]
 
+### Fixed
+
+- `siteSpecific_YouTube_ShowShortReleaseDate.js` shows the release date on a first visit to
+  YouTube (#14). Its first run alerted that it was not initialized and reloaded the page, so a
+  first visit drew nothing until the bookmarklet was run again. A first visit does serve the
+  short's description, a moment after the page, so the bookmarklet now waits for the description
+  and the action bar, checking every half second for up to ten seconds, and leaves the short
+  alone if they never come rather than throwing on a description that is not there. In a narrow
+  window, where the action bar sits on the video, the date was drawn under the bar's first
+  button; it is now lifted above the bar. A second run reuses the one interval that follows the
+  shorts scrolled to rather than starting another, and turning the instructions alert off no
+  longer turns the rest of the bookmarklet off with it. The README entry's notes say so, and it
+  links the bookmarklet's first short.
+
 ### Added
 
 - `test-bm.js --short` records every entry it reaches as the bookmarklet's own recording. The
@@ -195,6 +209,12 @@ this file.
   that region's markup; an entry with `auth` gives the selector and its own lines and neither a
   region nor a screenshot; a run of one failing bookmarklet writes the file as well; and a run
   that fails nothing writes none.
+- `siteSpecific_YouTube_ShowShortReleaseDate`'s entry runs on one of the maintainer's own shorts,
+  rather than skipping on an ordinary video the shorts player sends to the watch page. A fresh
+  browser is a first visit every time, so the entry is the first visit check: it requires the
+  action bar and the description, runs the bookmarklet, waits for the date and expects it, then
+  runs it again and expects one date, not two. It failed on the unchanged file, which reloaded
+  the page, and passes on the fixed one.
 
 ### Notes
 
@@ -205,6 +225,10 @@ this file.
 - A line of the bookmarklet that merely names a tag from the selector is not reported as using
   it. `div.listing` would otherwise point at every `createElement("div")` in the file and say
   nothing about the listing, so a tag name is read only where the selector names nothing else.
+- Two of the open issues moved to `## User - Resolve Test Procedures` in `TODO.md`, each with
+  ways an automated run could resolve it, and neither was closed. No short behind a viewer
+  discretion notice could be reached signed out (#11), and the `\u` case (#4) is confirmed by a
+  signed-in run, which found the site signed out.
 
 ## [11.15.2026]
 
