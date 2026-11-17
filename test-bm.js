@@ -129,17 +129,28 @@
 // --short records what --capture records and turns it into the recording a short is made from: the
 // viewport is 648x648, so the page itself lays out square rather than a wide page being squeezed
 // into the frame afterwards, and the clip is cut to a little before the bookmarklet ran through to
-// its result being on screen, at 10 fps and under ten seconds. The GIF goes to the folder
-// TEST_BM_SHORTS_DIR names, test-results/shorts/ without one, as <name>.gif. A recording already
-// there is kept and the entry is not recorded again for it, because the maintainer's own recordings
-// come first. Only an entry that passed gets one: a recording of a bookmarklet that did not work is
-// not the bookmarklet's recording. ffmpeg on the PATH is what writes the GIF, and a machine without
-// it leaves every short owed rather than failing the run.
+// its result being on screen, at 10 fps and up to thirty seconds. The GIF goes to the folder
+// TEST_BM_SHORTS_DIR names, test-results/shorts/ without one, as <name>.gif.
+//
+// A clip that runs over fifteen seconds is written twice. <name>_Full.gif is the whole clip, and
+// <name>.gif is its 15 second cut: only the moments that show the bookmarklet's use, which are each
+// time it runs and each click, fill, press or select a reader would make, every one from a little
+// before it to an even share of fifteen seconds after it (two seconds at least), and the share
+// before the clip's end, which is its result on screen. Parts that overlap are joined, and the
+// waits, checks and set-up steps between them are dropped. A cut still over fifteen seconds is
+// time-stretched to fifteen when the short is rendered. The report names both files, their
+// lengths, and the parts of the whole clip the cut keeps.
+//
+// A recording already at <name>.gif is kept and the entry is not recorded again for it, because the
+// maintainer's own recordings come first. Only an entry that passed gets one: a recording of a
+// bookmarklet that did not work is not the bookmarklet's recording. ffmpeg on the PATH is what
+// writes the GIF, and a machine without it leaves every short owed rather than failing the run.
 //
 // An entry with auth records its short through the sign-in launcher, which is handed recordVideo
 // with the same { dir, size } a context takes; a launcher that ignores it records nothing, and the
 // short is left to be made by hand. That recording stays on this machine for the maintainer to
-// review, and nothing about the page goes into the report with it.
+// review, and nothing about the page goes into the report with it: its cut is reported as the
+// parts it keeps, in seconds, and never as the steps they came from.
 //
 // A failure keeps failure.png, the page as it stood when it failed, whether or not the entry was
 // captured - except in an entry with auth, which captures nothing at all, because a signed-in page
@@ -278,19 +289,38 @@ var captureArgs = ["--font-render-hinting=none", "--disable-lcd-text", "--force-
 // A short's frame, and what is cut out of the recording to fill it. The viewport is the frame, so
 // the page lays out square and nothing is scaled afterwards. The lead is how long before the
 // bookmarklet ran the clip starts, which is what shows a reader the page it ran on; the length is
-// under ten seconds with that lead counted, because a short that reaches ten is not one.
+// up to thirty seconds with that lead counted, the longest a short may run.
 var shortViewport = { width: 648, height: 648 };
 var shortFps = 10;
-var shortSeconds = 9.5;
+var shortSeconds = 30;
 var shortLead = 400;
+// A clip over this many seconds also gets its 15 second cut, the short that is posted with its GIF,
+// since a GIF runs fifteen seconds at most where it is posted. The whole clip is <name>_Full.gif.
+var shortCutSeconds = 15;
+var shortFullSuffix = "_Full";
+// The least a moment the cut keeps runs on after it, in milliseconds: enough to see what it did.
+var shortHold = 2000;
+// The steps a reader makes by hand. With each run of the bookmarklet they are the moments the cut
+// keeps; a wait, a check or a step that sets the page up is the harness's, and the cut drops it.
+var shortUseActions = ["click", "fill", "press", "select"];
 // The mark the clip runs to: the entry's steps done and the page settled, which is the moment the
 // bookmarklet's result is on screen.
 var shortEndMark = "the result is on screen";
 // A palette built from the clip rather than the colours a GIF defaults to, which is what keeps the
 // page's text readable at ten frames a second. It is the filter the video pipeline on this machine
-// already uses, so a recording made here matches one made by hand.
-var gifFilter = "fps=" + shortFps + ",split[s0][s1];[s0]palettegen=stats_mode=diff[p];"
- + "[s1][p]paletteuse=dither=bayer:bayer_scale=4";
+// already uses, so a recording made here matches one made by hand. A cut keeps only its parts of
+// the clip, each from its start up to and not including its end, so the parts add up to the cut's
+// length frame for frame, and each kept frame is placed straight after the one before it.
+function gifFilter(keep) {
+ var picked = "";
+ if (keep) {
+  picked = ",select='" + keep.map(function (part) {
+   return "gte(t," + part[0].toFixed(3) + ")*lt(t," + part[1].toFixed(3) + ")";
+  }).join("+") + "',setpts=N/(" + shortFps + "*TB)";
+ }
+ return "fps=" + shortFps + picked + ",split[s0][s1];[s0]palettegen=stats_mode=diff[p];"
+  + "[s1][p]paletteuse=dither=bayer:bayer_scale=4";
+}
 
 // How much of a failing page goes into failure.md. Enough to recognize what replaced a selector,
 // and not so much that the file stops being something an agent reads in one go.
@@ -1327,8 +1357,8 @@ function shortWork(ctx) {
 function shortFile(name) { return path.join(shortsDir, name + ".gif"); }
 
 // Where in the recording the clip starts and how long it runs, in seconds: a little before the
-// bookmarklet ran, through to its result being on screen, and never as long as ten seconds. The
-// offsets are the timeline's, which starts where the video starts.
+// bookmarklet ran, through to its result being on screen, and never longer than thirty seconds.
+// The offsets are the timeline's, which starts where the video starts.
 function shortClip(ctx) {
  var ran = 0;
  var found = false;
@@ -1345,22 +1375,63 @@ function shortClip(ctx) {
  return { from: from / 1000, span: Math.min(span, shortSeconds * 1000) / 1000 };
 }
 
-// The recording as a GIF, cut to the moment the bookmarklet ran. ffmpeg is what writes it, as the
-// video pipeline on this machine already does, and -n is how an unattended run refuses to overwrite
-// a recording rather than stopping at a prompt about it. The empty string when it worked, and the
-// reason it did not otherwise.
+// The 15 second cut of a clip that runs longer, as the parts of the clip it keeps, in seconds from
+// the clip's start. The moments it keeps are each time the bookmarklet runs and each step a reader
+// makes by hand. Each keeps the lead before it and an even share of the fifteen seconds after it,
+// never less than shortHold, and the clip's end keeps the same share before it, because that is
+// the result on screen. Parts that overlap, or that are a frame or less apart, are joined;
+// everything else is the waits, the checks and the set-up, and is dropped. The sum can still be
+// over fifteen seconds where there are many moments, and then it is the render that stretches it.
+function shortCut(ctx, clip) {
+ var fromMs = clip.from * 1000;
+ var endMs = clip.span * 1000;
+ var byHand = new RegExp("^step \\d+: (" + shortUseActions.join("|") + ")( |$)");
+ var moments = ctx.timeline.map(function (t) {
+  return { at: t.at - fromMs, what: t.what };
+ }).filter(function (t) {
+  return t.at >= 0 && t.at <= endMs && (t.what == "the bookmarklet runs" || byHand.test(t.what));
+ });
+ var hold = Math.max(shortHold, (shortCutSeconds * 1000 - moments.length * shortLead) / (moments.length + 1));
+ var parts = moments.map(function (m) {
+  return [Math.max(0, m.at - shortLead), Math.min(endMs, m.at + hold)];
+ });
+ parts.push([Math.max(0, endMs - hold), endMs]);
+ parts.sort(function (a, b) { return a[0] - b[0]; });
+ var joined = [];
+ parts.forEach(function (part) {
+  var last = joined[joined.length - 1];
+  if (last && part[0] <= last[1] + 1000 / shortFps) {
+   last[1] = Math.max(last[1], part[1]);
+  } else {
+   joined.push([part[0], part[1]]);
+  }
+ });
+ var keep = joined.map(function (part) {
+  return [Number((part[0] / 1000).toFixed(3)), Number((part[1] / 1000).toFixed(3))];
+ });
+ return {
+  keep: keep,
+  seconds: keep.reduce(function (sum, part) { return sum + part[1] - part[0]; }, 0),
+  moments: moments.map(function (m) { return { at: Number((m.at / 1000).toFixed(2)), what: m.what }; })
+ };
+}
+
+// The recording as a GIF, cut to the moment the bookmarklet ran, or to the parts of that clip a
+// cut keeps. ffmpeg is what writes it, as the video pipeline on this machine already does, and -n
+// is how an unattended run refuses to overwrite a recording rather than stopping at a prompt about
+// it. The empty string when it worked, and the reason it did not otherwise.
 //
 // A GIF ffmpeg did not write is taken away again, because the next run reads whatever is at this
 // name as the recording that is already there and records nothing for it. ffmpeg opens the output
 // before it encodes and leaves the file behind when the encode fails - a clip starting past the end
 // of the recording exits 0 and writes no bytes at all - so an attempt left where it fell would be
 // read as the finished recording by every run after it, and the short would be owed for good.
-function writeShortGif(source, dest, clip) {
+function writeShortGif(source, dest, clip, keep) {
  if (fs.existsSync(dest)) { return "a recording is already there, and it is kept: " + shownPath(dest); }
  fs.mkdirSync(path.dirname(dest), { recursive: true });
  var answer = child.spawnSync("ffmpeg", ["-hide_banner", "-nostdin", "-loglevel", "error", "-n",
   "-ss", clip.from.toFixed(3), "-t", clip.span.toFixed(3), "-i", source,
-  "-vf", gifFilter, "-loop", "0", dest], { encoding: "utf8" });
+  "-vf", gifFilter(keep), "-loop", "0", dest], { encoding: "utf8" });
  // ffmpeg names the files it was given the way they were given, as absolute paths. A note reads
  // the way the rest of the report does, so they are put back the way this file shows a path.
  var said = String((answer && answer.stderr) || "").trim().split("\n")[0]
@@ -1399,16 +1470,31 @@ function makeShort(ctx, result) {
   return;
  }
  var clip = shortClip(ctx);
- var lost = writeShortGif(ctx.videoFile, shortFile(ctx.name), clip);
+ // A clip over fifteen seconds is the whole one under <name>_Full.gif, and its cut is <name>.gif,
+ // which is the short that is posted with its GIF. The cut is only ever written beside the whole
+ // clip it came from: a cut that could not be written takes the whole clip away with it, so the
+ // next run records both rather than finding one and keeping it.
+ var cut = clip.span > shortCutSeconds ? shortCut(ctx, clip) : null;
+ var full = shortFile(ctx.name + shortFullSuffix);
+ var lost = cut ? writeShortGif(ctx.videoFile, full, clip) : "";
+ var wroteFull = !!cut && !lost;
+ if (!lost) { lost = writeShortGif(ctx.videoFile, shortFile(ctx.name), clip, cut && cut.keep); }
+ if (lost && wroteFull) { lost = dropShortGif(full, lost + "; the whole clip was taken away with it"); }
  if (lost) {
   result.notes.push("no short: " + lost);
   return;
  }
  result.short = {
   file: shownPath(shortFile(ctx.name)),
-  seconds: Number(clip.span.toFixed(2)),
+  seconds: Number((cut ? cut.seconds : clip.span).toFixed(2)),
   fps: shortFps
  };
+ if (cut) {
+  result.short.full = { file: shownPath(full), seconds: Number(clip.span.toFixed(2)) };
+  result.short.keep = cut.keep;
+  // A signed-in entry's steps stay in memory, as its timeline does; the parts are only seconds.
+  if (!ctx.private) { result.short.moments = cut.moments; }
+ }
  // The recording is in the GIF now, so the working copy goes - unless the entry was captured too,
  // where the same file is an artifact the report points at.
  if (!ctx.capture) {
@@ -2872,6 +2958,11 @@ function printDetail(result) {
  if (result.short) {
   console.log("  short: " + result.short.file + "  " + result.short.seconds + "s at "
    + result.short.fps + " fps" + (result.short.review ? "  waiting to be reviewed" : ""));
+  if (result.short.full) {
+   console.log("  full: " + result.short.full.file + "  " + result.short.full.seconds + "s, cut to "
+    + result.short.keep.map(function (part) { return part[0] + "-" + part[1] + "s"; }).join(", "));
+  }
+  (result.short.moments || []).forEach(function (m) { console.log("  kept +" + m.at + "s  " + m.what); });
  }
  result.dialogs.forEach(function (d) {
   console.log("  dialog: " + d.type + " " + (d.message === null ? withheldText : JSON.stringify(d.message)) + " " + d.answered);

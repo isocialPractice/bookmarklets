@@ -323,11 +323,13 @@ committed here is a page on the site.
 
 ## Short Videos
 
-One short per bookmarklet: its essential use in under ten seconds, framed with
-the repository's stamp border, posted to YouTube and linked from its README
-entry. Shorts are made in the maintainer's After Effects project on this
-machine. The project, its folders and the accounts posted to are local, and the
-run's constants keep them under `## Social Media Posting`.
+One short per bookmarklet: its essential use in up to thirty seconds, with a 15
+second cut when it runs longer, framed with the repository's stamp border,
+posted to YouTube and linked from its README entry. Shorts are made in the
+maintainer's After Effects project on this machine. The project, its folders
+and the accounts posted to are local, and the skill
+`.claude/skills/bookmarklets-social-media-manager/SKILL.md` keeps them, with
+how a short is made and posted.
 
 Each README entry links its videos from a block that takes the place of its
 `<!-- PASTE VIDEO HERE -->` comment, below the gist paragraph:

@@ -95,6 +95,23 @@ this file.
 
 ### Changed
 
+- `test-bm.js --short` records up to thirty seconds rather than under ten, because a short may now
+  run that long. A clip over fifteen seconds is written twice: `<name>_Full.gif`, the whole clip,
+  and `<name>.gif`, its 15 second cut, which is the short posted with its GIF, since a GIF runs
+  fifteen seconds at most where it is posted. The cut keeps only the moments that show the
+  bookmarklet's use: each time it runs, and each `click`, `fill`, `press` or `select` step a
+  reader would make. Each moment keeps the clip's lead before it and an even share of fifteen
+  seconds after it, never less than two, and the clip's end keeps the same share before it,
+  because that is the result on screen. Parts that overlap are joined, and the waits, checks and
+  set-up steps between them are dropped; a cut still over fifteen seconds is left for the render
+  to time-stretch. The result's `short` names both files and their lengths, the parts the cut
+  keeps as `keep`, in seconds of the whole clip, and what each was kept for as `moments`, except
+  for an entry with `auth`, whose steps stay in memory as its timeline does. A cut that could not
+  be written takes the whole clip away with it, so the next run records both. A clip of fifteen
+  seconds or less is one GIF, as before.
+- `TODO.md` `## Short Videos` describes a short as its essential use in up to thirty seconds, with
+  a 15 second cut when it runs longer, and points to the maintainer's local notes for how a short
+  is made and posted.
 - `OctoPrint - Change Graph Image` carries its demo in a video block, in place of the
   `<!-- PASTE VIDEO HERE -->` comment below its gist paragraph, rather than in a paragraph of its
   own above it. The link is the one that was already there. Its short line sits commented out
@@ -128,6 +145,13 @@ this file.
   and `failure.md` mark a result from an engine other than Chromium with the engine's name.
 
 ### Testing
+
+- Two tests in the `--short` section of `test/harness.test.js`, which now runs 103. An entry
+  that runs past thirty seconds stops at thirty; its whole clip and its cut are both GIFs; the cut
+  keeps the run, the click and the end and drops both waits; and ffmpeg's own count of each GIF's
+  frames agrees with the length the report gives it. A signed-in entry's cut is reported as
+  seconds only, with no moments. The test that checked a short under ten seconds checks thirty at
+  most, and that a clip of fifteen seconds or less is one GIF and no cut.
 
 - Twelve tests in two new sections of `test/harness.test.js`, which now runs 101. Four cover the
   `viewport` step, through a bookmarklet that writes the size of the window it ran in onto the

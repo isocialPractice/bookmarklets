@@ -724,16 +724,113 @@ test("--short records the entry at 648x648 and writes a 10 fps GIF where the pip
   assert.strictEqual(result.verdict, "pass", result.reason);
   assert.ok(result.short, "a short run reports the recording it wrote: " + JSON.stringify(result.notes));
   assert.strictEqual(result.short.fps, 10);
-  assert.ok(result.short.seconds > 0 && result.short.seconds < 10,
-   "a short runs for less than ten seconds, not " + result.short.seconds);
+  assert.ok(result.short.seconds > 0 && result.short.seconds <= 30,
+   "a short runs for thirty seconds at most, not " + result.short.seconds);
+  assert.strictEqual(result.short.full, undefined, "a clip of fifteen seconds or less is not cut");
+  assert.strictEqual(result.short.keep, undefined);
 
   var gif = path.join(shorts, "fixture_Short_Square.gif");
   assert.ok(fs.existsSync(gif), "there should be a GIF at " + gif);
   assert.ok(fs.statSync(gif).size > 0, "the GIF should not be empty");
   assert.strictEqual(fs.readFileSync(gif).slice(0, 6).toString("latin1"), "GIF89a",
    "the file should be a GIF, whatever it is named");
+  assert.deepStrictEqual(fs.readdirSync(shorts), ["fixture_Short_Square.gif"], "one clip, one GIF");
  } finally {
   removeDir(shorts);
+ }
+});
+
+// How many frames a GIF holds, read by ffmpeg, which is what tells a cut from the clip it came from
+// without taking the report's word for either length.
+function gifFrames(file) {
+ var answer = child.spawnSync("ffmpeg", ["-hide_banner", "-nostdin", "-i", file, "-f", "null", "-"], { encoding: "utf8" });
+ var counted = String(answer.stderr || "").match(/frame=\s*\d+/g);
+ return counted ? Number(/\d+/.exec(counted[counted.length - 1])[0]) : -1;
+}
+
+// Whether any part a cut keeps reaches into the stretch from..to of the whole clip, in seconds.
+function keepsAny(keep, from, to) {
+ return keep.some(function (part) { return part[0] < to && part[1] > from; });
+}
+
+test("a clip over fifteen seconds is kept whole up to thirty, and cut to its runs and clicks for the short", function (t) {
+ if (!hasFfmpeg()) {
+  t.skip("ffmpeg is not on the PATH, so there is no GIF to read");
+  return;
+ }
+ var shorts = shortsFolder();
+ try {
+  var answer = runApart({
+   fixture_Short_Long: {
+    url: "fixture:article.html", timeout: 60000,
+    steps: [{ run: true }, { wait: 12000 }, { click: "h1" }, { wait: 19000 }]
+   }
+  }, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts });
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "pass", result.reason);
+  assert.ok(result.short && result.short.full, "a long clip reports its whole clip and its cut: "
+   + JSON.stringify(result.notes));
+
+  assert.strictEqual(result.short.full.seconds, 30, "the clip ran past thirty seconds, so it stops at thirty");
+  assert.match(result.short.full.file, /fixture_Short_Long_Full\.gif$/);
+  assert.match(result.short.file, /fixture_Short_Long\.gif$/);
+  assert.ok(result.short.seconds > 0 && result.short.seconds <= 15,
+   "the cut keeps fifteen seconds at most, not " + result.short.seconds);
+
+  assert.deepStrictEqual(result.short.moments.map(function (m) { return m.what; }),
+   ["the bookmarklet runs", "step 3: click h1"], "the run and the click are the moments of use");
+  var keep = result.short.keep;
+  assert.strictEqual(keep.length, 3, "the run, the click and the end each keep a part: " + JSON.stringify(keep));
+  assert.strictEqual(keep[0][0], 0, "the cut starts where the clip does, a lead before the run");
+  assert.strictEqual(keep[keep.length - 1][1], 30, "the cut ends where the clip does, on the result");
+  keep.forEach(function (part, i) {
+   assert.ok(part[1] > part[0], "each part runs forward: " + JSON.stringify(part));
+   if (i) { assert.ok(part[0] > keep[i - 1][1], "parts are in order and apart: " + JSON.stringify(keep)); }
+  });
+  assert.ok(!keepsAny(keep, 6.5, 11), "the first wait is dropped: " + JSON.stringify(keep));
+  assert.ok(!keepsAny(keep, 18.5, 24.5), "the second wait is dropped: " + JSON.stringify(keep));
+
+  var whole = path.join(shorts, "fixture_Short_Long_Full.gif");
+  var cut = path.join(shorts, "fixture_Short_Long.gif");
+  [whole, cut].forEach(function (gif) {
+   assert.strictEqual(fs.readFileSync(gif).slice(0, 6).toString("latin1"), "GIF89a", gif + " should be a GIF");
+  });
+  var wholeFrames = gifFrames(whole);
+  var cutFrames = gifFrames(cut);
+  assert.ok(Math.abs(wholeFrames - 300) <= 3, "thirty seconds at 10 fps is about 300 frames, not " + wholeFrames);
+  assert.ok(Math.abs(cutFrames - result.short.seconds * 10) <= 3,
+   "the cut GIF holds the frames of the parts it keeps: " + cutFrames + " for " + result.short.seconds + "s");
+ } finally {
+  removeDir(shorts);
+ }
+});
+
+test("the cut of a signed-in entry is reported as seconds only, never as the steps it kept", function (t) {
+ if (!hasFfmpeg()) {
+  t.skip("ffmpeg is not on the PATH, so there is no GIF to read");
+  return;
+ }
+ var stub = makeStub();
+ var shorts = shortsFolder();
+ try {
+  var answer = runApart({
+   fixture_Short_LongSignedIn: {
+    url: "fixture:article.html", auth: "fixture-site", signedIn: "main", timeout: 40000,
+    steps: [{ run: true }, { wait: 16500 }]
+   }
+  }, ["--all", "--short"], { TEST_BM_AUTH_LAUNCHER: stub.file, TEST_BM_SHORTS_DIR: shorts });
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "pass", result.reason);
+  assert.ok(result.short && result.short.full, "the clip ran over fifteen seconds: " + JSON.stringify(result.notes));
+  assert.strictEqual(result.short.review, true, "a short of a signed-in page waits to be reviewed");
+  assert.ok(Array.isArray(result.short.keep) && result.short.keep.length > 0, "the parts are reported");
+  assert.strictEqual(result.short.moments, undefined, "the steps of a signed-in entry stay in memory");
+  assert.strictEqual(result.capture, undefined, "a signed-in page is still captured not at all");
+  assert.ok(fs.existsSync(path.join(shorts, "fixture_Short_LongSignedIn_Full.gif")));
+  assert.ok(fs.existsSync(path.join(shorts, "fixture_Short_LongSignedIn.gif")));
+ } finally {
+  removeDir(shorts);
+  removeDir(stub.dir);
  }
 });
 
