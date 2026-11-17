@@ -484,11 +484,19 @@
  },
 
  "siteSpecific_YouTube_ShowShortReleaseDate": {
-  "url": "https://www.youtube.com/shorts/jNQXAC9IVRw",
+  "url": "https://www.youtube.com/shorts/7begOX2yiC4",
   "scheduled": false,
-  "skip": "the shorts player refuses an ordinary video id and redirects to the watch page, so this entry needs a short chosen to stay available",
-  "requires": ["#actions"],
-  "timeout": 60000
+  "requires": ["reel-action-bar-view-model", ".ytwFactoidRendererFactoid"],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "wait": "#putReleaseYoutTubeShortRelease" },
+   { "expect": { "selector": "#putReleaseYoutTubeShortRelease", "text": "Nov 10, 2026" } },
+   { "run": true },
+   { "wait": 1500 },
+   { "expect": { "selector": "#putReleaseYoutTubeShortRelease", "count": 1 } },
+   { "expect": { "selector": "#putReleaseYoutTubeShortRelease", "text": "Nov 10, 2026" } }
+  ]
  },
 
  "siteSpecific_YouTube_StackUserPlaylistFeed": {

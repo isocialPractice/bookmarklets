@@ -30,29 +30,18 @@ javascript:(function() {
 
  /***********************SUPPORT FUNCTIONS***********************/
  /*
-  Check if being run for first time, setting storage if not as to
-  compensate for initialization bug.
+  Check if on a shorts page. A first visit serves the short's description
+  a moment after the page, so the main function waits for it rather than
+  reloading the page.
  */
  const runInitYoutTubeShortRelease = () => {
   if (reloadYouTubeShortRelease == undefined) { /* don't repeat alerts */
-    if (sessionStorage.getItem("initYoutTubeShortRelease") != true) {
-      if (location.href.indexOf(youTubeShortPath) > -1) {
-        alert(
-        "BOOKMARKLET HAS NOT BEEN INITIALIZED:\n\n" +
-        "Run bookmarklet again if release date is not displayed.\n"
-        );
-        /* on shorts set storage */
-        sessionStorage.setItem("initYoutTubeShortRelease", "1");
-        /* only reload if on shorts page */
-        window.location.reload();
-      } else {
-        alert(youTubeShortReleaseURINotice);
-      }
-      return 1;
-    } else {
-      checkPageInitYoutTubeShortRelease = /* define */
-        sessionStorage.getItem("initYoutTubeShortRelease");
+    if (location.href.indexOf(youTubeShortPath) > -1) {
+      checkPageInitYoutTubeShortRelease = 1; /* on shorts page */
       return 0;
+    } else {
+      alert(youTubeShortReleaseURINotice);
+      return 1;
     }
   }
  };
@@ -71,9 +60,9 @@ javascript:(function() {
   actionsIDYoutTubeShortRelease =
    hotGlueplaceDateYouTubeShortRelease();
 
-  /* get release date */
-  releaseDateYoutTubeShortRelease =
-   factoidsYoutTubeShortRelease[2].textContent;
+  /* get release date - undefined until the description is on the page */
+  releaseDateYoutTubeShortRelease = factoidsYoutTubeShortRelease[2] ?
+   factoidsYoutTubeShortRelease[2].textContent : undefined;
  };
 
  /* Create and style HTML to hold date. *****/
@@ -126,6 +115,18 @@ javascript:(function() {
   putReleaseYoutTubeShortRelease =
    document.getElementById("putReleaseYoutTubeShortRelease");
 
+  /* Narrow window - the action bar sits on the video, so lift the date above it. */
+  let barBoxYoutTubeShortRelease =
+   actionsIDYoutTubeShortRelease[0].getBoundingClientRect();
+  let dateBoxYoutTubeShortRelease =
+   putReleaseYoutTubeShortRelease.getBoundingClientRect();
+  if (dateBoxYoutTubeShortRelease.bottom > barBoxYoutTubeShortRelease.top) {
+   putReleaseYoutTubeShortRelease.style.setProperty("top",
+    (barBoxYoutTubeShortRelease.top - dateBoxYoutTubeShortRelease.bottom - 10) + "px");
+   putReleaseYoutTubeShortRelease.style.setProperty("background", "rgba(255, 255, 255, .85)");
+   putReleaseYoutTubeShortRelease.style.setProperty("color", "#0f0f0f");
+  }
+
   /* check if year is at end or beginning */
   let atEndYear = /^[a-zA-Z]+ \d{5,}$/;
   let atStartYear = /^\d{4}.*$/;
@@ -170,8 +171,22 @@ javascript:(function() {
                           MAIN FUNCTION
  ****************************************************************/
  function showShortReleaseDate() {
-  /* Have to delay a bit - using one second cause - seems right. */
-  setTimeout(function() {
+  /* Wait for the description and action bar, which a first visit serves late. */
+  let triesYoutTubeShortRelease = 0;
+  let waitYoutTubeShortRelease = setInterval(function() {
+   triesYoutTubeShortRelease++;
+   defineVarYoutTubeShortRelease();
+
+   /* Not on the page yet - try again, and leave the short alone after 10 seconds. */
+   if (releaseDateYoutTubeShortRelease == undefined ||
+       actionsIDYoutTubeShortRelease.length == 0) {
+    if (triesYoutTubeShortRelease >= 20) {
+     clearInterval(waitYoutTubeShortRelease);
+    }
+    return;
+   }
+   clearInterval(waitYoutTubeShortRelease);
+
    /* Check id that is made to remove if already placed. */
    putReleaseYoutTubeShortRelease =
     document.getElementById("putReleaseYoutTubeShortRelease");
@@ -179,9 +194,6 @@ javascript:(function() {
    /* If already placed remove. */
    if (putReleaseYoutTubeShortRelease) {
     putReleaseYoutTubeShortRelease.remove();
-    defineVarYoutTubeShortRelease();
-   } else {
-    defineVarYoutTubeShortRelease();
    }
 
    /* Prep element to be inserted. */
@@ -190,31 +202,29 @@ javascript:(function() {
    /* insert short release date */
    addRelDateYoutTubeShortRelease();
 
-   /* Delay for half a second for content loading. */
+   /* Check every half a second for content loading. */
   }, 500);
  }
 
- /* Adds interval to check for uri change. */
- var runShortReleaseURIInterval;
+ /* Adds interval to check for uri change - kept on window so a second run reuses it. */
+ var runShortReleaseURIInterval =
+  "runShortReleaseURIInterval--__-unlikely_-_name-__--runShortReleaseURIInterval";
 
- /* Check if page needs to be reloaded or if intialised.          */
- if (reloadYouTubeShortRelease == 0) { /* does not need reloading */
+ /* Run if on a shorts page.          */
+ if (reloadYouTubeShortRelease == 0) { /* on shorts page */
   /* add functionality */
-  /* Show instructions if turned on and on short path. */
+  /* Show instructions if turned on. */
   if (alertInstructionsYoutTubeShortRelease == 1) {
-    if (location.href.indexOf(youTubeShortPath) == -1) {
-    alert(youTubeShortReleaseURINotice);
-    } else {
     alert(`
     INSTRUCTIONS - YOUTUBE SHOW SHORT RELEASE DATE \n
     ********************************************** \n
     After first short has loaded, remaining shorts \n
     will be automatically updated with release date. \n
     `);
-    showShortReleaseDate();
-    runShortReleaseURIInterval = /* interval to update when short changes */
-     setInterval(checkCurrentShort, 500);
   }
-  }
+  showShortReleaseDate();
+  /* interval to update when short changes - one, however often it is run */
+  clearInterval(window[runShortReleaseURIInterval]);
+  window[runShortReleaseURIInterval] = setInterval(checkCurrentShort, 500);
  }
 })();
