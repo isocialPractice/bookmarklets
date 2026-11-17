@@ -393,16 +393,29 @@ the bookmarklet has a demo.
     was checked against the masking table before the upload. Its GIF is
     posted to Giphy, 11.15.2026, with the short as its source, and is in the
     `Bookmarklets` collection, 11.15.2026.
-  - `siteSpecific_YouTube_ShowShortReleaseDate` is posted, 11.16.2026:
-    [Short - YouTube - Show Short Release Date](https://www.youtube.com/shorts/wSBBxlRVyKs),
+  - `siteSpecific_YouTube_ShowShortReleaseDate` is posted, remade 11.16.2026:
+    [Short - YouTube - Show Short Release Date](https://www.youtube.com/shorts/mMW_1TJUJa0),
     public, in the `Bookmarklet Shorts` playlist, and its README entry links
-    it in place of the comment. Recorded with `test-bm.js --short` on one of
-    the maintainer's own shorts, signed out, with the channel's name and
-    avatar and the page's sign-in button taken off the page before the
-    recording; it runs 7.8 seconds, so it is one video. Every frame was
-    checked against the masking table and for a login screen before the
-    upload. Its GIF is posted to Giphy, 11.16.2026, with the short as its
-    source, and is in the `Bookmarklets` collection, 11.16.2026.
+    it. It replaces the first short of the same day, `wSBBxlRVyKs`, which was
+    recorded on a page showing another bookmarklet's short, so its frames
+    named and showed that bookmarklet and only the date belonged to this one.
+    Every short matches the bookmarklet it is named for, so it was remade.
+    - The remake is recorded by `.videos/support/record-show-short-release-date.mjs`
+      on the same page, signed out, dressed before the page draws: the
+      playing video is under a placeholder graphic, the title and channel
+      read `Sample Short` and `Sample Channel`, the avatars are plain, and
+      the sign-in button is not drawn. Its guard refuses a recording it could
+      not dress.
+    - It runs 9.4 seconds, so it is one video, with the date on screen for 67
+      of its 94 frames. Every frame of the recording, the MP4 and the GIF was
+      checked against the masking table, for a login screen and for another
+      bookmarklet's name before the upload.
+    - Its GIF is a new post for the new short, so the rule against posting a
+      GIF twice does not apply. It is posted to Giphy, 11.16.2026, with the
+      new short as its source, and is in the `Bookmarklets` collection,
+      11.16.2026.
+    - The first short and its GIF stay up until the maintainer deletes them
+      by hand, which also takes the old GIF out of the collection.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the

@@ -157,6 +157,12 @@ this file.
 - Each result in `report.json` names the engine it ran in, `browser` is the engine the run was
   asked for, and `browsers` lists every engine an entry ran in. `summary.txt`, the printed lines
   and `failure.md` mark a result from an engine other than Chromium with the engine's name.
+- The README's `YouTube - Show Short Release Date` entry links a new short. The first one was
+  recorded on a page that showed another bookmarklet's short, so its frames named that
+  bookmarklet and only the date belonged to this one. Every short now matches the bookmarklet it
+  is named for: the new one is recorded on the same page dressed with placeholders, its title,
+  channel and playing video included, so nothing in it names another bookmarklet, and the date is
+  on screen for most of the clip. Its GIF is posted with the new short as its source.
 
 ### Testing
 

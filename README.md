@@ -949,7 +949,7 @@ Gist page for [siteSpecific_YouTube_ShowShortReleaseDate.js](https://gist.github
 
 <b>Video Demonstration for Use:</b>
 
-- `Ctrl + click` link to view short on YouTube [Short - YouTube - Show Short Release Date](https://www.youtube.com/shorts/wSBBxlRVyKs)
+- `Ctrl + click` link to view short on YouTube [Short - YouTube - Show Short Release Date](https://www.youtube.com/shorts/mMW_1TJUJa0)
 <!-- - `Ctrl + click` link to view demo on YouTube [Demo - <bookmarklet-sub-category> - <(from.title):bookmarklet-descriptive-name>](<youtube-url) -->
 
 </dd></dl></dd></dl>
