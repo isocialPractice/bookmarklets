@@ -69,11 +69,12 @@ resolve; a run never works one.
     path needs its own. The entry for this bookmarklet needs an answer holding
     `\u` to paste. Close the issue with `Fixes #4`.
   - <https://github.com/isocialPractice/bookmarklets/issues/4>
-  - Not tested: the bookmarklet on an answer holding `\u`, in plain text and in a code block. The code as it stands writes a backslash in a code block as `&#x5c;`, and one in plain text as `&#92;` through its `RUNNING_FIX` list; whether either still lets `\u` through is what the test would show.
-  - Why: the check that confirms a change here is the entry's signed-in run, and on 11.16.2026 the site was signed out for the automated run, which never signs in. The run also never sends a prompt, so it has no answer of its own holding `\u` to copy.
+  - Tested on 11.16.2026 on a fixture page only, built from the markup the file reads (its turn, answer area, code block and copy button selectors) rather than read from the site, with a placeholder answer holding `\u` in plain text, in inline code and in a code block. The file as it stands passes: the bookmarklet it puts on the clipboard parses with its line breaks dropped and with each one replaced by a space, and shows every `\u` as written. A copy of the file without its first `RUNNING_FIX` item fails the same check with "Invalid Unicode escape sequence", the error this issue reports. So the backslash escapes added since the issue was filed (`&#92;` in plain text, `&#x5c;` in a code block) cover the case on that markup. The fixture page and its entry are not in the repository, because `test-bm.json` holds one entry per file and this file's entry is the signed-in run.
+  - Not tested: the same answer on the site's own markup, and the signed-in entry.
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check, so no answer of the site's own was read, and no prompt was sent.
   - Ways an AI-safe automated procedure could resolve it:
-    - a local fixture page with the site's answer markup as the bookmarklet reads it, holding placeholder answers with `\u` in plain text and in a code block, so the encoding is checked without the site;
-    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, with a saved conversation that already holds such an answer, so the signed-in run copies it and no prompt is ever sent.
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, with a saved conversation that already holds such an answer, so the signed-in run copies it and no prompt is ever sent;
+    - a recorded page state of such an answer, saved once with its text replaced by placeholders and replayed offline, so the fixture check runs on the site's own markup.
   - Done when an entry with an answer holding `\u` passes in both places, the signed-in entry still passes, and the issue is closed with `Fixes #4`.
 - [ ] **User todo**: `siteSpecific_YouTube_ShowShortReleaseDate.js` breaks on a short behind a
   viewer discretion notice
@@ -89,6 +90,48 @@ resolve; a run never works one.
     - a local fixture page that reproduces a notice short's structure, the description and action bar markup the bookmarklet reads, filled with placeholder text and graphics;
     - a recorded page state of a short behind the notice, saved once and replayed offline, with its content replaced by placeholders.
   - Done when an entry for the notice's structure passes and the issue is closed with `Fixes #11`.
+- [ ] **User todo**: Confirm that `siteSpecific_chatGPT_NavigateAnswers.js` still works on the site
+  - Not tested: the entry's run, which checks that the bookmarklet adds its toggle button to the conversation (`#main .normal-chat`).
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
+    - a local fixture page with the conversation markup the bookmarklet reads (`#main`, and one `article` per turn), filled with placeholder text.
+  - Done when the entry passes signed in, or on a fixture page with that markup.
+- [ ] **User todo**: Confirm that `siteSpecific_chatGPT_ResizePrompt.js` still works on the site
+  - Not tested: the entry's run, which checks that the bookmarklet makes the prompt box resizable (its style element first in the body), on a page with the prompt `form` and `#prompt-textarea`.
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
+    - a local fixture page with the prompt form markup the bookmarklet reads (the `form`, `#prompt-textarea` and the parents it styles), with an empty prompt.
+  - Done when the entry passes signed in, or on a fixture page with that markup.
+- [ ] **User todo**: Confirm that `siteSpecific_chatGPT_SearchChatHistory.js` still works on the site
+  - Not tested: the entry's run, which checks that the bookmarklet adds its search box and clear button above the chat history, on a page with chat links (`a[href*='/c/']`) in the sidebar.
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. A guest also has no chat history to search, so a guest run could not test it even past that check.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding a few saved conversations with placeholder titles;
+    - a local fixture page with a sidebar of placeholder chat links in the markup the bookmarklet reads.
+  - Done when the entry passes signed in, or on a fixture page with that markup.
+- [ ] **User todo**: Confirm that `siteSpecific_Gmail_ResizeSideBar.js` still works on the site
+  - Not tested: the entry's run, which checks that the bookmarklet adds its resize handle (`#gmail-resizer-handle`) to the label sidebar (`div.aeN`).
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding a few labels with placeholder names;
+    - a local fixture page with the sidebar markup the bookmarklet reads, holding placeholder labels.
+  - Done when the entry passes signed in, or on a fixture page with that markup.
+- [ ] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
+  - Not tested: the bookmarklet on an inbox listing (`table` and `tr`), where it marks and styles the sponsored rows. Its entry runs only the default safe run, with no assertion of its own.
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in;
+    - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
+  - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
+- [ ] **User todo**: Confirm that `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js` still works on the site
+  - Not tested: the bookmarklet on an inbox with nested labels (`div.aim` label rows and their `div.TH` expand arrows), where it opens a label an email is held over. Its entry runs only the default safe run, with no assertion of its own.
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding one nested label with a placeholder name;
+    - a local fixture page with placeholder nested labels and email rows in the markup the bookmarklet reads.
+  - Done when the entry passes signed in, or on a fixture page with that markup.
 
 ## Existing Bookmarklets
 

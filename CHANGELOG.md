@@ -250,6 +250,15 @@ this file.
   ways an automated run could resolve it, and neither was closed. No short behind a viewer
   discretion notice could be reached signed out (#11), and the `\u` case (#4) is confirmed by a
   signed-in run, which found the site signed out.
+- Six more bookmarklets moved to `## User - Resolve Test Procedures`, one item each, and no
+  bookmarklet or entry changed. Run without a sign-in, the ChatGPT entries met the site's bot
+  check before any page loaded, and a guest has no chat history for
+  `siteSpecific_chatGPT_SearchChatHistory` to search. The Gmail site has no guest mode. A fixture
+  page built from the markup `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` reads, with
+  placeholder answers holding `\u` in plain text, inline code and a code block, shows that the
+  file as it stands escapes the backslash on both of its encoding paths. The bookmarklet it
+  copies parses and shows each `\u` as written, and a copy of the file without its plain-text
+  escape fails with the error #4 reports. #4 stays open until the site's own markup is checked.
 
 ## [11.15.2026]
 
