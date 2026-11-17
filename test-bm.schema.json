@@ -49,7 +49,7 @@
     },
     "permissions": {
      "type": "array",
-     "description": "Browser permissions the context grants, such as clipboard-read and clipboard-write. An expect on a clipboard value needs clipboard-read.",
+     "description": "Browser permissions the context grants, such as clipboard-read and clipboard-write. An expect on a clipboard value needs clipboard-read. Firefox has no clipboard permission to grant, its clipboard being open to the page already, so a run there leaves those two out and grants the rest.",
      "items": { "type": "string", "minLength": 1 }
     },
     "skip": {
@@ -91,6 +91,14 @@
      "type": "string",
      "minLength": 1,
      "description": "A selector only the signed-in page has, checked before requires. A page without it, or one that lands on another origin, is a skip reading \"signed out of <site>\" rather than a site-changed failure."
+    },
+    "browsers": {
+     "type": "array",
+     "description": "The engines this entry runs in when the run names none with --browser. Without it the entry runs in chromium alone, which is also all --scheduled uses unless an entry asks for more. --browser <engine> runs every entry in that one engine whatever this says. In firefox, every request to another host after the bookmarklet first ran is judged as the bookmarklet's, since firefox does not say which code started it; an entry that counts requests, or has auth, is a skip there. An entry with auth runs in chromium only, and naming another engine here is a configuration error.",
+     "minItems": 1,
+     "uniqueItems": true,
+     "items": { "enum": ["chromium", "firefox"] },
+     "examples": [["chromium", "firefox"]]
     }
    },
    "dependencies": {
@@ -98,11 +106,11 @@
     "signedIn": ["auth"]
    },
    "if": { "required": ["auth"] },
-   "then": { "properties": { "scheduled": { "const": false }, "capture": false } }
+   "then": { "properties": { "scheduled": { "const": false }, "capture": false, "browsers": { "items": { "const": "chromium" } } } }
   },
   "step": {
    "type": "object",
-   "description": "One thing to do. Exactly one of run, click, fill, press, select, wait, answer, detach, attach or expect.",
+   "description": "One thing to do. Exactly one of run, click, fill, press, select, wait, answer, detach, attach, viewport or expect.",
    "additionalProperties": false,
    "properties": {
     "run": {
@@ -173,6 +181,17 @@
      "minLength": 1,
      "description": "The name an earlier detach step gave what it took off the page, put back where it came from. A name nothing earlier in the entry detached is a configuration error, and a place that is itself gone by then fails the entry.",
      "examples": ["headerRow"]
+    },
+    "viewport": {
+     "type": "object",
+     "description": "The page's size for every step after this one, until another viewport step or the end of the entry, when the entry's own size - 1280x720, or 648x648 for a short - comes back. It is how an expectation that reads geometry, as clear does, is asked at a width a reader's window has and the default does not.",
+     "additionalProperties": false,
+     "required": ["width", "height"],
+     "properties": {
+      "width": { "type": "integer", "minimum": 100, "maximum": 4000, "description": "Whole pixels." },
+      "height": { "type": "integer", "minimum": 100, "maximum": 4000, "description": "Whole pixels." }
+     },
+     "examples": [{ "width": 1024, "height": 720 }]
     },
     "as": {
      "type": "string",

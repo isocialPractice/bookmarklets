@@ -1271,6 +1271,154 @@ test("a value that would make the file fail its own check is refused, unsafe cod
 });
 
 // ----------------------------------------------------------------------------------------------- //
+// A viewport step
+// ----------------------------------------------------------------------------------------------- //
+
+// A bookmarklet that writes the size of the window it ran in onto the page, so each run says what
+// the steps before it left the viewport at.
+var windowSource = [
+ "javascript:(function() {",
+ " var panelFixtureReadsTheSize = document.getElementById(\"size--__-unlikely_-_name-__--size\");",
+ " if (!panelFixtureReadsTheSize) {",
+ "  panelFixtureReadsTheSize = document.createElement(\"p\");",
+ "  panelFixtureReadsTheSize.id = \"size--__-unlikely_-_name-__--size\";",
+ "  document.body.appendChild(panelFixtureReadsTheSize);",
+ " }",
+ " panelFixtureReadsTheSize.textContent = \"size: \" + window.innerWidth + \"x\" + window.innerHeight;",
+ "})();"
+].join("\n");
+
+var windowPanel = "#size--__-unlikely_-_name-__--size";
+
+function windowIs(text) { return { expect: { selector: windowPanel, text: "size: " + text } }; }
+
+// A bookmarklet that adds a two-column header row whose first column is sized by the window, the
+// way GitHub's file table narrows with it. The heading in it is held to one line, as the Size
+// heading was, and the column beside it paints its own words. At 1280 the first column is 280px and
+// the heading fits; at 1024 it is 24px and the heading runs over its neighbour. The row is fixed
+// near the top of the window, so what its overflow lands on is always on screen to be read.
+var narrowingSource = [
+ "javascript:(function() {",
+ " var tableFixtureNarrowsIt = document.createElement(\"table\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"position\", \"fixed\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"top\", \"200px\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"left\", \"0\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"z-index\", \"10\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"background\", \"#fff\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"table-layout\", \"fixed\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"border-collapse\", \"collapse\");",
+ " tableFixtureNarrowsIt.style.setProperty(\"width\", \"calc(100vw - 600px)\");",
+ " var rowFixtureNarrowsIt = tableFixtureNarrowsIt.insertRow(0);",
+ " var heldFixtureNarrowsIt = document.createElement(\"th\");",
+ " heldFixtureNarrowsIt.id = \"held--__-unlikely_-_name-__--held\";",
+ " heldFixtureNarrowsIt.textContent = \"Size (rate limited)\";",
+ " heldFixtureNarrowsIt.style.setProperty(\"width\", \"calc(100vw - 1000px)\");",
+ " heldFixtureNarrowsIt.style.setProperty(\"white-space\", \"nowrap\");",
+ " var nextFixtureNarrowsIt = document.createElement(\"th\");",
+ " nextFixtureNarrowsIt.textContent = \"Last commit message\";",
+ " nextFixtureNarrowsIt.style.setProperty(\"width\", \"400px\");",
+ " [heldFixtureNarrowsIt, nextFixtureNarrowsIt].forEach(function(cellFixtureNarrowsIt) {",
+ "  cellFixtureNarrowsIt.style.setProperty(\"font-size\", \"12px\");",
+ "  cellFixtureNarrowsIt.style.setProperty(\"padding\", \"0\");",
+ "  cellFixtureNarrowsIt.style.setProperty(\"text-align\", \"left\");",
+ "  rowFixtureNarrowsIt.appendChild(cellFixtureNarrowsIt);",
+ " });",
+ " document.body.appendChild(tableFixtureNarrowsIt);",
+ "})();"
+].join("\n");
+
+var heldHeading = "#held--__-unlikely_-_name-__--held";
+
+test("a viewport step sizes the page for every step after it, until another one changes it", function () {
+ var answer = runApart({
+  fixture_Viewport_HoldsForWhatFollows: {
+   url: "fixture:article.html",
+   steps: [
+    { run: true },
+    windowIs("1280x720"),
+    { viewport: { width: 1024, height: 720 } },
+    { run: true },
+    windowIs("1024x720"),
+    { wait: 200 },
+    { run: true },
+    windowIs("1024x720"),
+    { viewport: { width: 400, height: 800 } },
+    { run: true },
+    windowIs("400x800")
+   ]
+  }
+ }, ["--all"], undefined, windowSource);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+});
+
+test("the entry's own size comes back when it ends, and the next entry meets the default", function () {
+ var answer = runApart({
+  fixture_Viewport_A_Narrows: {
+   url: "fixture:article.html",
+   capture: true,
+   steps: [{ viewport: { width: 800, height: 600 } }, { run: true }, windowIs("800x600")]
+  },
+  fixture_Viewport_B_Follows: { url: "fixture:article.html", steps: [{ run: true }, windowIs("1280x720")] }
+ }, ["--all"], undefined, windowSource);
+ assert.ok(answer.report, answer.run.out + answer.run.err);
+ var narrows = answer.report.results.filter(function (r) { return r.name === "fixture_Viewport_A_Narrows"; })[0];
+ var follows = answer.report.results.filter(function (r) { return r.name === "fixture_Viewport_B_Follows"; })[0];
+ assert.strictEqual(narrows.verdict, "pass", narrows.reason);
+ assert.strictEqual(follows.verdict, "pass", follows.reason);
+ var said = narrows.capture.timeline.map(function (t) { return t.what; });
+ assert.ok(said.indexOf("step 1: viewport 800x600") >= 0, "the timeline names the size the step asked for:\n" + said.join("\n"));
+ assert.strictEqual(said[said.length - 1], "the viewport goes back to 1280x720",
+  "the default comes back last, once the entry's steps are done:\n" + said.join("\n"));
+});
+
+test("clear at a narrower window fails where the default width passes, which is what the step is for", function () {
+ var answer = runApart({
+  fixture_Viewport_ClearAtDefault: {
+   url: "fixture:article.html",
+   steps: [{ run: true }, { expect: { selector: heldHeading, clear: true } }]
+  },
+  fixture_Viewport_ClearAtNarrow: {
+   url: "fixture:article.html",
+   steps: [
+    { run: true },
+    { expect: { selector: heldHeading, clear: true } },
+    { viewport: { width: 1024, height: 720 } },
+    { expect: { selector: heldHeading, clear: true } }
+   ]
+  }
+ }, ["--all"], undefined, narrowingSource);
+ assert.ok(answer.report, answer.run.out + answer.run.err);
+ var wide = answer.report.results.filter(function (r) { return r.name === "fixture_Viewport_ClearAtDefault"; })[0];
+ var narrow = answer.report.results.filter(function (r) { return r.name === "fixture_Viewport_ClearAtNarrow"; })[0];
+ assert.strictEqual(wide.verdict, "pass", wide.reason);
+ assert.strictEqual(narrow.verdict, "fail");
+ assert.match(narrow.reason, /^step 4: #held--__-unlikely_-_name-__--held paints [\d.]+px of text past its own box, over th/,
+  "the clear at the default passed, and the one after the step failed");
+ assert.match(narrow.reason, /"Last commit message"/);
+});
+
+test("a viewport that is not a width and a height of whole pixels a window could have is refused", function () {
+ refuses({
+  fixture_Pass_AddsAPanel: {
+   steps: [
+    { viewport: "1024x720" },
+    { viewport: { width: 1024 } },
+    { viewport: { width: 1024.5, height: 720 } },
+    { viewport: { width: 1024, height: 20 } },
+    { viewport: { width: 1024, height: 720, scale: 2 } }
+   ]
+  }
+ }, new RegExp([
+  "step 1: viewport takes \\{ \"width\": <pixels>, \"height\": <pixels> \\}",
+  "step 2: viewport takes a height of whole pixels from 100 to 4000",
+  "step 3: viewport takes a width of whole pixels from 100 to 4000",
+  "step 4: viewport takes a height of whole pixels from 100 to 4000",
+  "step 5: viewport has no scale - it takes width and height"
+ ].join("[\\s\\S]*")));
+});
+
+// ----------------------------------------------------------------------------------------------- //
 // A host the entry answers, and a page the entry takes apart
 // ----------------------------------------------------------------------------------------------- //
 
@@ -1509,4 +1657,186 @@ test("a count of requests with neither a count nor a bound is a configuration er
  refuses({
   fixture_Pass_AddsAPanel: { steps: [{ expect: { requests: "api.collector.invalid" } }] }
  }, /requests takes count, the number of requests to that host, or atMost, a bound on it/);
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// Another engine
+// ----------------------------------------------------------------------------------------------- //
+
+// Firefox is an install step of its own, npx playwright install firefox, which a machine may never
+// have taken. The tests that run it say so and skip there, as the short tests do without ffmpeg; the
+// ones that only read the configuration, or ask for an engine that is not there, run everywhere.
+function hasFirefox() {
+ try {
+  return fs.existsSync(require("playwright").firefox.executablePath());
+ } catch (err) {
+  return false;
+ }
+}
+
+var noFirefox = "firefox is not installed for Playwright here: npx playwright install firefox";
+
+function resultsNamed(answer, name) {
+ assert.ok(answer.report, "the run should have written a report:\n" + answer.run.out + answer.run.err);
+ return answer.report.results.filter(function (r) { return r.name === name; });
+}
+
+test("--browser takes chromium or firefox, and nothing else, and goes with neither --sign-in nor --short", function () {
+ var odd = runHarness(["--list", "--browser", "webkit"], fixtureEnv());
+ assert.strictEqual(odd.status, 2);
+ assert.match(odd.err, /--browser takes chromium or firefox/);
+ var signIn = runHarness(["--sign-in", "fixture-site", "--browser", "firefox"], fixtureEnv());
+ assert.strictEqual(signIn.status, 2);
+ assert.match(signIn.err, /--sign-in opens the sign-in launcher's own browser, and takes no --browser/);
+ var short = runHarness(["--all", "--short", "--browser", "firefox"], fixtureEnv());
+ assert.strictEqual(short.status, 2);
+ assert.match(short.err, /--short records in chromium, the browser the shorts are made in/);
+});
+
+test("browsers takes known engines, each once, and chromium alone for an entry with auth", function () {
+ refuses({
+  fixture_Pass_AddsAPanel: { browsers: [] },
+  fixture_Origin_UsesStorageAndLocation: { browsers: ["chromium", "webkit"] },
+  fixture_Popup_OpensANewTab: { browsers: ["firefox", "firefox"] },
+  fixture_Selection_AnchorsTheSelection: { browsers: "firefox" },
+  fixture_Auth_MarksTheSignedInPage: { auth: "fixture-site", signedIn: "body", browsers: ["chromium", "firefox"] }
+ }, new RegExp([
+  "fixture_Pass_AddsAPanel: browsers takes a list of engines",
+  "fixture_Origin_UsesStorageAndLocation: browsers has no engine \"webkit\" - it takes chromium or firefox",
+  "fixture_Popup_OpensANewTab: browsers names firefox twice",
+  "fixture_Selection_AnchorsTheSelection: browsers takes a list of engines",
+  "fixture_Auth_MarksTheSignedInPage: an entry with auth runs in chromium only"
+ ].join("[\\s\\S]*")));
+ var listed = runApart({ fixture_Engine_Listed: { url: "fixture:article.html", browsers: ["chromium", "firefox"] } }, ["--list"]);
+ assert.strictEqual(listed.run.status, 0, listed.run.err);
+ assert.match(listed.run.out, /fixture_Engine_Listed\s+configured\s+fixture:article\.html  browsers chromium, firefox/);
+});
+
+test("an engine Playwright has no build of stops the run before any entry, naming the install step", function () {
+ var empty = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-no-browsers-"));
+ try {
+  var answer = runApart({ fixture_Engine_NotThere: { url: "fixture:article.html" } }, ["--all", "--browser", "firefox"],
+   { PLAYWRIGHT_BROWSERS_PATH: empty });
+  assert.strictEqual(answer.run.status, 2, answer.run.out + answer.run.err);
+  assert.match(answer.run.err, /firefox is not installed for Playwright - run npx playwright install firefox/);
+  assert.strictEqual(answer.report, null, "no entry ran, so no report was written");
+ } finally {
+  removeDir(empty);
+ }
+});
+
+test("--browser firefox runs every entry in firefox, says so, and reads a throw back to its line", function (t) {
+ if (!hasFirefox()) { t.skip(noFirefox); return; }
+ var answer = runApart({
+  fixture_Engine_WritesTheValue: setEntry([
+   { run: true },
+   { expect: { selector: setPanel, text: "label: as published" } },
+   { run: { set: { labelFixtureSetsIt: "from the entry" } } },
+   { expect: { selector: setPanel, text: "label: from the entry" } }
+  ]),
+  fixture_Engine_ThrowsAtItsLine: setEntry([{ run: { set: { labelFixtureSetsIt: setLong } } }])
+ }, ["--all", "--browser", "firefox"], undefined, setSource);
+ assert.ok(answer.report, answer.run.out + answer.run.err);
+ assert.strictEqual(answer.report.browser, "firefox");
+ assert.deepStrictEqual(answer.report.browsers, ["firefox"]);
+ assert.strictEqual(answer.report.injected, "evaluate", "firefox keeps the sourceURL tag, so page.evaluate is the way in");
+ var writes = resultsNamed(answer, "fixture_Engine_WritesTheValue");
+ var throws = resultsNamed(answer, "fixture_Engine_ThrowsAtItsLine");
+ assert.strictEqual(writes.length, 1);
+ assert.strictEqual(writes[0].browser, "firefox");
+ assert.strictEqual(writes[0].verdict, "pass", writes[0].reason);
+ assert.strictEqual(throws[0].verdict, "fail");
+ assert.match(throws[0].reason, /^the bookmarklet threw: .*\(line 10\)$/,
+  "firefox's stack names the bookmarklet by its sourceURL, so the line is read back as in chromium");
+ assert.match(answer.run.out, /fixture_Engine_WritesTheValue \[firefox\]\s+pass/);
+ var failures = failureFileOf(answer.run);
+ assert.match(failures, /## fixture_Engine_ThrowsAtItsLine \[firefox\]\n\n[\s\S]*- \*\*Browser\*\*: firefox - run it again with `--browser firefox`/);
+});
+
+test("an entry asking for firefox runs in both engines, and everything else in chromium alone", function (t) {
+ if (!hasFirefox()) { t.skip(noFirefox); return; }
+ var entries = {
+  fixture_Engine_AsksForBoth: {
+   url: "fixture:article.html",
+   scheduled: true,
+   browsers: ["chromium", "firefox"],
+   steps: [{ viewport: { width: 1024, height: 720 } }, { run: true }, windowIs("1024x720")]
+  },
+  fixture_Engine_AsksForNothing: { url: "fixture:article.html", scheduled: true, steps: [{ run: true }, windowIs("1280x720")] }
+ };
+ var scheduled = runApart(entries, ["--scheduled"], undefined, windowSource);
+ var both = resultsNamed(scheduled, "fixture_Engine_AsksForBoth");
+ var plain = resultsNamed(scheduled, "fixture_Engine_AsksForNothing");
+ assert.deepStrictEqual(both.map(function (r) { return r.browser; }), ["chromium", "firefox"]);
+ assert.deepStrictEqual(plain.map(function (r) { return r.browser; }), ["chromium"]);
+ both.concat(plain).forEach(function (r) { assert.strictEqual(r.verdict, "pass", r.browser + ": " + r.reason); });
+ assert.deepStrictEqual(scheduled.report.browsers, ["chromium", "firefox"]);
+
+ var named = runApart(entries, ["--scheduled", "--browser", "chromium"], undefined, windowSource);
+ assert.deepStrictEqual(named.report.results.map(function (r) { return r.browser; }), ["chromium", "chromium"],
+  "--browser names the one engine for every entry, whatever an entry asks for");
+});
+
+test("in firefox every request to another host after the run is the bookmarklet's, and a count of them is a skip", function (t) {
+ if (!hasFirefox()) { t.skip(noFirefox); return; }
+ var answer = runApart({
+  fixture_Engine_NamesNothing: { url: "fixture:article.html", steps: [{ run: true }, { wait: 1500 }] },
+  fixture_Engine_NamesTheHost: {
+   url: "fixture:article.html",
+   network: askedNetwork,
+   steps: [
+    { answer: { host: askedHost, status: 200, body: "a listing" } },
+    { run: true },
+    { wait: 1500 },
+    { expect: { selector: answerPanel, text: "200 a listing" } }
+   ]
+  },
+  fixture_Engine_CountsThem: {
+   url: "fixture:article.html",
+   network: askedNetwork,
+   steps: [{ run: true }, { wait: 500 }, { expect: { requests: askedHost, count: 1 } }]
+  }
+ }, ["--all", "--browser", "firefox"], undefined, askingSource);
+ var unnamed = resultsNamed(answer, "fixture_Engine_NamesNothing")[0];
+ var named = resultsNamed(answer, "fixture_Engine_NamesTheHost")[0];
+ var counts = resultsNamed(answer, "fixture_Engine_CountsThem")[0];
+ assert.strictEqual(unnamed.verdict, "fail");
+ assert.match(unnamed.reason, /^sends a request to api\.collector\.invalid, a host other than the page's own/);
+ assert.strictEqual(named.verdict, "pass", named.reason);
+ assert.strictEqual(counts.verdict, "skip");
+ assert.match(counts.reason, /only chromium says which code sent a request - firefox would count the page's own as well/);
+});
+
+test("an entry with auth is a skip in firefox, and the sign-in launcher is never loaded for it", function (t) {
+ if (!hasFirefox()) { t.skip(noFirefox); return; }
+ // A launcher named by a path that holds nothing is a configuration error the moment it is loaded,
+ // so a run that ends in a skip is a run that never loaded it.
+ var nowhere = path.join(os.tmpdir(), "test-bm-no-launcher-" + process.pid, "missing-launcher.mjs");
+ var answer = runApart({
+  fixture_Engine_SignedIn: { url: "fixture:article.html", auth: "fixture-site", signedIn: "body" }
+ }, ["--all", "--browser", "firefox"], { TEST_BM_AUTH_LAUNCHER: nowhere });
+ assert.strictEqual(answer.run.status, 0, answer.run.out + answer.run.err);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "skip");
+ assert.strictEqual(result.reason, "an entry with auth runs in chromium only - the sign-in launcher gives a chromium browser");
+});
+
+test("firefox leaves out the clipboard permissions it has no name for, and its clipboard still works", function (t) {
+ if (!hasFirefox()) { t.skip(noFirefox); return; }
+ var clipSource = [
+  "javascript:(function() {",
+  " navigator.clipboard.writeText(\"copied by the fixture\");",
+  "})();"
+ ].join("\n");
+ var answer = runApart({
+  fixture_Engine_Copies: {
+   url: "fixture:article.html",
+   permissions: ["clipboard-read", "clipboard-write"],
+   steps: [{ run: true }, { wait: 300 }, { expect: { clipboard: "copied by the fixture" } }]
+  }
+ }, ["--all", "--browser", "firefox"], undefined, clipSource);
+ var result = onlyResult(answer);
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.ok(result.notes.indexOf("firefox has no clipboard-read or clipboard-write permission to grant: its clipboard is open to the page") >= 0,
+  result.notes.join("\n"));
 });

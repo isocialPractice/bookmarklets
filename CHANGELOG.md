@@ -71,6 +71,27 @@ this file.
   tests the automated runs could not finish. Each item opens with `**User todo**:`, so no run
   works it, says in general terms what was not tested and why, and proposes one to three ways an
   automated procedure could resolve it without handling a password.
+- A `viewport` step sizes the page for the steps after it:
+  `{ "viewport": { "width": 1024, "height": 720 } }` lays the page out at 1024x720 from there on,
+  until another viewport step, and the entry's own size, 1280x720 or 648x648 for a short, comes
+  back when the entry ends, which the timeline records. It is how `clear`, the one expectation
+  that reads geometry, is asked at a width a reader's window has and the default does not. Width
+  and height are whole pixels from 100 to 4000, and anything else is a configuration error before
+  any browser starts. `test-bm.schema.json` takes the step.
+- `test-bm.js --browser firefox` runs the same checks in Firefox, the second most likely place a
+  reader pastes a bookmarklet. Chromium stays the default, and the only engine `--scheduled`
+  uses unless an entry asks for more with `"browsers": ["chromium", "firefox"]`; `--browser`
+  names one engine for every entry, whatever an entry asks for. Firefox keeps the `sourceURL` tag,
+  so the bookmarklet's errors are told apart from the page's and read back to their line as in
+  Chromium. It does not say which code started a request, so there every request to another host
+  after the bookmarklet first ran is judged as the bookmarklet's, which judges more than Chromium
+  does and never less; an entry that counts requests is a skip in Firefox for the same reason, and
+  so is an entry with `auth`, whose launcher gives a Chromium browser and is never loaded for a
+  Firefox run. Firefox has no `clipboard-read` or `clipboard-write` permission, its clipboard
+  being open to the page already, so those two are left out with a note and the rest are granted.
+  A short is recorded in Chromium only, so `--short` takes no other engine. Firefox is a local
+  install step, `npx playwright install firefox`, which the scheduled set never runs, and a run
+  that needs it where it is missing stops with exit 2 naming that step.
 
 ### Changed
 
@@ -97,8 +118,32 @@ this file.
 - The README's `OctoPrint - Change Graph Image` entry says it was tested on OctoPrint 1.11.5 via
   OctoPi OS, what each path showed, that no printer needs to be connected, and how to open the
   page, in place of saying it had not been tested on OctoPi OS.
+- The `siteSpecific_GitHub_ShowFileSize` entry asserts `clear` at 1024 as well as at the default,
+  on the folder page with the API refusing, which is the state and the width the heading
+  collision of 11.15.2026 lived at. The bookmarklet passes it. The copy from before that day's
+  fix fails the same check, its heading painting 49px of text past its own box over GitHub's
+  `Last commit message`, so the check is one that would have caught it.
+- Each result in `report.json` names the engine it ran in, `browser` is the engine the run was
+  asked for, and `browsers` lists every engine an entry ran in. `summary.txt`, the printed lines
+  and `failure.md` mark a result from an engine other than Chromium with the engine's name.
 
 ### Testing
+
+- Twelve tests in two new sections of `test/harness.test.js`, which now runs 101. Four cover the
+  `viewport` step, through a bookmarklet that writes the size of the window it ran in onto the
+  page: a step holds for every step after it until another one changes it; the entry's own size
+  comes back when it ends, and the next entry meets the default; a column sized by the window
+  passes `clear` at 1280 and fails it after a step to 1024; and a size that is not a width and a
+  height of whole pixels is refused. Eight cover the engines: `--browser` takes only `chromium`
+  or `firefox`, and neither `--sign-in` nor `--short` takes another engine; `browsers` takes
+  known engines once each, and only `chromium` for an entry with `auth`; an engine Playwright
+  has no build of stops the run before any entry, naming the install step; and, where Firefox is
+  installed, a run in Firefox passes, reads a throw back to its line and says so in every report,
+  an entry asking for both engines runs in both while the rest run in Chromium alone, a request
+  to a host the entry does not name fails while a named one passes and a count of requests is a
+  skip, an entry with `auth` is a skip that never loads the launcher, and the clipboard works
+  with its two permissions left out. The five that need Firefox skip themselves with a reason
+  where it is not installed.
 
 - Ten tests in a new section of `test/harness.test.js`, which now runs 89, cover a `run` that
   sets variables, each through a bookmarklet of its own that asks to be edited. A set value is

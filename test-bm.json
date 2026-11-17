@@ -361,7 +361,12 @@
    { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "text": "Size (rate limited)" } },
    { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "visible": true } },
    { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "clear": true } },
-   { "expect": { "requests": "api.github.com", "atMost": 2 } }
+   { "expect": { "requests": "api.github.com", "atMost": 2 } },
+   { "viewport": { "width": 1024, "height": 720 } },
+   { "wait": 1500 },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "text": "Size (rate limited)" } },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "visible": true } },
+   { "expect": { "selector": "#sizeCol--__-unlikely_-_name-__--sizeCol", "clear": true } }
   ]
  },
 

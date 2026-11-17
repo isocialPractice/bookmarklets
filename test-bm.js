@@ -2,11 +2,12 @@
 // test-bm                                                                                         //
 // Run a bookmarklet in a real browser and say whether it still works.                             //
 // *********************************************************************************************** //
-// Needs Playwright: npm install, then npx playwright install chromium.
+// Needs Playwright: npm install, then npx playwright install chromium. A run in Firefox also needs
+// npx playwright install firefox, once, on the machine that runs it.
 //
-//   node test-bm.js <name> [--headed] [--slow-mo <ms>] [--capture] [--short]
-//   node test-bm.js --all [--headed] [--slow-mo <ms>] [--capture] [--short]
-//   node test-bm.js --scheduled
+//   node test-bm.js <name> [--browser <engine>] [--headed] [--slow-mo <ms>] [--capture] [--short]
+//   node test-bm.js --all [--browser <engine>] [--headed] [--slow-mo <ms>] [--capture] [--short]
+//   node test-bm.js --scheduled [--browser <engine>]
 //   node test-bm.js --list
 //   node test-bm.js --sign-in <site>
 //
@@ -16,6 +17,8 @@
 //              a Windows scheduled task has to call. Nothing on this path waits for input.
 // --list       What a run would do with each bookmarklet, without opening a browser.
 // --sign-in    Ask the sign-in launcher to open <site> for signing in, then exit.
+// --browser    The engine every entry runs in: chromium, the default, or firefox. Without it, an
+//              entry runs in chromium and in any other engine its "browsers" names.
 // --headed     Watch the run in a browser window.
 // --slow-mo    Milliseconds between actions, for the same reason. Neither is ever needed.
 // --capture    Capture every entry the run reaches, as an entry's "capture": true does for itself.
@@ -87,6 +90,24 @@
 // configuration error before any browser starts. The report names each variable set and its value,
 // and a line an error is read back to is a line of the file with the value in. { "run": true } runs
 // the file as it is, and nothing is ever written back to it.
+//
+// A viewport step sizes the page for the steps after it: { "viewport": { "width": 1024, "height": 720 } }
+// lays the page out at 1024x720 from there on, and the entry's own size - 1280x720, or 648x648 for a
+// short - comes back when the entry ends. It is how an expectation that reads geometry, as clear does,
+// is asked at a width a reader's window has and the default does not: a heading that fits its column
+// at 1280 can cover the one beside it at 1024. Width and height are whole pixels from 100 to 4000.
+//
+// --browser firefox runs the same checks in Firefox, the second most likely place a reader pastes a
+// bookmarklet, and bookmarklets are handled differently there. Chromium stays the default, and the
+// only engine --scheduled uses unless an entry asks for more with "browsers": ["chromium", "firefox"].
+// Firefox keeps the sourceURL tag, so the bookmarklet's errors are told apart from the page's as they
+// are in Chromium. It does not say which code started a request, so there every request to another
+// host after the bookmarklet first ran is judged as the bookmarklet's: a page that keeps reaching other
+// hosts on its own can fail in Firefox and pass in Chromium, and never the other way round. For the
+// same reason an entry that counts requests is a skip in Firefox, and so is an entry with auth, whose
+// launcher gives a Chromium browser. Firefox has no clipboard-read or clipboard-write permission to
+// grant, because its clipboard is already open to the page; the entry's other permissions are granted
+// as asked. A short is recorded in Chromium only.
 //
 // --capture, and an entry's "capture": true, write a screenshot of the page either side of the
 // bookmarklet and a video of the whole entry, into test-results/test-bm/<run>/capture/<name>/. Each
@@ -212,12 +233,15 @@ var exitConfig = 2;
 
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
- "timeout", "settle", "auth", "signedIn", "network", "capture"];
+ "timeout", "settle", "auth", "signedIn", "network", "capture", "browsers"];
 // A host a network entry names: an exact host, or "*." and a domain for any of its subdomains, as
 // a media server picked per request is.
 var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d+)?$/;
 var stepActions = ["run", "click", "fill", "press", "select", "wait", "answer", "detach", "attach",
- "expect"];
+ "viewport", "expect"];
+// The sizes a viewport step may ask for, in whole pixels. Narrower than a phone or wider than a 4K
+// screen is a typing slip rather than a reader's window.
+var viewportLimits = { least: 100, most: 4000 };
 var stepExtras = ["value", "text", "selector", "as"];
 var expectKeys = ["selector", "visible", "hidden", "clear", "count", "matches", "text", "clipboard",
  "location", "popup", "requests", "atMost"];
@@ -232,8 +256,17 @@ var siteNamePattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
 var launcherVariable = "TEST_BM_AUTH_LAUNCHER";
 var withheldText = "(not recorded on a signed-in page)";
 
-// How the code gets into the page, worked out once per browser by chooseInjector.
-var injector = "";
+// The engines a run can use. Chromium is the default and the only one an entry gets without asking;
+// it is also the only one the sign-in launcher, a short and the request watcher's initiators belong
+// to.
+var engines = ["chromium", "firefox"];
+var defaultEngine = "chromium";
+// The permissions Chromium grants and Firefox has no name for, because Firefox's clipboard is open
+// to the page already. Any other permission an entry asks for is handed to the engine as it is.
+var openInFirefox = ["clipboard-read", "clipboard-write"];
+
+// How the code gets into the page, worked out once per engine by chooseInjector.
+var injectors = {};
 
 // What a browser is started with when the run is going to capture something. Chromium's own text
 // rasterizing is what moves between two runs of an unchanged bookmarklet - a handful of antialiased
@@ -711,6 +744,46 @@ function validateRunSet(run, where, problems) {
  });
 }
 
+// A viewport step's size: a width and a height, each a whole number of pixels a window could have.
+function validateViewport(size, where, problems) {
+ var shape = "viewport takes { \"width\": <pixels>, \"height\": <pixels> }, such as { \"width\": 1024, \"height\": 720 }";
+ if (!size || typeof size != "object" || Array.isArray(size)) {
+  problems.push(where + ": " + shape);
+  return;
+ }
+ Object.keys(size).forEach(function (k) {
+  if (k != "width" && k != "height") { problems.push(where + ": viewport has no " + k + " - it takes width and height"); }
+ });
+ ["width", "height"].forEach(function (k) {
+  var n = size[k];
+  if (typeof n != "number" || !Number.isInteger(n) || n < viewportLimits.least || n > viewportLimits.most) {
+   problems.push(where + ": viewport takes a " + k + " of whole pixels from " + viewportLimits.least
+    + " to " + viewportLimits.most);
+  }
+ });
+}
+
+// The engines an entry runs in when the run names none: a list of known engines, each once.
+function validateBrowsers(entry, name, problems) {
+ if (entry.browsers === undefined) { return; }
+ var list = entry.browsers;
+ if (!Array.isArray(list) || !list.length) {
+  problems.push(name + ": browsers takes a list of engines, such as [\"chromium\", \"firefox\"]");
+  return;
+ }
+ list.forEach(function (b, i) {
+  if (engines.indexOf(b) < 0) {
+   problems.push(name + ": browsers has no engine " + JSON.stringify(b) + " - it takes " + engines.join(" or "));
+  } else if (list.indexOf(b) !== i) {
+   problems.push(name + ": browsers names " + b + " twice");
+  }
+ });
+ if (entry.auth !== undefined && list.some(function (b) { return b != defaultEngine; })) {
+  problems.push(name + ": an entry with auth runs in " + defaultEngine + " only - the sign-in launcher gives a "
+   + defaultEngine + " browser");
+ }
+}
+
 function validateStep(step, where, problems) {
  if (!step || typeof step != "object" || Array.isArray(step)) {
   problems.push(where + " is not an object");
@@ -741,6 +814,7 @@ function validateStep(step, where, problems) {
  if (action == "attach" && (typeof step.attach != "string" || !step.attach.length)) {
   problems.push(where + ": attach takes the name a detach step gave what it took off the page");
  }
+ if (action == "viewport") { validateViewport(step.viewport, where, problems); }
  if (step.as !== undefined) {
   if (step.detach === undefined) { problems.push(where + ": as names what a detach step took, and goes with one"); }
   if (typeof step.as != "string" || !step.as.length) { problems.push(where + ": as takes a name"); }
@@ -877,6 +951,7 @@ function validateConfig(config, names) {
   if (entry.auth !== undefined && entry.scheduled === true) {
    problems.push(name + ": an entry with auth is never scheduled - an unattended run has no one to sign in");
   }
+  validateBrowsers(entry, name, problems);
   if (entry.capture !== undefined && entry.capture !== true) { problems.push(name + ": capture takes true"); }
   if (entry.capture === true && entry.auth !== undefined) {
    problems.push(name + ": an entry with auth captures nothing - a signed-in page shows the account and what it holds");
@@ -1097,6 +1172,26 @@ function requirePlaywright() {
  }
 }
 
+// One engine, started the way the run asks. The capture settings are Chromium's own switches, so
+// another engine starts without them. An engine Playwright has no build of on this machine is the
+// one install step the run needs, and it is named as that rather than as Playwright's own message.
+async function launchEngine(playwright, engine, options, capturing) {
+ try {
+  return await playwright[engine].launch({
+   headless: !options.headed,
+   slowMo: options.slowMo,
+   args: capturing && engine == defaultEngine ? captureArgs : []
+  });
+ } catch (err) {
+  if (/Executable doesn't exist|playwright install/i.test(String(err && err.message))) {
+   var missing = new Error(engine + " is not installed for Playwright - run npx playwright install " + engine);
+   missing.missingEngine = true;
+   throw missing;
+  }
+  throw err;
+ }
+}
+
 function sourceUrl(name) { return "bookmarklet/" + name + ".js"; }
 
 // ----------------------------------------------------------------------------------------------- //
@@ -1107,7 +1202,9 @@ function sourceUrl(name) { return "bookmarklet/" + name + ".js"; }
 // auth never gets one: ctx.captures is false for it, and every call here answers to that.
 function captureDir(ctx) {
  if (!ctx.captureFolder) {
-  ctx.captureFolder = path.join(runDir(), "capture", ctx.name);
+  // An entry run in two engines captures twice, so the second engine's folder carries its name.
+  ctx.captureFolder = path.join(runDir(), "capture",
+   ctx.name + (ctx.engine && ctx.engine != defaultEngine ? "-" + ctx.engine : ""));
   fs.mkdirSync(ctx.captureFolder, { recursive: true });
  }
  return ctx.captureFolder;
@@ -1124,6 +1221,8 @@ function mark(ctx, what) {
  ctx.timeline.push({ at: Date.now() - ctx.clock, what: scrubbed(ctx, what) });
 }
 
+function sizeText(size) { return (size && size.width) + "x" + (size && size.height); }
+
 // What a step is, for the timeline: its action, and what it aims at where that is a selector or a key.
 function stepName(step) {
  for (var i = 0; i < stepActions.length; i++) {
@@ -1131,6 +1230,7 @@ function stepName(step) {
   if (step[action] === undefined) { continue; }
   if (action == "run" && setOf(step)) { return "run with " + cut(setText(setOf(step))); }
   if (action == "run" || action == "expect") { return action; }
+  if (action == "viewport") { return "viewport " + sizeText(step.viewport); }
   var aimed = step[action];
   if (action == "answer") {
    return "answer " + cut(aimed && aimed.host) + (aimed && aimed.pass === true ? " from the network" : " " + (aimed && aimed.status));
@@ -1329,9 +1429,11 @@ function makeShort(ctx, result) {
 // policy to apply to whatever the bookmarklet then adds, which is what a bookmarklet meets. The
 // sourceURL tag has to survive the trip, because the stack it leaves in an error is how the
 // bookmarklet's errors are told apart from the page's own. Where it does not survive, Chromium's
-// CDP Runtime.evaluate is the way in.
-async function chooseInjector(page) {
- if (injector) { return injector; }
+// CDP Runtime.evaluate is the way in. Firefox has no CDP, so an engine other than Chromium that
+// loses the tag has no way in at all, and says so rather than running code whose errors would all
+// read as the page's.
+async function chooseInjector(page, engine) {
+ if (injectors[engine]) { return injectors[engine]; }
  var probe = "(function(){ try { null.x; } catch (e) { return String((e && e.stack) || \"\"); } })();"
   + "\n//# sourceURL=" + sourceUrl("__probe__");
  var survives = false;
@@ -1340,16 +1442,21 @@ async function chooseInjector(page) {
  } catch (err) {
   survives = false;
  }
- injector = survives ? "evaluate" : "cdp";
- return injector;
+ injectors[engine] = survives ? "evaluate" : engine == defaultEngine ? "cdp" : "none";
+ return injectors[engine];
 }
 
-async function inject(page, code, name) {
+async function inject(page, code, name, engine) {
  // The guard keeps a bookmarklet that returns a DOM node from failing on the way back.
  var text = code + "\n;undefined;\n//# sourceURL=" + sourceUrl(name);
- if (await chooseInjector(page) == "evaluate") {
+ var how = await chooseInjector(page, engine || defaultEngine);
+ if (how == "evaluate") {
   await page.evaluate(text);
   return;
+ }
+ if (how == "none") {
+  throw new Error(engine + " dropped the sourceURL tag, so the bookmarklet's errors could not be told"
+   + " from the page's");
  }
  var cdp = await page.context().newCDPSession(page);
  try {
@@ -1381,7 +1488,7 @@ function startedBy(stack, url) {
 // reason. Moving the page itself is not counted: that is the reader going somewhere. Chromium's
 // protocol is what carries the initiator, so this reads it directly.
 async function watchRequests(page, ctx) {
- var allowed = ctx.network.map(function (n) { return n.host; });
+ if (ctx.engine && ctx.engine != defaultEngine) { return watchRequestEvents(page, ctx); }
  var session = await page.context().newCDPSession(page);
  var mainFrame = "";
  try {
@@ -1391,18 +1498,7 @@ async function watchRequests(page, ctx) {
  }
  function judge(address, home, initiator) {
   if (!startedBy(initiator && initiator.stack, sourceUrl(ctx.name))) { return; }
-  var target;
-  try { target = new URL(address); } catch (err) { return; }
-  if (!/^(https?|wss?):$/.test(target.protocol)) { return; }
-  // Counted before it is judged, and whoever answers it: an entry answering a host itself still
-  // wants to know how many times the bookmarklet asked, which is the whole of what a backing-off
-  // retry can be seen by.
-  ctx.requestCounts[target.host] = (ctx.requestCounts[target.host] || 0) + 1;
-  if (target.host === home || allowed.some(function (h) { return hostNamed(h, target.host); })) { return; }
-  if (ctx.offHosts.indexOf(target.host) < 0) { ctx.offHosts.push(target.host); }
- }
- function hostOf(address) {
-  try { return new URL(address).host; } catch (err) { return ""; }
+  judgeRequest(ctx, address, home);
  }
  session.on("Network.requestWillBeSent", function (event) {
   if (event.type == "Document" && event.frameId == mainFrame) { return; }
@@ -1413,6 +1509,43 @@ async function watchRequests(page, ctx) {
  });
  await session.send("Network.enable");
  return session;
+}
+
+function hostOf(address) {
+ try { return new URL(address).host; } catch (err) { return ""; }
+}
+
+// A request held to be the bookmarklet's, counted and judged against the page's own host and the
+// hosts the entry names.
+function judgeRequest(ctx, address, home) {
+ var target;
+ try { target = new URL(address); } catch (err) { return; }
+ if (!/^(https?|wss?):$/.test(target.protocol)) { return; }
+ // Counted before it is judged, and whoever answers it: an entry answering a host itself still
+ // wants to know how many times the bookmarklet asked, which is the whole of what a backing-off
+ // retry can be seen by.
+ ctx.requestCounts[target.host] = (ctx.requestCounts[target.host] || 0) + 1;
+ if (target.host === home || ctx.network.some(function (n) { return hostNamed(n.host, target.host); })) { return; }
+ if (ctx.offHosts.indexOf(target.host) < 0) { ctx.offHosts.push(target.host); }
+}
+
+// Firefox says nothing about which code started a request, so nothing here can tell the
+// bookmarklet's from the page's. Every request made once the bookmarklet has first run is held to be
+// its own, which judges more than Chromium does and never less: a host the page reaches by itself
+// after that fails the entry here, and a host the bookmarklet reaches can never pass for the page's.
+// The page's own load, before the bookmarklet ran, is left alone, and moving the page is the reader
+// going somewhere, as it is in Chromium.
+function watchRequestEvents(page, ctx) {
+ page.on("request", function (request) {
+  if (!ctx.ran) { return; }
+  var frame = null;
+  try { frame = request.frame(); } catch (err) { frame = null; }
+  if (request.isNavigationRequest() && frame === page.mainFrame()) { return; }
+  judgeRequest(ctx, request.url(), hostOf(frame ? frame.url() : page.url()));
+ });
+ page.on("websocket", function (socket) {
+  if (ctx.ran) { judgeRequest(ctx, socket.url(), hostOf(page.url())); }
+ });
 }
 
 function offHostReason(ctx) {
@@ -1633,7 +1766,7 @@ async function runBookmarklet(page, ctx, index) {
  mark(ctx, "the bookmarklet runs");
  if (ctx.capture) { await shot(page, ctx, "before" + which); }
  try {
-  await inject(page, ctx.check.code, ctx.name);
+  await inject(page, ctx.check.code, ctx.name, ctx.engine);
  } catch (err) {
   if (ctx.capture) { await shot(page, ctx, "after" + which); }
   var stack = String((err && err.stack) || (err && err.message) || err || "");
@@ -2176,7 +2309,23 @@ async function doStep(page, ctx, step, index) {
    typeof step.as == "string" && step.as.length ? step.as : step.detach);
  }
  if (step.attach !== undefined) { return attachTo(page, ctx, step.attach); }
+ if (step.viewport !== undefined) { return setViewport(page, ctx, step.viewport); }
  return doExpect(page, ctx, step.expect, where);
+}
+
+// The size every step after this one meets, until another viewport step or the end of the entry.
+async function setViewport(page, ctx, size) {
+ ctx.viewportNow = { width: size.width, height: size.height };
+ await page.setViewportSize(ctx.viewportNow);
+}
+
+// The entry's own size again, once its steps are done, so nothing a step asked for outlasts the
+// entry that asked for it.
+async function restoreViewport(page, ctx) {
+ if (!ctx.viewportNow) { return; }
+ ctx.viewportNow = null;
+ mark(ctx, "the viewport goes back to " + sizeText(ctx.viewport));
+ await page.setViewportSize(ctx.viewport);
 }
 
 async function playEntry(page, ctx) {
@@ -2206,12 +2355,55 @@ async function playEntry(page, ctx) {
  mark(ctx, shortEndMark);
  // The page with everything the entry asked for done, which is what the after shot is of.
  await takePendingShot(page, ctx);
+ await restoreViewport(page, ctx);
 }
 
-async function runOne(browser, name, entry, session, options) {
+// Whether an entry counts the requests the bookmarklet sent, which only Chromium can tell apart from
+// the page's own.
+function countsRequests(entry) {
+ return !!(entry && Array.isArray(entry.steps) && entry.steps.some(function (step) {
+  return step && step.expect && step.expect.requests !== undefined;
+ }));
+}
+
+// Why an entry cannot be judged in an engine other than Chromium, or "" where it can.
+function engineSkip(entry, engine) {
+ if (engine == defaultEngine || !entry) { return ""; }
+ if (entry.auth) {
+  return "an entry with auth runs in " + defaultEngine + " only - the sign-in launcher gives a "
+   + defaultEngine + " browser";
+ }
+ if (countsRequests(entry)) {
+  return "it counts the requests the bookmarklet sent, and only " + defaultEngine + " says which code sent"
+   + " a request - " + engine + " would count the page's own as well";
+ }
+ return "";
+}
+
+// The permissions an engine is handed for an entry. Firefox has no clipboard permission, its
+// clipboard being open to the page already, so asking for one there is a note rather than an error.
+function permissionsFor(engine, asked, notes) {
+ var list = asked || [];
+ if (engine == defaultEngine) { return list; }
+ var open = list.filter(function (p) { return openInFirefox.indexOf(p) >= 0; });
+ if (open.length) {
+  notes.push(engine + " has no " + open.join(" or ") + " permission to grant: its clipboard is open to the page");
+ }
+ return list.filter(function (p) { return openInFirefox.indexOf(p) < 0; });
+}
+
+// How a result is named where an engine other than Chromium ran it, so two runs of one entry in one
+// report read apart.
+function labelOf(result) {
+ return result.name + (result.browser && result.browser != defaultEngine ? " [" + result.browser + "]" : "");
+}
+
+async function runOne(browser, name, entry, session, options, engine) {
  var started = Date.now();
+ engine = engine || defaultEngine;
  var result = {
   name: name,
+  browser: engine,
   verdict: "pass",
   reason: "",
   url: "",
@@ -2240,7 +2432,7 @@ async function runOne(browser, name, entry, session, options) {
   }
   // What was read off the page while it was still open goes to failure.md rather than into the
   // report, so it is held by name until the run writes that file.
-  if (ctx && ctx.diagnosis && verdict == "fail") { diagnoses[name] = ctx.diagnosis; }
+  if (ctx && ctx.diagnosis && verdict == "fail") { diagnoses[labelOf(result)] = ctx.diagnosis; }
   return result;
  }
 
@@ -2271,6 +2463,11 @@ async function runOne(browser, name, entry, session, options) {
   setChecks[s + 1] = variant;
  }
 
+ // What this engine cannot judge, said before any page opens. The file's own check above holds in
+ // every engine, so a broken file still fails here rather than skipping.
+ var cannot = engineSkip(entry, engine);
+ if (cannot) { return close("skip", cannot); }
+
  // The address the entry asks for. A variable that names it is read here and nowhere else, so the
  // address reaches the browser and nothing that is written down.
  var asked = (entry && entry.url) || defaultUrl;
@@ -2286,6 +2483,7 @@ async function runOne(browser, name, entry, session, options) {
 
  var ctx = {
   name: name,
+  engine: engine,
   check: check,
   baseCheck: check,
   setChecks: setChecks,
@@ -2314,6 +2512,7 @@ async function runOne(browser, name, entry, session, options) {
   host: "",
   clock: started,
   viewport: (options && options.short) ? shortViewport : viewport,
+  viewportNow: null,
   captures: false,
   capture: false,
   captureFolder: "",
@@ -2336,6 +2535,10 @@ async function runOne(browser, name, entry, session, options) {
  // the maintainer asked for it, reviews it, and it never leaves this machine. A recording already
  // on disk is kept as it is, so the entry is not recorded again for one.
  ctx.short = !!(options && options.short);
+ if (ctx.short && engine != defaultEngine) {
+  ctx.short = false;
+  result.notes.push("no short: a short is recorded in " + defaultEngine + ", and this run is " + engine + "'s");
+ }
  if (ctx.short && fs.existsSync(shortFile(name))) {
   ctx.short = false;
   result.notes.push("no short: a recording is already there, and it is kept: "
@@ -2363,7 +2566,7 @@ async function runOne(browser, name, entry, session, options) {
   } else {
    context = await browser.newContext({
     viewport: ctx.viewport,
-    permissions: (entry && entry.permissions) || [],
+    permissions: permissionsFor(engine, entry && entry.permissions, result.notes),
     recordVideo: (ctx.capture || ctx.short)
      ? { dir: ctx.capture ? captureDir(ctx) : shortWork(ctx), size: ctx.viewport }
      : undefined
@@ -2455,7 +2658,7 @@ function tally(counts) {
 function seconds(ms) { return (ms / 1000).toFixed(1) + "s"; }
 
 function summaryLine(result, width) {
- return pad(result.name, width) + "  " + pad(result.verdict, 4) + "  " + pad(seconds(result.durationMs), 6)
+ return pad(labelOf(result), width) + "  " + pad(result.verdict, 4) + "  " + pad(seconds(result.durationMs), 6)
   + (result.reason ? "  " + result.reason : "");
 }
 
@@ -2465,15 +2668,21 @@ function stamp(when) {
   + two(when.getHours()) + two(when.getMinutes()) + two(when.getSeconds());
 }
 
-function writeReport(results, mode, started, finished) {
+// browser is the engine the run was asked for, and browsers every engine an entry ran in, in the
+// order they first ran; each result names its own. injected is how the asked-for engine took the code.
+function writeReport(results, mode, started, finished, engine) {
  var counts = countOf(results);
  var dir = runDir();
+ var asked = engine || defaultEngine;
+ var ran = [];
+ results.forEach(function (r) { if (r.verdict != "skip" && ran.indexOf(r.browser) < 0) { ran.push(r.browser); } });
 
  fs.writeFileSync(path.join(dir, "report.json"), JSON.stringify({
   tool: "test-bm",
   mode: mode,
-  browser: "chromium",
-  injected: injector || "none",
+  browser: asked,
+  browsers: ran,
+  injected: injectors[asked] || "none",
   started: started.toISOString(),
   finished: finished.toISOString(),
   counts: counts,
@@ -2481,7 +2690,7 @@ function writeReport(results, mode, started, finished) {
  }, null, 1) + "\n");
 
  var width = 0;
- results.forEach(function (r) { if (r.name.length > width) { width = r.name.length; } });
+ results.forEach(function (r) { if (labelOf(r).length > width) { width = labelOf(r).length; } });
  var lines = results.map(function (r) { return summaryLine(r, width); });
  lines.push(tally(counts));
  fs.writeFileSync(path.join(dir, "summary.txt"), lines.join("\n") + "\n");
@@ -2519,10 +2728,13 @@ function failureShot(result) {
 
 // One failing bookmarklet, as much of it as is knowable without running anything again.
 function failureSection(result, diagnosis) {
- var out = ["## " + result.name, ""];
+ var out = ["## " + labelOf(result), ""];
  out.push("- **Verdict**: " + (result.reason || "fail"));
  out.push("- **Page**: " + (result.url || defaultUrl));
  out.push("- **File**: `" + shownPath(bookmarkletFile(result.name)) + "`");
+ if (result.browser && result.browser != defaultEngine) {
+  out.push("- **Browser**: " + result.browser + " - run it again with `--browser " + result.browser + "`");
+ }
  if (result.auth) {
   out.push("- **Signed in**: " + result.auth + " - nothing this page showed is in this report");
  }
@@ -2613,7 +2825,7 @@ function writeFailureReport(results, mode, finished) {
   ""
  ];
  failed.forEach(function (result) {
-  out = out.concat(failureSection(result, diagnoses[result.name] || null));
+  out = out.concat(failureSection(result, diagnoses[labelOf(result)] || null));
  });
  var file = path.join(runDir(), "failure.md");
  fs.writeFileSync(file, out.join("\n").replace(/\n+$/, "") + "\n");
@@ -2636,6 +2848,7 @@ function printList(names, config) {
     + (entry.auth ? "  auth " + entry.auth : "")
     + (entry.scheduled ? "  scheduled" : "")
     + (entry.capture ? "  capture" : "")
+    + (entry.browsers ? "  browsers " + entry.browsers.join(", ") : "")
     + (entry.requires && entry.requires.length ? "  requires " + entry.requires.length : "")
     + (entry.steps && entry.steps.length ? "  " + entry.steps.length + " steps" : "");
   }
@@ -2673,7 +2886,8 @@ function printDetail(result) {
 // ----------------------------------------------------------------------------------------------- //
 
 function readOptions(args) {
- var options = { mode: "", name: "", site: "", headed: false, slowMo: 0, capture: false, short: false };
+ var options = { mode: "", name: "", site: "", headed: false, slowMo: 0, capture: false, short: false,
+  browser: "" };
  for (var i = 0; i < args.length; i++) {
   var arg = args[i];
   if (arg == "--all" || arg == "--scheduled" || arg == "--list" || arg == "--sign-in") {
@@ -2691,6 +2905,10 @@ function readOptions(args) {
    options.capture = true;
   } else if (arg == "--short") {
    options.short = true;
+  } else if (arg == "--browser") {
+   if (options.browser) { configError("--browser takes one engine for the whole run"); }
+   options.browser = String(args[++i] || "");
+   if (engines.indexOf(options.browser) < 0) { configError("--browser takes " + engines.join(" or ")); }
   } else if (arg == "--slow-mo") {
    var ms = Number(args[++i]);
    if (!isFinite(ms) || ms < 0) { configError("--slow-mo takes a number of milliseconds"); }
@@ -2704,6 +2922,13 @@ function readOptions(args) {
   }
  }
  if (options.mode == "sign-in" && options.name) { configError("--sign-in takes a site, not a bookmarklet"); }
+ if (options.mode == "sign-in" && options.browser) {
+  configError("--sign-in opens the sign-in launcher's own browser, and takes no --browser");
+ }
+ if (options.short && options.browser && options.browser != defaultEngine) {
+  configError("--short records in " + defaultEngine + ", the browser the shorts are made in, and takes no --browser "
+   + options.browser);
+ }
  if (options.mode && options.name) { configError("--" + options.mode + " takes the whole set, so it takes no name"); }
  if (!options.mode && !options.name) { configError("name a bookmarklet, or use --all, --scheduled, --list or --sign-in"); }
  return options;
@@ -2780,11 +3005,21 @@ async function main() {
  runStarted = started;
  var results = [];
 
- if (queue.length) {
+ // Each bookmarklet in each engine it runs in: the one --browser names for every entry, or else
+ // Chromium and whatever else the entry's own browsers asks for.
+ var jobs = [];
+ queue.forEach(function (n) {
+  var wanted = options.browser ? [options.browser] : ((config[n] && config[n].browsers) || [defaultEngine]);
+  wanted.forEach(function (engine) { jobs.push({ name: n, engine: engine }); });
+ });
+
+ if (jobs.length) {
   var playwright = requirePlaywright();
   // The launcher is loaded only when an entry needs it, and before any browser starts, so a
-  // launcher that is set but wrong stops the run at once.
-  var needsLauncher = queue.some(function (n) { return config[n] && config[n].auth && !config[n].skip; });
+  // launcher that is set but wrong stops the run at once. Only Chromium's runs of an entry use it.
+  var needsLauncher = jobs.some(function (j) {
+   return j.engine == defaultEngine && config[j.name] && config[j.name].auth && !config[j.name].skip;
+  });
   var session = {
    chromium: playwright.chromium,
    launcher: needsLauncher ? await loadLauncher() : { api: null, why: "" }
@@ -2794,29 +3029,43 @@ async function main() {
   var capturing = options.capture || options.short || queue.some(function (n) {
    return config[n] && config[n].capture === true && !config[n].auth;
   });
-  var browser = await playwright.chromium.launch({
-   headless: !options.headed,
-   slowMo: options.slowMo,
-   args: capturing ? captureArgs : []
-  });
+  var browsers = {};
   var width = 0;
-  queue.forEach(function (n) { if (n.length > width) { width = n.length; } });
+  jobs.forEach(function (j) {
+   var shown = labelOf({ name: j.name, browser: j.engine });
+   if (shown.length > width) { width = shown.length; }
+  });
   try {
-   for (var i = 0; i < queue.length; i++) {
-    var result = await runOne(browser, queue[i], config[queue[i]] || null, session, options);
+   // Every engine the run needs is started before any entry runs, so an engine that is not installed
+   // stops the run at once rather than after an hour of the other one.
+   for (var e = 0; e < engines.length; e++) {
+    var engine = engines[e];
+    if (!jobs.some(function (j) { return j.engine == engine; })) { continue; }
+    try {
+     browsers[engine] = await launchEngine(playwright, engine, options, capturing);
+    } catch (err) {
+     for (var launched in browsers) { await browsers[launched].close().catch(function () { }); }
+     browsers = {};
+     if (err && err.missingEngine) { configError(err.message); }
+     throw err;
+    }
+   }
+   for (var i = 0; i < jobs.length; i++) {
+    var job = jobs[i];
+    var result = await runOne(browsers[job.engine], job.name, config[job.name] || null, session, options, job.engine);
     results.push(result);
     console.log(summaryLine(result, width));
     if (!batch) { printDetail(result); }
    }
   } finally {
-   await browser.close().catch(function () { });
+   for (var open in browsers) { await browsers[open].close().catch(function () { }); }
   }
   await reportSignIns(session, results);
  }
 
  var counts = countOf(results);
  if (batch) {
-  var dir = writeReport(results, options.mode, started, new Date());
+  var dir = writeReport(results, options.mode, started, new Date(), options.browser);
   console.log(tally(counts));
   console.log("report: " + shownPath(dir));
  }

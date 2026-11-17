@@ -70,15 +70,24 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-- [ ] **Pause**: Add `--browser firefox` as a second engine
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
+- [x] Add `--browser firefox` as a second engine
   - Bookmarklet handling differs between engines, and Firefox is the second
     most likely place a reader pastes one. Chromium stays the default and the
     only engine `--scheduled` uses unless an entry asks for more.
+  - Done 11.16.2026: `--browser firefox` runs every entry in Firefox, and an
+    entry's `"browsers": ["chromium", "firefox"]` asks for both when the run
+    names no engine. No entry asks for Firefox yet, so `--scheduled` still runs
+    Chromium alone.
+  - Firefox does not say which code started a request, so there every request
+    to another host after the bookmarklet first ran is judged as its own, and
+    an entry that counts requests, or has `auth`, is a skip.
+  - Firefox is a local install step, `npx playwright install firefox`, which
+    the scheduled set never runs. The harness names it when Firefox is
+    missing, and `--help` says so; the install section of `docs/testing.md`
+    is where it belongs once that page exists.
 
-- [ ] **Pause**: Add a `viewport` step to `test-bm.json`, so an entry can assert at a
+- [x] Add a `viewport` step to `test-bm.json`, so an entry can assert at a
   width other than the 1280x720 every run uses
-  - Held for the maintainer's testing plan, .claude/prompts/bookmarklets-test.prompt.md, which removes the marker when it takes the item up.
   - `clear` is the one expectation that reads geometry, and the defect it was
     written for was width-dependent. Measured on 11.15.2026 against the copy
     of `siteSpecific_GitHub_ShowFileSize` this run replaced, `clear` fails it
@@ -92,6 +101,11 @@ browser for the same result.
   - `siteSpecific_GitHub_ShowFileSize` then asserts `clear` at 1024 as well as
     at the default, on the folder page with the API refusing, which is the
     state and the width the collision lived at.
+  - Done 11.16.2026: the step holds for the steps after it, and the entry's
+    own size comes back when it ends. `siteSpecific_GitHub_ShowFileSize`
+    passes `clear` at 1024 on that page in that state, and the copy from
+    before the 11.15.2026 fix fails the same check, its heading painting past
+    its box over `Last commit message`.
   - From: UI/UX verification, 11.15.2026
 
 ## Test Configurations
