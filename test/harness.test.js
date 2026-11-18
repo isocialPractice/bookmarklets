@@ -1080,6 +1080,102 @@ test("a run that fails nothing writes no failure report at all", function () {
 });
 
 // ----------------------------------------------------------------------------------------------- //
+// Two runs in one second
+// ----------------------------------------------------------------------------------------------- //
+
+// A run's folder is named for the second it started, as docs/testing.md gives it.
+function secondOf(when) {
+ function two(n) { return (n < 10 ? "0" : "") + n; }
+ return when.getFullYear() + "-" + two(when.getMonth() + 1) + "-" + two(when.getDate()) + "_"
+  + two(when.getHours()) + two(when.getMinutes()) + two(when.getSeconds());
+}
+
+// runApart, without waiting: the run is started and its answer comes when it exits, so a test can
+// have two going at once.
+function startApart(entries, source) {
+ var js = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-apart-"));
+ Object.keys(entries).forEach(function (name) { fs.writeFileSync(path.join(js, name + ".js"), source); });
+ var config = path.join(js, "test-bm.json");
+ fs.writeFileSync(config, JSON.stringify(entries));
+ return new Promise(function (resolve) {
+  var out = "";
+  var err = "";
+  var proc = child.spawn(process.execPath, ["test-bm.js", "--all"], {
+   cwd: rootDir,
+   env: Object.assign({}, process.env, { TEST_BM_AUTH_LAUNCHER: "", TEST_BM_JS_DIR: js, TEST_BM_CONFIG: config })
+  });
+  proc.stdout.on("data", function (chunk) { out += chunk; });
+  proc.stderr.on("data", function (chunk) { err += chunk; });
+  proc.on("close", function (status) {
+   removeDir(js);
+   var named = /^report: (.+)$/m.exec(out);
+   resolve({ status: status, out: out, err: err, folder: named ? named[1] : "" });
+  });
+ });
+}
+
+test("two runs that start in the same second each write a folder of their own", async function () {
+ var resultsDir = path.join(rootDir, "test-results", "test-bm");
+ // Every second either run could start in already has a folder, made the way an earlier run makes
+ // one, so both runs find their second taken whatever the clock says, and the two of them most
+ // often find the same one.
+ // A second that already has a folder, from a run of the test before this one, counts as taken, and
+ // only the folders made here are checked and taken away again.
+ var taken = [];
+ var made = [];
+ var now = Date.now();
+ fs.mkdirSync(resultsDir, { recursive: true });
+ for (var s = 0; s <= 60; s++) {
+  var name = secondOf(new Date(now + s * 1000));
+  taken.push(name);
+  if (fs.existsSync(path.join(resultsDir, name))) { continue; }
+  fs.mkdirSync(path.join(resultsDir, name));
+  fs.writeFileSync(path.join(resultsDir, name, "failure.md"), "an earlier run's failure report\n");
+  made.push(name);
+ }
+ try {
+  var throwing = [
+   "javascript:(function() {",
+   " /* A fixture that reads a thing that is not there, so its run fails and writes failure.md. */",
+   " document.title = missingFixtureSameSecondThrows.textContent;",
+   "})();"
+  ].join("\n") + "\n";
+  var passing = fs.readFileSync(path.join(rootDir, jsDir, "fixture_Pass_AddsAPanel.js"));
+  var both = await Promise.all([
+   startApart({ fixture_SameSecond_Fails: { url: "fixture:article.html", steps: [{ run: true }] } }, throwing),
+   startApart({ fixture_SameSecond_Passes: { url: "fixture:article.html", steps: [{ run: true }] } }, passing)
+  ]);
+  var failed = both[0];
+  var passed = both[1];
+  assert.strictEqual(failed.status, 1, failed.out + failed.err);
+  assert.strictEqual(passed.status, 0, passed.out + passed.err);
+  assert.ok(failed.folder && passed.folder, "both runs should name their folder:\n" + failed.out + passed.out);
+  assert.notStrictEqual(failed.folder, passed.folder, "the two runs share " + passed.folder);
+  [failed, passed].forEach(function (run) {
+   var m = /^test-results\/test-bm\/(\d{4}-\d\d-\d\d_\d{6})-(\d+)$/.exec(run.folder);
+   assert.ok(m, run.folder + " should be a taken second with a number after it");
+   assert.ok(taken.indexOf(m[1]) >= 0, run.folder + " should start in one of the seconds made taken");
+   assert.ok(Number(m[2]) >= 2, run.folder + " should be numbered from 2");
+  });
+  var passedDir = path.join(rootDir, passed.folder.replace(/\//g, path.sep));
+  var failedDir = path.join(rootDir, failed.folder.replace(/\//g, path.sep));
+  assert.strictEqual(fs.existsSync(path.join(passedDir, "failure.md")), false,
+   "the passing run's folder holds the other run's failure report");
+  assert.ok(fs.existsSync(path.join(failedDir, "failure.md")), "the failing run writes its own");
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(passedDir, "report.json"), "utf8")).results
+   .map(function (r) { return r.name; }), ["fixture_SameSecond_Passes"]);
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(failedDir, "report.json"), "utf8")).results
+   .map(function (r) { return r.name; }), ["fixture_SameSecond_Fails"]);
+  made.forEach(function (name) {
+   assert.deepStrictEqual(fs.readdirSync(path.join(resultsDir, name)), ["failure.md"],
+    "an earlier run's folder is left as it was: " + name);
+  });
+ } finally {
+  made.forEach(function (name) { removeDir(path.join(resultsDir, name)); });
+ }
+});
+
+// ----------------------------------------------------------------------------------------------- //
 // One selector counted against another
 // ----------------------------------------------------------------------------------------------- //
 

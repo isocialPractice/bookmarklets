@@ -160,8 +160,10 @@ made from:
 
 Every run that writes something gets its own folder under
 `test-results/test-bm/`, named for the second it started:
-`test-results/test-bm/<YYYY-MM-DD_HHMMSS>/`. The folder is made the first time
-something is written into it, so a quiet run of one bookmarklet leaves none.
+`test-results/test-bm/<YYYY-MM-DD_HHMMSS>/`. A run that starts in a second
+another run already has takes `<YYYY-MM-DD_HHMMSS>-2/`, then `-3/` and so on, so
+no two runs share a folder. The folder is made the first time something is
+written into it, so a quiet run of one bookmarklet leaves none.
 `test-results/` is ignored by git.
 
 | File | Written by | Holds |

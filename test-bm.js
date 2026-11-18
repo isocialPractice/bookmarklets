@@ -188,7 +188,8 @@
 //
 // Exit 0 nothing failed, 1 something failed, 2 usage or configuration error. A skip never fails a
 // run. --all and --scheduled write test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json and
-// summary.txt.
+// summary.txt. A run that starts in a second another run already has takes <YYYY-MM-DD_HHMMSS>-2,
+// then -3 and so on.
 
 var fs = require("fs");
 var path = require("path");
@@ -346,11 +347,25 @@ function fromEnv(name, fallback) {
 }
 
 function runDir() {
- if (!runFolder) {
-  runFolder = path.join(resultsRoot, stamp(runStarted || new Date()));
-  fs.mkdirSync(runFolder, { recursive: true });
- }
+ if (!runFolder) { runFolder = claimRunFolder(stamp(runStarted || new Date())); }
  return runFolder;
+}
+
+// A run's folder is named for the second it started, and two runs can start in the same second: the
+// harness's own suite starts one run after another, often well inside a second. mkdir without
+// recursive refuses a folder that is already there, so the run that makes the name first keeps it,
+// and a later one takes -2, then -3 and so on, rather than writing into a folder another run owns.
+function claimRunFolder(name) {
+ fs.mkdirSync(resultsRoot, { recursive: true });
+ for (var n = 1; ; n++) {
+  var folder = path.join(resultsRoot, n == 1 ? name : name + "-" + n);
+  try {
+   fs.mkdirSync(folder);
+   return folder;
+  } catch (err) {
+   if (!err || err.code != "EEXIST") { throw err; }
+  }
+ }
 }
 
 function configError(message) {

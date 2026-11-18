@@ -6,6 +6,24 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.18.2026]
+
+### Fixed
+
+- Two `test-bm.js` runs that start in the same second no longer share a results folder. A run's
+  folder is named for the second it started, and two runs often start inside one second, as the
+  harness's own suite does, so the second run wrote into the first one's folder and a passing run
+  could be read as holding the other run's `failure.md`. The folder is now claimed when it is
+  made: the first run keeps `<YYYY-MM-DD_HHMMSS>`, and a later run in that second takes `-2`,
+  then `-3` and so on. `docs/testing.md` and `--help` say so.
+
+### Testing
+
+- One test in `test/harness.test.js`, which now runs 104. Two runs start at once, one failing and
+  one passing, with every second they could start in already holding a folder. Each writes a
+  numbered folder of its own, holding only its own report; the passing run's holds no
+  `failure.md`; and the folders that were there first are left as they were.
+
 ## [11.16.2026]
 
 ### Fixed
