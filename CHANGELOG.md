@@ -24,6 +24,18 @@ this file.
   numbered folder of its own, holding only its own report; the passing run's holds no
   `failure.md`; and the folders that were there first are left as they were.
 
+### Notes
+
+- The ten bookmarklets whose entries skip moved to `## User - Resolve Test Procedures`, one item
+  each, and no bookmarklet or entry changed. Four meet a bot check in the automated browser
+  (Amazon, both Stack Overflow anchor link bookmarklets and the Google AI answer bookmarklet),
+  four need a signed-in YouTube page (the history, the history search, the subscriptions toggle
+  and the shorts hover title), one saves notes from a notebox another bookmarklet adds, and the
+  Google Maps one measures against a scale bar the automated browser is not shown. Each item
+  names the maintainer's everyday browser, opened by
+  [to-explorer](https://github.com/jhauga/to-explorer), as the first way to resolve it, and each
+  entry keeps its `skip` until it passes.
+
 ## [11.16.2026]
 
 ### Fixed
