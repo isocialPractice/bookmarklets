@@ -132,18 +132,11 @@ resolve; a run never works one.
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding one nested label with a placeholder name;
     - a local fixture page with placeholder nested labels and email rows in the markup the bookmarklet reads.
   - Done when the entry passes signed in, or on a fixture page with that markup.
-- [ ] **User todo**: Confirm that `siteSpecific_YouTube_SavePageNotesToLocalStorage.js` still works on the site
-  - Not tested: whether the bookmarklet saves the notes typed into a notebox on a video page to `localStorage`, under a key made from the video's channel and title. Its entry skips.
-  - Why: it saves what is already in a notebox another bookmarklet adds (`#noteBox`, from `siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks.js`, or `#noteBoxTakNotes`, from `siteSpecific_YouTube_TakeVideoNotes.js`), and an entry runs one bookmarklet.
-  - Ways an AI-safe automated procedure could resolve it:
-    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), with the bookmarklet run in a tab the route opened;
-    - an entry that runs one of those note-taking bookmarklets first in the same tab, types `Sample Note: a placeholder for the test` into its notebox, then runs this one and reads what it saved by its key.
-  - Done when its entry passes.
 - [ ] **User todo**: Confirm that `siteSpecific_GoogleMaps_CustomMearsureDistance.js` still works on the site
   - Not tested: whether the bookmarklet adds its measure button (`#custom-measure-btn`) and, in drawing mode, draws a line between two clicked points labelled with a distance worked out from the map's scale bar. Its entry skips.
-  - Why: the map shows no scale bar to the automated browser, and the bookmarklet measures against the scale bar.
+  - Why: on 11.18.2026 the map showed its scale bar, in the maintainer's everyday browser and in an automated one, but its label is now a `label` with the class `U5ELMd` rather than the element with the id `U5ELMd` that the bookmarklet reads. So the bookmarklet finds no scale bar, alerts "Scale bar not found!", and adds no button. The page does run the bookmarklet's inline script.
   - Ways an AI-safe automated procedure could resolve it:
-    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), with the bookmarklet run in a tab the route opened;
+    - a one-line fix in the bookmarklet that reads the label by its class, with the push, gist update and short a bookmarklet change brings, then its entry run again: it already holds the everyday run, in the maintainer's everyday browser opened by [to-explorer](https://github.com/jhauga/to-explorer), with the map at -34.397, 150.644, zoom 8, a right-click there, "Measure distance" and a second point toward Sydney by the computer's own mouse, then the bookmarklet's own two points and its distance checked against the map's within ten percent;
     - a local fixture page with the scale bar markup the bookmarklet reads (its label and its bar) over a placeholder map image, so an entry can check the distance it draws.
   - Done when its entry passes.
 

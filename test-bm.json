@@ -484,11 +484,22 @@
  },
 
  "siteSpecific_YouTube_SavePageNotesToLocalStorage": {
-  "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
-  "scheduled": false,
-  "skip": "it saves what is already in the notebox another bookmarklet adds, and an entry runs one bookmarklet",
-  "requires": ["#top-row", "#noteBox"],
-  "timeout": 60000
+  "url": "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+  "scheduled": true,
+  "requires": ["#above-the-fold", "#player", "#top-row", ".style-scope.ytd-watch-metadata"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "bookmarklet": "siteSpecific_YouTube_TakeVideoNotes" },
+   { "wait": 1500 },
+   { "expect": { "selector": "#noteBoxTakNotes", "count": 1 } },
+   { "fill": "#noteBoxTakNotes", "value": "Sample Note: a placeholder for the test" },
+   { "run": true },
+   { "wait": 500 },
+   { "expect": { "storage": "local", "newKeys": 1, "valueIncludes": "Sample Note: a placeholder for the test" } },
+   { "expect": { "storage": "local", "newKeys": 0 } }
+  ]
  },
 
  "siteSpecific_YouTube_SavedPageNotesToNotebox": {
@@ -668,11 +679,33 @@
  },
 
  "siteSpecific_GoogleMaps_CustomMearsureDistance": {
-  "url": "https://www.google.com/maps",
+  "url": "https://www.google.com/maps/@-34.397,150.644,8z",
+  "drive": "everyday",
   "scheduled": false,
-  "skip": "the map renders no scale bar for a headless load from this machine, and the bookmarklet measures against the scale bar",
-  "requires": ["canvas"],
-  "timeout": 60000
+  "skip": "the map's scale label is now a label with the class U5ELMd rather than the element with that id the bookmarklet reads, so it reports no scale bar and adds nothing until the bookmarklet reads the class",
+  "requires": ["canvas", "#U5ELMd", ".Ty7QWe"],
+  "timeout": 60000,
+  "steps": [
+   { "wait": 3000 },
+   { "click": "canvas", "button": "right", "via": "desktop" },
+   { "wait": 1200 },
+   { "click": "[role='menu'] [role='menuitemradio']", "withText": "Measure distance", "via": "desktop" },
+   { "wait": 1200 },
+   { "click": "canvas", "at": { "dx": 100, "dy": -110 }, "via": "desktop" },
+   { "wait": 2000 },
+   { "run": true },
+   { "wait": 1000 },
+   { "expect": { "selector": "#googleMapsCustomMeasureDistanceStyle", "count": 1 } },
+   { "expect": { "selector": "#custom-measure-btn", "count": 1 } },
+   { "click": "#custom-measure-btn" },
+   { "expect": { "selector": "body > svg[style*='19999'][style*='display: block']", "count": 1 } },
+   { "click": "body > svg[style*='19999']", "at": { "dx": 0, "dy": 0 } },
+   { "click": "body > svg[style*='19999']", "at": { "dx": 100, "dy": -110 } },
+   { "wait": 500 },
+   { "expect": { "selector": "body > svg[style*='19999'] > g > line", "count": 1 } },
+   { "expect": { "selector": "body > svg[style*='19999'] > g > text", "count": 1 } },
+   { "expect": { "check": "maps-distance" } }
+  ]
  },
 
  "siteSpecific_chatGPT_BookmarkResponse": {

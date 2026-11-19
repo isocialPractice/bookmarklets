@@ -56,6 +56,20 @@ this file.
     for a placeholder word typed into its box, never submitted, and hides none once the box is
     cleared; and the subscriptions toggle adds one button at the top of the guide's section,
     turns it on and off, and adds no second button on a second run.
+- `siteSpecific_YouTube_SavePageNotesToLocalStorage` passes in the harness's own browser and is
+  scheduled again, on the video YouTube's IFrame Player API documentation uses. A bookmarklet
+  step runs `siteSpecific_YouTube_TakeVideoNotes` first, `Sample Note: a placeholder for the
+  test` goes into its notebox, and this one saves it: its alert is accepted, one new
+  `localStorage` key holds the note, and the key is removed again. Its item left
+  `## User - Resolve Test Procedures`.
+- `siteSpecific_GoogleMaps_CustomMearsureDistance` keeps its `skip` and its item, with the reason
+  brought up to date. The map does show its scale bar, in the maintainer's everyday browser and
+  in an automated one, but the scale label is now a `label` with the class `U5ELMd` rather than
+  the element with that id the bookmarklet reads, so the bookmarklet reports no scale bar. The
+  page does run its inline script. The entry already holds the whole everyday run for when the
+  bookmarklet reads the class: the map at `-34.397, 150.644`, zoom 8, the right-click,
+  "Measure distance" and a second point by the computer's own mouse, the bookmarklet's own two
+  points, and its distance checked against the map's.
 - Sixteen tests in `test/harness.test.js`, which now runs 120, for the everyday contract and the
   new step kinds, on a stub driver that opens nothing. Every run there clears
   `_TEST_BM_EVERYDAY_DRIVER`, as it does `TEST_BM_AUTH_LAUNCHER`.
