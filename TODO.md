@@ -27,6 +27,145 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
+- [ ] Make `index.html` work on a phone and pass the W3C validator
+  - Add `lang="en"`, `<meta name="viewport">`, a description, and the
+    repository's `favicon.png`. Give the frame a `title`.
+  - Replace the absolutely positioned 15% side navigation and the floated 80%
+    frame with a grid that stacks the navigation above the frame on narrow
+    screens.
+  - Style the frame's border with CSS in place of the deprecated
+    `frameborder` attribute, which also lacks a space before it today.
+  - Make the `<title>` and the `<h1>` agree. They read "Bookmarklet Examples"
+    and "Bookmarklets Examples" today.
+  - From: Improve GitHub Pages Site
+- [ ] Give each example its own address
+  - Choosing an example sets `#<example-file-name>` in the address bar,
+    opening the page with that hash shows that example, and Back returns to
+    the previous one. The README can then link straight to an example.
+  - Mark the open example's link with `aria-current="page"` in place of
+    `data-active`, with a visible focus style.
+  - Size the frame from the example's `load` event and a `ResizeObserver` on
+    its body. The examples share the site's origin, so this replaces the
+    polling loop that runs every 100 ms and stops after 300.
+  - From: Improve GitHub Pages Site
+- [ ] Let a reader control the slideshow
+  - It advances every three seconds until something is clicked, cycles every
+    `<a>` on the page, and treats a hover as a click. Scope it to the example
+    links and give it a visible pause and play button.
+  - Stop it on any click, focus or key press, and never start it when the
+    reader's system asks for reduced motion (`prefers-reduced-motion`).
+    Content that moves on its own needs a way to pause it (WCAG 2.2.2).
+  - From: Improve GitHub Pages Site
+- [ ] Explain the page above the gallery
+  - Say what the examples are: pages that
+    `ChatGPT - Paste Ready Bookmark Response` saved as bookmarks, each shown
+    as a reader would see it on opening the bookmark. Link the bookmarklet's
+    README entry, raw file, gist and short.
+  - Add a short how-to-install with `support/Demo-ReadyToUse.gif`, and a link
+    to the README for the full list.
+  - From: Improve GitHub Pages Site
+- [ ] Add practice pages, where a reader can try the bookmarklets that work on
+  any page (`dom_`, `nav_`, `style_` and `window_`): an article with headings
+  and long text, a table, a form, a page with a sidebar, and one with a video
+  - Link them from the gallery under their own heading, each listing the
+    bookmarklets to try on it.
+  - Make them the same pages as the test fixtures under `## Test Harness`, so
+    one set serves both the site and the tests. They are in
+    `test/fixtures/pages/` as of 11.08.2026 - an article, a table, a form, a
+    sidebar, a video, a page whose loader never finishes, a long page, a small
+    page holding one of each thing a converter handles, and an index listing
+    them. Pages already serves them; this item is the gallery link.
+  - From: Improve GitHub Pages Site
+
+### UI/UX Override - the deployed gallery, its examples and the practice pages
+
+#### Found Issues
+
+- [ ] Stop the gallery's slideshow adding a session history entry every three
+  seconds, so Back can leave the page
+  - **Issue**: each slideshow tick calls `.click()` on a link whose `target` is
+    the frame, and a frame navigation is a session history entry. Measured
+    signed out in Chromium: `history.length` is 2 on load and **10 after 26
+    seconds** of nobody touching the page, growing without bound. Back
+    therefore rewinds the slideshow instead of leaving the gallery - after half
+    a minute a reader needs eight presses to get off the page, after five
+    minutes a hundred. The three queued slideshow and address items do not name
+    this: "Let a reader control the slideshow" scopes which anchors are
+    clicked, and "Give each example its own address" asks that "Back returns to
+    the previous one", which is the deliberate choice, not the automatic tick.
+  - **Goal**: an automatic advance replaces the current history entry rather
+    than adding one - `history.replaceState` with the example's hash, or a
+    frame navigation made with `location.replace` - and only a reader's own
+    click or key press pushes an entry. Check it by reading `history.length`
+    after 30 seconds of leaving the page alone: it should not have moved.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [ ] Land "Let a reader control the slideshow" before "Explain the page above
+  the gallery", or the gallery throws readers off the site
+  - **Issue**: the slideshow clicks every `<a>` on the page, and an anchor
+    without `target="examples"` navigates the top level rather than the frame.
+    Proved by appending one ordinary link to the side navigation and leaving
+    the page alone: within one cycle the address bar had left the gallery for
+    the appended link's own page. Today nothing triggers it, because the five
+    example links are the only anchors on the page - but "Explain the page
+    above the gallery" adds links to the README entry, the raw file, the gist,
+    the short and the README. Shipped in that order, with the slideshow still
+    cycling every anchor, the gallery sends a reader off the site on its own
+    within fifteen seconds of their arriving.
+  - **Goal**: work the slideshow item first, or work the two together. Either
+    way the slideshow steps a named list of the example links, never
+    `document.getElementsByTagName("a")`. A regression guard is cheap: append
+    an anchor to the navigation, wait a cycle, and assert the top-level
+    document has not navigated.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [ ] Repair the five `examples/` pages, and the bookmarklet that writes them
+  - **Issue**: the deployed site is `index.html` and the pages it frames, and
+    every queued item names `index.html` or the gallery, so the five framed
+    pages have no item and no test. Measured: `chatGPT_Bookmark_Schedule.html`
+    pushes the document to **766px in a 390px viewport** on its one table, the
+    same defect `test/pages.test.js` exists to catch on the practice pages;
+    three of the five render in quirks mode on a bare `<!DOCTYPE>`; none of the
+    five carries `lang`; every one of them skips h1 to h3; and all five share
+    one `<title>` ("ChatGPT Bookmark") and one `<h1>` ("ChatGPT Response"), so
+    the five examples cannot be told apart in a tab, in history or in a
+    bookmark. The table style, the missing `lang` and the skipped level are
+    written by
+    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js`, so the
+    queued "Add more examples" item would reproduce them.
+  - **Goal**: Resolve to [example-pages-markup.prompt.md](.claude/prompts/example-pages-markup.prompt.md)
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [ ] Give `snippet.html` a `Try these on this page` box, or stop the practice
+  index promising one
+  - **Issue**: `test/fixtures/pages/index.html` tells a reader "Each page lists
+    what to try on it", and `snippet.html` carries no such box. It is the one
+    page of the eight the index links that does not. `test/pages.test.js`
+    cannot catch it: its "the Try these on this page box does not skip a
+    level" test returns early on a page without a box (`if (!box) { return; }`)
+    and then asserts only that at least one page carries one, so the suite is
+    green with eight boxes or with one.
+  - **Goal**: give `snippet.html` a box naming the converter bookmarklets it
+    exists for - `Clipboard - convert page to markdown` is the one it was built
+    as a fixture for - and change that `pages.test.js` test to require a box on
+    every page the index links, so the next page added without one fails.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [ ] Take `GitHub - resize repo table columns` out of `table.html`'s try box,
+  or say it needs GitHub
+  - **Issue**: `table.html` names it among the three bookmarklets to try, and
+    it does nothing there. Run on `table.html`, signed out, it added 0 resize
+    handles, 0 fixed-layout tables, 0 style tags and 0 flagged tables, and
+    threw nothing - `setGlobals` tests `location.host` for `github.com` and
+    returns before touching a table anywhere else. Both of the page's tables do
+    carry the `Name` header the bookmarklet's own fallback looks for, so the
+    host gate is the only thing stopping it. A reader follows the instruction,
+    sees nothing happen, and gets no message saying why. No test disagrees: the
+    bookmarklet's `test-bm.json` entry runs it against
+    `https://github.com/isocialPractice/bookmarklets`, never against a practice
+    page.
+  - **Goal**: drop the line from `table.html`'s box, since the page cannot
+    exercise it. If it is kept, word it as `scroll.html` words its own
+    unexercised entry ("nothing to fix here, which is also worth seeing") so
+    the reader is told nothing will happen and why.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+
 ### Create and Deploy GitHub Pages Override
 
 - No site
@@ -40,6 +179,31 @@ security policies, real dialogs and clipboard. It records video when asked, and
 it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
+
+- [ ] Promote a `test/gallery.test.js` that opens `index.html` and the five
+  `examples/` pages, the parts of the deployed site no test opens
+  - `test/pages.test.js` covers `test/fixtures/pages/` only, so the gallery's
+    script has never been read by a test: not the sizing interval that runs
+    every 100 ms and is cleared after 300, not the slideshow that clicks every
+    `<a>` every three seconds, and not `data-active`. A working driver is in
+    `.tmp/ui-ux-gallery/` (ignored): `gallery.test.js`, 34 assertions, and
+    `read.test.js`, 49 across the examples and the practice pages. Both follow
+    `pages.test.js`: `node --test`, `playwright.chromium.launch()`, the files
+    served by `page.route` on an origin of its own so the framed pages are
+    same-origin, collectors evaluated whole inside the page, and one measuring
+    pass shared by many small assertions.
+  - It asserts what the `## Current` gallery batch is for, so it is that
+    batch's regression guard and should land with it: the slideshow stops and
+    can be paused, it steps only the example links, it adds no history entry on
+    its own, it does not run under `prefers-reduced-motion`, the navigation and
+    the frame do not overlap at 1280, 1024 and 390, no nav link is covered or
+    clipped, the frame is sized to the example it is showing rather than the one
+    before it, Tab reaches the five links in order and each is visibly marked,
+    the `<title>` and the `<h1>` agree, and the page says what the examples are.
+  - 17 of the gallery driver's 34 assertions fail against the page as it
+    stands, by design - that is the batch's work list. Wire it into
+    `package.json` as its own `test:gallery` script once it is green, so
+    `npm test` is not red in the meantime.
 
 ## Test Configurations
 
@@ -167,39 +331,6 @@ the deployed site's own files; none changes the Pages source or build type or
 adds a second site. Pages publishes what is committed to `main`, so a page
 committed here is a page on the site.
 
-- [ ] Make `index.html` work on a phone and pass the W3C validator
-  - Add `lang="en"`, `<meta name="viewport">`, a description, and the
-    repository's `favicon.png`. Give the frame a `title`.
-  - Replace the absolutely positioned 15% side navigation and the floated 80%
-    frame with a grid that stacks the navigation above the frame on narrow
-    screens.
-  - Style the frame's border with CSS in place of the deprecated
-    `frameborder` attribute, which also lacks a space before it today.
-  - Make the `<title>` and the `<h1>` agree. They read "Bookmarklet Examples"
-    and "Bookmarklets Examples" today.
-- [ ] Let a reader control the slideshow
-  - It advances every three seconds until something is clicked, cycles every
-    `<a>` on the page, and treats a hover as a click. Scope it to the example
-    links and give it a visible pause and play button.
-  - Stop it on any click, focus or key press, and never start it when the
-    reader's system asks for reduced motion (`prefers-reduced-motion`).
-    Content that moves on its own needs a way to pause it (WCAG 2.2.2).
-- [ ] Give each example its own address
-  - Choosing an example sets `#<example-file-name>` in the address bar,
-    opening the page with that hash shows that example, and Back returns to
-    the previous one. The README can then link straight to an example.
-  - Mark the open example's link with `aria-current="page"` in place of
-    `data-active`, with a visible focus style.
-  - Size the frame from the example's `load` event and a `ResizeObserver` on
-    its body. The examples share the site's origin, so this replaces the
-    polling loop that runs every 100 ms and stops after 300.
-- [ ] Explain the page above the gallery
-  - Say what the examples are: pages that
-    `ChatGPT - Paste Ready Bookmark Response` saved as bookmarks, each shown
-    as a reader would see it on opening the bookmark. Link the bookmarklet's
-    README entry, raw file, gist and short.
-  - Add a short how-to-install with `support/Demo-ReadyToUse.gif`, and a link
-    to the README for the full list.
 - [ ] Add examples from the other two bookmarklets that save an answer as a
   bookmark: `ChatGPT - Bookmark a specific response` and
   `Google - Paste Ready Bookmark AI Response`
@@ -216,17 +347,6 @@ committed here is a page on the site.
   - Topics stay ordinary subjects, as the existing ones are (a schedule, a
     musical, marketing, computer science). No personal details or private
     conversations go into an example.
-- [ ] Add practice pages, where a reader can try the bookmarklets that work on
-  any page (`dom_`, `nav_`, `style_` and `window_`): an article with headings
-  and long text, a table, a form, a page with a sidebar, and one with a video
-  - Link them from the gallery under their own heading, each listing the
-    bookmarklets to try on it.
-  - Make them the same pages as the test fixtures under `## Test Harness`, so
-    one set serves both the site and the tests. They are in
-    `test/fixtures/pages/` as of 11.08.2026 - an article, a table, a form, a
-    sidebar, a video, a page whose loader never finishes, a long page, a small
-    page holding one of each thing a converter handles, and an index listing
-    them. Pages already serves them; this item is the gallery link.
 - [ ] Add an install page with a drag-to-install link for each bookmarklet
   - A site can render `<a href="javascript:...">` for a reader to drag onto
     the bookmarks bar, which a GitHub README cannot. Build each `href` from the
