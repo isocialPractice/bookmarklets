@@ -319,21 +319,30 @@ the bookmarklet has a demo.
       11.16.2026.
     - The first short and its GIF stay up until the maintainer deletes them
       by hand, which also takes the old GIF out of the collection.
-  - `siteSpecific_GoogleMaps_CustomMearsureDistance` is posted, 11.18.2026:
-    [Short - Google Maps - Custom Mearsure Distance](https://www.youtube.com/shorts/hDZ6-BE33no),
+  - `siteSpecific_GoogleMaps_CustomMearsureDistance` is posted, remade
+    11.19.2026:
+    [Short - Google Maps - Custom Mearsure Distance](https://www.youtube.com/shorts/snJ8bXCJS6w),
     public, in the `Bookmarklet Shorts` playlist, and its README entry links
-    it in place of the comment.
+    it. It replaces the first short, `hDZ6-BE33no` (11.18.2026), which drew
+    one line and then held its last frame for over three seconds.
+    - The remake is the maintainer's: the Grand Canyon in the map's satellite
+      view, the canyon measured rim to rim at its widest, then a triangle
+      area with each side measured, then a path down the river, seven lines
+      in all.
     - It is recorded by `test-bm.js --short` in the harness's own browser,
-      signed in to nothing, on the map at `-34.397, 150.644`, zoom 8, after
-      the map's own "Measure distance" line toward Sydney. The site's sign-in
-      button is taken off the page before the recording, and checked absent
-      after it.
-    - It runs 8.2 seconds, so it is one video, with the bookmarklet's line and
-      distance on screen for most of it. Every frame of the recording and the
-      MP4 was checked for a login screen and for another bookmarklet's name
-      before the upload.
-    - Its GIF is posted to Giphy, 11.18.2026, with the short as its source,
-      and is in the `Bookmarklets` collection, 11.18.2026.
+      signed in to nothing. The site's sign-in button, its area card and its
+      search chips are taken off the page before the recording, and checked
+      absent after it.
+    - It runs 14.5 seconds, so it is one video. Something new is drawn every
+      second and a half, and it ends on a second and a half of the finished
+      map, with no still of two seconds anywhere. Every frame of the
+      recording, the MP4 and the GIF was checked for a login screen and for
+      another bookmarklet's name before the upload.
+    - Its GIF is a new post for the new short, posted to Giphy, 11.19.2026,
+      with the new short as its source, and is in the `Bookmarklets`
+      collection, 11.19.2026.
+    - The first short and its GIF stay up until the maintainer deletes them
+      by hand, which also takes the old GIF out of the collection.
 - [ ] Make and post the shorts for the signed-in site-specific bookmarklets:
   ChatGPT and Gmail
   - From the launcher's sign-in where it has one, otherwise from the

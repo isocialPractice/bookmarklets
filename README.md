@@ -700,7 +700,7 @@ Gist page for [siteSpecific_GoogleMaps_CustomMearsureDistance.js](https://gist.g
 
 <b>Video Demonstration for Use:</b>
 
-<!-- PASTE VIDEO HERE -->
+- `Ctrl + click` link to view short on YouTube [Short - Google Maps - Custom Mearsure Distance](https://www.youtube.com/shorts/snJ8bXCJS6w)
 <!-- - `Ctrl + click` link to view demo on YouTube [Demo - Google Maps - Custom Mearsure Distance](https://www.youtube.com/watch?v=<id>) -->
 
 </dd></dl></dd></dl>
