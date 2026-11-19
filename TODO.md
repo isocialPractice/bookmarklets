@@ -113,26 +113,27 @@ resolve; a run never works one.
   - Not tested: the entry's run, which checks that the bookmarklet adds its resize handle (`#gmail-resizer-handle`) to the label sidebar (`div.aeN`).
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
   - On 11.18.2026, in the maintainer's everyday browser, signed in: every check held. The handle was added to the sidebar, took its hover colour under an in-tab hover, and a second run added no second handle. The everyday route could not close the mail tab afterwards, so the run does not count as a pass, and its entry keeps a skip with that reason.
+  - Later on 11.18.2026, a second run in the everyday browser stopped before any step: the mail tab it opened never reached the route, which finds its tab by a mark at the end of the page's address, the part the mail page uses for its own views and so likely replaced first. Nothing was done in that tab, and no further mail run was started.
   - Ways an AI-safe automated procedure could resolve it:
-    - the same run in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), once the route closes the mail tab it opens;
+    - the same run in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), once the route both holds and closes the mail tab it opens;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding a few labels with placeholder names;
     - a local fixture page with the sidebar markup the bookmarklet reads, holding placeholder labels.
   - Done when the entry passes signed in, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
   - Not tested: the bookmarklet on an inbox listing (`table` and `tr`), where it marks and styles the sponsored rows. Its entry runs only the default safe run, with no assertion of its own.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
-  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail run before it could not close its tab, so no further mail run was started. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
+  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail runs before it either could not close their tab or never reached it, so no further mail run was started. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
   - Ways an AI-safe automated procedure could resolve it:
-    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), with the bookmarklet run in a tab the route opened, once the route closes the mail tabs it opens;
+    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), with the bookmarklet run in a tab the route opened, once the route both holds and closes the mail tabs it opens;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in;
     - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
   - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js` still works on the site
   - Not tested: the bookmarklet on an inbox with nested labels (`div.aim` label rows and their `div.TH` expand arrows), where it opens a label an email is held over. Its entry runs only the default safe run, with no assertion of its own.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
-  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail run before it could not close its tab. Its entry there checks only that the bookmarklet turns on with its notice, and that a second run turns it off without adding a second one. Opening a label while an email is held over it is a drag, and a drag can move or label the email, so no run does it.
+  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail runs before it either could not close their tab or never reached it. Its entry there checks only that the bookmarklet turns on with its notice, and that a second run turns it off without adding a second one. Opening a label while an email is held over it is a drag, and a drag can move or label the email, so no run does it.
   - Ways an AI-safe automated procedure could resolve it:
-    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), for the bookmarklet turning on and off, once the route closes the mail tabs it opens;
+    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), for the bookmarklet turning on and off, once the route both holds and closes the mail tabs it opens;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding one nested label with a placeholder name;
     - a local fixture page with placeholder nested labels and email rows in the markup the bookmarklet reads.
   - Done when the entry passes signed in, or on a fixture page with that markup.

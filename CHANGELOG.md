@@ -83,6 +83,11 @@ this file.
   bookmarklets were not run after it. `siteSpecific_chatGPT_PasteReadyBookmarkResponse` keeps its
   signed-in entry: its result is on the clipboard, which a run on such a page never reads, and
   its check needs a prompt, which no run sends. No bookmarklet changed.
+- The three Gmail entries keep their `skip` and their items, with the reason brought up to date.
+  A second run of `siteSpecific_Gmail_ResizeSideBar` in the everyday browser stopped before any
+  step: the mail tab it opened never reached the everyday route, which finds its tab by a mark at
+  the end of the page's address, the part the mail page uses for its own views. Nothing was done
+  in that tab, and the two other mail bookmarklets were not run after it. No bookmarklet changed.
 - Sixteen tests in `test/harness.test.js`, which now runs 120, for the everyday contract and the
   new step kinds, on a stub driver that opens nothing. Every run there clears
   `_TEST_BM_EVERYDAY_DRIVER`, as it does `TEST_BM_AUTH_LAUNCHER`.
