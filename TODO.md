@@ -119,13 +119,6 @@ resolve; a run never works one.
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in;
     - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
   - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
-- [ ] **User todo**: Confirm that `siteSpecific_GoogleMaps_CustomMearsureDistance.js` still works on the site
-  - Not tested: whether the bookmarklet adds its measure button (`#custom-measure-btn`) and, in drawing mode, draws a line between two clicked points labelled with a distance worked out from the map's scale bar. Its entry skips.
-  - Why: on 11.18.2026 the map showed its scale bar, in the maintainer's everyday browser and in an automated one, but its label is now a `label` with the class `U5ELMd` rather than the element with the id `U5ELMd` that the bookmarklet reads. So the bookmarklet finds no scale bar, alerts "Scale bar not found!", and adds no button. The page does run the bookmarklet's inline script.
-  - Ways an AI-safe automated procedure could resolve it:
-    - a one-line fix in the bookmarklet that reads the label by its class, with the push, gist update and short a bookmarklet change brings, then its entry run again: it already holds the everyday run, in the maintainer's everyday browser opened by [to-explorer](https://github.com/jhauga/to-explorer), with the map at -34.397, 150.644, zoom 8, a right-click there, "Measure distance" and a second point toward Sydney by the computer's own mouse, then the bookmarklet's own two points and its distance checked against the map's within ten percent;
-    - a local fixture page with the scale bar markup the bookmarklet reads (its label and its bar) over a placeholder map image, so an entry can check the distance it draws.
-  - Done when its entry passes.
 
 ## Existing Bookmarklets
 

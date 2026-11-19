@@ -16,6 +16,15 @@ this file.
   could be read as holding the other run's `failure.md`. The folder is now claimed when it is
   made: the first run keeps `<YYYY-MM-DD_HHMMSS>`, and a later run in that second takes `-2`,
   then `-3` and so on. `docs/testing.md` and `--help` say so.
+- `siteSpecific_GoogleMaps_CustomMearsureDistance` finds the map's scale label again. The label
+  is now a `label` with the class `U5ELMd` rather than an element with that id, so the
+  bookmarklet reported no scale bar and added nothing. It now reads the label by its class when
+  no element has the id. Its entry passes in the maintainer's everyday browser, on the map at
+  `-34.397, 150.644`, zoom 8: a right-click, "Measure distance" and a second point by the
+  computer's own mouse, then the bookmarklet's button, its own two points, and a line whose
+  distance is within ten percent of the map's own. The entry's `requires` names the label by its
+  class, as the bookmarklet now reads it, and its `skip` and its item in
+  `## User - Resolve Test Procedures` are gone.
 
 ### Added
 

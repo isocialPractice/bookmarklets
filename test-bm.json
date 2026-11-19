@@ -682,8 +682,7 @@
   "url": "https://www.google.com/maps/@-34.397,150.644,8z",
   "drive": "everyday",
   "scheduled": false,
-  "skip": "the map's scale label is now a label with the class U5ELMd rather than the element with that id the bookmarklet reads, so it reports no scale bar and adds nothing until the bookmarklet reads the class",
-  "requires": ["canvas", "#U5ELMd", ".Ty7QWe"],
+  "requires": ["canvas", ".U5ELMd", ".Ty7QWe"],
   "timeout": 60000,
   "steps": [
    { "wait": 3000 },

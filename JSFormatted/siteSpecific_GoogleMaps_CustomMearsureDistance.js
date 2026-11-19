@@ -24,7 +24,7 @@ javascript:(function(){
  const googleMapsCustomMeasureDistanceDraw = () => {
   /* global variables for inserted script    */
   const googleMapsCustomMeasureDistanceLabelEl = /* select current scale */
-   document.getElementById('U5ELMd');
+   document.getElementById('U5ELMd') || document.querySelector('.U5ELMd');
   const googleMapsCustomMeasureDistanceBarEl =   /* get scal in pixels */
    document.querySelector('.Ty7QWe');
 
