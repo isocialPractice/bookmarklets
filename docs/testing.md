@@ -264,7 +264,9 @@ page or a fixture page like it, is what turns a pass into "it still works".
 | `capture` | Capture this entry, as `--capture` does for every entry. Takes only `true`. | `"capture": true` |
 | `browsers` | The engines this entry runs in when the run names none with `--browser`. Defaults to Chromium alone. | `"browsers": ["chromium", "firefox"]` |
 | `auth` | The sign-in the entry needs, by site name (see [Signed-in sites](#signed-in-sites-auth-signedin-and-test_bm_auth_launcher)). | `"auth": "example-app"` |
-| `signedIn` | A selector only the signed-in page has. Goes with `auth`, and only with it. | `"signedIn": "#account-menu"` |
+| `signedIn` | A selector only the signed-in page has. Goes with `auth` or `drive`, and only with them. | `"signedIn": "#account-menu"` |
+| `drive` | Run the entry in the reader's everyday browser, through a driver outside the repository (see [The everyday browser](#the-everyday-browser-drive-personal-and-_test_bm_everyday_driver)). Takes only `"everyday"`. | `"drive": "everyday"` |
+| `personal` | Marks a page that shows what the account holds, and keeps the entry to selectors, counts and states. Takes only `true`, and goes with `drive`. | `"personal": true` |
 
 A property the schema does not list is a configuration error.
 
@@ -276,7 +278,9 @@ Each step does exactly one thing.
 | --- | --- | --- |
 | `run` | Run the bookmarklet here. A second `run` runs it again, which is how a bookmarklet that turns itself off on a second run is checked. | `{ "run": true }` |
 | `run` with `set` | Run it with variables changed first (see below). | `{ "run": { "set": { "img": "sample.png" } } }` |
-| `click` | Click a selector. | `{ "click": "button.toggle" }` |
+| `bookmarklet` | Run another bookmarklet from `JSFormatted/` first, in the same page, the way a reader runs one bookmarklet to set up what the next one reads. Its file is checked as the entry's own is, and its errors and requests are judged the same way. An entry with one names its own run with a `run` step. | `{ "bookmarklet": "dom_Example_AddNoteBox" }` |
+| `click` | Click a selector. See below for `button`, `withText`, `at` and `via`. | `{ "click": "button.toggle" }` |
+| `hover` | Move the pointer over the first match. | `{ "hover": "#panel-handle" }` |
 | `fill` | Type a value into a selector. The value can sit beside it as `value` or `text`, or both can be nested. | `{ "fill": "#search", "value": "Springfield" }` or `{ "fill": { "selector": "#search", "value": "Springfield" } }` |
 | `press` | Press a key. With `selector` beside it, the key goes to that element. | `{ "press": "Enter", "selector": "#search" }` |
 | `select` | Select a selector's text, the way a reader drags across it. | `{ "select": "p.intro" }` |
@@ -286,6 +290,23 @@ Each step does exactly one thing.
 | `attach` | Put back what an earlier `detach` took, where it came from. | `{ "attach": "headerRow" }` |
 | `viewport` | Size the page for every step after this one (see below). | `{ "viewport": { "width": 1024, "height": 720 } }` |
 | `expect` | Say what should be true (see [Expectations](#expectations)). | `{ "expect": { "selector": "#panel", "visible": true } }` |
+
+**Aiming a click or a hover.** Three optional properties sit beside the
+selector:
+
+- `withText`: the element's own text, matched whole, to pick one match of
+  several, such as one item of a menu;
+- `at`: `{ "dx": n, "dy": n }` in CSS pixels from the element's centre, to aim
+  somewhere other than its middle, as a map is clicked;
+- `button` (a click only): `left`, `right` or `middle`.
+
+```json
+{ "click": "[role='menu'] [role='menuitem']", "withText": "Sample Item" },
+{ "click": "canvas", "at": { "dx": 100, "dy": -110 } }
+```
+
+A fourth, `via`, goes only in an everyday entry (see
+[The everyday browser](#the-everyday-browser-drive-personal-and-_test_bm_everyday_driver)).
 
 **`run` with `set`.** Some bookmarklets ask the reader to edit a value before
 saving them, such as `var img = "CHANGE_IMAGE";`. `set` makes that edit for the
@@ -331,6 +352,10 @@ beside it at 1024. Width and height are whole pixels from 100 to 4000.
 | `selector` + `text` | The first match holds that text somewhere in it. | `{ "selector": "h1", "text": "Acme Corp" }` |
 | `selector` + `clear` | The first match paints its text inside its own box, and where the text runs past, over nothing that paints text of its own. It is the one expectation that reads geometry. | `{ "selector": "th.size", "clear": true }` |
 | `clipboard` | The clipboard holds exactly that value, trimmed at both ends. Needs `clipboard-read`. | `{ "clipboard": "- [Home](https://example.com/)" }` |
+| `clipboard` + `selector` | The clipboard holds that element's own value: its property named by `attr` when it has one, or else the attribute. `href` gives the absolute address. | `{ "clipboard": { "selector": "a.copy-link", "attr": "href" } }` |
+| `clipboard` + its shape | The clipboard's value starts with that text, is on one line, or is not empty, for a value no entry could write down in full. Any of the three. | `{ "clipboard": { "startsWith": "javascript:", "singleLine": true, "nonEmpty": true } }` |
+| `storage` | Compares the page's storage, `local` or `session`, with the keys it held before the first bookmarklet ran: `newKeys` is how many are new, and `valueIncludes` that each new key's value holds the text. The new keys are then removed, unless `remove` is `false`. Names and values stay in the page, and a failure gives counts. | `{ "storage": "local", "newKeys": 1, "valueIncludes": "Sample Note" }` |
+| `check` | A check the everyday driver holds, by name, for what no selector can say, such as a distance read within a tolerance. Only in an everyday entry. | `{ "check": "map-distance" }` |
 | `location` | The page's address holds that text, for a bookmarklet that navigates. | `{ "location": "#section-2" }` |
 | `popup` | The address of a new tab the bookmarklet opened holds that text. | `{ "popup": "example.org" }` |
 | `requests` + `count` | The bookmarklet sent exactly that many requests to the host since the last expect that counted it, or since the page opened. | `{ "requests": "api.example.com", "count": 1 }` |
@@ -489,6 +514,114 @@ To open the same page by hand, in a chosen Chrome profile, use
 `to-explorer --chrome [0-9]+ http://octopi.local/?#temp`, where `[0-9]+` is the
 profile's number.
 
+### The everyday browser: `drive`, `personal` and `_TEST_BM_EVERYDAY_DRIVER`
+
+Some pages never reach the harness's own browser: a site that answers an
+automated browser with a bot check, or a page only the reader's own browser
+profile shows. An entry with `"drive": "everyday"` runs in that everyday
+browser instead. **`test-bm.js` never reaches it itself.** It hands the entry to
+a driver, a module outside the repository, the way an entry with `auth` gets
+its sign-in from the launcher:
+
+```json
+"siteSpecific_Example_HighlightRows": {
+ "url": "https://app.example.org/inbox",
+ "drive": "everyday",
+ "personal": true,
+ "signedIn": "#account-menu",
+ "scheduled": false,
+ "requires": ["table.rows"],
+ "steps": [
+  { "run": true },
+  { "expect": { "selector": "tr[data-highlighted]", "count": 3 } },
+  { "hover": "#row-handle", "via": "cdp" },
+  { "run": true },
+  { "expect": { "selector": "tr[data-highlighted]", "count": 0 } }
+ ]
+}
+```
+
+**The entry.**
+
+- It is never scheduled, takes no `auth`, captures nothing, grants no
+  `permissions` and names no `network`: the everyday browser is the reader's
+  own, it is not run unattended, and the harness does not watch the requests a
+  bookmarklet sends there. A bookmarklet that sends any is tested in the
+  harness's own browser.
+- Its `url` is a site's own `https` page, never a fixture, a variable or the
+  default.
+- It types into no prompt, and presses only keys that submit nothing: `Tab`,
+  `Escape`, the arrows, `Home`, `End`, `PageUp`, `PageDown`, `Backspace` and
+  `Delete`.
+- It has no `select`, `answer`, `detach`, `attach` or `viewport` step, and no
+  `clear`, `location`, `popup` or `requests` expectation. Each of those needs
+  the harness's own browser.
+- `signedIn` is a selector only the signed-in page has, which the driver looks
+  for first. A page without it is a skip reading `sign-in wall`, since nothing
+  here signs in.
+- `"personal": true` marks a page that shows what the account holds, such as
+  mail, chats or watch history. Such an entry names `signedIn`, and is kept to
+  selectors, counts and states: no `withText`, no desktop input, and no
+  expectation on `text`, the clipboard, `valueIncludes`, `matches` or a
+  `check`.
+- `via` on a `click`, `hover`, `fill` or `press` says how the driver sends it:
+  `"cdp"`, an event inside the tab, which reaches no other window, or
+  `"desktop"`, the computer's own mouse and keyboard, for a page that answers
+  only real input.
+- `{ "check": "<name>" }` names a check the driver holds, in lower-case letters,
+  digits and hyphens, for what no selector can say.
+- **`requires` may name what the driver needs before the steps,** not only what
+  the bookmarklet reads: the product block of a shop's page, say, so a page
+  that came up as a bot check is a skip naming that selector rather than a
+  failure further on.
+
+Each of these is a configuration error before anything runs.
+
+**The driver.** `_TEST_BM_EVERYDAY_DRIVER` names it: an absolute path to an ES
+module outside the repository, with a `run` function as its default export or a
+named export. Set it only for the run that uses it:
+
+```bat
+set "_TEST_BM_EVERYDAY_DRIVER=C:\Users\<user>\AppData\Local\example-driver\everyday.mjs"
+node test-bm.js siteSpecific_Example_HighlightRows
+set "_TEST_BM_EVERYDAY_DRIVER="
+```
+
+```sh
+_TEST_BM_EVERYDAY_DRIVER="$HOME/.local/share/example-driver/everyday.mjs" node test-bm.js siteSpecific_Example_HighlightRows
+```
+
+| | What it holds |
+| --- | --- |
+| **`run(job)` takes** | `{ name, file, code, url, requires, steps, dialogs, timeout, settle, personal, signedIn, bookmarklets }`: `file` is the formatted file, `code` the one line the harness checked, and `bookmarklets` the `{ file, code }` of each bookmarklet a `bookmarklet` step runs first. |
+| **It returns** | `{ verdict, reason, inputs, realRuns }`: `pass`, `fail` or `skip`; a sentence of the driver's own, never anything a page said, up to 300 characters; which input each entry step sent, as `[{ "step": 4, "via": "cdp" }]`; and how many real runs it made. |
+
+- **Nothing else it returns is kept**, so nothing a page showed reaches
+  `report.json`, `summary.txt` or `failure.md`. A failure's section says only
+  the driver's reason.
+- **With the variable unset, every everyday entry is a skip** reading
+  `no everyday driver`, so `npm test` and the scheduled run are unchanged on a
+  machine without one. A variable that is set but wrong is exit 2 before any
+  browser starts, under the same rules as the launcher's.
+- **A driver that gives no verdict** inside three times the entry's `timeout`,
+  plus two minutes, fails the entry, and so does one that throws.
+
+**What a driver must keep to.** How it reaches the everyday browser is its own
+business, and nothing in the repository knows it. Whatever it uses, it:
+
+- acts only in a tab it opened for the entry, and closes that tab when the
+  entry ends, whatever the page asks;
+- never signs in or out, submits a form, posts, sends, buys, or changes a
+  setting;
+- on a `personal` page, reads selectors, counts and states only, and takes no
+  screenshot;
+- holds no secret, and is never committed.
+
+One way to open the entry's page in a chosen Chrome profile is
+[to-explorer](https://github.com/jhauga/to-explorer):
+`to-explorer --chrome [0-9]+ https://app.example.org/inbox`, where `[0-9]+` is
+the profile's number. The driver then needs its own way to act in that one tab.
+
 ## Scheduling a run
 
 `node test-bm.js --scheduled` is the whole of what a scheduled job calls. It
@@ -585,11 +718,13 @@ missing semicolons,
 the refusals of anything that could pass for malicious, the `network` rule,
 fixture pages, signed-in entries, `--capture`, `--short` and its 15 second
 cut, `failure.md`, `matches`, `clear`, urls held in a variable, `set`,
-`answer`, `detach` and `attach`, `viewport`, and both engines.
+`answer`, `detach` and `attach`, `viewport`, both engines, the `bookmarklet`,
+`hover`, `storage` and clipboard shape steps, and everyday entries.
 
-No test here reaches a real sign-in. Every run clears `TEST_BM_AUTH_LAUNCHER`
-unless the test sets it, and the tests that set it point it at a stub that
-signs in to nothing. The tests that need ffmpeg or Firefox skip themselves,
+No test here reaches a real sign-in or the everyday browser. Every run clears
+`TEST_BM_AUTH_LAUNCHER` and `_TEST_BM_EVERYDAY_DRIVER` unless the test sets
+one, and the tests that set them point them at stubs that sign in to nothing
+and open nothing. The tests that need ffmpeg or Firefox skip themselves,
 with a reason, where it is not installed.
 
 ### `test:pages`
@@ -623,8 +758,9 @@ it needs a network, and a site that changed fails it, which is the verdict it
 exists to give. No entry here submits a form or sends a message, and on a
 signed-in page the harness refuses any step that could. `test-bm.js` signs in
 to nothing itself: an entry with `auth` runs on the browser the launcher gives
-it, or is a skip. A skip, such as an entry with `auth` on a machine with no
-launcher, or a url variable that is not set, never fails it. It writes its
+it, or is a skip, and an everyday entry runs through the driver, or is a skip.
+A skip, such as an entry with `auth` on a machine with no launcher, an everyday
+entry with no driver, or a url variable that is not set, never fails it. It writes its
 report folder as any `--all` run does.
 
 ## Working with an AI assistant
