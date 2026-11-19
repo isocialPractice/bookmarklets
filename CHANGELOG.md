@@ -31,6 +31,14 @@ this file.
 - `siteSpecific_GoogleMaps_CustomMearsureDistance` has a new short, recorded on the Grand Canyon:
   the canyon measured rim to rim at its widest, a triangle area, and a path down the river. The
   README links it in place of the first short. The bookmarklet did not change.
+- A second run the same day built nothing: the queue was empty but for the standing `- No site`
+  directive, so it tested what exists and planned the next batch instead. `npm test` is green on
+  all three stages - harness 121 of 121, pages 16 of 16, and `test-bm.js --all` 54 run, 39
+  passed, 0 failed, 15 skipped, every skip a missing sign-in or the everyday driver rather than a
+  fault. Gists are 54 OK with no drift, and `verify` reports 54 entries and 0 errors. The two
+  open issues, #4 and #11, were read against the code again and both still stand. No bookmarklet,
+  test or document changed; `## Current` now holds the five `index.html` gallery items from
+  `## Improve GitHub Pages Site`.
 
 ## [11.18.2026]
 
