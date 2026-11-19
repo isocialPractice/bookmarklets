@@ -708,6 +708,55 @@ var sizeSource = [
  "})();"
 ].join("\n") + "\n";
 
+// A bookmarklet that keeps the page moving: a block that changes colour every quarter second. A
+// clip of it never holds still, so it is cut only for its length, never for a still.
+var movingSource = [
+ "javascript:(function() {",
+ " /* A fixture that never holds still. */",
+ " var blockKeepsThePageMoving = document.createElement(\"div\");",
+ " blockKeepsThePageMoving.style.cssText = \"position:fixed;top:0;left:0;width:240px;height:240px;\";",
+ " document.body.appendChild(blockKeepsThePageMoving);",
+ " var tickKeepsThePageMoving = 0;",
+ " setInterval(function() {",
+ "  tickKeepsThePageMoving++;",
+ "  blockKeepsThePageMoving.style.background = (tickKeepsThePageMoving % 2) ? \"#cc0000\" : \"#0000cc\";",
+ " }, 250);",
+ "})();"
+].join("\n") + "\n";
+
+// A bookmarklet that changes the page twice: a block when it runs, and a second block five seconds
+// later. Between them, and after the second, the page holds still.
+var twoBlockSource = [
+ "javascript:(function() {",
+ " /* A fixture that draws a block, then a second one five seconds later, and nothing else. */",
+ " var blockFirstOfTwoBlocks = document.createElement(\"div\");",
+ " blockFirstOfTwoBlocks.style.cssText = \"position:fixed;top:0;left:0;width:240px;height:240px;background:#cc0000;\";",
+ " document.body.appendChild(blockFirstOfTwoBlocks);",
+ " setTimeout(function() {",
+ "  var blockSecondOfTwoBlocks = document.createElement(\"div\");",
+ "  blockSecondOfTwoBlocks.style.cssText = \"position:fixed;top:300px;left:300px;width:240px;height:240px;background:#0000cc;\";",
+ "  document.body.appendChild(blockSecondOfTwoBlocks);",
+ " }, 5000);",
+ "})();"
+].join("\n") + "\n";
+
+// The longest a GIF holds one frame, in seconds, read by ffmpeg the way the harness reads a clip:
+// the longest gap between the frames mpdecimate keeps, or from the last of them to the GIF's end.
+function longestStill(file) {
+ var answer = child.spawnSync("ffmpeg", ["-hide_banner", "-nostdin", "-loglevel", "info", "-i", file,
+  "-vf", "fps=10,mpdecimate=max=0,showinfo", "-f", "null", "-"], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+ var moved = (String(answer.stderr || "").match(/pts_time:\s*\d+(?:\.\d+)?/g) || []).map(function (m) {
+  return Number(/\d+(?:\.\d+)?/.exec(m)[0]);
+ });
+ var end = gifFrames(file) / 10;
+ var longest = 0;
+ moved.forEach(function (at, i) {
+  var next = i + 1 < moved.length ? moved[i + 1] : end;
+  longest = Math.max(longest, next - at);
+ });
+ return longest;
+}
+
 test("--short records the entry at 648x648 and writes a 10 fps GIF where the pipeline reads it", function (t) {
  if (!hasFfmpeg()) {
   t.skip("ffmpeg is not on the PATH, so there is no GIF to read");
@@ -766,7 +815,7 @@ test("a clip over fifteen seconds is kept whole up to thirty, and cut to its run
     url: "fixture:article.html", timeout: 60000,
     steps: [{ run: true }, { wait: 12000 }, { click: "h1" }, { wait: 19000 }]
    }
-  }, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts });
+  }, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts }, movingSource);
   var result = onlyResult(answer);
   assert.strictEqual(result.verdict, "pass", result.reason);
   assert.ok(result.short && result.short.full, "a long clip reports its whole clip and its cut: "
@@ -801,6 +850,42 @@ test("a clip over fifteen seconds is kept whole up to thirty, and cut to its run
   assert.ok(Math.abs(wholeFrames - 300) <= 3, "thirty seconds at 10 fps is about 300 frames, not " + wholeFrames);
   assert.ok(Math.abs(cutFrames - result.short.seconds * 10) <= 3,
    "the cut GIF holds the frames of the parts it keeps: " + cutFrames + " for " + result.short.seconds + "s");
+  assert.strictEqual(result.short.stills, undefined, "a page that keeps moving has no still to cut");
+ } finally {
+  removeDir(shorts);
+ }
+});
+
+test("a short never holds still for two seconds: each still keeps a second and a half, and the rest is cut", function (t) {
+ if (!hasFfmpeg()) {
+  t.skip("ffmpeg is not on the PATH, so there is no GIF to read");
+  return;
+ }
+ var shorts = shortsFolder();
+ try {
+  var answer = runApart({
+   fixture_Short_Still: { url: "fixture:article.html", timeout: 40000, steps: [{ run: true }, { wait: 8000 }] }
+  }, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts }, twoBlockSource);
+  var result = onlyResult(answer);
+  assert.strictEqual(result.verdict, "pass", result.reason);
+  assert.ok(result.short, "a short run reports the recording it wrote: " + JSON.stringify(result.notes));
+  assert.strictEqual(result.short.full, undefined, "what moves runs under fifteen seconds, so there is one GIF");
+  assert.strictEqual(result.short.keep, undefined, "no fifteen second cut was made");
+
+  var stills = result.short.stills;
+  assert.ok(Array.isArray(stills) && stills.length === 2,
+   "the wait between the blocks and the end on the result each held still: " + JSON.stringify(stills));
+  assert.ok(stills[0][1] - stills[0][0] > 2.5, "most of the five seconds between the blocks is cut: " + JSON.stringify(stills));
+  assert.ok(stills[1][0] > stills[0][1], "the second block is kept, after the first still: " + JSON.stringify(stills));
+  assert.ok(result.short.seconds > 2 && result.short.seconds < 5,
+   "the run, the second block and a second and a half of each are left: " + result.short.seconds + "s");
+
+  var gif = path.join(shorts, "fixture_Short_Still.gif");
+  var frames = gifFrames(gif);
+  assert.ok(Math.abs(frames - result.short.seconds * 10) <= 3,
+   "the GIF holds the frames of what was kept: " + frames + " for " + result.short.seconds + "s");
+  var longest = longestStill(gif);
+  assert.ok(longest < 2, "the GIF never holds one frame for two seconds, and held one for " + longest + "s");
  } finally {
   removeDir(shorts);
  }
@@ -819,11 +904,13 @@ test("the cut of a signed-in entry is reported as seconds only, never as the ste
     url: "fixture:article.html", auth: "fixture-site", signedIn: "main", timeout: 40000,
     steps: [{ run: true }, { wait: 16500 }]
    }
-  }, ["--all", "--short"], { TEST_BM_AUTH_LAUNCHER: stub.file, TEST_BM_SHORTS_DIR: shorts });
+  }, ["--all", "--short"], { TEST_BM_AUTH_LAUNCHER: stub.file, TEST_BM_SHORTS_DIR: shorts }, movingSource);
   var result = onlyResult(answer);
   assert.strictEqual(result.verdict, "pass", result.reason);
   assert.ok(result.short && result.short.full, "the clip ran over fifteen seconds: " + JSON.stringify(result.notes));
   assert.strictEqual(result.short.review, true, "a short of a signed-in page waits to be reviewed");
+  assert.strictEqual(result.short.stills, undefined, "the recording is the entry's moving page, not the"
+   + " blank page the launcher's context opened first");
   assert.ok(Array.isArray(result.short.keep) && result.short.keep.length > 0, "the parts are reported");
   assert.strictEqual(result.short.moments, undefined, "the steps of a signed-in entry stay in memory");
   assert.strictEqual(result.capture, undefined, "a signed-in page is still captured not at all");

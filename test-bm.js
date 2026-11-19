@@ -159,6 +159,15 @@
 // time-stretched to fifteen when the short is rendered. The report names both files, their
 // lengths, and the parts of the whole clip the cut keeps.
 //
+// A short never holds still for two seconds, in the middle or at its end on the result: a frame
+// that does not move for that long reads as a stalled video. Where nothing on the page moves for
+// longer than a second and a half, the clip keeps that second and a half and cuts the rest. That
+// happens before the fifteen second cut is chosen, and in both GIFs of a long clip. Moving means a
+// change ffmpeg's mpdecimate sees between frames, so a dot or a line drawn on the page is one and
+// a blinking caret is not. The report names the parts cut as stills, in seconds of the whole clip.
+// This is the short's rule only: a demo ends on fifteen still seconds for YouTube's countdown to
+// the next video, and is not made here.
+//
 // A recording already at <name>.gif is kept and the entry is not recorded again for it, because the
 // maintainer's own recordings come first. Only an entry that passed gets one: a recording of a
 // bookmarklet that did not work is not the bookmarklet's recording. ffmpeg on the PATH is what
@@ -389,6 +398,10 @@ var shortCutSeconds = 15;
 var shortFullSuffix = "_Full";
 // The least a moment the cut keeps runs on after it, in milliseconds: enough to see what it did.
 var shortHold = 2000;
+// The longest a short holds still, in milliseconds. A short may never stand still for two seconds,
+// and a second and a half leaves room for a frame either side of a still. What is cut is a wait's
+// or the end's, never a moment of use: a still is where nothing happens.
+var shortStillKeep = 1500;
 // The steps a reader makes by hand. With each run of the bookmarklet they are the moments the cut
 // keeps; a wait, a check or a step that sets the page up is the harness's, and the cut drops it.
 var shortUseActions = ["click", "hover", "fill", "press", "select"];
@@ -1617,14 +1630,31 @@ async function shot(page, ctx, what) {
 }
 
 // The webm a context left in the folder it was told to record into, whatever Playwright named it.
+// A launcher's persistent context opens a blank page of its own before the harness opens the
+// entry's, and records that one too. Where the page's own name is not to be had, the largest file
+// is taken: the entry's page is the one that changed, and a blank page records almost nothing.
 function foundRecording(dir) {
  var found = [];
  try {
-  found = fs.readdirSync(dir).filter(function (f) { return /\.webm$/i.test(f); });
+  found = fs.readdirSync(dir).filter(function (f) { return /\.webm$/i.test(f); }).map(function (f) {
+   return { file: path.join(dir, f), size: fs.statSync(path.join(dir, f)).size };
+  });
  } catch (err) {
   return "";
  }
- return found.length ? path.join(dir, found[0]) : "";
+ found.sort(function (a, b) { return b.size - a.size; });
+ return found.length ? found[0].file : "";
+}
+
+// Where Playwright wrote this page's own video, which is the entry's whichever other pages the
+// context recorded, or the empty string when it cannot say.
+async function recordedPath(video) {
+ try {
+  var named = await video.path();
+  return named && fs.existsSync(named) ? named : "";
+ } catch (err) {
+  return "";
+ }
 }
 
 // The video the context recorded, under a name of this run's choosing. Playwright names the file
@@ -1634,7 +1664,8 @@ function foundRecording(dir) {
 //
 // saveAs is the way to pick the file up, and it asks the browser for it - which a launcher's
 // persistent context cannot answer, because closing that context closes the browser with it. So the
-// folder it recorded into is read as well, which reaches the same file by another route.
+// file is then taken by the name Playwright gave the page's video, or failing that from the folder
+// it recorded into, which reaches the same file by another route.
 async function saveVideo(page, ctx) {
  if (!ctx.capture && !ctx.short) { return ""; }
  var dir = ctx.capture ? captureDir(ctx) : shortWork(ctx);
@@ -1650,7 +1681,7 @@ async function saveVideo(page, ctx) {
   }
  }
  if (!fs.existsSync(file)) {
-  var recorded = foundRecording(dir);
+  var recorded = (video && await recordedPath(video)) || foundRecording(dir);
   if (recorded) {
    try {
     fs.renameSync(recorded, file);
@@ -1746,6 +1777,66 @@ function shortCut(ctx, clip) {
  };
 }
 
+// The parts of a clip to cut because the page holds still there, in seconds from the clip's start,
+// or null when ffmpeg could not say. mpdecimate keeps only the frames that differ, block by block,
+// from the last frame it kept, so the times of the frames it keeps are the times the page moved,
+// and the gaps between them are the stills. It reads the clip at the GIF's own rate, so its times
+// are the GIF's frames.
+function shortStills(source, clip) {
+ var answer = child.spawnSync("ffmpeg", ["-hide_banner", "-nostdin", "-loglevel", "info",
+  "-ss", clip.from.toFixed(3), "-t", clip.span.toFixed(3), "-i", source,
+  "-vf", "fps=" + shortFps + ",mpdecimate=max=0,showinfo", "-f", "null", "-"],
+  { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+ if (answer.error || answer.status !== 0) { return null; }
+ var moved = [];
+ String(answer.stderr || "").replace(/pts_time:\s*(\d+(?:\.\d+)?)/g, function (all, at) {
+  moved.push(Number(at));
+  return all;
+ });
+ return moved.length ? stillParts(moved, clip.span) : null;
+}
+
+// From the times the page moved, the stills to cut: each gap from one move to the next, or from
+// the last move to the clip's end, that runs past shortStillKeep loses everything after it.
+function stillParts(moved, span) {
+ var keep = shortStillKeep / 1000;
+ var cuts = [];
+ moved.forEach(function (at, i) {
+  var next = i + 1 < moved.length ? moved[i + 1] : span;
+  if (next - at > keep + 0.001) { cuts.push([Number((at + keep).toFixed(3)), Number(next.toFixed(3))]); }
+ });
+ return cuts;
+}
+
+// What is left of the stretch 0..span once the cuts are taken out, as the parts kept.
+function keptBetween(cuts, span) {
+ var keep = [];
+ var at = 0;
+ cuts.forEach(function (part) {
+  if (part[0] > at) { keep.push([at, part[0]]); }
+  at = Math.max(at, part[1]);
+ });
+ if (span > at) { keep.push([at, Number(span.toFixed(3))]); }
+ return keep;
+}
+
+// Where two lists of parts overlap, in order, which is a cut's parts with the stills taken out.
+function bothKeep(a, b) {
+ var out = [];
+ a.forEach(function (p) {
+  b.forEach(function (q) {
+   var from = Math.max(p[0], q[0]);
+   var to = Math.min(p[1], q[1]);
+   if (to - from > 0.001) { out.push([from, to]); }
+  });
+ });
+ return out.sort(function (x, y) { return x[0] - y[0]; });
+}
+
+function partsSeconds(parts) {
+ return parts.reduce(function (sum, part) { return sum + part[1] - part[0]; }, 0);
+}
+
 // The recording as a GIF, cut to the moment the bookmarklet ran, or to the parts of that clip a
 // cut keeps. ffmpeg is what writes it, as the video pipeline on this machine already does, and -n
 // is how an unattended run refuses to overwrite a recording rather than stopping at a prompt about
@@ -1800,15 +1891,22 @@ function makeShort(ctx, result) {
   return;
  }
  var clip = shortClip(ctx);
+ // A short never holds still for two seconds, so the stills come out of the whole clip first, and
+ // every length after this is the length of what moves. Where ffmpeg cannot say where the page
+ // held still, the clip is written as it is, and the note says to check it before it is posted.
+ var stills = shortStills(ctx.videoFile, clip);
+ var moving = stills && stills.length ? keptBetween(stills, clip.span) : null;
+ var movingSeconds = moving ? partsSeconds(moving) : clip.span;
  // A clip over fifteen seconds is the whole one under <name>_Full.gif, and its cut is <name>.gif,
  // which is the short that is posted with its GIF. The cut is only ever written beside the whole
  // clip it came from: a cut that could not be written takes the whole clip away with it, so the
  // next run records both rather than finding one and keeping it.
- var cut = clip.span > shortCutSeconds ? shortCut(ctx, clip) : null;
+ var cut = movingSeconds > shortCutSeconds ? shortCut(ctx, clip) : null;
+ var keep = cut ? (moving ? bothKeep(cut.keep, moving) : cut.keep) : moving;
  var full = shortFile(ctx.name + shortFullSuffix);
- var lost = cut ? writeShortGif(ctx.videoFile, full, clip) : "";
+ var lost = cut ? writeShortGif(ctx.videoFile, full, clip, moving) : "";
  var wroteFull = !!cut && !lost;
- if (!lost) { lost = writeShortGif(ctx.videoFile, shortFile(ctx.name), clip, cut && cut.keep); }
+ if (!lost) { lost = writeShortGif(ctx.videoFile, shortFile(ctx.name), clip, keep); }
  if (lost && wroteFull) { lost = dropShortGif(full, lost + "; the whole clip was taken away with it"); }
  if (lost) {
   result.notes.push("no short: " + lost);
@@ -1816,12 +1914,17 @@ function makeShort(ctx, result) {
  }
  result.short = {
   file: shownPath(shortFile(ctx.name)),
-  seconds: Number((cut ? cut.seconds : clip.span).toFixed(2)),
+  seconds: Number((keep ? partsSeconds(keep) : clip.span).toFixed(2)),
   fps: shortFps
  };
+ if (moving) { result.short.stills = stills; }
+ if (!stills) {
+  result.notes.push("the clip's stills could not be read, so none was cut: check it for a still of"
+   + " two seconds before it is posted");
+ }
  if (cut) {
-  result.short.full = { file: shownPath(full), seconds: Number(clip.span.toFixed(2)) };
-  result.short.keep = cut.keep;
+  result.short.full = { file: shownPath(full), seconds: Number(movingSeconds.toFixed(2)) };
+  result.short.keep = keep;
   // A signed-in entry's steps stay in memory, as its timeline does; the parts are only seconds.
   if (!ctx.private) { result.short.moments = cut.moments; }
  }
@@ -3540,6 +3643,10 @@ function printDetail(result) {
   if (result.short.full) {
    console.log("  full: " + result.short.full.file + "  " + result.short.full.seconds + "s, cut to "
     + result.short.keep.map(function (part) { return part[0] + "-" + part[1] + "s"; }).join(", "));
+  }
+  if (result.short.stills) {
+   console.log("  stills cut: "
+    + result.short.stills.map(function (part) { return part[0] + "-" + part[1] + "s"; }).join(", "));
   }
   (result.short.moments || []).forEach(function (m) { console.log("  kept +" + m.at + "s  " + m.what); });
  }

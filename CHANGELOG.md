@@ -6,6 +6,32 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.19.2026]
+
+### Changed
+
+- `test-bm.js --short` never leaves a still of two seconds in a short. Where nothing on the page
+  moves for longer than a second and a half, in a wait or on the result at the end, the clip
+  keeps that second and a half and cuts the rest, before the 15 second cut is chosen and in both
+  GIFs of a long clip. ffmpeg's `mpdecimate` tells a still from a change, so a dot or a line
+  drawn on the page counts as moving and a blinking caret does not. The report names the parts
+  cut as `stills`, and the printed result shows them. Demos are not made by the harness and keep
+  their own ending. `docs/testing.md` and `--help` say so.
+
+### Fixed
+
+- A short recorded through a sign-in launcher is the entry's own page again. A launcher's
+  persistent context opens a blank page of its own before the harness opens the entry's, and
+  records both; the harness took whichever video file came first by name, so the short could be
+  the blank page. It now takes the file Playwright named for the entry's page, and failing that
+  the largest.
+
+### Notes
+
+- `siteSpecific_GoogleMaps_CustomMearsureDistance` has a new short, recorded on the Grand Canyon:
+  the canyon measured rim to rim at its widest, a triangle area, and a path down the river. The
+  README links it in place of the first short. The bookmarklet did not change.
+
 ## [11.18.2026]
 
 ### Fixed

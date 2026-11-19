@@ -144,6 +144,14 @@ made from:
   least), plus the clip's end, which is the result on screen. Waits, checks and
   set-up steps between them are dropped. A cut still over fifteen seconds is
   time-stretched to fifteen when the short is rendered.
+- **A short never holds still for two seconds**, in the middle or at its end.
+  Where nothing on the page moves for longer than a second and a half, the clip
+  keeps that second and a half and cuts the rest. This happens before the 15
+  second cut is chosen, and in both GIFs of a long clip. A change ffmpeg's
+  `mpdecimate` sees between frames counts as moving, so a dot or a line drawn
+  on the page does and a blinking caret does not. The report names the parts
+  cut as `stills`, in seconds of the whole clip. The rule is for shorts only: a
+  demo ends on fifteen still seconds for YouTube's countdown to the next video.
 - A recording already at `<name>.gif` is kept, and the entry is not recorded
   again for it.
 - Only an entry that passed gets one.
