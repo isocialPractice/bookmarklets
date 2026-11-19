@@ -55,6 +55,7 @@ resolve; a run never works one.
 - [ ] **User todo**: Confirm that `siteSpecific_OctoPrint_ChangeGraphImage`, with `img` set, shows an image placed in OctoPrint's `webassets/img` folder as the graph's background
   - Not tested: whether the file is served and shown. The automated run checked only that the bookmarklet writes `/static/webassets/img/<img>` into the graph's style, and the test image's address answers 404 because no file is there.
   - Why: placing the file needs a shell on the OctoPrint host, which the automated run does not have.
+  - On 11.18.2026 an automated shell session on the host typed the commands that place the test image, then stopped when one read-back of its output timed out, before the copy was checked. The test image's address still answered 404 signed out, so whether the file was written is not known, and this check waits for a later attempt.
   - Ways an AI-safe automated procedure could resolve it:
     - key-based SSH with a key restricted to one command and one folder (`authorized_keys` `restrict,command=`), which copies only the test image into `webassets/img`, so no password is ever handled;
     - a local fixture page with OctoPrint's `#temperature-graph` and a test image served at `/static/webassets/img/`, so the image path is checked end to end without the host.
@@ -109,34 +110,15 @@ resolve; a run never works one.
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
     - a local fixture page with the prompt form markup the bookmarklet reads (the `form`, `#prompt-textarea` and the parents it styles), with an empty prompt.
   - Done when the entry passes signed in, or on a fixture page with that markup.
-- [ ] **User todo**: Confirm that `siteSpecific_Gmail_ResizeSideBar.js` still works on the site
-  - Not tested: the entry's run, which checks that the bookmarklet adds its resize handle (`#gmail-resizer-handle`) to the label sidebar (`div.aeN`).
-  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
-  - On 11.18.2026, in the maintainer's everyday browser, signed in: every check held. The handle was added to the sidebar, took its hover colour under an in-tab hover, and a second run added no second handle. The everyday route could not close the mail tab afterwards, so the run does not count as a pass, and its entry keeps a skip with that reason.
-  - Later on 11.18.2026, a second run in the everyday browser stopped before any step: the mail tab it opened never reached the route, which finds its tab by a mark at the end of the page's address, the part the mail page uses for its own views and so likely replaced first. Nothing was done in that tab, and no further mail run was started.
-  - Ways an AI-safe automated procedure could resolve it:
-    - the same run in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), once the route both holds and closes the mail tab it opens;
-    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding a few labels with placeholder names;
-    - a local fixture page with the sidebar markup the bookmarklet reads, holding placeholder labels.
-  - Done when the entry passes signed in, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
   - Not tested: the bookmarklet on an inbox listing (`table` and `tr`), where it marks and styles the sponsored rows. Its entry runs only the default safe run, with no assertion of its own.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
-  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail runs before it either could not close their tab or never reached it, so no further mail run was started. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
+  - On 11.18.2026, in the maintainer's everyday browser, signed in: the run held its mail tab and closed it, but no row was marked within ten seconds of the bookmarklet's run. The run reads no mail, so whether the inbox showed a sponsored row at that moment is not known, and its entry keeps a skip with that reason. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
   - Ways an AI-safe automated procedure could resolve it:
-    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), with the bookmarklet run in a tab the route opened, once the route both holds and closes the mail tabs it opens;
+    - the same run in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), at a time the inbox shows a sponsored row;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in;
     - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
   - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
-- [ ] **User todo**: Confirm that `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js` still works on the site
-  - Not tested: the bookmarklet on an inbox with nested labels (`div.aim` label rows and their `div.TH` expand arrows), where it opens a label an email is held over. Its entry runs only the default safe run, with no assertion of its own.
-  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
-  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail runs before it either could not close their tab or never reached it. Its entry there checks only that the bookmarklet turns on with its notice, and that a second run turns it off without adding a second one. Opening a label while an email is held over it is a drag, and a drag can move or label the email, so no run does it.
-  - Ways an AI-safe automated procedure could resolve it:
-    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), for the bookmarklet turning on and off, once the route both holds and closes the mail tabs it opens;
-    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding one nested label with a placeholder name;
-    - a local fixture page with placeholder nested labels and email rows in the markup the bookmarklet reads.
-  - Done when the entry passes signed in, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_GoogleMaps_CustomMearsureDistance.js` still works on the site
   - Not tested: whether the bookmarklet adds its measure button (`#custom-measure-btn`) and, in drawing mode, draws a line between two clicked points labelled with a distance worked out from the map's scale bar. Its entry skips.
   - Why: on 11.18.2026 the map showed its scale bar, in the maintainer's everyday browser and in an automated one, but its label is now a `label` with the class `U5ELMd` rather than the element with the id `U5ELMd` that the bookmarklet reads. So the bookmarklet finds no scale bar, alerts "Scale bar not found!", and adds no button. The page does run the bookmarklet's inline script.

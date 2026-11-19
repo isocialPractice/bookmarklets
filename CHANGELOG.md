@@ -88,6 +88,16 @@ this file.
   step: the mail tab it opened never reached the everyday route, which finds its tab by a mark at
   the end of the page's address, the part the mail page uses for its own views. Nothing was done
   in that tab, and the two other mail bookmarklets were not run after it. No bookmarklet changed.
+- Two Gmail entries now pass in the maintainer's everyday browser, checked by selectors, counts
+  and states only, and their `skip` and their items are gone. The everyday route held each mail
+  tab it opened and closed it through the page. `siteSpecific_Gmail_ResizeSideBar` adds its
+  resize handle to the label sidebar, the handle takes its hover colour under a hover, and a
+  second run adds no second handle. `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail` turns on
+  with its notice, and a second run turns it off without adding a second notice.
+  `siteSpecific_Gmail_StyleSponsoredEmail` keeps its `skip` and its item: no row was marked
+  within ten seconds of its run, and the run reads no mail, so whether the inbox showed a
+  sponsored row then is not known. The OctoPrint item records that the test image's address still
+  answers 404. No bookmarklet changed.
 - Sixteen tests in `test/harness.test.js`, which now runs 120, for the everyday contract and the
   new step kinds, on a stub driver that opens nothing. Every run there clears
   `_TEST_BM_EVERYDAY_DRIVER`, as it does `TEST_BM_AUTH_LAUNCHER`.

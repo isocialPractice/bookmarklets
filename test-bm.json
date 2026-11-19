@@ -799,7 +799,6 @@
   "personal": true,
   "signedIn": "div[gh='cm']",
   "scheduled": false,
-  "skip": "every check held in the everyday browser once, but the everyday route could not close that mail tab, and a later run's mail tab never reached the route at all, so the entry waits for a route that holds and closes the mail tab it opens",
   "requires": ["div.aeN", ".aeN.WR.baA.nH.oy8Mbf"],
   "timeout": 60000,
   "steps": [
@@ -820,7 +819,7 @@
   "personal": true,
   "signedIn": "div[gh='cm']",
   "scheduled": false,
-  "skip": "not yet run in the everyday browser: the mail runs before it either could not close their tab or never reached it, so no further mail run was started",
+  "skip": "in the everyday browser the mail tab was held and closed, but no row was marked within ten seconds of the run; the run reads no mail, so whether the inbox showed a sponsored row then is not known",
   "requires": ["table", "tr"],
   "timeout": 60000,
   "steps": [
@@ -837,7 +836,6 @@
   "personal": true,
   "signedIn": "div[gh='cm']",
   "scheduled": false,
-  "skip": "not yet run in the everyday browser: the mail runs before it either could not close their tab or never reached it, so no further mail run was started",
   "requires": ["div.aim", "div.TH"],
   "timeout": 60000,
   "steps": [
