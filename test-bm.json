@@ -234,10 +234,21 @@
  },
  "siteSpecific_Amazon_HideVideoPauseIcon": {
   "url": "https://www.amazon.com/dp/B09B8V1LZ3",
+  "drive": "everyday",
   "scheduled": false,
-  "skip": "Amazon serves a headless browser a continue-shopping bot check in place of the product page, and its video.js player only loads once a product video is opened",
-  "requires": [".vjs-big-play-button"],
-  "timeout": 60000
+  "requires": ["#dp", "[id^='cg-video-container']"],
+  "timeout": 60000,
+  "steps": [
+   { "hover": "[id^='cg-video-container']" },
+   { "wait": ".vjs-big-play-button" },
+   { "run": true },
+   { "wait": 500 },
+   { "expect": { "selector": ".vjs-big-play-button", "hidden": true } },
+   { "expect": { "selector": ".vjs-big-play-button:not([style*='display: none'])", "count": 0 } },
+   { "run": true },
+   { "wait": 500 },
+   { "expect": { "selector": ".vjs-big-play-button", "hidden": true } }
+  ]
  },
  "siteSpecific_GitHub_AlternateRowColor": {
   "url": "https://github.com/isocialPractice/bookmarklets",
@@ -372,19 +383,33 @@
 
  "siteSpecific_Stackoverflow_Add_Answer_Anchor_Links": {
   "url": "https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array",
+  "drive": "everyday",
   "scheduled": false,
-  "skip": "stackoverflow.com answers a headless load from this machine with a Cloudflare challenge page, so the question never renders",
-  "requires": [".answer", ".answer .js-vote-count", "#answers"],
-  "timeout": 45000
+  "requires": [".answer", ".answer .js-vote-count", ".answer .js-voting-container", "#answers"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": ".answer .js-voting-container a[href^='#answer-']" },
+   { "expect": { "selector": ".answer:not(:has(.js-voting-container a[href^='#answer-']))", "count": 0 } },
+   { "expect": { "selector": ".js-voting-container a[href^='#answer-'] ~ a[href^='#answer-']", "count": 0 } }
+  ]
  },
 
  "siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links": {
   "url": "https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array",
+  "drive": "everyday",
   "scheduled": false,
-  "skip": "stackoverflow.com answers a headless load from this machine with a Cloudflare challenge page, so the question never renders",
-  "requires": [".answer", "#answers"],
-  "permissions": ["clipboard-read", "clipboard-write"],
-  "timeout": 45000
+  "requires": [".answer", ".answer .js-voting-container", "#answers"],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": ".answer .js-voting-container a[href^='#answer-']" },
+   { "expect": { "selector": ".answer:not(:has(.js-voting-container a[href^='#answer-']))", "count": 0 } },
+   { "expect": { "selector": ".js-voting-container a[href^='#answer-'] ~ a[href^='#answer-']", "count": 0 } },
+   { "click": ".answer .js-voting-container a[href^='#answer-']" },
+   { "wait": 600 },
+   { "expect": { "clipboard": { "selector": ".answer .js-voting-container a[href^='#answer-']", "attr": "href" } } }
+  ]
  },
 
  "siteSpecific_w3Schools_exampleLineNumbers": {
@@ -445,10 +470,17 @@
 
  "siteSpecific_YouTube_HideShortHistory": {
   "url": "https://www.youtube.com/feed/history",
+  "drive": "everyday",
+  "personal": true,
+  "signedIn": "#avatar-btn",
   "scheduled": false,
-  "skip": "it only acts on the watch history feed, which is empty without a signed-in session",
   "requires": ["ytd-reel-shelf-renderer", "body"],
-  "timeout": 60000
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "wait": 1000 },
+   { "expect": { "selector": "ytd-reel-shelf-renderer", "hidden": true } }
+  ]
  },
 
  "siteSpecific_YouTube_SavePageNotesToLocalStorage": {
@@ -476,11 +508,21 @@
  },
 
  "siteSpecific_YouTube_ShortHoverTitle": {
-  "url": "https://www.youtube.com/",
+  "url": "https://www.youtube.com/shorts/7begOX2yiC4",
   "scheduled": false,
-  "skip": "it reads the shorts shelf overlay, and the home page serves no shorts shelf to a signed-out load",
-  "requires": ["#experiment-overlay", "ytd-reel-shelf-renderer"],
-  "timeout": 60000
+  "requires": ["#experiment-overlay", "#experiment-overlay h1"],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "hover": "#experiment-overlay h1" },
+   { "wait": 1000 },
+   { "expect": { "selector": "#experiment-overlay h1[data-tooltip-active='true']", "count": 1 } },
+   { "expect": { "selector": "body > div[style*='z-index: 10000'][style*='pointer-events: none']", "count": 1 } },
+   { "hover": "body", "at": { "dx": -600, "dy": 0 } },
+   { "wait": 500 },
+   { "expect": { "selector": "#experiment-overlay h1[data-tooltip-active]", "count": 0 } },
+   { "expect": { "selector": "body > div[style*='z-index: 10000'][style*='pointer-events: none']", "count": 0 } }
+  ]
  },
 
  "siteSpecific_YouTube_ShowShortReleaseDate": {
@@ -544,10 +586,25 @@
 
  "siteSpecific_YouTube_TopSubscriptionToggleBtn": {
   "url": "https://www.youtube.com/",
+  "drive": "everyday",
+  "personal": true,
+  "signedIn": "#avatar-btn",
   "scheduled": false,
-  "skip": "it toggles the subscriptions shelf at the top of the home page, which only appears for a signed-in session",
-  "requires": ["ytd-guide-section-renderer"],
-  "timeout": 60000
+  "requires": ["ytd-guide-section-renderer", "ytd-guide-collapsible-section-entry-renderer", "ytd-guide-entry-renderer#expander-item[role='button']"],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "#idYouTubeTopSubscriptionToggleBtn", "count": 1 } },
+   { "expect": { "selector": "ytd-guide-collapsible-section-entry-renderer > #idYouTubeTopSubscriptionToggleBtn:first-child", "count": 1 } },
+   { "click": "#idYouTubeTopSubscriptionToggleBtn" },
+   { "wait": 500 },
+   { "expect": { "selector": "#idYouTubeTopSubscriptionToggleBtn[data-toggle='1']", "count": 1 } },
+   { "click": "#idYouTubeTopSubscriptionToggleBtn" },
+   { "wait": 500 },
+   { "expect": { "selector": "#idYouTubeTopSubscriptionToggleBtn[data-toggle='0']", "count": 1 } },
+   { "run": true },
+   { "expect": { "selector": "#idYouTubeTopSubscriptionToggleBtn", "count": 1 } }
+  ]
  },
 
  "siteSpecific_YouTube_WatchRandomVideo": {
@@ -564,10 +621,21 @@
 
  "siteSpecific_YouTube_dynamicHistorySearch": {
   "url": "https://www.youtube.com/feed/history",
+  "drive": "everyday",
+  "personal": true,
+  "signedIn": "#avatar-btn",
   "scheduled": false,
-  "skip": "it searches the watch history, which is empty without a signed-in session, and the search box it reads is not served",
-  "requires": ["#input-1"],
-  "timeout": 60000
+  "requires": ["#input-1", "#input-1 input", "ytd-video-renderer"],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "fill": "#input-1 input", "value": "zzplaceholder" },
+   { "wait": 1000 },
+   { "expect": { "selector": "ytd-video-renderer", "hidden": true } },
+   { "fill": "#input-1 input", "value": "" },
+   { "wait": 1000 },
+   { "expect": { "selector": "ytd-video-renderer[style*='none']", "count": 0 } }
+  ]
  },
 
  "siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks": {
@@ -587,11 +655,16 @@
 
  "siteSpecific_Google_PasteReadyBookmarkAIResponse": {
   "url": "https://www.google.com/search?q=what+is+a+bookmarklet",
+  "drive": "everyday",
   "scheduled": false,
-  "skip": "google.com answers a headless search from this machine with its /sorry/index bot check, so no result page renders",
-  "requires": ["#search"],
-  "permissions": ["clipboard-read", "clipboard-write"],
-  "timeout": 45000
+  "requires": ["#search", ".UxeQfc, .mZJni.Dn7Fzd"],
+  "dialogs": [{ "accept": true }],
+  "timeout": 45000,
+  "steps": [
+   { "run": true },
+   { "wait": 2000 },
+   { "expect": { "clipboard": { "startsWith": "javascript:", "nonEmpty": true } } }
+  ]
  },
 
  "siteSpecific_GoogleMaps_CustomMearsureDistance": {

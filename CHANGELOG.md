@@ -39,6 +39,23 @@ this file.
 
 ### Testing
 
+- Eight entries that skipped now pass, and their items left `## User - Resolve Test Procedures`.
+  No bookmarklet changed.
+  - `siteSpecific_YouTube_ShortHoverTitle` runs in the harness's own browser, on a public short's
+    own page, which serves the shorts overlay signed out: a hover over the title shows the
+    tooltip and empties the title's `title`, and moving away takes both back.
+  - Seven run in the maintainer's everyday browser, `"drive": "everyday"`. The four that met a
+    bot check in the automated browser: Amazon's video player gets every big play button hidden
+    by the bookmarklet's own inline style, and a second run changes nothing, with a hover that
+    scrolls the video into view as the only pointer step; both Stack Overflow anchor link
+    bookmarklets give every answer one link and none two, and the Copy one puts the clicked
+    link's own address on the clipboard; and the Google AI answer bookmarklet's alert is
+    accepted, after which the clipboard holds a bookmarklet that starts `javascript:`. The three
+    on signed-in YouTube pages are checked by selectors, counts and states only, never by what
+    the page holds: the history's shorts shelves are hidden; the history search hides every row
+    for a placeholder word typed into its box, never submitted, and hides none once the box is
+    cleared; and the subscriptions toggle adds one button at the top of the guide's section,
+    turns it on and off, and adds no second button on a second run.
 - Sixteen tests in `test/harness.test.js`, which now runs 120, for the everyday contract and the
   new step kinds, on a stub driver that opens nothing. Every run there clears
   `_TEST_BM_EVERYDAY_DRIVER`, as it does `TEST_BM_AUTH_LAUNCHER`.
