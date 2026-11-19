@@ -72,6 +72,7 @@ resolve; a run never works one.
   - Tested on 11.16.2026 on a fixture page only, built from the markup the file reads (its turn, answer area, code block and copy button selectors) rather than read from the site, with a placeholder answer holding `\u` in plain text, in inline code and in a code block. The file as it stands passes: the bookmarklet it puts on the clipboard parses with its line breaks dropped and with each one replaced by a space, and shows every `\u` as written. A copy of the file without its first `RUNNING_FIX` item fails the same check with "Invalid Unicode escape sequence", the error this issue reports. So the backslash escapes added since the issue was filed (`&#92;` in plain text, `&#x5c;` in a code block) cover the case on that markup. The fixture page and its entry are not in the repository, because `test-bm.json` holds one entry per file and this file's entry is the signed-in run.
   - Not tested: the same answer on the site's own markup, and the signed-in entry.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check, so no answer of the site's own was read, and no prompt was sent.
+  - On 11.18.2026 the maintainer's everyday browser was signed in to the site, and this bookmarklet was not run there. Its live check needs an answer holding `\u`, which only a prompt would give, and no run sends a prompt; and its result is on the clipboard, which a run on a page that shows what the account holds never reads. The issue stays open.
   - Ways an AI-safe automated procedure could resolve it:
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, with a saved conversation that already holds such an answer, so the signed-in run copies it and no prompt is ever sent;
     - a recorded page state of such an answer, saved once with its text replaced by placeholders and replayed offline, so the fixture check runs on the site's own markup.
@@ -93,42 +94,45 @@ resolve; a run never works one.
 - [ ] **User todo**: Confirm that `siteSpecific_chatGPT_NavigateAnswers.js` still works on the site
   - Not tested: the entry's run, which checks that the bookmarklet adds its toggle button to the conversation (`#main .normal-chat`).
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
+  - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has no `#main`, where the bookmarklet adds its button, and a conversation opened from the sidebar showed no `article` within ten seconds. The run read nothing else from the page, so whether the conversation's markup changed or the click did not open it is not known. Its entry keeps a skip with that reason.
   - Ways an AI-safe automated procedure could resolve it:
+    - a fix to the bookmarklet that reads the conversation as it is now, worked out from the site's markup with placeholder content, with the push, gist update and short a bookmarklet change brings; its entry already opens the most recent conversation by selector in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), and reads nothing from it;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
     - a local fixture page with the conversation markup the bookmarklet reads (`#main`, and one `article` per turn), filled with placeholder text.
   - Done when the entry passes signed in, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_chatGPT_ResizePrompt.js` still works on the site
   - Not tested: the entry's run, which checks that the bookmarklet makes the prompt box resizable (its style element first in the body), on a page with the prompt `form` and `#prompt-textarea`.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
+  - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has a `form` but no `#prompt-textarea`, the prompt box the bookmarklet reads by its id, so the run went no further. Nothing was typed into the prompt box. Its entry keeps a skip with that reason.
   - Ways an AI-safe automated procedure could resolve it:
+    - a fix to the bookmarklet that finds the prompt box as it is now, with the push, gist update and short a bookmarklet change brings, then its entry run again in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer);
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
     - a local fixture page with the prompt form markup the bookmarklet reads (the `form`, `#prompt-textarea` and the parents it styles), with an empty prompt.
-  - Done when the entry passes signed in, or on a fixture page with that markup.
-- [ ] **User todo**: Confirm that `siteSpecific_chatGPT_SearchChatHistory.js` still works on the site
-  - Not tested: the entry's run, which checks that the bookmarklet adds its search box and clear button above the chat history, on a page with chat links (`a[href*='/c/']`) in the sidebar.
-  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. A guest also has no chat history to search, so a guest run could not test it even past that check.
-  - Ways an AI-safe automated procedure could resolve it:
-    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding a few saved conversations with placeholder titles;
-    - a local fixture page with a sidebar of placeholder chat links in the markup the bookmarklet reads.
   - Done when the entry passes signed in, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_Gmail_ResizeSideBar.js` still works on the site
   - Not tested: the entry's run, which checks that the bookmarklet adds its resize handle (`#gmail-resizer-handle`) to the label sidebar (`div.aeN`).
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
+  - On 11.18.2026, in the maintainer's everyday browser, signed in: every check held. The handle was added to the sidebar, took its hover colour under an in-tab hover, and a second run added no second handle. The everyday route could not close the mail tab afterwards, so the run does not count as a pass, and its entry keeps a skip with that reason.
   - Ways an AI-safe automated procedure could resolve it:
+    - the same run in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), once the route closes the mail tab it opens;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding a few labels with placeholder names;
     - a local fixture page with the sidebar markup the bookmarklet reads, holding placeholder labels.
   - Done when the entry passes signed in, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
   - Not tested: the bookmarklet on an inbox listing (`table` and `tr`), where it marks and styles the sponsored rows. Its entry runs only the default safe run, with no assertion of its own.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
+  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail run before it could not close its tab, so no further mail run was started. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
   - Ways an AI-safe automated procedure could resolve it:
+    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), with the bookmarklet run in a tab the route opened, once the route closes the mail tabs it opens;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in;
     - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
   - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
 - [ ] **User todo**: Confirm that `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js` still works on the site
   - Not tested: the bookmarklet on an inbox with nested labels (`div.aim` label rows and their `div.TH` expand arrows), where it opens a label an email is held over. Its entry runs only the default safe run, with no assertion of its own.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
+  - On 11.18.2026 it was not run in the maintainer's everyday browser: the mail run before it could not close its tab. Its entry there checks only that the bookmarklet turns on with its notice, and that a second run turns it off without adding a second one. Opening a label while an email is held over it is a drag, and a drag can move or label the email, so no run does it.
   - Ways an AI-safe automated procedure could resolve it:
+    - the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), for the bookmarklet turning on and off, once the route closes the mail tabs it opens;
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, holding one nested label with a placeholder name;
     - a local fixture page with placeholder nested labels and email rows in the markup the bookmarklet reads.
   - Done when the entry passes signed in, or on a fixture page with that markup.

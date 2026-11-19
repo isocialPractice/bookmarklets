@@ -70,6 +70,19 @@ this file.
   bookmarklet reads the class: the map at `-34.397, 150.644`, zoom 8, the right-click,
   "Measure distance" and a second point by the computer's own mouse, the bookmarklet's own two
   points, and its distance checked against the map's.
+- `siteSpecific_chatGPT_SearchChatHistory` passes in the maintainer's everyday browser, on a page
+  that shows what the account holds, checked by selectors, counts and states only: its search
+  bar, box and clear button are added once, a placeholder word typed into its box, never
+  submitted, hides every chat link, and clearing the box hides none. Its item left
+  `## User - Resolve Test Procedures`.
+- Five more ChatGPT and Gmail entries now name the everyday browser, and keep a `skip` and their
+  items with the reason brought up to date. The chat page no longer has the `#main` and
+  `#prompt-textarea` that `siteSpecific_chatGPT_NavigateAnswers` and
+  `siteSpecific_chatGPT_ResizePrompt` read. `siteSpecific_Gmail_ResizeSideBar` held every check,
+  but the everyday route could not close its mail tab afterwards, so the two other mail
+  bookmarklets were not run after it. `siteSpecific_chatGPT_PasteReadyBookmarkResponse` keeps its
+  signed-in entry: its result is on the clipboard, which a run on such a page never reads, and
+  its check needs a prompt, which no run sends. No bookmarklet changed.
 - Sixteen tests in `test/harness.test.js`, which now runs 120, for the everyday contract and the
   new step kinds, on a stub driver that opens nothing. Every run there clears
   `_TEST_BM_EVERYDAY_DRIVER`, as it does `TEST_BM_AUTH_LAUNCHER`.
