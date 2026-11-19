@@ -107,6 +107,15 @@ this file.
   within ten seconds of its run, and the run reads no mail, so whether the inbox showed a
   sponsored row then is not known. The OctoPrint item records that the test image's address still
   answers 404. No bookmarklet changed.
+- `siteSpecific_chatGPT_NavigateAnswers` and `siteSpecific_chatGPT_ResizePrompt` keep their
+  `skip` and their items, with the reason brought up to date from probes in the maintainer's
+  everyday browser that counted candidate selectors only, read no text and typed nothing. A
+  conversation's page has a `main` element without the id `main`, and its turns carry no
+  `article` or other turn marker, only class names that counts could not tie to one element per
+  turn. The prompt box is an editable element with no id, deep inside the prompt form, whose
+  first two children, which `ResizePrompt` reads by position, are a hidden element and an empty
+  one. Neither bookmarklet changed: a fix for either needs markup that selector counts alone do
+  not pin down.
 - Sixteen tests in `test/harness.test.js`, which now runs 120, for the everyday contract and the
   new step kinds, on a stub driver that opens nothing. Every run there clears
   `_TEST_BM_EVERYDAY_DRIVER`, as it does `TEST_BM_AUTH_LAUNCHER`.

@@ -724,7 +724,7 @@
   "personal": true,
   "signedIn": "a[href*='/c/']",
   "scheduled": false,
-  "skip": "signed in, the chat page has no #main, and a conversation opened from the sidebar showed no article within ten seconds; the bookmarklet reads both, so it waits for a fix that reads the page as it is now",
+  "skip": "signed in, a conversation opened from the sidebar has a main element without the id main, and no article; its turns carry only class names, some nested inside others, that selector counts could not tie to one element per turn, so it waits for a fix built from the turn markup",
   "requires": ["body"],
   "dialogs": [{ "accept": true }],
   "timeout": 60000,
@@ -756,7 +756,7 @@
   "personal": true,
   "signedIn": "a[href*='/c/']",
   "scheduled": false,
-  "skip": "signed in, the chat page has a form but no #prompt-textarea, the prompt box the bookmarklet reads by its id, so it waits for a fix that reads the page as it is now",
+  "skip": "signed in, the prompt box is an editable element with no id, more than ten levels inside the form, and the form's first two children, which the bookmarklet reads by position, are a hidden element and an empty one, so it waits for a fix built from the prompt markup as it is now",
   "requires": ["form", "#prompt-textarea", "body"],
   "timeout": 60000,
   "steps": [
