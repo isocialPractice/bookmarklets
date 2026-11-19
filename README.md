@@ -698,7 +698,10 @@ Copy/paste: open [siteSpecific_GoogleMaps_CustomMearsureDistance.js](https://raw
 
 Gist page for [siteSpecific_GoogleMaps_CustomMearsureDistance.js](https://gist.github.com/jhauga/c16243b10c2cd74e4dd7a2259109f575)
 
-<!-- PASTE VIDEO HERE -->
+<b>Video Demonstration for Use:</b>
+
+- `Ctrl + click` link to view short on YouTube [Short - Google Maps - Custom Mearsure Distance](https://www.youtube.com/shorts/hDZ6-BE33no)
+<!-- - `Ctrl + click` link to view demo on YouTube [Demo - Google Maps - Custom Mearsure Distance](https://www.youtube.com/watch?v=<id>) -->
 
 </dd></dl></dd></dl>
 
