@@ -97,6 +97,24 @@
 // is asked at a width a reader's window has and the default does not: a heading that fits its column
 // at 1280 can cover the one beside it at 1024. Width and height are whole pixels from 100 to 4000.
 //
+// A bookmarklet step, { "bookmarklet": "<name>" }, runs another bookmarklet from JSFormatted first, in
+// the same page, the way a reader runs one bookmarklet to set up what the next one reads. Its file is
+// checked as the entry's own is before anything opens, its errors fail the entry as the entry's own
+// do, and the requests its code sends are judged the same way. An entry with one names its own run
+// with a run step. A hover step moves the pointer over the first match. A click or a hover may take
+// "withText", the element's own text matched whole, to pick one match of several; "at", { "dx": n,
+// "dy": n } in CSS pixels from the element's centre, to aim somewhere other than its middle, as a map
+// is clicked; and a click "button", left, right or middle.
+//
+// expect { "storage": "local", "newKeys": n, "valueIncludes": "<text>" } compares the page's storage,
+// local or session, with the keys it held before the first bookmarklet ran: how many keys are new,
+// and whether each new key's value holds the text. The new keys are then removed, unless "remove" is
+// false, so a run leaves nothing behind. Their names and values stay in the page, and a failure
+// gives counts. expect { "clipboard": { "selector": "<sel>", "attr": "href" } } is the clipboard
+// holding that element's own value, its property of that name or else the attribute, and { "clipboard":
+// { "startsWith": "<text>", "singleLine": true, "nonEmpty": true } } its shape, for a value no entry
+// could write down in full. Neither form says what the clipboard held.
+//
 // --browser firefox runs the same checks in Firefox, the second most likely place a reader pastes a
 // bookmarklet, and bookmarklets are handled differently there. Chromium stays the default, and the
 // only engine --scheduled uses unless an entry asks for more with "browsers": ["chromium", "firefox"].
@@ -178,6 +196,30 @@
 // acts. Nothing the page shows is written down. When the run ends, the launcher's
 // signInState(states) hears which sites were found signed in. An entry with auth is never scheduled.
 //
+// An entry with "drive": "everyday" runs in the maintainer's everyday browser rather than in one this
+// harness starts: for a site that answers an automated browser with a bot check, or a page only the
+// maintainer's own profile shows. The harness never reaches that browser itself. It loads the module
+// _TEST_BM_EVERYDAY_DRIVER names, an absolute path outside the repository, and hands its run(job) the
+// entry as { name, file, code, url, requires, steps, dialogs, timeout, settle, personal, signedIn,
+// bookmarklets }: file is the formatted file, code the one line the harness checked, and bookmarklets
+// the { file, code } of each bookmarklet a step runs first. The driver answers { verdict, reason,
+// inputs, realRuns }: pass, fail or skip; a sentence of its own, never anything a page said; which
+// input each entry step sent, as [{ "step": n, "via": "cdp" }], cdp inside the tab or desktop by the
+// computer's own mouse and keyboard; and how many real runs it made. Nothing else it returns is kept,
+// so nothing a page showed reaches the report through it. Without a driver the entry is a skip. An
+// everyday entry is never scheduled, takes no auth, captures nothing, grants no permissions, opens a
+// site's own https page, answers no prompt, and presses only keys that submit nothing: Tab, Escape,
+// the arrows, Home, End, PageUp, PageDown, Backspace and Delete. It names no network either: the
+// everyday browser does not watch the requests a bookmarklet sends, so the check of the source before
+// the run is all that holds a bookmarklet to its page there, and one that sends any is tested in the
+// harness's own browser. "signedIn" names a selector only the signed-in page has, which the driver
+// looks for first: a page without it is a skip reading "sign-in wall", since nothing here signs in.
+// "personal": true marks a page that shows what the account holds, and keeps the entry
+// to selectors, counts and states: no withText, no desktop input, and no expect on text, the
+// clipboard, a stored value, matches or a check. "via" on a click, hover, fill or press says how the
+// driver sends it, and expect { "check": "<name>" } names a check the driver holds, for what no
+// selector can say, such as a distance read within a tolerance. Both go only in an everyday entry.
+//
 // No bookmarklet may do anything that could pass for malicious. Before any browser starts, a file
 // that touches document.cookie, runs a string as code (eval, new Function, a string handed to
 // setTimeout or setInterval, import()), or loads a <script> by its src without an integrity hash
@@ -245,19 +287,28 @@ var exitConfig = 2;
 
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
- "timeout", "settle", "auth", "signedIn", "network", "capture", "browsers"];
+ "timeout", "settle", "auth", "signedIn", "network", "capture", "browsers", "drive", "personal"];
 // A host a network entry names: an exact host, or "*." and a domain for any of its subdomains, as
 // a media server picked per request is.
 var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d+)?$/;
-var stepActions = ["run", "click", "fill", "press", "select", "wait", "answer", "detach", "attach",
- "viewport", "expect"];
+var stepActions = ["run", "bookmarklet", "click", "hover", "fill", "press", "select", "wait", "answer",
+ "detach", "attach", "viewport", "expect"];
 // The sizes a viewport step may ask for, in whole pixels. Narrower than a phone or wider than a 4K
 // screen is a typing slip rather than a reader's window.
 var viewportLimits = { least: 100, most: 4000 };
-var stepExtras = ["value", "text", "selector", "as"];
+var stepExtras = ["value", "text", "selector", "as", "button", "withText", "at", "via"];
 var expectKeys = ["selector", "visible", "hidden", "clear", "count", "matches", "text", "clipboard",
- "location", "popup", "requests", "atMost"];
+ "location", "popup", "requests", "atMost", "storage", "newKeys", "valueIncludes", "remove", "check"];
 var answerKeys = ["host", "status", "contentType", "body", "pass"];
+// What a click or a hover may say about where it lands, and the mouse buttons a click may press. An
+// offset further than this from an element's centre is a typing slip rather than a point on a page.
+var pointerSteps = ["click", "hover"];
+var buttons = ["left", "right", "middle"];
+var offsetLimit = 4000;
+// The shapes a clipboard expect takes when it is not the whole value: the value of an element, or how
+// the value reads.
+var clipboardKeys = ["selector", "attr", "startsWith", "singleLine", "nonEmpty"];
+var storageAreas = ["local", "session"];
 
 // A url that names an environment variable holding the address, rather than holding it itself.
 var urlVariablePattern = /^\$[A-Z][A-Z0-9_]*$/;
@@ -267,6 +318,43 @@ var urlVariablePattern = /^\$[A-Z][A-Z0-9_]*$/;
 var siteNamePattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
 var launcherVariable = "TEST_BM_AUTH_LAUNCHER";
 var withheldText = "(not recorded on a signed-in page)";
+
+// The everyday browser is the maintainer's own, reached only through the driver module this variable
+// names, the way an entry with auth reaches its sign-in through the launcher. Nothing in the
+// repository knows how the driver gets there.
+var driverVariable = "_TEST_BM_EVERYDAY_DRIVER";
+var drives = ["everyday"];
+// The inputs a driver can send a step with: events inside the tab, or the computer's own mouse and
+// keyboard. Only these four steps send input.
+var inputs = ["cdp", "desktop"];
+var inputSteps = ["click", "hover", "fill", "press"];
+// The keys an everyday entry may press: none of them submits, sends or ticks anything, which Enter
+// and Space each do somewhere.
+var everydayKeys = ["Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End",
+ "PageUp", "PageDown", "Backspace", "Delete"];
+// What the harness's own browser does and the everyday browser does not, by the step or the expect
+// that asks for it.
+var everydayRefusedSteps = {
+ select: "a selection is set in the page, which is the harness's own reach",
+ answer: "answering a host is the harness's own network",
+ detach: "taking elements off the page is the harness's own reach",
+ attach: "putting elements back is the harness's own reach",
+ viewport: "the everyday browser keeps the maintainer's own window size"
+};
+var everydayRefusedExpects = {
+ clear: "it reads geometry in the harness's own browser",
+ location: "a page's address could carry what the account holds",
+ popup: "a new tab's address could carry what the account holds",
+ requests: "the everyday browser does not watch the requests a bookmarklet sends"
+};
+// A check the driver holds is named the way a site is, so the name carries nothing else.
+var checkNamePattern = /^[a-z0-9][a-z0-9-]{0,39}$/;
+// The longest reason a driver's verdict keeps, on one line. A route's reasons are fixed sentences
+// well inside this.
+var reasonLimit = 300;
+// How long the harness waits for a driver's verdict: its dry run and its real run, each up to the
+// entry's own timeout, with room for a person at the machine making a desktop step wait.
+function everydayLimit(timeout) { return 3 * timeout + 120000; }
 
 // The engines a run can use. Chromium is the default and the only one an entry gets without asking;
 // it is also the only one the sign-in launcher, a short and the request watcher's initiators belong
@@ -303,7 +391,7 @@ var shortFullSuffix = "_Full";
 var shortHold = 2000;
 // The steps a reader makes by hand. With each run of the bookmarklet they are the moments the cut
 // keeps; a wait, a check or a step that sets the page up is the harness's, and the cut drops it.
-var shortUseActions = ["click", "fill", "press", "select"];
+var shortUseActions = ["click", "hover", "fill", "press", "select"];
 // The mark the clip runs to: the entry's steps done and the page settled, which is the moment the
 // bookmarklet's result is on screen.
 var shortEndMark = "the result is on screen";
@@ -827,6 +915,58 @@ function validateBrowsers(entry, name, problems) {
   problems.push(name + ": an entry with auth runs in " + defaultEngine + " only - the sign-in launcher gives a "
    + defaultEngine + " browser");
  }
+ if (entry.drive !== undefined && list.some(function (b) { return b != defaultEngine; })) {
+  problems.push(name + ": an everyday entry runs in the everyday browser, which is Chrome, so browsers names "
+   + defaultEngine + " only");
+ }
+}
+
+// Where a click or a hover lands when it is not the element's centre: an offset from that centre, in
+// CSS pixels, each way.
+function validateAt(at, where, problems) {
+ var shape = "at takes { \"dx\": <pixels>, \"dy\": <pixels> }, an offset from the element's centre";
+ if (!at || typeof at != "object" || Array.isArray(at)) {
+  problems.push(where + ": " + shape);
+  return;
+ }
+ Object.keys(at).forEach(function (k) {
+  if (k != "dx" && k != "dy") { problems.push(where + ": at has no " + k + " - it takes dx and dy"); }
+ });
+ ["dx", "dy"].forEach(function (k) {
+  var n = at[k];
+  if (typeof n != "number" || !isFinite(n) || Math.abs(n) > offsetLimit) {
+   problems.push(where + ": at takes a " + k + " of CSS pixels, at most " + offsetLimit + " either way");
+  }
+ });
+}
+
+// A clipboard expect that is not the whole value: an element's own value, or how the value reads.
+function validateClipboard(said, where, problems) {
+ if (typeof said == "string") { return; }
+ var shape = "clipboard takes the whole value, or { selector, attr } for an element's own value, or"
+  + " startsWith, singleLine and nonEmpty for how it reads";
+ if (!said || typeof said != "object" || Array.isArray(said) || !Object.keys(said).length) {
+  problems.push(where + ": " + shape);
+  return;
+ }
+ Object.keys(said).forEach(function (k) {
+  if (clipboardKeys.indexOf(k) < 0) { problems.push(where + ": clipboard has no " + k); }
+ });
+ if ((said.selector === undefined) !== (said.attr === undefined)) {
+  problems.push(where + ": clipboard takes a selector and an attr together, the element and the value of it the"
+   + " clipboard holds");
+ }
+ if (said.selector !== undefined && (typeof said.selector != "string" || !said.selector.length)) {
+  problems.push(where + ": clipboard's selector takes a selector");
+ }
+ if (said.attr !== undefined && (typeof said.attr != "string" || !/^[A-Za-z][A-Za-z0-9_-]*$/.test(said.attr))) {
+  problems.push(where + ": clipboard's attr takes the name of a property or an attribute, such as href");
+ }
+ if (said.startsWith !== undefined && (typeof said.startsWith != "string" || !said.startsWith.length)) {
+  problems.push(where + ": clipboard's startsWith takes the text the value opens with");
+ }
+ if (said.singleLine !== undefined && said.singleLine !== true) { problems.push(where + ": singleLine takes true"); }
+ if (said.nonEmpty !== undefined && said.nonEmpty !== true) { problems.push(where + ": nonEmpty takes true"); }
 }
 
 function validateStep(step, where, problems) {
@@ -847,6 +987,40 @@ function validateStep(step, where, problems) {
  }
  var action = actions[0];
  if (action == "run" && step.run !== true) { validateRunSet(step.run, where, problems); }
+ if (action == "bookmarklet" && (typeof step.bookmarklet != "string" || !step.bookmarklet.length)) {
+  problems.push(where + ": bookmarklet takes the name of another bookmarklet in JSFormatted, to run first");
+ }
+ if (action == "hover" && (typeof step.hover != "string" || !step.hover.length)) {
+  problems.push(where + ": hover takes a selector");
+ }
+ if (step.button !== undefined) {
+  if (action != "click") {
+   problems.push(where + ": button goes with a click");
+  } else if (buttons.indexOf(step.button) < 0) {
+   problems.push(where + ": button takes " + buttons.join(", "));
+  }
+ }
+ if (step.withText !== undefined) {
+  if (pointerSteps.indexOf(action) < 0) {
+   problems.push(where + ": withText goes with a click or a hover");
+  } else if (typeof step.withText != "string" || !step.withText.trim()) {
+   problems.push(where + ": withText takes the element's own text");
+  }
+ }
+ if (step.at !== undefined) {
+  if (pointerSteps.indexOf(action) < 0) {
+   problems.push(where + ": at goes with a click or a hover");
+  } else {
+   validateAt(step.at, where, problems);
+  }
+ }
+ if (step.via !== undefined) {
+  if (inputSteps.indexOf(action) < 0) {
+   problems.push(where + ": via goes with a click, a hover, a fill or a press, the steps that send input");
+  } else if (inputs.indexOf(step.via) < 0) {
+   problems.push(where + ": via takes cdp, input inside the tab, or desktop, the computer's own mouse and keyboard");
+  }
+ }
  if (action == "click" && typeof step.click != "string") { problems.push(where + ": click takes a selector"); }
  if (action == "press" && typeof step.press != "string") { problems.push(where + ": press takes a key"); }
  if (action == "select" && typeof step.select != "string") { problems.push(where + ": select takes a selector"); }
@@ -910,9 +1084,36 @@ function validateStep(step, where, problems) {
    if (expectKeys.indexOf(k) < 0) { problems.push(where + ": expect has no " + k); }
   });
   var valueOnly = want.clipboard !== undefined || want.location !== undefined || want.popup !== undefined
-   || want.requests !== undefined;
+   || want.requests !== undefined || want.storage !== undefined || want.check !== undefined;
   if (!valueOnly && typeof want.selector != "string") {
-   problems.push(where + ": expect takes a selector, a clipboard value, a location, a popup, or a count of requests");
+   problems.push(where + ": expect takes a selector, a clipboard value, a location, a popup, a count of requests,"
+    + " storage, or a check");
+  }
+  if (want.clipboard !== undefined) { validateClipboard(want.clipboard, where, problems); }
+  if (want.storage !== undefined) {
+   if (storageAreas.indexOf(want.storage) < 0) { problems.push(where + ": storage takes local or session"); }
+   if (want.selector !== undefined) { problems.push(where + ": storage compares the page's stored keys, and takes no selector"); }
+   if (want.newKeys === undefined && want.valueIncludes === undefined) {
+    problems.push(where + ": storage takes newKeys, how many keys are new, or valueIncludes, text each new key's"
+     + " value holds");
+   }
+  }
+  if (want.newKeys !== undefined && (typeof want.newKeys != "number" || !Number.isInteger(want.newKeys) || want.newKeys < 0)) {
+   problems.push(where + ": newKeys takes a whole number");
+  }
+  if (want.valueIncludes !== undefined && (typeof want.valueIncludes != "string" || !want.valueIncludes.length)) {
+   problems.push(where + ": valueIncludes takes the text a new key's value holds");
+  }
+  if (want.remove !== undefined && typeof want.remove != "boolean") { problems.push(where + ": remove takes true or false"); }
+  ["newKeys", "valueIncludes", "remove"].forEach(function (k) {
+   if (want[k] !== undefined && want.storage === undefined) { problems.push(where + ": " + k + " goes with storage"); }
+  });
+  if (want.check !== undefined) {
+   if (typeof want.check != "string" || !checkNamePattern.test(want.check)) {
+    problems.push(where + ": check takes the name of a check the everyday driver holds, in lower-case letters,"
+     + " digits and hyphens");
+   }
+   if (want.selector !== undefined) { problems.push(where + ": check names a check the driver holds, and takes no selector"); }
   }
   if (want.requests !== undefined) {
    if (typeof want.requests != "string" || !hostPattern.test(want.requests)) {
@@ -992,7 +1193,19 @@ function validateConfig(config, names) {
   if (entry.auth !== undefined && (typeof entry.signedIn != "string" || !entry.signedIn.length)) {
    problems.push(name + ": an entry with auth names signedIn, a selector only a signed-in page has");
   }
-  if (entry.signedIn !== undefined && entry.auth === undefined) { problems.push(name + ": signedIn goes with auth"); }
+  if (entry.drive !== undefined && drives.indexOf(entry.drive) < 0) {
+   problems.push(name + ": drive takes \"everyday\", the maintainer's everyday browser through the everyday driver");
+  }
+  var everyday = entry.drive === "everyday";
+  if (entry.personal !== undefined && entry.personal !== true) { problems.push(name + ": personal takes true"); }
+  if (entry.personal !== undefined && !everyday) { problems.push(name + ": personal goes with drive everyday"); }
+  if (entry.signedIn !== undefined && entry.auth === undefined && !everyday) {
+   problems.push(name + ": signedIn goes with auth, or with drive everyday");
+  }
+  if (everyday && entry.signedIn !== undefined && (typeof entry.signedIn != "string" || !entry.signedIn.length)) {
+   problems.push(name + ": signedIn takes a selector only a signed-in page has");
+  }
+  if (everyday) { validateEveryday(entry, name, problems); }
   if (entry.auth !== undefined && entry.scheduled === true) {
    problems.push(name + ": an entry with auth is never scheduled - an unattended run has no one to sign in");
   }
@@ -1064,6 +1277,21 @@ function validateConfig(config, names) {
       var refused = setRefusal(name, setOf(step));
       if (refused) { problems.push(where + ": " + refused); }
      }
+     if (typeof step.bookmarklet == "string" && step.bookmarklet.length) {
+      if (step.bookmarklet == name) {
+       problems.push(where + ": bookmarklet runs another bookmarklet first, and a run step runs this one");
+      } else if (names.indexOf(step.bookmarklet) < 0) {
+       problems.push(where + ": there is no " + shownPath(bookmarkletFile(step.bookmarklet)) + " to run first");
+      }
+     }
+     if (!everyday && step.via !== undefined) {
+      problems.push(where + ": via says how the everyday driver sends a step's input, and goes in an entry with"
+       + " drive everyday");
+     }
+     if (!everyday && step.expect && typeof step.expect == "object" && step.expect.check !== undefined) {
+      problems.push(where + ": check names a check the everyday driver holds, and goes in an entry with drive"
+       + " everyday");
+     }
      if (typeof step.detach == "string" && step.detach.length) {
       var slot = typeof step.as == "string" && step.as.length ? step.as : step.detach;
       if (detached.indexOf(slot) < 0) { detached.push(slot); }
@@ -1092,10 +1320,83 @@ function validateConfig(config, names) {
        + " network - a host the bookmarklet reaches is named with the reason whoever answers it");
      }
     });
+    // A bookmarklet run first is set-up, and the bookmarklet would otherwise run after load, before
+    // the set-up it needs, so an entry with one says where its own bookmarklet runs.
+    var stepOf = function (k) { return function (s) { return s && typeof s == "object" && s[k] !== undefined; }; };
+    if (entry.steps.some(stepOf("bookmarklet")) && !entry.steps.some(stepOf("run"))) {
+     problems.push(name + ": a bookmarklet step runs another bookmarklet first, so the entry names its own run"
+      + " with a run step");
+    }
    }
   }
  });
  if (problems.length) { configError(shownPath(configFile) + ":\n  " + problems.join("\n  ")); }
+}
+
+// What an entry with drive everyday cannot ask for, because the everyday browser is the maintainer's
+// own and the harness reaches it only through the driver. Each rule is something that browser either
+// cannot do or must never do: be run unattended, sign in, record, be granted a permission, reach a
+// fixture, answer a prompt, or press a key that submits. A personal page is held to selectors, counts
+// and states on top of that, which is how nothing it shows can be read into a verdict.
+function validateEveryday(entry, name, problems) {
+ var is = name + ": an everyday entry ";
+ if (entry.scheduled === true) {
+  problems.push(is + "is never scheduled - the scheduled run has no desktop and no everyday browser");
+ }
+ if (entry.auth !== undefined) {
+  problems.push(is + "takes no auth - the everyday browser is the maintainer's own, and nothing here signs in to it");
+ }
+ if (entry.capture !== undefined) { problems.push(is + "captures nothing - the harness records nothing in the everyday browser"); }
+ if (entry.permissions !== undefined) {
+  problems.push(is + "grants no permissions - the everyday browser's permissions are the maintainer's to give");
+ }
+ if (entry.network !== undefined) {
+  problems.push(is + "names no network - the everyday browser does not watch the requests a bookmarklet sends, so"
+   + " a bookmarklet that sends any is tested in the harness's own browser");
+ }
+ if (typeof entry.url != "string" || !/^https:\/\/[^\/\s?#]+/i.test(entry.url.trim())) {
+  problems.push(is + "opens a site's own https page, named in url - never a fixture, a variable or the default");
+ }
+ if (entry.personal === true && entry.signedIn === undefined) {
+  problems.push(name + ": a personal everyday entry names signedIn, a selector only the signed-in page has");
+ }
+ if (Array.isArray(entry.dialogs)) {
+  entry.dialogs.forEach(function (answer, i) {
+   if (answer && typeof answer == "object" && answer.text !== undefined) {
+    problems.push(name + ": dialog " + (i + 1) + ": an everyday entry types into no prompt");
+   }
+  });
+ }
+ if (!Array.isArray(entry.steps)) { return; }
+ entry.steps.forEach(function (step, i) {
+  if (!step || typeof step != "object" || Array.isArray(step)) { return; }
+  var where = name + " step " + (i + 1) + ": an everyday entry ";
+  Object.keys(everydayRefusedSteps).forEach(function (k) {
+   if (step[k] !== undefined) { problems.push(where + "has no " + k + " step - " + everydayRefusedSteps[k]); }
+  });
+  if (setOf(step)) { problems.push(where + "runs the file as it is - a run that sets variables is the harness's own"); }
+  if (step.press !== undefined) {
+   if (everydayKeys.indexOf(step.press) < 0) {
+    problems.push(where + "presses only " + everydayKeys.join(", ") + " - the rest can submit, send or tick something");
+   }
+   if (step.selector !== undefined) { problems.push(where + "presses a key where the focus is, so press takes no selector"); }
+  }
+  var want = step.expect && typeof step.expect == "object" ? step.expect : null;
+  if (want) {
+   Object.keys(everydayRefusedExpects).forEach(function (k) {
+    if (want[k] !== undefined) { problems.push(where + "has no expect on " + k + " - " + everydayRefusedExpects[k]); }
+   });
+  }
+  if (entry.personal !== true) { return; }
+  var personal = name + " step " + (i + 1) + ": a personal page is kept to selectors, counts and states, so it takes no ";
+  if (step.withText !== undefined) { problems.push(personal + "withText"); }
+  if (step.via === "desktop") { problems.push(personal + "desktop input"); }
+  if (want && want.text !== undefined) { problems.push(personal + "expect on text"); }
+  if (want && want.clipboard !== undefined) { problems.push(personal + "expect on the clipboard"); }
+  if (want && want.valueIncludes !== undefined) { problems.push(personal + "valueIncludes"); }
+  if (want && want.matches !== undefined) { problems.push(personal + "matches, which needs a check that reads the page"); }
+  if (want && want.check !== undefined) { problems.push(personal + "check"); }
+ });
 }
 
 // ----------------------------------------------------------------------------------------------- //
@@ -1113,21 +1414,35 @@ function insideRepository(full) {
 // to skip rather than an error, so a machine without a launcher still runs everything else; a
 // variable that is set but wrong is a configuration error.
 async function loadLauncher() {
- var named = String(process.env[launcherVariable] || "").trim();
- if (!named) { return { api: null, why: "no sign-in launcher: " + launcherVariable + " is not set" }; }
- if (!path.isAbsolute(named)) { configError(launcherVariable + " must be an absolute path"); }
+ return loadOutside(launcherVariable, "the sign-in launcher", "launch", "no sign-in launcher");
+}
+
+// The module an everyday entry is run by, held to the same rules as the launcher and for the same
+// reason: it is the maintainer's own, and how it reaches the everyday browser is nothing the
+// repository knows.
+async function loadDriver() {
+ return loadOutside(driverVariable, "the everyday driver", "run", "no everyday driver");
+}
+
+// A module the maintainer keeps outside the repository, named by an environment variable as an
+// absolute path, and holding the one function the harness calls. Unset is a reason to skip; set and
+// wrong is a configuration error, so a run never goes ahead on a module nobody meant.
+async function loadOutside(variable, label, needs, unset) {
+ var named = String(process.env[variable] || "").trim();
+ if (!named) { return { api: null, why: unset + ": " + variable + " is not set" }; }
+ if (!path.isAbsolute(named)) { configError(variable + " must be an absolute path"); }
  var full = path.resolve(named);
- if (!fs.existsSync(full) || !fs.statSync(full).isFile()) { configError(launcherVariable + " names no file: " + full); }
+ if (!fs.existsSync(full) || !fs.statSync(full).isFile()) { configError(variable + " names no file: " + full); }
  full = fs.realpathSync(full);
- if (insideRepository(full)) { configError(launcherVariable + " must name a file outside the repository"); }
+ if (insideRepository(full)) { configError(variable + " must name a file outside the repository"); }
  var loaded = null;
  try {
   loaded = await import(nodeUrl.pathToFileURL(full).href);
  } catch (err) {
-  configError("the sign-in launcher would not load: " + firstLine(err));
+  configError(label + " would not load: " + firstLine(err));
  }
- var api = loaded && loaded.default && typeof loaded.default.launch == "function" ? loaded.default : loaded;
- if (!api || typeof api.launch != "function") { configError("the sign-in launcher has no launch function"); }
+ var api = loaded && loaded.default && typeof loaded.default[needs] == "function" ? loaded.default : loaded;
+ if (!api || typeof api[needs] != "function") { configError(label + " has no " + needs + " function"); }
  return { api: api, why: "" };
 }
 
@@ -1597,8 +1912,10 @@ async function watchRequests(page, ctx) {
  } catch (err) {
   mainFrame = "";
  }
+ // A bookmarklet a step runs first is held to the same rule as the entry's own.
+ var urls = [sourceUrl(ctx.name)].concat(ctx.firstNames.map(sourceUrl));
  function judge(address, home, initiator) {
-  if (!startedBy(initiator && initiator.stack, sourceUrl(ctx.name))) { return; }
+  if (!urls.some(function (u) { return startedBy(initiator && initiator.stack, u); })) { return; }
   judgeRequest(ctx, address, home);
  }
  session.on("Network.requestWillBeSent", function (event) {
@@ -1638,14 +1955,14 @@ function judgeRequest(ctx, address, home) {
 // going somewhere, as it is in Chromium.
 function watchRequestEvents(page, ctx) {
  page.on("request", function (request) {
-  if (!ctx.ran) { return; }
+  if (!ctx.ran && !ctx.firstRan) { return; }
   var frame = null;
   try { frame = request.frame(); } catch (err) { frame = null; }
   if (request.isNavigationRequest() && frame === page.mainFrame()) { return; }
   judgeRequest(ctx, request.url(), hostOf(frame ? frame.url() : page.url()));
  });
  page.on("websocket", function (socket) {
-  if (ctx.ran) { judgeRequest(ctx, socket.url(), hostOf(page.url())); }
+  if (ctx.ran || ctx.firstRan) { judgeRequest(ctx, socket.url(), hostOf(page.url())); }
  });
 }
 
@@ -1796,10 +2113,12 @@ function attachListeners(page, result, ctx) {
   result.console.push({ type: type, text: cut(scrubbed(ctx, msg.text())) });
  });
 
- // Only the bookmarklet's errors fail the entry. The page's own are recorded and left alone.
+ // Only the bookmarklet's errors fail the entry, and those of a bookmarklet a step runs first. The
+ // page's own are recorded and left alone.
  page.on("pageerror", function (err) {
   var stack = String((err && err.stack) || (err && err.message) || err || "");
-  var from = stack.indexOf(sourceUrl(ctx.name)) >= 0 ? "bookmarklet" : "page";
+  var from = stack.indexOf(sourceUrl(ctx.name)) >= 0 ? "bookmarklet"
+   : ctx.firstNames.some(function (n) { return stack.indexOf(sourceUrl(n)) >= 0; }) ? "first" : "page";
   if (ctx.private && from == "page") {
    result.withheld.pageErrors++;
    return;
@@ -1864,6 +2183,7 @@ async function runBookmarklet(page, ctx, index) {
  var which = ctx.runs > 1 ? "-" + ctx.runs : "";
  // Whatever the run before this one was waiting to show, this is the end of it.
  await takePendingShot(page, ctx);
+ await takeStorageBefore(page, ctx);
  mark(ctx, "the bookmarklet runs");
  if (ctx.capture) { await shot(page, ctx, "before" + which); }
  try {
@@ -1879,6 +2199,39 @@ async function runBookmarklet(page, ctx, index) {
   throw failure("the bookmarklet could not be run: " + firstLine(err));
  }
  if (ctx.capture) { ctx.pendingShot = "after" + which; }
+}
+
+// Another bookmarklet, run first in the same page, as a reader runs one bookmarklet to set up what
+// the next one reads: a note-taking box, say, that a second bookmarklet saves. It was checked before
+// the browser started, as the entry's own file was.
+async function runFirst(page, ctx, index) {
+ var other = ctx.steps[index - 1].bookmarklet;
+ await takeStorageBefore(page, ctx);
+ ctx.firstRan = true;
+ try {
+  await inject(page, ctx.firsts[other].code, other, ctx.engine);
+ } catch (err) {
+  throw failure("step " + index + ": " + other + ", run first, threw: " + firstLine(err));
+ }
+}
+
+// The keys the page's storage held before any bookmarklet ran, which is what an expect on storage
+// counts new keys against. Only an entry that asks about storage reads them, so every other entry's
+// page meets the bookmarklet and nothing else. They stay in memory, and are never written down.
+async function takeStorageBefore(page, ctx) {
+ if (!ctx.wantsStorage || ctx.storageBefore) { return; }
+ try {
+  ctx.storageBefore = await page.evaluate(function () {
+   function keysOf(store) {
+    var out = [];
+    for (var i = 0; i < store.length; i++) { out.push(store.key(i)); }
+    return out;
+   }
+   return { local: keysOf(window.localStorage), session: keysOf(window.sessionStorage) };
+  });
+ } catch (err) {
+  ctx.storageBefore = { local: [], session: [], unreadable: firstLine(err) };
+ }
 }
 
 // The line in the formatted file an error came from, read out of the one line the browser ran.
@@ -2261,6 +2614,7 @@ async function doExpect(page, ctx, want, where) {
   }
   return;
  }
+ if (want.storage !== undefined) { return expectStorage(page, ctx, want, where); }
  if (want.clipboard !== undefined) {
   var held;
   try {
@@ -2269,6 +2623,7 @@ async function doExpect(page, ctx, want, where) {
    throw failure(where + ": the clipboard could not be read - the entry needs \"permissions\":"
     + " [\"clipboard-read\"] (" + firstLine(err) + ")");
   }
+  if (typeof want.clipboard == "object") { return expectClipboardShape(page, String(held), want.clipboard, where); }
   if (String(held).trim() !== String(want.clipboard).trim()) {
    throw failure(where + ": the clipboard holds " + (ctx.private ? withheldText : JSON.stringify(cut(held)))
     + ", not " + JSON.stringify(cut(want.clipboard)));
@@ -2346,6 +2701,97 @@ async function doExpect(page, ctx, want, where) {
  }
 }
 
+// The page's storage against what it held before the first bookmarklet ran: how many keys are new,
+// and whether each new one's value holds the text. The comparison runs in the page, and only counts
+// and a yes or no come back, so a key's name and value never leave it. The new keys are removed
+// before anything is judged, unless the entry says otherwise, so a run that fails leaves nothing
+// behind either.
+async function expectStorage(page, ctx, want, where) {
+ if (!ctx.storageBefore) { throw failure(where + ": no bookmarklet had run yet, so there is no storage to compare with"); }
+ if (ctx.storageBefore.unreadable) {
+  throw failure(where + ": the page's storage could not be read before the bookmarklet ran: " + ctx.storageBefore.unreadable);
+ }
+ var area = want.storage;
+ var seen = await page.evaluate(function (asked) {
+  var store = asked.area == "session" ? window.sessionStorage : window.localStorage;
+  var fresh = [];
+  for (var i = 0; i < store.length; i++) {
+   if (asked.before.indexOf(store.key(i)) < 0) { fresh.push(store.key(i)); }
+  }
+  var holds = asked.text !== null && fresh.length > 0 && fresh.every(function (k) {
+   return String(store.getItem(k)).indexOf(asked.text) >= 0;
+  });
+  if (asked.remove) { fresh.forEach(function (k) { store.removeItem(k); }); }
+  return { fresh: fresh.length, holds: holds };
+ }, {
+  area: area,
+  before: ctx.storageBefore[area] || [],
+  text: want.valueIncludes === undefined ? null : String(want.valueIncludes),
+  remove: want.remove !== false
+ });
+ var store = area + "Storage";
+ if (want.newKeys !== undefined && seen.fresh !== want.newKeys) {
+  throw failure(where + ": " + store + " has " + seen.fresh + " new key" + (seen.fresh == 1 ? "" : "s")
+   + " since the first bookmarklet ran, not " + want.newKeys);
+ }
+ if (want.valueIncludes !== undefined && !seen.holds) {
+  throw failure(where + ": " + (seen.fresh ? "a new " + store + " key does not hold " : "no new " + store + " key holds ")
+   + JSON.stringify(cut(want.valueIncludes)));
+ }
+}
+
+// The clipboard against an element's own value, or against how it reads, for a value no entry could
+// write down: an address the page builds, or a bookmarklet the page's answer was turned into. No
+// failure here says what the clipboard held.
+async function expectClipboardShape(page, held, said, where) {
+ var text = held.trim();
+ if (said.selector !== undefined) {
+  var own;
+  try {
+   own = await page.locator(said.selector).first().evaluate(function (el, name) {
+    var value = el[name];
+    if (value !== undefined && value !== null && typeof value != "object" && typeof value != "function") { return String(value); }
+    return el.getAttribute(name);
+   }, said.attr);
+  } catch (err) {
+   throw failure(where + ": " + said.selector + " is not on the page to compare the clipboard with");
+  }
+  if (own === null || text !== String(own).trim()) {
+   throw failure(where + ": the clipboard does not hold the " + said.attr + " of " + said.selector);
+  }
+ }
+ if (said.startsWith !== undefined && text.indexOf(said.startsWith) !== 0) {
+  throw failure(where + ": the clipboard does not start with " + JSON.stringify(cut(said.startsWith)));
+ }
+ if (said.singleLine === true && /[\r\n]/.test(text)) { throw failure(where + ": the clipboard holds more than one line"); }
+ if (said.nonEmpty === true && !text.length) { throw failure(where + ": the clipboard is empty"); }
+}
+
+// A click or a hover: on the first match, or on the first whose own text is withText, and at its
+// centre or at an offset from it. An offset is a point on the page rather than on the element, which
+// is how a map is clicked somewhere other than its middle.
+async function pointAt(page, step) {
+ var hovering = step.hover !== undefined;
+ var target = page.locator(hovering ? step.hover : step.click);
+ if (typeof step.withText == "string") {
+  var words = step.withText.replace(/\s+/g, " ").trim().split(" ").map(escapeRegExp).join("\\s+");
+  target = target.filter({ hasText: new RegExp("^\\s*" + words + "\\s*$") });
+ }
+ target = target.first();
+ var button = step.button || "left";
+ if (!step.at) {
+  if (hovering) { return target.hover(); }
+  return target.click({ button: button });
+ }
+ await target.scrollIntoViewIfNeeded();
+ var box = await target.boundingBox();
+ if (!box) { throw new Error((hovering ? step.hover : step.click) + " is not on the page to aim at"); }
+ var x = box.x + box.width / 2 + step.at.dx;
+ var y = box.y + box.height / 2 + step.at.dy;
+ await page.mouse.move(x, y);
+ if (!hovering) { await page.mouse.click(x, y, { button: button }); }
+}
+
 // A selection, which is what the bookmarklets that style selected text read. Dragging the mouse
 // across the text selects whatever happens to lie under the pointer, so the range is set in the page
 // instead. Nothing is focused afterwards, so the keys a bookmarklet listens for still reach the body.
@@ -2384,7 +2830,8 @@ async function doStep(page, ctx, step, index) {
   if (hit) { throw failure("refused: " + where + " would " + verb + " " + hit + " on a signed-in page"); }
  }
  if (step.run) { return runBookmarklet(page, ctx, index); }
- if (step.click !== undefined) { return page.click(step.click); }
+ if (step.bookmarklet !== undefined) { return runFirst(page, ctx, index); }
+ if (step.click !== undefined || step.hover !== undefined) { return pointAt(page, step); }
  if (step.fill !== undefined) {
   var selector = typeof step.fill == "string" ? step.fill : step.fill.selector;
   var value = typeof step.fill == "string"
@@ -2470,6 +2917,7 @@ function countsRequests(entry) {
 // Why an entry cannot be judged in an engine other than Chromium, or "" where it can.
 function engineSkip(entry, engine) {
  if (engine == defaultEngine || !entry) { return ""; }
+ if (entry.drive) { return "an everyday entry runs in the everyday browser, which is Chrome, and has no " + engine + " run"; }
  if (entry.auth) {
   return "an entry with auth runs in " + defaultEngine + " only - the sign-in launcher gives a "
    + defaultEngine + " browser";
@@ -2564,10 +3012,24 @@ async function runOne(browser, name, entry, session, options, engine) {
   setChecks[s + 1] = variant;
  }
 
+ // Each bookmarklet a step runs first, checked as this one was: what it runs is code in the page too.
+ var firsts = {};
+ for (var f = 0; f < listed.length; f++) {
+  var other = listed[f] && listed[f].bookmarklet;
+  if (typeof other != "string" || firsts[other]) { continue; }
+  var otherCheck = checkFile(bookmarkletFile(other), other);
+  if (!otherCheck.ok) { return close("fail", "step " + (f + 1) + ": " + other + ", run first, " + otherCheck.reason); }
+  firsts[other] = otherCheck;
+ }
+
  // What this engine cannot judge, said before any page opens. The file's own check above holds in
  // every engine, so a broken file still fails here rather than skipping.
  var cannot = engineSkip(entry, engine);
  if (cannot) { return close("skip", cannot); }
+
+ if (entry && entry.drive == "everyday") {
+  return runEveryday(name, entry, session, options, check, firsts, result, close);
+ }
 
  // The address the entry asks for. A variable that names it is read here and nowhere else, so the
  // address reaches the browser and nothing that is written down.
@@ -2625,7 +3087,14 @@ async function runOne(browser, name, entry, session, options, engine) {
   shortFolder: "",
   videoFile: "",
   thrownStacks: [],
-  diagnosis: null
+  diagnosis: null,
+  firsts: firsts,
+  firstNames: Object.keys(firsts),
+  firstRan: false,
+  wantsStorage: ((entry && entry.steps) || []).some(function (step) {
+   return step && step.expect && step.expect.storage !== undefined;
+  }),
+  storageBefore: null
  };
  ctx.host = named ? originOf(ctx.url).replace(/^https?:\/\//, "") : "";
  // An entry with auth is never captured, and nothing else about it is written down either, so the
@@ -2734,8 +3203,87 @@ async function runOne(browser, name, entry, session, options, engine) {
   ctx.diagnosis = threwDiagnosis(ctx, thrown[0].message, ctx.thrownStacks[0] || "");
   return close("fail", "the bookmarklet threw after it returned: " + thrown[0].message);
  }
+ var firstThrown = result.errors.filter(function (e) { return e.from == "first"; });
+ if (firstThrown.length) {
+  return close("fail", "a bookmarklet run first threw after it returned: " + firstThrown[0].message);
+ }
  makeShort(ctx, result);
  return close("pass", "");
+}
+
+// ----------------------------------------------------------------------------------------------- //
+// The everyday browser
+// ----------------------------------------------------------------------------------------------- //
+
+// An entry with drive everyday, handed whole to the driver, which runs it in the maintainer's own
+// browser. What comes back is cut down to the verdict, the driver's own reason, which input each step
+// sent and how many real runs it made: anything else a driver returns is dropped here rather than
+// trusted, so nothing a page showed can reach the report through it.
+async function runEveryday(name, entry, session, options, check, firsts, result, close) {
+ result.drive = entry.drive;
+ result.personal = entry.personal === true;
+ result.url = entry.url;
+ result.notes.push("run by the everyday driver, which does not watch the requests the bookmarklet sends:"
+  + " the check of its source before the run is what holds it to its page");
+ if (options && options.capture) { result.notes.push("nothing was captured: the harness records nothing in the everyday browser"); }
+ if (options && options.short) {
+  result.notes.push("no short: the harness records nothing in the everyday browser, so this one's short is made by hand");
+ }
+ if (!session.driver || !session.driver.api) { return close("skip", (session.driver && session.driver.why) || "no everyday driver"); }
+ var job = {
+  name: name,
+  file: path.resolve(bookmarkletFile(name)),
+  code: check.code,
+  url: entry.url.trim(),
+  requires: (entry.requires || []).slice(),
+  steps: JSON.parse(JSON.stringify(entry.steps || [])),
+  dialogs: JSON.parse(JSON.stringify(entry.dialogs || [])),
+  timeout: typeof entry.timeout == "number" ? entry.timeout : defaultTimeout,
+  settle: typeof entry.settle == "number" ? entry.settle : defaultSettle,
+  personal: entry.personal === true,
+  signedIn: entry.signedIn || "",
+  bookmarklets: {}
+ };
+ Object.keys(firsts).forEach(function (other) {
+  job.bookmarklets[other] = { file: path.resolve(bookmarkletFile(other)), code: firsts[other].code };
+ });
+ var said;
+ try {
+  said = await withTimeout(Promise.resolve().then(function () { return session.driver.api.run(job); }),
+   everydayLimit(job.timeout), "the everyday driver gave no verdict inside " + everydayLimit(job.timeout) + "ms");
+ } catch (err) {
+  return close("fail", err && err.expected ? err.message : "the everyday driver failed: " + oneSentence(firstLine(err)));
+ }
+ var kept = keptVerdict(said, job.steps.length);
+ if (kept.inputs.length) { result.inputs = kept.inputs; }
+ if (kept.realRuns !== undefined) { result.realRuns = kept.realRuns; }
+ return close(kept.verdict, kept.reason);
+}
+
+// The part of a driver's answer the report keeps. A verdict it does not know is a failure rather
+// than a guess, an input it names is kept only when it is one of the entry's own steps and one of
+// the two inputs there are, and the reason is held to one line.
+function keptVerdict(said, stepCount) {
+ var out = { verdict: "fail", reason: "the everyday driver gave no verdict", inputs: [] };
+ if (!said || typeof said != "object" || ["pass", "fail", "skip"].indexOf(said.verdict) < 0) { return out; }
+ out.verdict = said.verdict;
+ out.reason = said.verdict == "pass" ? "" : (oneSentence(said.reason) || "the everyday driver gave no reason");
+ if (Array.isArray(said.inputs)) {
+  said.inputs.forEach(function (sent) {
+   if (sent && Number.isInteger(sent.step) && sent.step >= 1 && sent.step <= stepCount && inputs.indexOf(sent.via) >= 0) {
+    out.inputs.push({ step: sent.step, via: sent.via });
+   }
+  });
+ }
+ if (Number.isInteger(said.realRuns) && said.realRuns >= 0 && said.realRuns <= 20) { out.realRuns = said.realRuns; }
+ return out;
+}
+
+// A reason held to one line and a length a summary can show.
+function oneSentence(text) {
+ if (typeof text != "string") { return ""; }
+ var s = text.replace(/\s+/g, " ").trim();
+ return s.length > reasonLimit ? s.slice(0, reasonLimit - 3) + "..." : s;
 }
 
 // ----------------------------------------------------------------------------------------------- //
@@ -2839,9 +3387,18 @@ function failureSection(result, diagnosis) {
  if (result.auth) {
   out.push("- **Signed in**: " + result.auth + " - nothing this page showed is in this report");
  }
+ if (result.drive) {
+  out.push("- **Everyday browser**: run by the everyday driver - nothing the page showed is in this report");
+ }
  out.push("");
 
- if (diagnosis && diagnosis.kind == "requires") {
+ if (result.drive) {
+  out.push("### What the everyday driver said", "");
+  out = out.concat(fence("", result.reason || "fail"));
+  out.push("The driver ran this entry in the everyday browser, and nothing it read off the page comes back"
+   + " to the harness, so the reason above is all there is. It names the step that did not hold, or the"
+   + " rule that refused the run.", "");
+ } else if (diagnosis && diagnosis.kind == "requires") {
   out.push("### The selector that is gone", "");
   out = out.concat(fence("", diagnosis.selector));
   out.push("### Where the bookmarklet uses it", "");
@@ -2944,9 +3501,11 @@ function printList(names, config) {
    what = "skip";
    extra = entry.skip;
   } else if (entry) {
-   what = entry.auth ? "signed in" : "configured";
+   what = entry.auth ? "signed in" : entry.drive ? "everyday" : "configured";
    extra = (entry.url || defaultUrl)
     + (entry.auth ? "  auth " + entry.auth : "")
+    + (entry.drive ? "  drive " + entry.drive : "")
+    + (entry.personal ? "  personal" : "")
     + (entry.scheduled ? "  scheduled" : "")
     + (entry.capture ? "  capture" : "")
     + (entry.browsers ? "  browsers " + entry.browsers.join(", ") : "")
@@ -2958,13 +3517,18 @@ function printList(names, config) {
  var configured = names.filter(function (n) { return config[n]; }).length;
  var scheduled = names.filter(function (n) { return config[n] && config[n].scheduled; }).length;
  var signedIn = names.filter(function (n) { return config[n] && config[n].auth; }).length;
+ var everyday = names.filter(function (n) { return config[n] && config[n].drive; }).length;
  console.log("");
  console.log("test-bm: " + names.length + " bookmarklets, " + configured + " configured, "
-  + scheduled + " scheduled, " + signedIn + " signed in");
+  + scheduled + " scheduled, " + signedIn + " signed in, " + everyday + " everyday");
 }
 
 function printDetail(result) {
  result.notes.forEach(function (note) { console.log("  note: " + note); });
+ if (result.inputs) {
+  console.log("  inputs: " + result.inputs.map(function (i) { return "step " + i.step + " " + i.via; }).join(", "));
+ }
+ if (result.realRuns !== undefined) { console.log("  real runs: " + result.realRuns); }
  if (result.capture) {
   result.capture.screenshots.forEach(function (s) { console.log("  " + s.what + ": " + s.file); });
   if (result.capture.video) { console.log("  video: " + result.capture.video); }
@@ -3120,15 +3684,22 @@ async function main() {
  });
 
  if (jobs.length) {
-  var playwright = requirePlaywright();
-  // The launcher is loaded only when an entry needs it, and before any browser starts, so a
-  // launcher that is set but wrong stops the run at once. Only Chromium's runs of an entry use it.
+  // An everyday entry runs in the maintainer's own browser, so a queue of nothing else starts none.
+  var everydayJob = function (j) { return !!(config[j.name] && config[j.name].drive); };
+  var playwright = jobs.some(function (j) { return !everydayJob(j); }) ? requirePlaywright() : null;
+  // The launcher and the driver are each loaded only when an entry needs one, and before any
+  // browser starts, so one that is set but wrong stops the run at once. Only Chromium's runs of an
+  // entry use either.
   var needsLauncher = jobs.some(function (j) {
    return j.engine == defaultEngine && config[j.name] && config[j.name].auth && !config[j.name].skip;
   });
+  var needsDriver = jobs.some(function (j) {
+   return j.engine == defaultEngine && everydayJob(j) && !config[j.name].skip;
+  });
   var session = {
-   chromium: playwright.chromium,
-   launcher: needsLauncher ? await loadLauncher() : { api: null, why: "" }
+   chromium: playwright ? playwright.chromium : null,
+   launcher: needsLauncher ? await loadLauncher() : { api: null, why: "" },
+   driver: needsDriver ? await loadDriver() : { api: null, why: "" }
   };
   // Whether anything in this queue is going to be captured decides how the browser is started, so it
   // is worked out before the launch rather than per entry.
@@ -3146,7 +3717,7 @@ async function main() {
    // stops the run at once rather than after an hour of the other one.
    for (var e = 0; e < engines.length; e++) {
     var engine = engines[e];
-    if (!jobs.some(function (j) { return j.engine == engine; })) { continue; }
+    if (!jobs.some(function (j) { return j.engine == engine && !everydayJob(j); })) { continue; }
     try {
      browsers[engine] = await launchEngine(playwright, engine, options, capturing);
     } catch (err) {

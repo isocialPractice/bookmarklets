@@ -90,7 +90,15 @@
     "signedIn": {
      "type": "string",
      "minLength": 1,
-     "description": "A selector only the signed-in page has, checked before requires. A page without it, or one that lands on another origin, is a skip reading \"signed out of <site>\" rather than a site-changed failure."
+     "description": "A selector only the signed-in page has, checked before requires. With auth, a page without it, or one that lands on another origin, is a skip reading \"signed out of <site>\" rather than a site-changed failure. With drive everyday the driver looks for it first, and a page without it is a skip reading \"sign-in wall\", since nothing here signs in."
+    },
+    "drive": {
+     "enum": ["everyday"],
+     "description": "Run the entry in the maintainer's everyday browser rather than in one test-bm.js starts, for a site that answers an automated browser with a bot check or a page only the maintainer's own profile shows. test-bm.js never reaches that browser itself: it hands the entry to the module _TEST_BM_EVERYDAY_DRIVER names, an absolute path outside the repository, and keeps only the verdict, the driver's own reason, which input each step sent and how many real runs it made. Without a driver the entry is a skip. An everyday entry is never scheduled, takes no auth, captures nothing, grants no permissions, names no network, opens a site's own https page, answers no prompt, and presses only Tab, Escape, the arrows, Home, End, PageUp, PageDown, Backspace and Delete."
+    },
+    "personal": {
+     "const": true,
+     "description": "The page shows what the account holds, such as a mailbox, a chat or a watch history, so the entry is kept to selectors, counts and states: no withText, no desktop input, and no expect on text, the clipboard, a stored value, matches or a check. Goes with drive everyday, and names signedIn."
     },
     "browsers": {
      "type": "array",
@@ -103,16 +111,72 @@
    },
    "dependencies": {
     "auth": ["signedIn"],
-    "signedIn": ["auth"]
+    "signedIn": { "anyOf": [{ "required": ["auth"] }, { "required": ["drive"] }] },
+    "personal": ["drive", "signedIn"]
    },
-   "if": { "required": ["auth"] },
-   "then": { "properties": { "scheduled": { "const": false }, "capture": false, "browsers": { "items": { "const": "chromium" } } } }
+   "allOf": [
+    {
+     "if": { "required": ["auth"] },
+     "then": { "properties": { "scheduled": { "const": false }, "capture": false, "browsers": { "items": { "const": "chromium" } } } }
+    },
+    {
+     "if": { "required": ["drive"] },
+     "then": {
+      "required": ["url"],
+      "properties": {
+       "url": { "pattern": "^https://" },
+       "scheduled": { "const": false },
+       "auth": false,
+       "capture": false,
+       "permissions": false,
+       "network": false,
+       "browsers": { "items": { "const": "chromium" } }
+      }
+     }
+    }
+   ]
   },
   "step": {
    "type": "object",
-   "description": "One thing to do. Exactly one of run, click, fill, press, select, wait, answer, detach, attach, viewport or expect.",
+   "description": "One thing to do. Exactly one of run, bookmarklet, click, hover, fill, press, select, wait, answer, detach, attach, viewport or expect.",
    "additionalProperties": false,
    "properties": {
+    "bookmarklet": {
+     "type": "string",
+     "minLength": 1,
+     "description": "Another bookmarklet in JSFormatted, by name, run here first in the same page, the way a reader runs one bookmarklet to set up what the next one reads. Its file is checked as the entry's own is before anything opens, its errors fail the entry, and the requests its code sends are judged as the entry's own. An entry with one names its own run with a run step.",
+     "examples": ["siteSpecific_YouTube_TakeVideoNotes"]
+    },
+    "hover": {
+     "type": "string",
+     "minLength": 1,
+     "description": "A selector to move the pointer over."
+    },
+    "button": {
+     "enum": ["left", "right", "middle"],
+     "description": "The mouse button a click presses. Defaults to left."
+    },
+    "withText": {
+     "type": "string",
+     "minLength": 1,
+     "description": "With a click or a hover, the first match whose own text is this, matched whole, with runs of white space read as one.",
+     "examples": ["Measure distance"]
+    },
+    "at": {
+     "type": "object",
+     "description": "With a click or a hover, the point to aim at as an offset from the element's centre, in CSS pixels, rather than the centre itself.",
+     "additionalProperties": false,
+     "required": ["dx", "dy"],
+     "properties": {
+      "dx": { "type": "number", "minimum": -4000, "maximum": 4000 },
+      "dy": { "type": "number", "minimum": -4000, "maximum": 4000 }
+     },
+     "examples": [{ "dx": 120, "dy": -80 }]
+    },
+    "via": {
+     "enum": ["cdp", "desktop"],
+     "description": "In an entry with drive everyday, how the driver sends a click, hover, fill or press: cdp, events inside the tab, which cannot reach another window, or desktop, the computer's own mouse and keyboard aimed at the one window the page is in. Defaults to cdp. A personal page takes cdp only."
+    },
     "run": {
      "description": "Run the bookmarklet here, rather than after load. A second run step runs it again, which is how a bookmarklet that turns itself off on the second run is checked. An object with set runs it with variables set first.",
      "oneOf": [
@@ -217,7 +281,7 @@
   },
   "expect": {
    "type": "object",
-   "description": "What should be true. A selector that is visible or hidden, paints its text clear of its neighbours, matches a count, matches as many elements as another selector, or holds some text; or a clipboard value; or where the page is; or where a new tab went; or how many requests the bookmarklet sent to a host.",
+   "description": "What should be true. A selector that is visible or hidden, paints its text clear of its neighbours, matches a count, matches as many elements as another selector, or holds some text; or a clipboard value; or where the page is; or where a new tab went; or how many requests the bookmarklet sent to a host; or what the bookmarklet stored; or, in an everyday entry, a check the everyday driver holds.",
    "additionalProperties": false,
    "properties": {
     "selector": { "type": "string", "minLength": 1, "description": "The elements to look at." },
@@ -227,7 +291,30 @@
     "count": { "type": "number", "description": "How many elements the selector matches, exactly." },
     "matches": { "type": "string", "minLength": 1, "description": "A second selector, whose matches are counted against the first selector's. It is for one thing per row of something the page lists, where the count the page would give changes whenever the page does and the relation does not: a size cell in every file row, say. The failure names both counts.", "examples": ["table tr:has(a[href*='/blob/'])"] },
     "text": { "type": "string", "description": "Text the first match holds somewhere in it." },
-    "clipboard": { "type": "string", "description": "What the clipboard holds, trimmed at both ends. The whole value, not a part of it. Needs clipboard-read in permissions." },
+    "clipboard": {
+     "description": "What the clipboard holds, trimmed at both ends: the whole value as a string, or an object for a value no entry could write down in full. selector and attr together are an element's own value, its property of that name or else the attribute, such as the absolute href of a link the bookmarklet added; startsWith, singleLine and nonEmpty say how the value reads. Neither form says in a failure what the clipboard held. Needs clipboard-read in permissions, except in an everyday entry, whose driver reads the clipboard itself.",
+     "oneOf": [
+      { "type": "string" },
+      {
+       "type": "object",
+       "additionalProperties": false,
+       "minProperties": 1,
+       "dependencies": { "selector": ["attr"], "attr": ["selector"] },
+       "properties": {
+        "selector": { "type": "string", "minLength": 1 },
+        "attr": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]*$", "examples": ["href"] },
+        "startsWith": { "type": "string", "minLength": 1, "examples": ["javascript:"] },
+        "singleLine": { "const": true },
+        "nonEmpty": { "const": true }
+       }
+      }
+     ]
+    },
+    "storage": { "enum": ["local", "session"], "description": "The page's localStorage or sessionStorage, compared with the keys it held before the first bookmarklet ran. Takes newKeys, valueIncludes or both, and no selector. The new keys are removed afterwards unless remove is false, so a run leaves nothing behind. Names and values stay in the page, and a failure gives counts." },
+    "newKeys": { "type": "integer", "minimum": 0, "description": "With storage, how many keys are new, exactly." },
+    "valueIncludes": { "type": "string", "minLength": 1, "description": "With storage, text each new key's value holds.", "examples": ["Sample Note: a placeholder for the test"] },
+    "remove": { "type": "boolean", "description": "With storage, whether the new keys are removed after the check. Defaults to true." },
+    "check": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,39}$", "description": "In an everyday entry, the name of a check the everyday driver holds, for what no selector can say, such as a distance read within a tolerance. Takes no selector.", "examples": ["maps-distance"] },
     "location": { "type": "string", "description": "Text the page's address holds somewhere in it, for a bookmarklet that navigates. Chromium keeps a text fragment directive out of the address, so a bookmarklet that writes one is read off the page it moved instead." },
     "popup": { "type": "string", "minLength": 1, "description": "Text the address of a new tab the bookmarklet opened holds somewhere in it, for a bookmarklet that opens a link in a new tab. Waits for the tab, up to the entry's timeout or ten seconds." },
     "requests": { "type": "string", "pattern": "^(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\\d+)?$", "description": "A host, counted against how many requests the bookmarklet made to it since the last expect that counted the same host, or since the page opened. Takes count for an exact number or atMost for a bound, and no selector. It is what says a directory change costs one request rather than seven, which is a thing no selector on the page can show. A host answered by the entry is counted the same way a host answered by the network is.", "examples": ["api.example.com"] },
@@ -244,7 +331,9 @@
     { "required": ["selector", "hidden"] },
     { "required": ["selector", "count"] },
     { "required": ["selector", "matches"] },
-    { "required": ["selector", "text"] }
+    { "required": ["selector", "text"] },
+    { "required": ["storage"] },
+    { "required": ["check"] }
    ]
   },
   "answer": {

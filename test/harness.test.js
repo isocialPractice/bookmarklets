@@ -7,9 +7,10 @@
 // file under a folder called test as a test file, and test/fixtures/bookmarklets holds fourteen that
 // are bookmarklets.
 //
-// No run here ever reaches a real sign-in. Every run clears TEST_BM_AUTH_LAUNCHER unless the test
-// sets it, and the tests that set it point it at a stub written into the temporary folder, which
-// signs in to nothing.
+// No run here ever reaches a real sign-in or the everyday browser. Every run clears
+// TEST_BM_AUTH_LAUNCHER and _TEST_BM_EVERYDAY_DRIVER unless the test sets one, and the tests that set
+// one point it at a stub written into the temporary folder, which signs in to nothing and opens
+// nothing.
 //
 // Each fixture under test/fixtures/bookmarklets carries one defect, or none, and the assertions
 // below are the verdict and the reason test-bm.js gives for it. TEST_BM_JS_DIR and TEST_BM_CONFIG
@@ -39,7 +40,7 @@ function runHarness(args, env) {
  var answer = child.spawnSync(process.execPath, ["test-bm.js"].concat(args), {
   cwd: rootDir,
   encoding: "utf8",
-  env: Object.assign({}, process.env, { TEST_BM_AUTH_LAUNCHER: "" }, env || {})
+  env: Object.assign({}, process.env, { TEST_BM_AUTH_LAUNCHER: "", _TEST_BM_EVERYDAY_DRIVER: "" }, env || {})
  });
  return { status: answer.status, out: String(answer.stdout || ""), err: String(answer.stderr || "") };
 }
@@ -1102,7 +1103,8 @@ function startApart(entries, source) {
   var err = "";
   var proc = child.spawn(process.execPath, ["test-bm.js", "--all"], {
    cwd: rootDir,
-   env: Object.assign({}, process.env, { TEST_BM_AUTH_LAUNCHER: "", TEST_BM_JS_DIR: js, TEST_BM_CONFIG: config })
+   env: Object.assign({}, process.env, { TEST_BM_AUTH_LAUNCHER: "", _TEST_BM_EVERYDAY_DRIVER: "", TEST_BM_JS_DIR: js,
+    TEST_BM_CONFIG: config })
   });
   proc.stdout.on("data", function (chunk) { out += chunk; });
   proc.stderr.on("data", function (chunk) { err += chunk; });
@@ -2032,4 +2034,490 @@ test("firefox leaves out the clipboard permissions it has no name for, and its c
  assert.strictEqual(result.verdict, "pass", result.reason);
  assert.ok(result.notes.indexOf("firefox has no clipboard-read or clipboard-write permission to grant: its clipboard is open to the page") >= 0,
   result.notes.join("\n"));
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// A bookmarklet run first, the pointer, and what a bookmarklet stores
+// ----------------------------------------------------------------------------------------------- //
+
+// A run of bookmarklets of more than one shape, each file written under its own name, with a
+// configuration of its own. It is what a test needs when one bookmarklet runs first and another
+// reads what the first one added. Whatever the run wrote beside its report comes back with it.
+function runFiles(files, entries, args, env) {
+ var js = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-files-"));
+ try {
+  Object.keys(files).forEach(function (name) { fs.writeFileSync(path.join(js, name + ".js"), files[name]); });
+  var config = path.join(js, "test-bm.json");
+  fs.writeFileSync(config, JSON.stringify(entries));
+  var run = runHarness(args, Object.assign({ TEST_BM_JS_DIR: js, TEST_BM_CONFIG: config }, env || {}));
+  var answer = { run: run, report: null, summary: "", failures: "" };
+  var named = /^report: (.+)$/m.exec(run.out);
+  if (named) {
+   var folder = path.join(rootDir, named[1].replace(/\//g, path.sep));
+   answer.report = JSON.parse(fs.readFileSync(path.join(folder, "report.json"), "utf8"));
+   answer.summary = fs.readFileSync(path.join(folder, "summary.txt"), "utf8");
+   if (fs.existsSync(path.join(folder, "failure.md"))) {
+    answer.failures = fs.readFileSync(path.join(folder, "failure.md"), "utf8");
+   }
+  }
+  return answer;
+ } finally {
+  removeDir(js);
+ }
+}
+
+function resultIn(answer, name) {
+ assert.ok(answer.report, "the run should have written a report:\n" + answer.run.out + answer.run.err);
+ var found = answer.report.results.filter(function (r) { return r.name === name; });
+ assert.strictEqual(found.length, 1, name + " should appear once in the report");
+ return found[0];
+}
+
+// The same file, one copy under each name.
+function copiesOf(source, names) {
+ var files = {};
+ names.forEach(function (name) { files[name] = source; });
+ return files;
+}
+
+var noteSelector = "#note--__-unlikely_-_name-__--fixtureStepsFirst";
+var stepsMark = "#mark--__-unlikely_-_name-__--fixtureStepsWorker";
+var stepsLink = "#link--__-unlikely_-_name-__--fixtureStepsWorker";
+var sampleNote = "Sample Note: a placeholder for the test";
+
+// Run first: a notebox for the other one to save, the way a note-taking bookmarklet adds one.
+var firstSource = [
+ "javascript:(function() {",
+ " /* Run first by the step kinds fixture: a notebox for the other one to save. */",
+ " var boxFixtureStepsFirst = document.createElement(\"textarea\");",
+ " boxFixtureStepsFirst.id = \"note--__-unlikely_-_name-__--fixtureStepsFirst\";",
+ " document.body.appendChild(boxFixtureStepsFirst);",
+ "})();"
+].join("\n");
+
+// Saves what that notebox holds, adds a link that copies its own address, and marks where a pointer
+// went over the page and which button it pressed on the heading.
+var workerSource = [
+ "javascript:(function() {",
+ " /* The step kinds fixture: it saves the notebox run first, copies a link's address, and marks",
+ "    each way a pointer reaches the page. */",
+ " var boxFixtureStepsWorker = document.getElementById(\"note--__-unlikely_-_name-__--fixtureStepsFirst\");",
+ " var markFixtureStepsWorker = document.createElement(\"div\");",
+ " markFixtureStepsWorker.id = \"mark--__-unlikely_-_name-__--fixtureStepsWorker\";",
+ " document.body.appendChild(markFixtureStepsWorker);",
+ " if (boxFixtureStepsWorker) {",
+ "  localStorage.setItem(\"fixtureStepsWorker\" + location.pathname, \"saved: \" + boxFixtureStepsWorker.value);",
+ " }",
+ " var linkFixtureStepsWorker = document.createElement(\"a\");",
+ " linkFixtureStepsWorker.id = \"link--__-unlikely_-_name-__--fixtureStepsWorker\";",
+ " linkFixtureStepsWorker.setAttribute(\"href\", \"#saved-notes\");",
+ " linkFixtureStepsWorker.textContent = \"| # |\";",
+ " linkFixtureStepsWorker.addEventListener(\"click\", function (ev) {",
+ "  ev.preventDefault();",
+ "  navigator.clipboard.writeText(linkFixtureStepsWorker.href);",
+ " });",
+ " document.body.appendChild(linkFixtureStepsWorker);",
+ " document.addEventListener(\"mouseover\", function (ev) {",
+ "  markFixtureStepsWorker.setAttribute(\"data-over\", ev.target.id || \"none\");",
+ " });",
+ " var headFixtureStepsWorker = document.querySelector(\"h1\");",
+ " headFixtureStepsWorker.addEventListener(\"mousedown\", function (ev) {",
+ "  var boxFixtureStepsWorkerHead = headFixtureStepsWorker.getBoundingClientRect();",
+ "  var offFixtureStepsWorker = ev.clientX - (boxFixtureStepsWorkerHead.left + boxFixtureStepsWorkerHead.width / 2);",
+ "  markFixtureStepsWorker.setAttribute(\"data-button\", String(ev.button));",
+ "  markFixtureStepsWorker.setAttribute(\"data-side\", offFixtureStepsWorker > 20 ? \"right\" : \"centre\");",
+ " });",
+ "})();"
+].join("\n");
+
+var stepsRun = null;
+
+// One run of every step kind case, shared by the assertions below, so the suite starts one browser
+// for all of them.
+function stepsReport() {
+ if (stepsRun) { return stepsRun; }
+ var files = copiesOf(workerSource, ["fixture_Steps_Worker", "fixture_Steps_StorageMismatch",
+  "fixture_Steps_ClipboardShape", "fixture_Steps_FirstThrows"]);
+ files.fixture_Steps_First = firstSource;
+ files.fixture_Steps_Thrower = fs.readFileSync(path.join(rootDir, jsDir, "fixture_Throw_ReadsAMissingThing.js"), "utf8");
+ var beforeTheRun = [
+  { bookmarklet: "fixture_Steps_First" },
+  { expect: { selector: noteSelector, count: 1 } },
+  { fill: noteSelector, value: sampleNote },
+  { run: true }
+ ];
+ stepsRun = runFiles(files, {
+  fixture_Steps_First: { url: "fixture:article.html" },
+  fixture_Steps_Thrower: { url: "fixture:article.html", skip: "run only as another entry's first bookmarklet" },
+  fixture_Steps_Worker: {
+   url: "fixture:article.html",
+   permissions: ["clipboard-read", "clipboard-write"],
+   steps: beforeTheRun.concat([
+    { expect: { storage: "local", newKeys: 1, valueIncludes: sampleNote } },
+    { expect: { storage: "local", newKeys: 0 } },
+    { hover: "h2", withText: "Routes" },
+    { expect: { selector: stepsMark + "[data-over='routes']", count: 1 } },
+    { click: "h1", button: "right", at: { dx: 200, dy: 0 } },
+    { expect: { selector: stepsMark + "[data-button='2'][data-side='right']", count: 1 } },
+    { click: stepsLink },
+    { wait: 300 },
+    { expect: { clipboard: { selector: stepsLink, attr: "href" } } },
+    { expect: { clipboard: { startsWith: "https://fixtures.test/", singleLine: true, nonEmpty: true } } }
+   ])
+  },
+  fixture_Steps_StorageMismatch: {
+   url: "fixture:article.html",
+   steps: beforeTheRun.concat([{ expect: { storage: "local", valueIncludes: "words the note never held" } }])
+  },
+  fixture_Steps_ClipboardShape: {
+   url: "fixture:article.html",
+   permissions: ["clipboard-read", "clipboard-write"],
+   steps: [{ run: true }, { click: stepsLink }, { wait: 300 }, { expect: { clipboard: { startsWith: "javascript:" } } }]
+  },
+  fixture_Steps_FirstThrows: {
+   url: "fixture:article.html",
+   steps: [{ bookmarklet: "fixture_Steps_Thrower" }, { run: true }]
+  }
+ }, ["--all"]);
+ return stepsRun;
+}
+
+test("a bookmarklet step runs another bookmarklet first in the same page, and its storage is counted and removed", function () {
+ var result = resultIn(stepsReport(), "fixture_Steps_Worker");
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.strictEqual(resultIn(stepsReport(), "fixture_Steps_First").verdict, "pass");
+});
+
+test("hover picks a match by its own text, and a click can press another button at an offset from the centre", function () {
+ // Both are inside the passing entry above: a hover that landed on the wrong heading, or a click
+ // that pressed the left button in the middle, fails its expect and the entry with it.
+ var result = resultIn(stepsReport(), "fixture_Steps_Worker");
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.strictEqual(result.errors.length, 0);
+});
+
+test("a stored value that does not hold the text fails with counts, and never says what was stored", function () {
+ var result = resultIn(stepsReport(), "fixture_Steps_StorageMismatch");
+ assert.strictEqual(result.verdict, "fail");
+ assert.strictEqual(result.reason, "step 5: a new localStorage key does not hold \"words the note never held\"");
+ assert.doesNotMatch(JSON.stringify(result), /saved: Sample Note/);
+});
+
+test("a clipboard compared by its shape fails without saying what the clipboard held", function () {
+ var result = resultIn(stepsReport(), "fixture_Steps_ClipboardShape");
+ assert.strictEqual(result.verdict, "fail");
+ assert.strictEqual(result.reason, "step 4: the clipboard does not start with \"javascript:\"");
+ assert.doesNotMatch(JSON.stringify(result), /saved-notes/);
+});
+
+test("a bookmarklet run first that throws fails the entry, and says it was the one run first", function () {
+ var result = resultIn(stepsReport(), "fixture_Steps_FirstThrows");
+ assert.strictEqual(result.verdict, "fail");
+ assert.match(result.reason, /^step 1: fixture_Steps_Thrower, run first, threw: /);
+});
+
+test("a bookmarklet step names another bookmarklet that is there, and the new step shapes are checked first", function () {
+ var answer = runFiles(copiesOf(workerSource, ["fixture_Steps_Worker", "fixture_Steps_First",
+  "fixture_Steps_StorageMismatch", "fixture_Steps_ClipboardShape"]), {
+  fixture_Steps_Worker: { url: "fixture:article.html", steps: [{ bookmarklet: "fixture_Steps_Missing" }, { run: true }] },
+  fixture_Steps_First: { url: "fixture:article.html", steps: [{ bookmarklet: "fixture_Steps_First" }, { run: true }] },
+  fixture_Steps_StorageMismatch: { url: "fixture:article.html", steps: [{ bookmarklet: "fixture_Steps_First" }] },
+  fixture_Steps_ClipboardShape: {
+   url: "fixture:article.html",
+   steps: [
+    { hover: "h1", button: "right" },
+    { click: "h1", at: { dx: "far", dy: 0 } },
+    { expect: { clipboard: { selector: "a" } } },
+    { expect: { storage: "cookie", newKeys: 1 } },
+    { expect: { selector: "a", newKeys: 1 } }
+   ]
+  }
+ }, ["--list"]);
+ assert.strictEqual(answer.run.status, 2, "a configuration error exits 2");
+ var err = answer.run.err;
+ assert.match(err, /fixture_Steps_Worker step 1: there is no .*fixture_Steps_Missing\.js to run first/);
+ assert.match(err, /fixture_Steps_First step 1: bookmarklet runs another bookmarklet first, and a run step runs this one/);
+ assert.match(err, /fixture_Steps_StorageMismatch: a bookmarklet step runs another bookmarklet first, so the entry names its own run with a run step/);
+ assert.match(err, /fixture_Steps_ClipboardShape step 1: button goes with a click/);
+ assert.match(err, /fixture_Steps_ClipboardShape step 2: at takes a dx of CSS pixels/);
+ assert.match(err, /fixture_Steps_ClipboardShape step 3: clipboard takes a selector and an attr together/);
+ assert.match(err, /fixture_Steps_ClipboardShape step 4: storage takes local or session/);
+ assert.match(err, /fixture_Steps_ClipboardShape step 5: newKeys goes with storage/);
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// The everyday browser
+// ----------------------------------------------------------------------------------------------- //
+
+// What a page could have shown, in words the stub hands back where a verdict holds none. If any of
+// them reaches a report, a summary or the output, the harness kept something it should have dropped.
+var pageWords = "Jane Doe watched Sample Video 42 from 123 Main Street";
+
+// A stand-in for the maintainer's everyday driver. It opens nothing: it answers each entry by name,
+// and writes down the job the harness handed it so the assertions can read it back. It is written
+// into the temporary folder because the harness refuses a driver inside the repository.
+var driverSource = [
+ "import fs from \"node:fs\";",
+ "import path from \"node:path\";",
+ "import { fileURLToPath } from \"node:url\";",
+ "var here = path.dirname(fileURLToPath(import.meta.url));",
+ "var page = " + JSON.stringify(pageWords) + ";",
+ "var said = {",
+ " fixture_Everyday_Passes: { verdict: \"pass\", reason: \"kept only for a fail or a skip\", realRuns: 1,",
+ "  inputs: [{ step: 3, via: \"desktop\" }, { step: 9, via: \"desktop\" }, { step: 1, via: \"telepathy\" }] },",
+ " fixture_Everyday_Fails: { verdict: \"fail\", reason: \"step 3 (check) did not hold\", realRuns: 1 },",
+ " fixture_Everyday_SignInWall: { verdict: \"skip\", reason: \"sign-in wall\", realRuns: 1 },",
+ " fixture_Everyday_Chatty: { verdict: \"fail\", reason: \"step 1 (check) did not hold\", text: page, title: page,",
+ "  steps: [{ text: page }], facts: { title: page }, inputs: [{ step: 1, via: \"cdp\", text: page }] },",
+ " fixture_Everyday_NoVerdict: { verdict: \"maybe\", reason: page }",
+ "};",
+ "export async function run(job) {",
+ " fs.writeFileSync(path.join(here, job.name + \".json\"), JSON.stringify(job));",
+ " if (job.name == \"fixture_Everyday_Throws\") { throw new Error(\"the route could not be reached\"); }",
+ " return said[job.name];",
+ "}"
+].join("\n") + "\n";
+
+function makeDriver(source) {
+ var dir = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-stub-driver-"));
+ var file = path.join(dir, "stub-driver.mjs");
+ fs.writeFileSync(file, source === undefined ? driverSource : source);
+ return { dir: dir, file: file };
+}
+
+var passSource = fs.readFileSync(path.join(rootDir, jsDir, "fixture_Pass_AddsAPanel.js"), "utf8");
+var everydayUrl = "https://www.example.com/";
+
+var everydayScenarios = {
+ fixture_Everyday_Passes: {
+  url: everydayUrl, drive: "everyday", requires: ["main"], timeout: 20000, dialogs: [{ accept: true }],
+  steps: [{ bookmarklet: "fixture_Everyday_Fails" }, { run: true }, { hover: "h1", via: "desktop" },
+   { expect: { selector: "main", count: 1 } }]
+ },
+ fixture_Everyday_Fails: { url: everydayUrl, drive: "everyday" },
+ fixture_Everyday_SignInWall: {
+  url: everydayUrl + "feed/history", drive: "everyday", personal: true, signedIn: "#account",
+  steps: [{ run: true }, { expect: { selector: "#panel", hidden: true } }]
+ },
+ fixture_Everyday_Chatty: { url: everydayUrl, drive: "everyday", steps: [{ click: "main" }] },
+ fixture_Everyday_Throws: { url: everydayUrl, drive: "everyday" },
+ fixture_Everyday_NoVerdict: { url: everydayUrl, drive: "everyday" },
+ fixture_Everyday_Skipped: { url: everydayUrl, drive: "everyday", skip: "kept back by its own entry" }
+};
+
+var everydayRun = null;
+
+// One run of every everyday case through the stub. Every entry is an everyday one, so the run
+// starts no browser at all.
+function everydayReport() {
+ if (everydayRun) { return everydayRun; }
+ var driver = makeDriver();
+ try {
+  var answer = runFiles(copiesOf(passSource, Object.keys(everydayScenarios)), everydayScenarios, ["--all"],
+   { _TEST_BM_EVERYDAY_DRIVER: driver.file });
+  answer.jobs = {};
+  Object.keys(everydayScenarios).forEach(function (name) {
+   var file = path.join(driver.dir, name + ".json");
+   answer.jobs[name] = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
+  });
+  everydayRun = answer;
+  return answer;
+ } finally {
+  removeDir(driver.dir);
+ }
+}
+
+test("an everyday entry is a skip, never a failure, when no everyday driver is set", function () {
+ var answer = runFiles(copiesOf(passSource, ["fixture_Everyday_Fails"]),
+  { fixture_Everyday_Fails: { url: everydayUrl, drive: "everyday" } }, ["--all"]);
+ assert.strictEqual(answer.run.status, 0, answer.run.out + answer.run.err);
+ var result = resultIn(answer, "fixture_Everyday_Fails");
+ assert.strictEqual(result.verdict, "skip");
+ assert.strictEqual(result.reason, "no everyday driver: _TEST_BM_EVERYDAY_DRIVER is not set");
+ assert.strictEqual(result.drive, "everyday");
+});
+
+test("an everyday entry is handed to the driver whole, and the driver's pass is the entry's pass", function () {
+ var result = resultIn(everydayReport(), "fixture_Everyday_Passes");
+ assert.strictEqual(result.verdict, "pass", result.reason);
+ assert.strictEqual(result.reason, "", "a pass keeps no reason");
+ assert.strictEqual(result.personal, false);
+ assert.deepStrictEqual(result.inputs, [{ step: 3, via: "desktop" }], "only an input for one of the entry's own steps is kept");
+ assert.strictEqual(result.realRuns, 1);
+
+ var job = everydayReport().jobs.fixture_Everyday_Passes;
+ assert.ok(job, "the driver should have been handed the entry");
+ assert.ok(path.isAbsolute(job.file) && /fixture_Everyday_Passes\.js$/.test(job.file), job.file);
+ assert.doesNotMatch(job.code, /\n/, "the code is the one line the harness checked");
+ assert.doesNotMatch(job.code, /^\s*javascript:/i, "the code is what runs, without its scheme");
+ assert.strictEqual(job.url, everydayUrl);
+ assert.deepStrictEqual(job.requires, ["main"]);
+ assert.deepStrictEqual(job.steps, everydayScenarios.fixture_Everyday_Passes.steps);
+ assert.deepStrictEqual(job.dialogs, [{ accept: true }]);
+ assert.strictEqual(job.timeout, 20000);
+ assert.strictEqual(job.settle, 500);
+ assert.strictEqual(job.personal, false);
+ assert.strictEqual(job.signedIn, "");
+ assert.deepStrictEqual(Object.keys(job.bookmarklets), ["fixture_Everyday_Fails"]);
+ assert.ok(path.isAbsolute(job.bookmarklets.fixture_Everyday_Fails.file));
+ assert.doesNotMatch(job.bookmarklets.fixture_Everyday_Fails.code, /\n/);
+});
+
+test("the driver's fail is the entry's fail, with the driver's own reason, written up without the page", function () {
+ var answer = everydayReport();
+ var result = resultIn(answer, "fixture_Everyday_Fails");
+ assert.strictEqual(result.verdict, "fail");
+ assert.strictEqual(result.reason, "step 3 (check) did not hold");
+ assert.strictEqual(answer.run.status, 1, "a failed entry fails the run");
+ var section = sectionOf(answer.failures, "fixture_Everyday_Fails");
+ assert.match(section, /\*\*Everyday browser\*\*: run by the everyday driver - nothing the page showed is in this report/);
+ assert.match(section, /### What the everyday driver said/);
+});
+
+test("the driver's skip, such as a sign-in wall, is the entry's skip with its reason, and a personal page says so", function () {
+ var result = resultIn(everydayReport(), "fixture_Everyday_SignInWall");
+ assert.strictEqual(result.verdict, "skip");
+ assert.strictEqual(result.reason, "sign-in wall");
+ assert.strictEqual(result.personal, true);
+ var job = everydayReport().jobs.fixture_Everyday_SignInWall;
+ assert.strictEqual(job.personal, true);
+ assert.strictEqual(job.signedIn, "#account");
+});
+
+test("nothing but the verdict, the reason, the inputs and the real runs reaches the report", function () {
+ var answer = everydayReport();
+ var result = resultIn(answer, "fixture_Everyday_Chatty");
+ assert.strictEqual(result.verdict, "fail");
+ assert.strictEqual(result.reason, "step 1 (check) did not hold");
+ assert.deepStrictEqual(result.inputs, [{ step: 1, via: "cdp" }]);
+ var words = new RegExp(pageWords.split(" ").slice(0, 3).join(" "));
+ assert.doesNotMatch(JSON.stringify(answer.report), words, "report.json");
+ assert.doesNotMatch(answer.summary, words, "summary.txt");
+ assert.doesNotMatch(answer.failures, words, "failure.md");
+ assert.doesNotMatch(answer.run.out + answer.run.err, words, "the run's own output");
+});
+
+test("a driver that throws or gives no verdict fails the entry, and a skipped entry never reaches the driver", function () {
+ var answer = everydayReport();
+ var threw = resultIn(answer, "fixture_Everyday_Throws");
+ assert.strictEqual(threw.verdict, "fail");
+ assert.strictEqual(threw.reason, "the everyday driver failed: the route could not be reached");
+ var none = resultIn(answer, "fixture_Everyday_NoVerdict");
+ assert.strictEqual(none.verdict, "fail");
+ assert.strictEqual(none.reason, "the everyday driver gave no verdict");
+ var kept = resultIn(answer, "fixture_Everyday_Skipped");
+ assert.strictEqual(kept.verdict, "skip");
+ assert.strictEqual(kept.reason, "kept back by its own entry");
+ assert.strictEqual(answer.jobs.fixture_Everyday_Skipped, null, "a skipped entry is never handed to the driver");
+});
+
+test("a driver named by a relative path, inside the repository, or with no run function is refused before anything runs", function () {
+ var one = { fixture_Everyday_Fails: { url: everydayUrl, drive: "everyday" } };
+ var files = copiesOf(passSource, ["fixture_Everyday_Fails"]);
+ var relative = runFiles(files, one, ["--all"], { _TEST_BM_EVERYDAY_DRIVER: "everyday.mjs" });
+ assert.strictEqual(relative.run.status, 2, relative.run.out + relative.run.err);
+ assert.match(relative.run.err, /_TEST_BM_EVERYDAY_DRIVER must be an absolute path/);
+
+ var inside = runFiles(files, one, ["--all"], { _TEST_BM_EVERYDAY_DRIVER: path.join(rootDir, "test", "harness.test.js") });
+ assert.strictEqual(inside.run.status, 2, inside.run.out + inside.run.err);
+ assert.match(inside.run.err, /_TEST_BM_EVERYDAY_DRIVER must name a file outside the repository/);
+
+ var driver = makeDriver("export function launch() { return null; }\n");
+ try {
+  var noRun = runFiles(files, one, ["--all"], { _TEST_BM_EVERYDAY_DRIVER: driver.file });
+  assert.strictEqual(noRun.run.status, 2, noRun.run.out + noRun.run.err);
+  assert.match(noRun.run.err, /the everyday driver has no run function/);
+ } finally {
+  removeDir(driver.dir);
+ }
+
+ // A driver named by a path that holds nothing is a configuration error the moment it is loaded, so
+ // a run of only a skipped entry that ends in a skip is a run that never loaded it.
+ var nowhere = path.join(os.tmpdir(), "test-bm-no-driver-" + process.pid, "missing-driver.mjs");
+ var skipped = runFiles(files, { fixture_Everyday_Fails: { url: everydayUrl, drive: "everyday", skip: "kept back" } },
+  ["--all"], { _TEST_BM_EVERYDAY_DRIVER: nowhere });
+ assert.strictEqual(skipped.run.status, 0, skipped.run.out + skipped.run.err);
+ assert.strictEqual(resultIn(skipped, "fixture_Everyday_Fails").reason, "kept back");
+});
+
+test("an everyday entry is never scheduled, signs in to nothing, records nothing, and opens a site's own page", function () {
+ var entries = {
+  fixture_Everyday_Scheduled: { drive: "everyday", url: everydayUrl, scheduled: true },
+  fixture_Everyday_Auth: { drive: "everyday", url: everydayUrl, auth: "fixture-site", signedIn: "main" },
+  fixture_Everyday_Capture: { drive: "everyday", url: everydayUrl, capture: true },
+  fixture_Everyday_Permissions: { drive: "everyday", url: everydayUrl, permissions: ["clipboard-read"] },
+  fixture_Everyday_Network: { drive: "everyday", url: everydayUrl, network: [{ host: "api.example.com", reason: "its own API" }] },
+  fixture_Everyday_Fixture: { drive: "everyday", url: "fixture:article.html" },
+  fixture_Everyday_Firefox: { drive: "everyday", url: everydayUrl, browsers: ["chromium", "firefox"] },
+  fixture_Everyday_Prompt: { drive: "everyday", url: everydayUrl, dialogs: [{ accept: true, text: "Bob" }] },
+  fixture_Everyday_Keys: {
+   drive: "everyday", url: everydayUrl,
+   steps: [{ press: "Enter" }, { press: "Escape", selector: "main" }, { select: "p" }, { expect: { location: "example" } }]
+  },
+  fixture_Everyday_Sometimes: { drive: "sometimes", url: everydayUrl }
+ };
+ var answer = runFiles(copiesOf(passSource, Object.keys(entries)), entries, ["--list"]);
+ assert.strictEqual(answer.run.status, 2, "a configuration error exits 2");
+ var err = answer.run.err;
+ assert.match(err, /fixture_Everyday_Scheduled: an everyday entry is never scheduled/);
+ assert.match(err, /fixture_Everyday_Auth: an everyday entry takes no auth/);
+ assert.match(err, /fixture_Everyday_Capture: an everyday entry captures nothing/);
+ assert.match(err, /fixture_Everyday_Permissions: an everyday entry grants no permissions/);
+ assert.match(err, /fixture_Everyday_Network: an everyday entry names no network/);
+ assert.match(err, /fixture_Everyday_Fixture: an everyday entry opens a site's own https page/);
+ assert.match(err, /fixture_Everyday_Firefox: an everyday entry runs in the everyday browser, which is Chrome/);
+ assert.match(err, /fixture_Everyday_Prompt: dialog 1: an everyday entry types into no prompt/);
+ assert.match(err, /fixture_Everyday_Keys step 1: an everyday entry presses only Tab, Escape/);
+ assert.match(err, /fixture_Everyday_Keys step 2: an everyday entry presses a key where the focus is/);
+ assert.match(err, /fixture_Everyday_Keys step 3: an everyday entry has no select step/);
+ assert.match(err, /fixture_Everyday_Keys step 4: an everyday entry has no expect on location/);
+ assert.match(err, /fixture_Everyday_Sometimes: drive takes "everyday"/);
+});
+
+test("a personal page is kept to selectors, counts and states, and via and check go only in an everyday entry", function () {
+ var entries = {
+  fixture_Personal_NoSignedIn: { drive: "everyday", personal: true, url: everydayUrl },
+  fixture_Personal_Reads: {
+   drive: "everyday", personal: true, signedIn: "#account", url: everydayUrl,
+   steps: [
+    { hover: "h2", withText: "Routes" },
+    { click: "h1", via: "desktop" },
+    { run: true },
+    { expect: { selector: "h1", text: "Jane" } },
+    { expect: { clipboard: "copied" } },
+    { expect: { storage: "local", valueIncludes: "Sample" } },
+    { expect: { selector: "a", matches: "p" } },
+    { expect: { check: "sample-check" } }
+   ]
+  },
+  fixture_Personal_NoDrive: { personal: true, url: "fixture:article.html" },
+  fixture_Outside_Via: { url: "fixture:article.html", steps: [{ click: "h1", via: "desktop" }, { expect: { check: "sample-check" } }] }
+ };
+ var answer = runFiles(copiesOf(passSource, Object.keys(entries)), entries, ["--list"]);
+ assert.strictEqual(answer.run.status, 2, "a configuration error exits 2");
+ var err = answer.run.err;
+ assert.match(err, /fixture_Personal_NoSignedIn: a personal everyday entry names signedIn/);
+ var kept = "a personal page is kept to selectors, counts and states, so it takes no ";
+ assert.match(err, new RegExp("fixture_Personal_Reads step 1: " + kept + "withText"));
+ assert.match(err, new RegExp("fixture_Personal_Reads step 2: " + kept + "desktop input"));
+ assert.match(err, new RegExp("fixture_Personal_Reads step 4: " + kept + "expect on text"));
+ assert.match(err, new RegExp("fixture_Personal_Reads step 5: " + kept + "expect on the clipboard"));
+ assert.match(err, new RegExp("fixture_Personal_Reads step 6: " + kept + "valueIncludes"));
+ assert.match(err, new RegExp("fixture_Personal_Reads step 7: " + kept + "matches"));
+ assert.match(err, new RegExp("fixture_Personal_Reads step 8: " + kept + "check"));
+ assert.match(err, /fixture_Personal_NoDrive: personal goes with drive everyday/);
+ assert.match(err, /fixture_Outside_Via step 1: via says how the everyday driver sends a step's input, and goes in an entry with drive everyday/);
+ assert.match(err, /fixture_Outside_Via step 2: check names a check the everyday driver holds, and goes in an entry with drive everyday/);
+});
+
+test("--list names an everyday entry and counts it", function () {
+ var entries = {
+  fixture_Everyday_Fails: { drive: "everyday", url: everydayUrl },
+  fixture_Everyday_SignInWall: { drive: "everyday", url: everydayUrl, personal: true, signedIn: "#account" }
+ };
+ var answer = runFiles(copiesOf(passSource, Object.keys(entries)), entries, ["--list"]);
+ assert.strictEqual(answer.run.status, 0, answer.run.err);
+ assert.match(answer.run.out, /fixture_Everyday_Fails\s+everyday\s+https:\/\/www\.example\.com\/  drive everyday/);
+ assert.match(answer.run.out, /fixture_Everyday_SignInWall\s+everyday\s+https:\/\/www\.example\.com\/  drive everyday  personal/);
+ assert.match(answer.run.out, /2 bookmarklets, 2 configured, 0 scheduled, 0 signed in, 2 everyday/);
 });

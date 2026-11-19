@@ -17,10 +17,33 @@ this file.
   made: the first run keeps `<YYYY-MM-DD_HHMMSS>`, and a later run in that second takes `-2`,
   then `-3` and so on. `docs/testing.md` and `--help` say so.
 
+### Added
+
+- `test-bm.js` runs an entry with `"drive": "everyday"` in the maintainer's everyday browser, for
+  a site that answers an automated browser with a bot check or a page only the maintainer's own
+  profile shows. The harness never reaches that browser itself: it hands the entry to the driver
+  module `_TEST_BM_EVERYDAY_DRIVER` names, an absolute path outside the repository, the way an
+  entry with `auth` reaches its sign-in through the launcher. Without a driver the entry is a
+  skip, so `npm test` and the scheduled run are unchanged. The report keeps only the driver's
+  verdict, its own reason, which input each step sent and how many real runs it made, so nothing
+  a page showed reaches it. An everyday entry is never scheduled, takes no auth, captures nothing,
+  grants no permissions, names no network, opens a site's own https page, answers no prompt, and
+  presses no key that submits. `"personal": true` keeps a page that shows what the account holds
+  to selectors, counts and states, and `signedIn` names what only the signed-in page has.
+- Step kinds for any entry: a `bookmarklet` step runs another bookmarklet first in the same page,
+  checked and judged as the entry's own; `hover`; a click's `button`, and `withText` and `at` on a
+  click or a hover; an expect on `storage`, counting the keys a bookmarklet added, matching their
+  values and removing them, without a key's name or value leaving the page; and a clipboard
+  expect against an element's own value, or by how the value reads. `--help` and
+  `test-bm.schema.json` say so.
+
 ### Testing
 
-- One test in `test/harness.test.js`, which now runs 104. Two runs start at once, one failing and
-  one passing, with every second they could start in already holding a folder. Each writes a
+- Sixteen tests in `test/harness.test.js`, which now runs 120, for the everyday contract and the
+  new step kinds, on a stub driver that opens nothing. Every run there clears
+  `_TEST_BM_EVERYDAY_DRIVER`, as it does `TEST_BM_AUTH_LAUNCHER`.
+- One test in `test/harness.test.js` for the results folder. Two runs start at once, one failing
+  and one passing, with every second they could start in already holding a folder. Each writes a
   numbered folder of its own, holding only its own report; the passing run's holds no
   `failure.md`; and the folders that were there first are left as they were.
 
