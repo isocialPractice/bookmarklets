@@ -524,17 +524,31 @@ test("every page the index lists resolves", function () {
 // The three defects this file was written for, named so a regression reads as itself
 // ----------------------------------------------------------------------------------------------- //
 
-test("the Try these on this page box does not skip a level", function () {
- var seen = 0;
- eachPage(function (at, found) {
-  var box = found.outline.filter(function (h) {
-   return h.text === "Try these on this page";
-  })[0];
-  if (!box) { return; }
-  seen++;
-  assert.strictEqual(box.level, 2, at + ": the try box should be an h2, it is an h" + box.level);
+// The index tells a reader "Each page lists what to try on it", so a page it links without a box
+// breaks that promise. This test used to return early on a page that had no box and then assert
+// only that at least one page carried one, which stayed green with eight boxes or with one:
+// snippet.html sat without a box from the day it was committed. The pages are read off the index
+// rather than listed here, so the next page added without a box fails the same way.
+test("every page the index lists carries a Try these on this page box, at h2", function () {
+ var listed = report.indexLinks.map(function (link) {
+  return link.href.split("#")[0].split("?")[0].replace("./", "");
  });
- assert.ok(seen > 0, "the try box should appear on the pages that carry it");
+ assert.ok(listed.length > 0, "the index should list pages");
+ var missing = [];
+ listed.forEach(function (name) {
+  VIEWPORTS.forEach(function (viewport) {
+   var at = name + " @" + viewport.width + "px";
+   var found = report.pages[at];
+   assert.ok(found, at + ": the index lists it, so PAGES should hold it to be measured");
+   var box = found.outline.filter(function (h) {
+    return h.text === "Try these on this page";
+   })[0];
+   if (!box) { missing.push(at); return; }
+   assert.strictEqual(box.level, 2, at + ": the try box should be an h2, it is an h" + box.level);
+  });
+ });
+ assert.deepStrictEqual(missing, [], "the index promises every page it lists says what to try on"
+  + " it, and these carry no box");
 });
 
 test("table.html keeps its wide table inside its own scrolling box", function () {
@@ -676,4 +690,46 @@ test("table.html adds and drops the table stop on resize, with no reload", funct
  assert.ok(exercised.afterResize.isBox, "narrowed to 400px without a reload: the first Tab should "
   + "reach the first table's box, it reached " + exercised.afterResize.tag
   + " \"" + exercised.afterResize.text + "\"");
+});
+
+// A try box tells a reader to run a named bookmarklet on this page, so a line naming one written
+// for another site is a line the reader follows while nothing happens. table.html named
+// "GitHub - resize repo table columns" that way until 11.20.2026: it reads location.host for
+// github.com and returns before touching a table anywhere else. These pages exist for the
+// bookmarklets that work on any page - the dom_, nav_, style_ and window_ files - so the site a
+// siteSpecific_ file is named for is the word to look for. Read from the page source rather than
+// the rendered page, because nothing about it changes with a viewport.
+test("no try box names a bookmarklet written for another site", function () {
+ var formatted = path.resolve(__dirname, "..", "JSFormatted");
+ // siteSpecific_GitHub_ResizeRepoTableColumns.js gives "github", siteSpecific_gmail_* "gmail".
+ // Squashed to letters and digits, so neither the file's capitals nor a box's punctuation and
+ // spacing decide whether the two meet: "GitHub - resize repo table columns" holds "github".
+ var sites = {};
+ fs.readdirSync(formatted).forEach(function (file) {
+  var parts = file.replace(/\.js$/, "").split("_");
+  if (!/\.js$/.test(file) || parts[0] !== "siteSpecific" || parts.length < 2) { return; }
+  var site = parts[1].replace(/[^a-z0-9]+/gi, "").toLowerCase();
+  if (site) { sites[site] = (sites[site] || []).concat(file); }
+ });
+ var named = Object.keys(sites);
+ assert.ok(named.length > 0, "the siteSpecific_ bookmarklets should be found under JSFormatted, "
+  + "none were, so this test would pass on any page at all");
+ var found = [];
+ PAGES.forEach(function (name) {
+  var html = fs.readFileSync(path.resolve(pagesDir, name), "utf8");
+  var box = /<div class="try">([\s\S]*?)<\/div>/.exec(html);
+  if (!box) { return; }
+  (box[1].match(/<strong>([\s\S]*?)<\/strong>/g) || []).forEach(function (run) {
+   var says = run.replace(/<\/?strong>/g, "");
+   var squashed = says.replace(/[^a-z0-9]+/gi, "").toLowerCase();
+   named.forEach(function (site) {
+    if (squashed.indexOf(site) >= 0) {
+     found.push(name + ": \"" + says + "\" names " + site + " (" + sites[site].join(", ") + ")");
+    }
+   });
+  });
+ });
+ assert.deepStrictEqual(found, [], "a practice page cannot exercise a bookmarklet written for "
+  + "another site, which reads location.host and returns before doing anything here, so the reader "
+  + "follows the line and nothing happens: " + JSON.stringify(found, null, 1));
 });

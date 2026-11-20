@@ -49,12 +49,17 @@ its README entry linking that gist. Runs post and update gists with
     polling loop that runs every 100 ms and stops after 300.
   - From: Improve GitHub Pages Site
 - [ ] Let a reader control the slideshow
-  - It advances every three seconds until something is clicked, cycles every
-    `<a>` on the page, and treats a hover as a click. Scope it to the example
-    links and give it a visible pause and play button.
+  - It advances every three seconds until something is clicked, and treats a
+    hover as a click. Give it a visible pause and play button.
   - Stop it on any click, focus or key press, and never start it when the
     reader's system asks for reduced motion (`prefers-reduced-motion`).
     Content that moves on its own needs a way to pause it (WCAG 2.2.2).
+  - Two parts of this landed on 11.20.2026 with the UI/UX override's found
+    issues, because the gallery was sending readers off the site without them:
+    it now steps the five example links rather than every `<a>` on the page,
+    and an automatic advance replaces the frame's location rather than clicking
+    a link, so it adds no session history entry. `test/gallery.test.js` guards
+    both. The control and `prefers-reduced-motion` are what is left.
   - From: Improve GitHub Pages Site
 - [ ] Explain the page above the gallery
   - Say what the examples are: pages that
@@ -77,94 +82,30 @@ its README entry linking that gist. Runs post and update gists with
     them. Pages already serves them; this item is the gallery link.
   - From: Improve GitHub Pages Site
 
-### UI/UX Override - the deployed gallery, its examples and the practice pages
+### UI/UX Override - the examples' new table box
 
 #### Found Issues
 
-- [ ] Stop the gallery's slideshow adding a session history entry every three
-  seconds, so Back can leave the page
-  - **Issue**: each slideshow tick calls `.click()` on a link whose `target` is
-    the frame, and a frame navigation is a session history entry. Measured
-    signed out in Chromium: `history.length` is 2 on load and **10 after 26
-    seconds** of nobody touching the page, growing without bound. Back
-    therefore rewinds the slideshow instead of leaving the gallery - after half
-    a minute a reader needs eight presses to get off the page, after five
-    minutes a hundred. The three queued slideshow and address items do not name
-    this: "Let a reader control the slideshow" scopes which anchors are
-    clicked, and "Give each example its own address" asks that "Back returns to
-    the previous one", which is the deliberate choice, not the automatic tick.
-  - **Goal**: an automatic advance replaces the current history entry rather
-    than adding one - `history.replaceState` with the example's hash, or a
-    frame navigation made with `location.replace` - and only a reader's own
-    click or key press pushes an entry. Check it by reading `history.length`
-    after 30 seconds of leaving the page alone: it should not have moved.
-  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
-- [ ] Land "Let a reader control the slideshow" before "Explain the page above
-  the gallery", or the gallery throws readers off the site
-  - **Issue**: the slideshow clicks every `<a>` on the page, and an anchor
-    without `target="examples"` navigates the top level rather than the frame.
-    Proved by appending one ordinary link to the side navigation and leaving
-    the page alone: within one cycle the address bar had left the gallery for
-    the appended link's own page. Today nothing triggers it, because the five
-    example links are the only anchors on the page - but "Explain the page
-    above the gallery" adds links to the README entry, the raw file, the gist,
-    the short and the README. Shipped in that order, with the slideshow still
-    cycling every anchor, the gallery sends a reader off the site on its own
-    within fifteen seconds of their arriving.
-  - **Goal**: work the slideshow item first, or work the two together. Either
-    way the slideshow steps a named list of the example links, never
-    `document.getElementsByTagName("a")`. A regression guard is cheap: append
-    an anchor to the navigation, wait a cycle, and assert the top-level
-    document has not navigated.
-  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
-- [ ] Repair the five `examples/` pages, and the bookmarklet that writes them
-  - **Issue**: the deployed site is `index.html` and the pages it frames, and
-    every queued item names `index.html` or the gallery, so the five framed
-    pages have no item and no test. Measured: `chatGPT_Bookmark_Schedule.html`
-    pushes the document to **766px in a 390px viewport** on its one table, the
-    same defect `test/pages.test.js` exists to catch on the practice pages;
-    three of the five render in quirks mode on a bare `<!DOCTYPE>`; none of the
-    five carries `lang`; every one of them skips h1 to h3; and all five share
-    one `<title>` ("ChatGPT Bookmark") and one `<h1>` ("ChatGPT Response"), so
-    the five examples cannot be told apart in a tab, in history or in a
-    bookmark. The table style, the missing `lang` and the skipped level are
-    written by
-    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js`, so the
-    queued "Add more examples" item would reproduce them.
-  - **Goal**: Resolve to [example-pages-markup.prompt.md](.claude/prompts/example-pages-markup.prompt.md)
-  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
-- [ ] Give `snippet.html` a `Try these on this page` box, or stop the practice
-  index promising one
-  - **Issue**: `test/fixtures/pages/index.html` tells a reader "Each page lists
-    what to try on it", and `snippet.html` carries no such box. It is the one
-    page of the eight the index links that does not. `test/pages.test.js`
-    cannot catch it: its "the Try these on this page box does not skip a
-    level" test returns early on a page without a box (`if (!box) { return; }`)
-    and then asserts only that at least one page carries one, so the suite is
-    green with eight boxes or with one.
-  - **Goal**: give `snippet.html` a box naming the converter bookmarklets it
-    exists for - `Clipboard - convert page to markdown` is the one it was built
-    as a fixture for - and change that `pages.test.js` test to require a box on
-    every page the index links, so the next page added without one fails.
-  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
-- [ ] Take `GitHub - resize repo table columns` out of `table.html`'s try box,
-  or say it needs GitHub
-  - **Issue**: `table.html` names it among the three bookmarklets to try, and
-    it does nothing there. Run on `table.html`, signed out, it added 0 resize
-    handles, 0 fixed-layout tables, 0 style tags and 0 flagged tables, and
-    threw nothing - `setGlobals` tests `location.host` for `github.com` and
-    returns before touching a table anywhere else. Both of the page's tables do
-    carry the `Name` header the bookmarklet's own fallback looks for, so the
-    host gate is the only thing stopping it. A reader follows the instruction,
-    sees nothing happen, and gets no message saying why. No test disagrees: the
-    bookmarklet's `test-bm.json` entry runs it against
-    `https://github.com/isocialPractice/bookmarklets`, never against a practice
-    page.
-  - **Goal**: drop the line from `table.html`'s box, since the page cannot
-    exercise it. If it is kept, word it as `scroll.html` words its own
-    unexercised entry ("nothing to fix here, which is also worth seeing") so
-    the reader is told nothing will happen and why.
-  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [ ] The examples' scrolling table box cannot be reached without a mouse
+  - **Issue**: the box
+    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` started
+    wrapping each table in on 11.20.2026, `div.tableScrollPasteReady`, scrolls
+    on `overflow-x: auto` but carries no `tabindex` and no `role`. Measured
+    signed out, each example opened directly rather than inside the gallery's
+    frame: at 390px `chatGPT_Bookmark_Schedule.html` holds **474px of its table
+    out of view** and `chatGPT_Bookmark_SocialMediaMarketing.html` 55px, and at
+    1280px `Schedule` holds 29px; on all of them `tabIndex` is `-1` and `role`
+    is absent, so Tab never lands on the box and the hidden columns cannot be
+    reached without a pointer. The repository already settled this the other
+    way on the practice pages: `test/fixtures/pages/table.html` sets
+    `role="region"` and `tabindex="0"` while `scrollWidth > clientWidth`, drops
+    both when the table fits, re-reads on resize, and `test/pages.test.js`
+    asserts it in three tests. The completed "Repair the five `examples/`
+    pages" item is not reopened by this: its goal was the document not dragging
+    sideways at 390px, which it reached, and `test/gallery.test.js` guards it.
+    The box it added to get there is what no item covers.
+  - **Goal**: Resolve to [example-table-box-keyboard.prompt.md](.claude/prompts/example-table-box-keyboard.prompt.md)
+  - From: UI/UX Override - the examples' new table box
 
 ### Create and Deploy GitHub Pages Override
 
@@ -204,6 +145,15 @@ browser for the same result.
     stands, by design - that is the batch's work list. Wire it into
     `package.json` as its own `test:gallery` script once it is green, so
     `npm test` is not red in the meantime.
+  - `test/gallery.test.js` and `test:gallery` already exist as of 11.20.2026,
+    holding 7 green tests: the three that guard the slide show's history
+    entries and the links it steps, and the four that read the five examples at
+    1280 and 390. They were landed with the UI/UX override's found issues, in
+    the same shape the driver uses. What is left of this item is the rest of
+    the list above - the sizing interval, the pause control,
+    `prefers-reduced-motion`, the navigation and frame at three widths, Tab
+    order, the title and heading agreeing, and the page saying what the
+    examples are - added to that file as the regular gallery items land.
 
 ## Test Configurations
 
@@ -347,6 +297,16 @@ committed here is a page on the site.
   - Topics stay ordinary subjects, as the existing ones are (a schedule, a
     musical, marketing, computer science). No personal details or private
     conversations go into an example.
+  - Set the bookmarklet's `pageTitle` and `pageHead` to the example's own
+    subject before saving it, as its lines 8 and 9 invite. The five existing
+    pages all shared one title and one heading until 11.20.2026, so they could
+    not be told apart in a tab, in history or in a bookmark; a new example set
+    this way arrives named.
+  - Escape the closing tag of the written page's own script (`<\/script>`)
+    when the clipboard's contents are wrapped in a `<script>` element to make
+    the file. The five existing pages predate that script and needed no
+    escaping; a page saved from the bookmarklet as it stands does, or the
+    wrapper closes early and the page writes nothing.
 - [ ] Add an install page with a drag-to-install link for each bookmarklet
   - A site can render `<a href="javascript:...">` for a reader to drag onto
     the bookmarks bar, which a GitHub README cannot. Build each `href` from the
@@ -1649,5 +1609,89 @@ roadmap section each one came from.
   - Done 11.16.2026: the paragraph closes the README's intro, after the blank
     canvas bookmarklet. The README keeps its CRLF line endings.
   - From: Testing Documentation
+- [x] Stop the gallery's slideshow adding a session history entry every three
+  seconds, so Back can leave the page
+  - **Issue**: each slideshow tick calls `.click()` on a link whose `target` is
+    the frame, and a frame navigation is a session history entry. Measured
+    signed out in Chromium: `history.length` is 2 on load and **10 after 26
+    seconds** of nobody touching the page, growing without bound. Back
+    therefore rewinds the slideshow instead of leaving the gallery - after half
+    a minute a reader needs eight presses to get off the page, after five
+    minutes a hundred. The three queued slideshow and address items do not name
+    this: "Let a reader control the slideshow" scopes which anchors are
+    clicked, and "Give each example its own address" asks that "Back returns to
+    the previous one", which is the deliberate choice, not the automatic tick.
+  - **Goal**: an automatic advance replaces the current history entry rather
+    than adding one - `history.replaceState` with the example's hash, or a
+    frame navigation made with `location.replace` - and only a reader's own
+    click or key press pushes an entry. Check it by reading `history.length`
+    after 30 seconds of leaving the page alone: it should not have moved.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [x] Land "Let a reader control the slideshow" before "Explain the page above
+  the gallery", or the gallery throws readers off the site
+  - **Issue**: the slideshow clicks every `<a>` on the page, and an anchor
+    without `target="examples"` navigates the top level rather than the frame.
+    Proved by appending one ordinary link to the side navigation and leaving
+    the page alone: within one cycle the address bar had left the gallery for
+    the appended link's own page. Today nothing triggers it, because the five
+    example links are the only anchors on the page - but "Explain the page
+    above the gallery" adds links to the README entry, the raw file, the gist,
+    the short and the README. Shipped in that order, with the slideshow still
+    cycling every anchor, the gallery sends a reader off the site on its own
+    within fifteen seconds of their arriving.
+  - **Goal**: work the slideshow item first, or work the two together. Either
+    way the slideshow steps a named list of the example links, never
+    `document.getElementsByTagName("a")`. A regression guard is cheap: append
+    an anchor to the navigation, wait a cycle, and assert the top-level
+    document has not navigated.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [x] Repair the five `examples/` pages, and the bookmarklet that writes them
+  - **Issue**: the deployed site is `index.html` and the pages it frames, and
+    every queued item names `index.html` or the gallery, so the five framed
+    pages have no item and no test. Measured: `chatGPT_Bookmark_Schedule.html`
+    pushes the document to **766px in a 390px viewport** on its one table, the
+    same defect `test/pages.test.js` exists to catch on the practice pages;
+    three of the five render in quirks mode on a bare `<!DOCTYPE>`; none of the
+    five carries `lang`; every one of them skips h1 to h3; and all five share
+    one `<title>` ("ChatGPT Bookmark") and one `<h1>` ("ChatGPT Response"), so
+    the five examples cannot be told apart in a tab, in history or in a
+    bookmark. The table style, the missing `lang` and the skipped level are
+    written by
+    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js`, so the
+    queued "Add more examples" item would reproduce them.
+  - **Goal**: Resolve to [example-pages-markup.prompt.md](.claude/prompts/example-pages-markup.prompt.md)
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [x] Give `snippet.html` a `Try these on this page` box, or stop the practice
+  index promising one
+  - **Issue**: `test/fixtures/pages/index.html` tells a reader "Each page lists
+    what to try on it", and `snippet.html` carries no such box. It is the one
+    page of the eight the index links that does not. `test/pages.test.js`
+    cannot catch it: its "the Try these on this page box does not skip a
+    level" test returns early on a page without a box (`if (!box) { return; }`)
+    and then asserts only that at least one page carries one, so the suite is
+    green with eight boxes or with one.
+  - **Goal**: give `snippet.html` a box naming the converter bookmarklets it
+    exists for - `Clipboard - convert page to markdown` is the one it was built
+    as a fixture for - and change that `pages.test.js` test to require a box on
+    every page the index links, so the next page added without one fails.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [x] Take `GitHub - resize repo table columns` out of `table.html`'s try box,
+  or say it needs GitHub
+  - **Issue**: `table.html` names it among the three bookmarklets to try, and
+    it does nothing there. Run on `table.html`, signed out, it added 0 resize
+    handles, 0 fixed-layout tables, 0 style tags and 0 flagged tables, and
+    threw nothing - `setGlobals` tests `location.host` for `github.com` and
+    returns before touching a table anywhere else. Both of the page's tables do
+    carry the `Name` header the bookmarklet's own fallback looks for, so the
+    host gate is the only thing stopping it. A reader follows the instruction,
+    sees nothing happen, and gets no message saying why. No test disagrees: the
+    bookmarklet's `test-bm.json` entry runs it against
+    `https://github.com/isocialPractice/bookmarklets`, never against a practice
+    page.
+  - **Goal**: drop the line from `table.html`'s box, since the page cannot
+    exercise it. If it is kept, word it as `scroll.html` words its own
+    unexercised entry ("nothing to fix here, which is also worth seeing") so
+    the reader is told nothing will happen and why.
+  - From: UI/UX Override - the deployed gallery, its examples and the practice pages
 
 </details>
