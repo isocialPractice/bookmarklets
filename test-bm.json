@@ -13,7 +13,7 @@
   "steps": [
    { "run": true },
    { "wait": 4000 },
-   { "expect": { "clipboard": "# One of each\r\n\r\nA small page, so the markdown a converter produces can be read in full.\r\n\r\n## A list\r\n\r\n-   First\r\n-   Second\r\n\r\n## A table\r\n\r\n| Stop | Name |\r\n| --- | --- |\r\n| 1 | Depot |\r\n| 2 | Main Street |\r\n\r\n## A link and an image\r\n\r\n[All practice pages](https://fixtures.test/index.html)\r\n\r\n![A placeholder badge](https://fixtures.test/badge.svg)" } }
+   { "expect": { "clipboard": "# One of each\r\n\r\nA small page, so the markdown a converter produces can be read in full.\r\n\r\n## Try these on this page\r\n\r\n-   **Clipboard - convert page to markdown**: the page is one of each thing the converter handles, so its whole output fits on a screen.\r\n-   **Clipboard - make a markdown link list**: one link to collect, under the one heading above it.\r\n\r\n## A list\r\n\r\n-   First\r\n-   Second\r\n\r\n## A table\r\n\r\n| Stop | Name |\r\n| --- | --- |\r\n| 1 | Depot |\r\n| 2 | Main Street |\r\n\r\n## A link and an image\r\n\r\n[All practice pages](https://fixtures.test/index.html)\r\n\r\n![A placeholder badge](https://fixtures.test/badge.svg)" } }
   ]
  },
 

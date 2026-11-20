@@ -704,12 +704,13 @@ exit "$code"
 npm test
 ```
 
-Three stages, in order, each run only when the one before it passed:
+Four stages, in order, each run only when the one before it passed:
 
 | Stage | Command | What it proves |
 | --- | --- | --- |
 | `test:harness` | `node --test test/harness.test.js` | That `test-bm.js` itself gives the right verdict. |
 | `test:pages` | `node --test test/pages.test.js` | That the practice pages are fit to show a reader. |
+| `test:gallery` | `node --test test/gallery.test.js` | That the deployed gallery and the pages it frames behave. |
 | `test:bookmarklets` | `node test-bm.js --all` | That every bookmarklet still works where its entry says. |
 
 ### `test:harness`
@@ -754,9 +755,41 @@ that:
 - every table has a header row, and a caption where a reader reads it as
   content;
 - every form control has a visible label tied to it;
-- every page links back to the index, and every page the index lists resolves;
+- every page links back to the index, every page the index lists resolves, and every page the
+  index lists carries the `Try these on this page` box the index promises it does;
 - the pages' own scrolling boxes, captions, readouts and keyboard stops behave
   at each width.
+
+### `test:gallery`
+
+`index.html` and the five pages it frames from `examples/` are the whole of the
+deployed site, and `test:pages` covers `test/fixtures/pages/` only, so until
+11.20.2026 nothing opened either. **`test/gallery.test.js` is what keeps the
+deployed site honest**, the way `pages.test.js` keeps the practice pages fit to
+show a reader.
+
+It serves the repository root on an origin of its own, so the frame shares the
+origin of the page framing it as it does on the site, then leaves the gallery
+alone for thirty seconds with one ordinary anchor appended to its navigation and
+checks that:
+
+- the slide show is still advancing, so the two guards below cannot pass by
+  standing still;
+- it adds no session history entry of its own, so Back leaves the page rather
+  than rewinding the show;
+- it steps the example links alone and never navigates the top level, so a link
+  added anywhere on the page cannot send a reader off the site.
+
+Then it opens each of the five examples directly, at 1280 and 390 pixels wide,
+as a reader reaches one from a bookmark or a link, and checks that each is
+served, renders in standards mode, names its language, skips no heading level,
+names its own subject in its title and its one `h1`, does not scroll sideways,
+and keeps any table inside a scrolling box of its own.
+
+The wider reading of the gallery - the sizing interval, the navigation and frame
+at three widths, Tab order, a pause control - is the roadmap item under
+`## Test Harness` in `TODO.md`, which proposes the rest of that driver be
+promoted here beside these.
 
 ### `test:bookmarklets`
 

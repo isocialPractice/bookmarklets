@@ -6,6 +6,78 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.20.2026]
+
+### Added
+
+- `npm run test:gallery` (`test/gallery.test.js`), a fourth stage of `npm test`. `index.html` and
+  the five pages it frames from `examples/` are the whole of the deployed site, and `test:pages`
+  covers `test/fixtures/pages/` only, so nothing had opened either. It leaves the gallery alone
+  for thirty seconds with one ordinary anchor appended to its navigation, then opens each example
+  directly at 1280 and 390 pixels wide. `docs/testing.md` describes what it checks.
+- A `Try these on this page` box on `test/fixtures/pages/snippet.html`, naming the two converter
+  bookmarklets the page exists for. It was the one page the practice index links without a box,
+  while the index tells a reader that each page it lists says what to try on it.
+
+### Fixed
+
+- The gallery's slide show adds no session history entry of its own. Each tick clicked a link
+  whose target is the frame, and a frame navigation is an entry, so the page grew one every three
+  seconds: left alone for thirty seconds it went from 2 entries to 7, and Back rewound the slide
+  show instead of leaving the page. An automatic advance now replaces the frame's own location,
+  and only a reader's own click pushes an entry.
+- The slide show steps the five example links rather than every anchor on the page. An anchor
+  without the frame as its target navigates the top level, so a link added anywhere on the page -
+  a README link, a raw file link, a gist link, a short - sent a reader off the site within one
+  cycle. Nothing triggered it yet, because those five links were the only anchors there.
+- The five `examples/` pages each name their own subject in their title and their heading. All
+  five read `ChatGPT Bookmark` and `ChatGPT Response`, so in a tab, in history and in a bookmark
+  the examples could not be told apart.
+- Three of the five opened on a bare `<!DOCTYPE>`, which has no name and is not a doctype, so
+  they rendered in quirks mode and their box sizing was not the one their style was written
+  against. All five now open on `<!DOCTYPE HTML>` and name their language.
+- A table in a saved page scrolls in a box of its own instead of dragging the article sideways.
+  `chatGPT_Bookmark_Schedule.html` pushed the document to 766px in a 390px viewport on its one
+  table. The box is the shape `test/fixtures/pages/table.html` already uses.
+- Every saved page's outline goes h1, h2, h3 with no level skipped. The sidebar byline that says
+  which bookmarklet wrote the page was an `<h3>` directly below the `<h1>`.
+
+### Changed
+
+- `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes those repairs into every page it
+  saves from now on: `lang` on the written `html` element, the byline as an `h2`, and each table in
+  a scrolling box of its own. The box is what keeps a wide table out of the document's width; the
+  `max-width: none !important` dropped from the `table` rule beside it was the property's own
+  initial value restated, with nothing in that stylesheet setting a table's `max-width` for it to
+  override, so it held a table at no width at all. Its gist carries the change.
+- `test/fixtures/pages/table.html` no longer names `GitHub - resize repo table columns` among the
+  bookmarklets to try. That one reads `location.host` for `github.com` and returns before touching
+  a table anywhere else, so a reader followed the line, saw nothing happen, and was told nothing.
+- `test/pages.test.js` requires the `Try these on this page` box on every page the index lists,
+  read off the index rather than from a list of its own. It used to return early on a page with no
+  box and then assert only that at least one page carried one, so it was green with eight boxes or
+  with one.
+- The pinned markdown in `test-bm.json` for `dom_Clipboard_ConvertPageToMarkdown` now holds
+  `snippet.html` with its new box. The fixture changed; the expectation is as exact as it was.
+
+### Notes
+
+- `index.html` and the five `examples/` pages were written back with the LF line endings the
+  repository holds them in. Each arrived CRLF in the working tree while its committed blob is LF,
+  so keeping the working copy's endings would have reported all 164 lines of `index.html` as
+  changed for the 30 that did.
+- The two open issues, #4 and #11, were read against the code again and both still stand. Neither
+  is touched by what changed here: #4 is about a `\u` sequence in a copied answer, and the paste
+  ready bookmarklet's encoding of one did not change.
+- `npm test` is green on its first three stages - harness 121 of 121, pages 17 of 17, gallery 8 of
+  8 - and `test-bm.js --all` ran 54, passed 38, skipped 15 and failed 1. The failure is
+  `siteSpecific_GitHub_NavigateCommitsSequentially`, and it is not a break: GitHub answers 503 for
+  that entry's one commit page and serves its own error page in place of the commit, so the
+  `relative-time[datetime]` the entry requires is not there to find. The repository's own page
+  answers 200 at the same moment and the five other GitHub entries pass, so nothing is queued for
+  it and nothing about the entry or the bookmarklet changed. It wants running again when that page
+  answers.
+
 ## [11.19.2026]
 
 ### Changed

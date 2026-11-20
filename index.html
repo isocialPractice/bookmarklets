@@ -113,6 +113,11 @@ iframe {
  var example = document.getElementsByTagName("iframe")[0];
  var exampleHasBeenClicked = 0;
  var sizeToExample, exampleHeight;
+ // The links the slide show steps: the five whose target is the frame, named rather than
+ // collected from every <a> on the page. An anchor without that target navigates the top level,
+ // so a link added anywhere here - a README link, a gist link, a short - used to send a reader
+ // off the site within one cycle of nobody touching the page.
+ var exampleLinks = document.querySelectorAll("div.sideNav a[target='examples']");
  
  // Resize iframe to fit example.
  function sizeExample(cur) {
@@ -144,17 +149,35 @@ iframe {
   cur.dataset.active = "1";  
  }
  
+ // Show an example without adding a session history entry. Clicking a link whose target is the
+ // frame is a frame navigation, and a frame navigation is an entry: left alone, the page grew one
+ // entry every three seconds, so Back rewound the slide show rather than leaving the gallery.
+ // Replacing the frame's own location leaves history.length where it is, and only a reader's own
+ // click pushes an entry. sizeExample does the rest, as it does for a click.
+ function replaceExample(cur) {
+  try {
+   example.contentWindow.location.replace(cur.href);
+  } catch (err) {
+   // A frame this page cannot reach into. The examples share its origin, so this is the odd
+   // case rather than the usual one, and the attribute is the only way left to show the page.
+   example.setAttribute("src", cur.href);
+  }
+  sizeExample(cur);
+ }
+
  // Play slide show of examples until clicked.
  var curExample = 0;
  function exampleSlideShow() {
   if (exampleHasBeenClicked == 0) {
-   let curEx = document.getElementsByTagName("a");
-   let curName = curEx[curExample].click(); 
-   if (curExample == curEx.length-1) {
-    curExample = 0;
-   } else {
-    curExample++;
-   }   
+   let curEx = exampleLinks;
+   if (curEx.length > 0) {
+    replaceExample(curEx[curExample]);
+    if (curExample == curEx.length-1) {
+     curExample = 0;
+    } else {
+     curExample++;
+    }
+   }
    setTimeout(exampleSlideShow, 3000);
   }
  }
