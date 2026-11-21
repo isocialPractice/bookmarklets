@@ -172,14 +172,15 @@ browser for the same result.
     `package.json` as its own `test:gallery` script once it is green, so
     `npm test` is not red in the meantime.
   - `test/gallery.test.js` and `test:gallery` already exist as of 11.20.2026,
-    holding 9 green tests: the three that guard the slide show's history
-    entries and the links it steps, and the six that read the five examples at
-    1280 and 390. They were landed with the UI/UX override's found issues, in
-    the same shape the driver uses. What is left of this item is the rest of
-    the list above - the sizing interval, the pause control,
-    `prefers-reduced-motion`, the navigation and frame at three widths, Tab
-    order, the title and heading agreeing, and the page saying what the
-    examples are - added to that file as the regular gallery items land.
+    holding 12 green tests as of 11.21.2026: the three that guard the slide
+    show's history entries and the links it steps, and the nine that read the
+    five examples at 1280 and 390. They were landed with the UI/UX
+    override's found issues, in the same shape the driver uses. What is
+    left of this item is the rest of the list above - the sizing interval,
+    the pause control, `prefers-reduced-motion`, the navigation and frame
+    at three widths, Tab order, the title and heading agreeing, and the
+    page saying what the examples are - added to that file as the regular
+    gallery items land.
 
 ## Test Configurations
 

@@ -6,6 +6,45 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.21.2026]
+
+### Fixed
+
+- The scrolling box each saved page puts a table in is a keyboard stop while it has something
+  left to scroll. `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` began wrapping every
+  table in `div.tableScrollPasteReady` on 11.20.2026, which stopped the article dragging
+  sideways, but the box carried no `tabindex` and no `role`: Tab never landed on it, so the
+  columns it held out of view could not be reached without a pointer, and nothing told a screen
+  reader the box scrolls. Measured signed out, `chatGPT_Bookmark_Schedule.html` held 474px of
+  its table out of view at 390px and 29px at 1280px, and
+  `chatGPT_Bookmark_SocialMediaMarketing.html` 55px at 390px. The page the bookmarklet writes
+  now marks each box `role="region"` with `tabindex="0"` while `scrollWidth` is over
+  `clientWidth`, drops both when the table fits, names the region from the nearest heading above
+  it, and re-reads on resize - the answer `test/fixtures/pages/table.html` already settled for
+  the practice pages. The box takes a `:focus-visible` outline from the page's own stylesheet,
+  3px of `#0969da`, which reads 4.97:1 against the page and shows the stop where Tab reaches
+  it. The `prefers-color-scheme: dark` branch changes that colour alone and the page itself
+  never darkens, so the dark reading is 2.42:1 - under the 3:1 WCAG 1.4.11 asks of a focus
+  indicator. That branch is queued in `TODO.md`, not fixed here.
+- The two `examples/` pages that hold a table, `chatGPT_Bookmark_Schedule.html` and
+  `chatGPT_Bookmark_SocialMediaMarketing.html`, carry the same marking and the same focus
+  outline. They hold their own copy of the style the bookmarklet writes, so the repaired
+  bookmarklet alone would have left the deployed site as it was. The other three hold no table.
+
+### Added
+
+- Four tests in `test/gallery.test.js`, its ninth through its twelfth: a table box on an example
+  is a keyboard stop only where it scrolls, Tab lands on one that scrolls and passes one whose
+  table fits, the arrow keys carry the hidden columns into view and take them back out, and a
+  box that scrolls is named from the nearest heading above it. The first reads the box's
+  `tabIndex` and `role` from the rendered page in the pass that already measures each example
+  at 1280 and 390, and asserts what `test/pages.test.js` asserts for the fixture; the other
+  three press the keys, because the markup and the behaviour can part company - a box carrying
+  both attributes that the page scrolls past, or that the arrow keys do not move, reads as
+  repaired and is not. They fail on the page as it stood on 11.20.2026 - on `Schedule` at both
+  widths and on `SocialMediaMarketing` at 390 - and pass on the repair:
+  `node --test test/gallery.test.js` reads 12 of 12.
+
 ## [11.20.2026]
 
 ### Added
