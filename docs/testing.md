@@ -784,7 +784,9 @@ Then it opens each of the five examples directly, at 1280 and 390 pixels wide,
 as a reader reaches one from a bookmark or a link, and checks that each is
 served, renders in standards mode, names its language, skips no heading level,
 names its own subject in its title and its one `h1`, does not scroll sideways,
-and keeps any table inside a scrolling box of its own.
+and keeps any table inside a scrolling box of its own - a box that is a keyboard
+stop, announced as a region, only where it has something left to scroll, so the
+columns held out of view can be reached without a pointer.
 
 The wider reading of the gallery - the sizing interval, the navigation and frame
 at three widths, Tab order, a pause control - is the roadmap item under

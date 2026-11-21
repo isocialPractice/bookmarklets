@@ -194,6 +194,15 @@ javascript:(function(){
   overflow-x: auto;
   max-width: 100%;
  }
+ div.tableScrollPasteReady:focus-visible {
+  outline: 3px solid #0969da;
+  outline-offset: 2px;
+ }
+ @media (prefers-color-scheme: dark) {
+  div.tableScrollPasteReady:focus-visible {
+   outline-color: #58a6ff;
+  }
+ }
  th,td {
   padding: 5px 5px;     
  }
@@ -517,6 +526,34 @@ setTimeout(function() {
  chatGPTPasteReadyBookmark.innerHTML = /* replace with empty string */
   chatGPTPasteReadyBookmark.innerHTML.replace(/--new-line_unlikely_line-new--/g, '');
  /* dark theme comes from the color-scheme meta tag and the style media query */
+ /* A table box is a keyboard stop only while it has something to scroll, so Tab reaches the
+    columns held out of view and never rings a box that cannot move. Read here, after the markup
+    above is final, and again on every resize, because the answer changes with the viewport. */
+ var markTableBoxesChatGPTPasteReadyBookmark = function() {
+  var curBoxes = /* every box the bookmark wrote around a table */
+   chatGPTPasteReadyBookmark.getElementsByClassName('tableScrollPasteReady');
+  for (var b = 0; b < curBoxes.length; b++) {
+   var curBox = curBoxes[b];
+   if (curBox.scrollWidth > curBox.clientWidth) { /* columns are out of view */
+    curBox.setAttribute('role', 'region');
+    curBox.setAttribute('tabindex', '0');
+    /* name the region from the nearest heading above it, since these tables carry no caption */
+    var curNamer = curBox.previousElementSibling;
+    while (curNamer && !/^H[1-6]$/.test(curNamer.tagName)) {
+     curNamer = curNamer.previousElementSibling;
+    }
+    if (curNamer) {
+     curBox.setAttribute('aria-label', (curNamer.textContent || '').trim());
+    }
+   } else { /* the table fits, so there is nothing to scroll to */
+    curBox.removeAttribute('role');
+    curBox.removeAttribute('tabindex');
+    curBox.removeAttribute('aria-label');
+   }
+  }
+ };
+ markTableBoxesChatGPTPasteReadyBookmark();
+ window.addEventListener('resize', markTableBoxesChatGPTPasteReadyBookmark);
 }, 500);
 </script>
 `;
