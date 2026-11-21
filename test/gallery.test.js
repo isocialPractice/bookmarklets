@@ -16,6 +16,14 @@
 // on a bare doctype and rendered in quirks mode, none of them named its language, every one skipped
 // h1 to h3, and all five carried the same title and the same h1.
 //
+// A fifth sat in the two examples that hold a table: the box added to stop the article dragging
+// sideways carried no tabindex and no role, so Tab never landed on it and the columns held out of
+// view could not be reached without a pointer.
+//
+// The fifth's guards press the keys as well as reading the markup, because the attributes and the
+// behaviour can part company: a box carrying tabindex and role that the page scrolls past, or that
+// the arrow keys do not move, reads as repaired and is not.
+//
 // What this file holds are the guards for those, measured from the rendered page. The wider gallery
 // reading - the sizing interval, the navigation and frame at three widths, Tab order, the slide
 // show pause control - is the roadmap item under ## Test Harness in TODO.md, which proposes the
@@ -210,7 +218,17 @@ function readExample() {
     boxed: !!box,
     boxScrolls: box ? box.scrollWidth > box.clientWidth : false,
     outgrowsBox: box ? Math.round(t.scrollWidth) > Math.round(box.clientWidth) + 1 : true,
-    boxWider: box ? Math.round(box.getBoundingClientRect().width) > doc.clientWidth + 1 : true
+    boxWider: box ? Math.round(box.getBoundingClientRect().width) > doc.clientWidth + 1 : true,
+    // What a reader cannot see, and what the keyboard is offered for it. The box decides its own
+    // marking from scrollWidth against clientWidth, so hidden is read the same way rather than from
+    // the table against the box: the two can disagree by a pixel, and a guard that keyed on the
+    // other measure would turn a rounding edge into a failed suite.
+    hidden: box ? Math.max(0, Math.round(box.scrollWidth - box.clientWidth)) : 0,
+    tabIndex: box ? box.tabIndex : -1,
+    role: box ? box.getAttribute("role") : null,
+    // The box holds no caption, so the name a screen reader announces on entering the region is
+    // taken from the nearest heading above it.
+    ariaLabel: box ? box.getAttribute("aria-label") : null
    };
   })
  };
@@ -250,6 +268,61 @@ async function watchGallery() {
  }
 }
 
+// The box's stop used rather than described. Whether tabIndex and role are set is read above, from
+// the markup; whether a reader can actually land on the box and bring the hidden columns into view
+// is only answerable by pressing the keys, and the two can part company - a stop the page scrolls
+// past, or one the arrow keys do not move, still carries the right attributes.
+async function useTableBox(page) {
+ await page.evaluate(function () {
+  if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+  window.scrollTo(0, 0);
+ });
+ var onBox = function () {
+  return page.evaluate(function () {
+   var a = document.activeElement;
+   return !!a && typeof a.className === "string"
+    && a.className.indexOf("tableScrollPasteReady") >= 0;
+  });
+ };
+ var scrolledTo = function () {
+  return page.evaluate(function () {
+   var a = document.activeElement;
+   return a && a.scrollLeft !== undefined ? Math.round(a.scrollLeft) : -1;
+  });
+ };
+ // Twelve is well past the handful of stops either example offers: the box is the first of them on
+ // a page opened directly, and a page whose table fits never reaches it at all.
+ var landedAt = null;
+ for (var i = 1; i <= 12; i++) {
+  await page.keyboard.press("Tab");
+  if (await onBox()) { landedAt = i; break; }
+ }
+ if (!landedAt) { return { landedAt: null }; }
+ var ring = await page.evaluate(function () {
+  var a = document.activeElement;
+  var s = getComputedStyle(a);
+  a.scrollLeft = 0;
+  return {
+   focusVisible: a.matches(":focus-visible"),
+   outlineStyle: s.outlineStyle,
+   outlineWidth: parseFloat(s.outlineWidth) || 0,
+   max: Math.max(0, Math.round(a.scrollWidth - a.clientWidth))
+  };
+ });
+ await page.keyboard.press("ArrowRight");
+ await page.waitForTimeout(150);
+ var afterOne = await scrolledTo();
+ // Twenty five presses carry 1000px at Chromium's 40px a press, past the widest run either example
+ // holds out of view.
+ for (var p = 1; p < 25; p++) { await page.keyboard.press("ArrowRight"); }
+ await page.waitForTimeout(250);
+ var afterMany = await scrolledTo();
+ await page.keyboard.press("ArrowLeft");
+ await page.waitForTimeout(150);
+ return { landedAt: landedAt, ring: ring, afterOne: afterOne, afterMany: afterMany,
+  afterLeft: await scrolledTo() };
+}
+
 // Each example opened directly rather than inside the frame, which is how a reader reaches one from
 // a bookmark or a link, at both widths.
 async function readExamples() {
@@ -268,6 +341,9 @@ async function readExamples() {
     var found = await page.evaluate(readExample);
     found.covered = await page.evaluate(readCoveredText);
     found.status = resp ? resp.status() : 0;
+    // Only the two examples that hold a table have a box to press keys at. Last of the three, so
+    // the presses and the scrolling they cause cannot disturb the two readings above.
+    found.keyboard = found.tables.length ? await useTableBox(page) : null;
     pages[EXAMPLES[e].file + " @" + viewport.width + "px"] = found;
    }
    await ctx.close();
@@ -394,6 +470,79 @@ test("no example scrolls the document sideways, and a wide table scrolls in its 
    });
   });
  });
+
+test("a table box on an example is a keyboard stop only where it scrolls", function () {
+ eachExample(function (at, found) {
+  found.tables.forEach(function (t, n) {
+   var which = at + ": table " + (n + 1);
+   if (t.boxScrolls) {
+    assert.strictEqual(t.tabIndex, 0, which + ": " + t.hidden + "px of the table is out of view, "
+     + "so the box should be a keyboard stop, its tabIndex is " + t.tabIndex);
+    assert.strictEqual(t.role, "region", which + ": it scrolls, so it should be announced as a "
+     + "region, its role is " + JSON.stringify(t.role));
+   } else {
+    assert.strictEqual(t.tabIndex, -1, which + ": the table fits its box, so the stop should not "
+     + "be there, its tabIndex is " + t.tabIndex);
+    assert.strictEqual(t.role, null, which + ": the table fits its box, so the region should not "
+     + "be there, its role is " + JSON.stringify(t.role));
+   }
+  });
+ });
+});
+
+test("Tab lands on a table box that scrolls, and passes one whose table fits", function () {
+ eachExample(function (at, found) {
+  if (!found.tables.length) { return; }
+  var t = found.tables[0];
+  var k = found.keyboard;
+  if (t.boxScrolls) {
+   assert.ok(k.landedAt, at + ": " + t.hidden + "px of the table is out of view, so Tab should "
+    + "land on the box, twelve presses never did");
+   assert.strictEqual(k.ring.focusVisible, true, at + ": reached by Tab, so the box should match "
+    + ":focus-visible and be given a ring, it does not");
+   assert.notStrictEqual(k.ring.outlineStyle, "none", at + ": the focused box draws no outline");
+   assert.ok(k.ring.outlineWidth >= 2, at + ": the ring should be thick enough to see, it is "
+    + k.ring.outlineWidth + "px");
+  } else {
+   assert.strictEqual(k.landedAt, null, at + ": the table fits its box, so Tab should pass the box "
+    + "by, it landed on it at press " + k.landedAt);
+  }
+ });
+});
+
+test("the arrow keys bring the hidden columns into view, and take them back out", function () {
+ eachExample(function (at, found) {
+  if (!found.tables.length || !found.tables[0].boxScrolls) { return; }
+  var k = found.keyboard;
+  assert.ok(k.afterOne > 0, at + ": one press of ArrowRight on the focused box moved it to "
+   + k.afterOne);
+  // A pixel of slack: scrollWidth and clientWidth are whole numbers while the extent scrollLeft
+  // can reach is fractional, so a box reading 474px out of view stops scrolling at 473.
+  assert.ok(k.afterMany >= k.ring.max - 1, at + ": the arrow keys should reach the end of the "
+   + k.ring.max + "px held out of view, they reached " + k.afterMany);
+  assert.ok(k.afterLeft < k.afterMany, at + ": ArrowLeft should take the columns back out, it went "
+   + "from " + k.afterMany + " to " + k.afterLeft);
+ });
+});
+
+test("a table box that scrolls is named from the nearest heading above it", function () {
+ eachExample(function (at, found) {
+  found.tables.forEach(function (t, n) {
+   var which = at + ": table " + (n + 1);
+   if (!t.boxScrolls) {
+    assert.strictEqual(t.ariaLabel, null, which + ": the table fits, so the box should carry no "
+     + "name either, it is named " + JSON.stringify(t.ariaLabel));
+    return;
+   }
+   assert.ok(t.ariaLabel && t.ariaLabel.length > 0, which + ": a region with no name is announced "
+    + "as an unnamed region, its aria-label is " + JSON.stringify(t.ariaLabel));
+   var headings = found.outline.map(function (h) { return h.text; });
+   assert.ok(headings.indexOf(t.ariaLabel) >= 0, which + ": the box is named "
+    + JSON.stringify(t.ariaLabel) + ", which is not one of the page's headings "
+    + JSON.stringify(headings));
+  });
+ });
+});
 
 test("the fixed byline block covers none of the article's text", function () {
  eachExample(function (at, found) {

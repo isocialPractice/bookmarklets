@@ -82,30 +82,56 @@ its README entry linking that gist. Runs post and update gists with
     them. Pages already serves them; this item is the gallery link.
   - From: Improve GitHub Pages Site
 
-### UI/UX Override - the examples' new table box
+### UI/UX Override - the table box's focus ring in the dark scheme
+
+#### Resolve Issues
+
+- [ ] Table Box Ring 1: the dark colour scheme draws the ring in the colour
+  meant for a dark page, on a page that stays light
+  - **Issue**: the stop itself works. Signed out, Chromium, each example opened
+    directly and again inside `index.html`'s frame, at 1280x800 and 390x844:
+    Tab lands on the box (first press opened directly, sixth inside the frame,
+    after the five navigation links), `:focus-visible` matches, a 3px ring is
+    painted on every side the viewport holds, the frame's edge clips none of
+    it, the arrow keys carry all 474px, 519px, 163px, 100px, 55px and 29px held
+    out of view into view and back out, and the region is named
+    "A Monthly Schedule" and "How It Works" from the heading above it.
+    `SocialMediaMarketing` at 1280 holds 0px out of view and is correctly no
+    stop at all: twenty presses of Tab pass it by. The ring's **colour** is
+    what fails. Read as painted pixels - the focused box shot, focus taken off
+    it at the same scroll position, the two differenced, so every changed pixel
+    is the ring and what it covered is the page behind it - the light scheme
+    gives `rgb(9,105,218)` over `rgb(249,250,250)` at **4.97:1**, and the dark
+    scheme gives `rgb(88,166,255)` over `rgb(249,250,250)` at **2.42:1**, under
+    the 3:1 WCAG 1.4.11 asks of a focus indicator. All six dark readings fail,
+    2.42:1 opened directly and 2.39:1 inside the frame. The cause is that the
+    page never darkens: `body` carries `background: rgb(47 79 79 / 3%)`, which
+    propagates to the canvas, so the pixels behind the box measure the same
+    near-white in both schemes to within a point per channel, while the
+    `@media (prefers-color-scheme: dark)` block changes the ring alone. The
+    dark branch makes the ring harder to see, not easier.
+  - **Goal**: Resolve to [example-table-box-dark-ring.prompt.md](.claude/prompts/example-table-box-dark-ring.prompt.md)
+  - From: UI/UX Override - the examples' new table box
 
 #### Found Issues
 
-- [ ] The examples' scrolling table box cannot be reached without a mouse
-  - **Issue**: the box
-    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` started
-    wrapping each table in on 11.20.2026, `div.tableScrollPasteReady`, scrolls
-    on `overflow-x: auto` but carries no `tabindex` and no `role`. Measured
-    signed out, each example opened directly rather than inside the gallery's
-    frame: at 390px `chatGPT_Bookmark_Schedule.html` holds **474px of its table
-    out of view** and `chatGPT_Bookmark_SocialMediaMarketing.html` 55px, and at
-    1280px `Schedule` holds 29px; on all of them `tabIndex` is `-1` and `role`
-    is absent, so Tab never lands on the box and the hidden columns cannot be
-    reached without a pointer. The repository already settled this the other
-    way on the practice pages: `test/fixtures/pages/table.html` sets
-    `role="region"` and `tabindex="0"` while `scrollWidth > clientWidth`, drops
-    both when the table fits, re-reads on resize, and `test/pages.test.js`
-    asserts it in three tests. The completed "Repair the five `examples/`
-    pages" item is not reopened by this: its goal was the document not dragging
-    sideways at 390px, which it reached, and `test/gallery.test.js` guards it.
-    The box it added to get there is what no item covers.
-  - **Goal**: Resolve to [example-table-box-keyboard.prompt.md](.claude/prompts/example-table-box-keyboard.prompt.md)
-  - From: UI/UX Override - the examples' new table box
+- [ ] `test:harness` fails intermittently on the short that holds still
+  - **Issue**: "a short never holds still for two seconds" failed once and
+    passed on an immediate re-run, nothing changed between them. It reported
+    `the wait between the blocks and the end on the result each held still:
+    [[1.5,8.532]]` - one still spanning eight and a half seconds where the test
+    asks for two, so the recorder saw the fixture's second block as part of the
+    same motionless run. The test records real video and reads the GIF back
+    through ffmpeg, so it is timing sensitive, and a busy machine is enough to
+    move it. Nothing in this run's diff touches `test-bm.js` or
+    `test/harness.test.js`.
+  - **Goal**: make the reading survive a slow recorder rather than loosening
+    what it asserts - drive the fixture's second block from something the
+    recorder cannot miss, or record the run again once before failing, and say
+    in the failure which of the two it was. A suite that goes red on a loaded
+    machine costs the next run a false alarm and teaches it to ignore the
+    harness.
+  - From: UI/UX Override - the table box's focus ring in the dark scheme
 
 ### Create and Deploy GitHub Pages Override
 
@@ -146,8 +172,8 @@ browser for the same result.
     `package.json` as its own `test:gallery` script once it is green, so
     `npm test` is not red in the meantime.
   - `test/gallery.test.js` and `test:gallery` already exist as of 11.20.2026,
-    holding 8 green tests: the three that guard the slide show's history
-    entries and the links it steps, and the five that read the five examples at
+    holding 9 green tests: the three that guard the slide show's history
+    entries and the links it steps, and the six that read the five examples at
     1280 and 390. They were landed with the UI/UX override's found issues, in
     the same shape the driver uses. What is left of this item is the rest of
     the list above - the sizing interval, the pause control,
@@ -1693,5 +1719,38 @@ roadmap section each one came from.
     unexercised entry ("nothing to fix here, which is also worth seeing") so
     the reader is told nothing will happen and why.
   - From: UI/UX Override - the deployed gallery, its examples and the practice pages
+- [x] **Table Box Ring**: The examples' scrolling table box cannot be reached
+  without a mouse
+  - **Issue**: the box
+    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` started
+    wrapping each table in on 11.20.2026, `div.tableScrollPasteReady`, scrolls
+    on `overflow-x: auto` but carries no `tabindex` and no `role`. Measured
+    signed out, each example opened directly rather than inside the gallery's
+    frame: at 390px `chatGPT_Bookmark_Schedule.html` holds **474px of its table
+    out of view** and `chatGPT_Bookmark_SocialMediaMarketing.html` 55px, and at
+    1280px `Schedule` holds 29px; on all of them `tabIndex` is `-1` and `role`
+    is absent, so Tab never lands on the box and the hidden columns cannot be
+    reached without a pointer. The repository already settled this the other
+    way on the practice pages: `test/fixtures/pages/table.html` sets
+    `role="region"` and `tabindex="0"` while `scrollWidth > clientWidth`, drops
+    both when the table fits, re-reads on resize, and `test/pages.test.js`
+    asserts it in three tests. The completed "Repair the five `examples/`
+    pages" item is not reopened by this: its goal was the document not dragging
+    sideways at 390px, which it reached, and `test/gallery.test.js` guards it.
+    The box it added to get there is what no item covers.
+  - **Goal**: Resolve to [example-table-box-keyboard.prompt.md](.claude/prompts/example-table-box-keyboard.prompt.md)
+  - Applied 11.21.2026. The page the bookmarklet writes marks each
+    `div.tableScrollPasteReady` `role="region"` with `tabindex="0"` while
+    `scrollWidth` is over `clientWidth`, drops both when the table fits, names the
+    region from the nearest heading above it, and re-reads on resize; the box takes
+    a `:focus-visible` outline from `bookmarkPageStyle` in both colour schemes. The
+    prompt's step 3 was wrong about the five `examples/` pages: none of them carries
+    the `pageScript` at all, and only `chatGPT_Bookmark_Schedule.html` and
+    `chatGPT_Bookmark_SocialMediaMarketing.html` hold a table, so the marking and the
+    outline went into those two and the other three were left as they are. The guard
+    keys on the box's own measure, `scrollWidth` over `clientWidth`, rather than the
+    table against the box: the two can differ by a pixel, and the box decides its own
+    marking from the first.
+  - From: UI/UX Override - the examples' new table box
 
 </details>
