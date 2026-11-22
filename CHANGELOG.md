@@ -6,6 +6,66 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.22.2026]
+
+### Fixed
+
+- The focus ring on the saved pages' table box is coloured for the surface it is actually drawn
+  on. `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` carried a
+  `@media (prefers-color-scheme: dark)` branch that recoloured the ring to `#58a6ff`, the blue
+  meant for a dark page - but the page it writes never darkens: `body` carries
+  `background: rgb(47 79 79 / 3%)`, which propagates to the canvas, so the pixels behind the box
+  measure the same near-white in both schemes to within a point per channel. Read as painted
+  pixels, the dark branch gave `rgb(88,166,255)` over `rgb(249,250,250)` at 2.42:1, under the 3:1
+  WCAG 1.4.11 asks of a focus indicator, where the light reading gave `rgb(9,105,218)` at 4.97:1.
+  The dark branch made the ring harder to see rather than easier, so it is gone and `#0969da`
+  serves both schemes. A dark override belongs back only once the page itself darkens, so that the
+  two move together, and the comment above the style says so.
+- The same branch is out of the two `examples/` pages that carry the style,
+  `chatGPT_Bookmark_Schedule.html` and `chatGPT_Bookmark_SocialMediaMarketing.html`. They hold
+  their own copy of what the bookmarklet writes, so the repaired bookmarklet alone would have left
+  the deployed site as it was. The other three hold no table and carry no box.
+- `test:harness` no longer goes red on a loaded machine for the one test that records real video.
+  "a short never holds still for two seconds" failed once and passed on an immediate re-run with
+  nothing changed between them, reporting one still of 8.5 seconds where the fixture draws a second
+  block five seconds in: Chromium's screencast hands over frames only as fast as it is let, and the
+  page's own timer can be starved past the end of the clip, so the second block never reached the
+  recording. The reading now **records the run once more before it fails**, unchanged, and only a
+  second disagreement is a failure; the failure names both attempts, with the second one's own
+  stack, so a reading that failed twice is told from one that failed once and passed. Nothing it
+  asserts was loosened.
+- The gallery's keyboard readings press a key until the box has come to rest rather than a fixed
+  number of times. Chromium carries 40px a press and animates it, and a press sent while the last
+  one is still animating is coalesced rather than queued: the same twenty five presses carried the
+  whole 474px on one run and 160px on the next, and a single `ArrowLeft` after them moved nothing
+  at all, with nothing changed between the runs. Found while adding the ring reading below, and the
+  same defect as the one above read from the other side.
+
+### Added
+
+- Three tests in `test/gallery.test.js`, its tenth, eleventh and twelfth, which read the focus ring
+  **as painted rather than as declared**: a clip of the box is shot focused and shot again with
+  focus taken off it at the same scroll position, and the two are differenced inside a page of its
+  own, where a canvas is the PNG decoder, so no image library joins the manifest. Only focus
+  changed, so every changed pixel is the ring and what the second shot holds under those pixels is
+  the page behind it, and the contrast between them has to reach 3:1. Both of the ring readings run
+  on every example and width whose box is a stop, once in each colour scheme. The tenth opens the
+  example on its own, with the scheme emulated on the one page, so a width costs one browser
+  context however many schemes are read in it; the eleventh reads the same ring inside
+  `index.html`'s frame, which is how the deployed site shows it, and splits its reading by side,
+  because the frame edge is the one thing that could take a side of the ring away and a mean colour
+  over the whole clip reads the same whether four sides were painted or three. Put the dark branch
+  back and both fail with the measurement that found this: the ring is rgb(88,166,255) over
+  rgb(249,250,250), 2.42:1. The twelfth asserts the page is painted alike in both schemes, which is
+  why one `outline-color` serves both, and names itself as the reading to change if the saved page
+  is ever given a real dark mode.
+
+### Changed
+
+- `docs/testing.md` says what each of those readings proves, and that each of the two timing-bound
+  readings takes its answer from where the page comes to rest rather than from a count of presses
+  or a single recording.
+
 ## [11.21.2026]
 
 ### Fixed

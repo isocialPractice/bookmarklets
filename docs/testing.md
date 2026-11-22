@@ -736,6 +736,14 @@ one, and the tests that set them point them at stubs that sign in to nothing
 and open nothing. The tests that need ffmpeg or Firefox skip themselves,
 with a reason, where it is not installed.
 
+The stills reading is the one test here that records real video and reads the
+GIF back, so what it measures depends on how loaded the machine is: Chromium's
+screencast hands over frames only as fast as it is let, and a page's own timer
+can be starved past the end of the clip. It **records the run once more before
+it fails**, and only a second disagreement is a failure. The failure then names
+both attempts, so a reading that failed twice is told from one that failed once
+and passed, and nothing about what it asserts is loosened to get there.
+
 ### `test:pages`
 
 The pages under `test/fixtures/pages/` are two things at once: the fixtures
@@ -787,6 +795,35 @@ names its own subject in its title and its one `h1`, does not scroll sideways,
 and keeps any table inside a scrolling box of its own - a box that is a keyboard
 stop, announced as a region, only where it has something left to scroll, so the
 columns held out of view can be reached without a pointer.
+
+Then it measures the ring that stop is drawn with, **as painted rather than as
+declared**, on every example and width whose box is a stop, once in each colour
+scheme. A clip of the box is shot focused and shot again with focus taken off it
+at the same scroll position, and the two are differenced inside a page of its own,
+where a canvas is the PNG decoder: only focus changed, so every changed pixel is
+the ring and what the second shot holds under those pixels is the page behind it.
+The contrast between the two has to reach the 3:1 WCAG 1.4.11 asks of a focus
+indicator. A declared colour cannot say what surface it landed on, which is the
+whole reason this reading exists: the saved page carries a background on its body
+that propagates to the canvas, so it is painted near-white whatever a reader's
+scheme asks for, and a dark branch that recoloured the ring alone read 2.42:1.
+Its companion asserts the page is painted alike in both schemes, which is why one
+`outline-color` serves both, and is the reading to change if the saved page is
+ever given a real dark mode.
+
+That ring is read a second time on the page as `index.html` frames it, which is
+how the deployed site shows it, and that reading is split by side: a frame paints
+nothing outside its own rect, so the frame edge is the one thing that could take a
+side of the ring away, and a mean colour over the whole clip reads the same whether
+four sides were painted or three. A side is held to the 3:1 only where the ring's
+reach lands inside both the frame's rect and the shot.
+
+The keyboard readings press a key until the box has come to rest rather than a
+fixed number of times. Chromium carries 40px a press and animates it, and a
+press sent while the last one is still animating is coalesced rather than
+queued, so a count of presses measures the machine as much as the box: twenty
+five sent back to back carried the whole 474px on one run and 160px on the next,
+with nothing changed between them.
 
 The wider reading of the gallery - the sizing interval, the navigation and frame
 at three widths, Tab order, a pause control - is the roadmap item under
