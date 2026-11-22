@@ -79,7 +79,11 @@ javascript:(function(){
  }
  };
 
- /* Style the bookmarked page. */
+ /* Style the bookmarked page. The body's background propagates to the canvas, so the saved page is
+    painted near-white whatever colour scheme the reader asks for. The focus ring is coloured for that
+    surface and for no other: #0969da reads at 4.97:1 against it, where the #58a6ff meant for a dark
+    surface read at 2.42:1, under the 3:1 WCAG 1.4.11 asks of a focus indicator. A dark override
+    belongs here only once the page itself darkens, so that the two move together. */
  {
  var bookmarkPageStyle = `
 <style>
@@ -197,11 +201,6 @@ javascript:(function(){
  div.tableScrollPasteReady:focus-visible {
   outline: 3px solid #0969da;
   outline-offset: 2px;
- }
- @media (prefers-color-scheme: dark) {
-  div.tableScrollPasteReady:focus-visible {
-   outline-color: #58a6ff;
-  }
  }
  th,td {
   padding: 5px 5px;     

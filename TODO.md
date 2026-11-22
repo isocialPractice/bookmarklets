@@ -82,57 +82,6 @@ its README entry linking that gist. Runs post and update gists with
     them. Pages already serves them; this item is the gallery link.
   - From: Improve GitHub Pages Site
 
-### UI/UX Override - the table box's focus ring in the dark scheme
-
-#### Resolve Issues
-
-- [ ] Table Box Ring 1: the dark colour scheme draws the ring in the colour
-  meant for a dark page, on a page that stays light
-  - **Issue**: the stop itself works. Signed out, Chromium, each example opened
-    directly and again inside `index.html`'s frame, at 1280x800 and 390x844:
-    Tab lands on the box (first press opened directly, sixth inside the frame,
-    after the five navigation links), `:focus-visible` matches, a 3px ring is
-    painted on every side the viewport holds, the frame's edge clips none of
-    it, the arrow keys carry all 474px, 519px, 163px, 100px, 55px and 29px held
-    out of view into view and back out, and the region is named
-    "A Monthly Schedule" and "How It Works" from the heading above it.
-    `SocialMediaMarketing` at 1280 holds 0px out of view and is correctly no
-    stop at all: twenty presses of Tab pass it by. The ring's **colour** is
-    what fails. Read as painted pixels - the focused box shot, focus taken off
-    it at the same scroll position, the two differenced, so every changed pixel
-    is the ring and what it covered is the page behind it - the light scheme
-    gives `rgb(9,105,218)` over `rgb(249,250,250)` at **4.97:1**, and the dark
-    scheme gives `rgb(88,166,255)` over `rgb(249,250,250)` at **2.42:1**, under
-    the 3:1 WCAG 1.4.11 asks of a focus indicator. All six dark readings fail,
-    2.42:1 opened directly and 2.39:1 inside the frame. The cause is that the
-    page never darkens: `body` carries `background: rgb(47 79 79 / 3%)`, which
-    propagates to the canvas, so the pixels behind the box measure the same
-    near-white in both schemes to within a point per channel, while the
-    `@media (prefers-color-scheme: dark)` block changes the ring alone. The
-    dark branch makes the ring harder to see, not easier.
-  - **Goal**: Resolve to [example-table-box-dark-ring.prompt.md](.claude/prompts/example-table-box-dark-ring.prompt.md)
-  - From: UI/UX Override - the examples' new table box
-
-#### Found Issues
-
-- [ ] `test:harness` fails intermittently on the short that holds still
-  - **Issue**: "a short never holds still for two seconds" failed once and
-    passed on an immediate re-run, nothing changed between them. It reported
-    `the wait between the blocks and the end on the result each held still:
-    [[1.5,8.532]]` - one still spanning eight and a half seconds where the test
-    asks for two, so the recorder saw the fixture's second block as part of the
-    same motionless run. The test records real video and reads the GIF back
-    through ffmpeg, so it is timing sensitive, and a busy machine is enough to
-    move it. Nothing in this run's diff touches `test-bm.js` or
-    `test/harness.test.js`.
-  - **Goal**: make the reading survive a slow recorder rather than loosening
-    what it asserts - drive the fixture's second block from something the
-    recorder cannot miss, or record the run again once before failing, and say
-    in the failure which of the two it was. A suite that goes red on a loaded
-    machine costs the next run a false alarm and teaches it to ignore the
-    harness.
-  - From: UI/UX Override - the table box's focus ring in the dark scheme
-
 ### Create and Deploy GitHub Pages Override
 
 - No site
@@ -270,6 +219,18 @@ files its failures here. A fix is finished when its posted gist carries it too.
 
 - [ ] Add an `s, s` key sequence to `siteSpecific_chatGPT_NavigateAnswers.js`
   that returns the page to normal
+- [ ] Give the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes a
+  real dark colour scheme, or take its dark rules out
+  - Its `@media (prefers-color-scheme: dark)` block still darkens the code blocks
+    on a page that never darkens. `body` carries `background: rgb(47 79 79 / 3%)`,
+    which propagates to the canvas, so the saved page is painted near-white in both
+    schemes. A dark code block on it is readable on its own terms, so this is a look
+    rather than a break - but it is the same shape of problem the focus ring had,
+    fixed on 11.22.2026 by dropping its dark branch. Either darken the canvas, the
+    table, the headings and the body text together and keep the dark rules, giving
+    the ring its `#58a6ff` back with them, or drop them. The reading in
+    `test/gallery.test.js` that says the page is painted alike in both schemes is
+    the one to change if the page is given a real dark mode, and it says so.
 
 ### From the Open Issues
 
@@ -1753,5 +1714,64 @@ roadmap section each one came from.
     table against the box: the two can differ by a pixel, and the box decides its own
     marking from the first.
   - From: UI/UX Override - the examples' new table box
+- [x] Table Box Ring 1: the dark colour scheme draws the ring in the colour
+  meant for a dark page, on a page that stays light
+  - **Issue**: the stop itself works. Signed out, Chromium, each example opened
+    directly and again inside `index.html`'s frame, at 1280x800 and 390x844:
+    Tab lands on the box (first press opened directly, sixth inside the frame,
+    after the five navigation links), `:focus-visible` matches, a 3px ring is
+    painted on every side the viewport holds, the frame's edge clips none of
+    it, the arrow keys carry all 474px, 519px, 163px, 100px, 55px and 29px held
+    out of view into view and back out, and the region is named
+    "A Monthly Schedule" and "How It Works" from the heading above it.
+    `SocialMediaMarketing` at 1280 holds 0px out of view and is correctly no
+    stop at all: twenty presses of Tab pass it by. The ring's **colour** is
+    what fails. Read as painted pixels - the focused box shot, focus taken off
+    it at the same scroll position, the two differenced, so every changed pixel
+    is the ring and what it covered is the page behind it - the light scheme
+    gives `rgb(9,105,218)` over `rgb(249,250,250)` at **4.97:1**, and the dark
+    scheme gives `rgb(88,166,255)` over `rgb(249,250,250)` at **2.42:1**, under
+    the 3:1 WCAG 1.4.11 asks of a focus indicator. All six dark readings fail,
+    2.42:1 opened directly and 2.39:1 inside the frame. The cause is that the
+    page never darkens: `body` carries `background: rgb(47 79 79 / 3%)`, which
+    propagates to the canvas, so the pixels behind the box measure the same
+    near-white in both schemes to within a point per channel, while the
+    `@media (prefers-color-scheme: dark)` block changes the ring alone. The
+    dark branch makes the ring harder to see, not easier.
+  - **Goal**: Resolve to [example-table-box-dark-ring.prompt.md](.claude/prompts/example-table-box-dark-ring.prompt.md)
+  - From: UI/UX Override - the examples' new table box
+- [x] `test:harness` fails intermittently on the short that holds still
+  - **Issue**: "a short never holds still for two seconds" failed once and
+    passed on an immediate re-run, nothing changed between them. It reported
+    `the wait between the blocks and the end on the result each held still:
+    [[1.5,8.532]]` - one still spanning eight and a half seconds where the test
+    asks for two, so the recorder saw the fixture's second block as part of the
+    same motionless run. The test records real video and reads the GIF back
+    through ffmpeg, so it is timing sensitive, and a busy machine is enough to
+    move it. Nothing in this run's diff touches `test-bm.js` or
+    `test/harness.test.js`.
+  - **Goal**: make the reading survive a slow recorder rather than loosening
+    what it asserts - drive the fixture's second block from something the
+    recorder cannot miss, or record the run again once before failing, and say
+    in the failure which of the two it was. A suite that goes red on a loaded
+    machine costs the next run a false alarm and teaches it to ignore the
+    harness.
+  - From: UI/UX Override - the table box's focus ring in the dark scheme
+- [x] The gallery's keyboard readings count presses, which measures the machine
+  as much as the box
+  - **Issue**: "the arrow keys bring the hidden columns into view, and take them
+    back out" went red on this run's first pass and green on the next, with
+    nothing changed between them: 25 presses of ArrowRight carried the whole 474px
+    on one run and 160px on the other, and on a third a single ArrowLeft after them
+    moved nothing at all. Chromium carries 40px a press and animates it, and a
+    press sent while the last one is still animating is coalesced rather than
+    queued, so a fixed count of presses carries a distance that depends on how
+    loaded the machine is. The same defect as the item above, read from the other
+    side, and found while adding the ring reading for the item above that.
+  - **Goal**: take the reading from where the box comes to rest rather than from a
+    count of presses - press until it has got there, on a budget past the widest
+    run either example hides, so what is asserted is still that the arrow keys
+    reach the end of what is out of view and bring it back.
+  - From: UI/UX Override - the table box's focus ring in the dark scheme
 
 </details>
