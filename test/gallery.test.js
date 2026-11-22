@@ -24,6 +24,24 @@
 // behaviour can part company: a box carrying tabindex and role that the page scrolls past, or that
 // the arrow keys do not move, reads as repaired and is not.
 //
+// A sixth was in the ring that stop is drawn with. The saved page carries a background on its body,
+// which propagates to the canvas, so the page is painted near-white whatever scheme the reader asks
+// for - while a dark branch recoloured the ring alone, for a surface that never arrives. Read as
+// painted, the dark scheme gave 2.42:1 where WCAG 1.4.11 asks 3:1, and the light scheme 4.97:1, so
+// the dark branch made the ring harder to see than no branch at all.
+//
+// The sixth's guard reads pixels, because a declared colour cannot say what surface it landed on: a
+// clip of the box is shot focused and shot again unfocused, and the difference is the ring and the
+// page behind it. Its companion asserts the page is painted alike in both schemes, which is the whole
+// reason one outline-color serves both, and is the reading to change if the page is ever given a real
+// dark mode.
+//
+// That ring is read twice, because a reader meets it two ways and neither stands for the other: on
+// the example opened on its own, and on the example as index.html frames it, which is how the
+// deployed site shows it. The framed reading is also split by side, since the frame is the one thing
+// that could take a side of the ring away, and a mean colour over the whole clip reads the same
+// whether four sides were painted or three.
+//
 // What this file holds are the guards for those, measured from the rendered page. The wider gallery
 // reading - the sizing interval, the navigation and frame at three widths, Tab order, the slide
 // show pause control - is the roadmap item under ## Test Harness in TODO.md, which proposes the
@@ -73,6 +91,18 @@ var APPENDED = "/appended-anchor-should-never-be-clicked.html";
 // The one page served that is not a file in the repository: somewhere for Back to land, so a press
 // of it can be told apart from a press that only rewound the slide show.
 var BEFORE = "/start.html";
+
+// How far two pixels must differ, in any channel, to count as changed between the shot with the box
+// focused and the shot with focus taken off it. Eight is past the noise a lossless screenshot does
+// not carry and well under the step from the page to a ring drawn over it.
+var CHANGED = 8;
+
+// The contrast a focus indicator owes the colour behind it (WCAG 1.4.11), and the two schemes a
+// reader can ask for. Until 11.22.2026 the dark scheme drew the ring at 2.42:1: the saved page never
+// darkens, since the background on its body propagates to the canvas, and the ring alone was
+// recoloured for a dark surface, so the dark branch made it harder to see rather than easier.
+var RING_CONTRAST = 3;
+var SCHEMES = ["light", "dark"];
 
 // The repository root, so index.html finds examples/ and the frame shares the origin of the page
 // framing it, as it does on the deployed site. A path that climbs out of the root is a 404 the page
@@ -234,6 +264,108 @@ function readExample() {
  };
 }
 
+// Two shots of the same clip, differenced inside a page of its own: a canvas is the one PNG decoder
+// to hand, so no image library joins the manifest for this. Only focus changed between the shots, so
+// every changed pixel is the ring, and what the second shot holds under those pixels is the page
+// behind it. That is what makes the ring readable as painted rather than as declared, which is the
+// whole of this reading: a declared colour cannot say what surface it landed on.
+function diffShots(args) {
+ function load(d) {
+  return new Promise(function (res, rej) {
+   var i = new Image();
+   i.onload = function () { res(i); };
+   i.onerror = rej;
+   i.src = "data:image/png;base64," + d;
+  });
+ }
+ function pixels(img) {
+  var c = document.createElement("canvas");
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  var g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(img, 0, 0);
+  return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data };
+ }
+ function lum(c) {
+  var f = [c[0], c[1], c[2]].map(function (v) {
+   v = v / 255;
+   return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+ }
+ function contrast(a, b) {
+  var la = lum(a);
+  var lb = lum(b);
+  return Math.round(((Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)) * 100) / 100;
+ }
+ return Promise.all([load(args.focused), load(args.blurred)]).then(function (both) {
+  var A = pixels(both[0]);
+  var B = pixels(both[1]);
+  if (A.w !== B.w || A.h !== B.h) { return { error: "the two shots differ in size" }; }
+  var count = 0;
+  var ring = [0, 0, 0];
+  var back = [0, 0, 0];
+  // Each changed pixel also sorted into the side of the box it sits outside, when the caller says
+  // where in the clip the box's border edges fell. A ring that reads at 4.97:1 on its left and is
+  // not painted at all on its right is a ring an edge has clipped, and one mean colour over the
+  // whole clip cannot tell the two apart. A caller that gives no box asks only for that mean.
+  var per = {};
+  var sides = ["left", "right", "top", "bottom"];
+  sides.forEach(function (k) { per[k] = { ring: [0, 0, 0], back: [0, 0, 0], n: 0 }; });
+  var inside = 0;
+  var edge = args.box ? {
+   l: args.box.left - args.clip.x, r: args.box.right - args.clip.x,
+   t: args.box.top - args.clip.y, b: args.box.bottom - args.clip.y
+  } : null;
+  for (var y = 0; y < A.h; y++) {
+   for (var x = 0; x < A.w; x++) {
+    var i = (y * A.w + x) * 4;
+    var d = Math.max(Math.abs(A.d[i] - B.d[i]), Math.abs(A.d[i + 1] - B.d[i + 1]),
+     Math.abs(A.d[i + 2] - B.d[i + 2]));
+    if (d <= args.changed) { continue; }
+    count++;
+    ring[0] += A.d[i]; ring[1] += A.d[i + 1]; ring[2] += A.d[i + 2];
+    back[0] += B.d[i]; back[1] += B.d[i + 1]; back[2] += B.d[i + 2];
+    if (!edge) { continue; }
+    var where = null;
+    if (x < edge.l) { where = "left"; }
+    else if (x >= edge.r) { where = "right"; }
+    else if (y < edge.t) { where = "top"; }
+    else if (y >= edge.b) { where = "bottom"; }
+    if (!where) { inside++; continue; }
+    var q = per[where];
+    q.n++;
+    q.ring[0] += A.d[i]; q.ring[1] += A.d[i + 1]; q.ring[2] += A.d[i + 2];
+    q.back[0] += B.d[i]; q.back[1] += B.d[i + 1]; q.back[2] += B.d[i + 2];
+   }
+  }
+  if (!count) { return { changed: 0 }; }
+  var mean = function (t, n) {
+   return [Math.round(t[0] / n), Math.round(t[1] / n), Math.round(t[2] / n)];
+  };
+  var r = mean(ring, count);
+  var b = mean(back, count);
+  var out = {
+   changed: count,
+   clip: { w: A.w, h: A.h },
+   ringColor: r,
+   behindColor: b,
+   contrast: contrast(r, b)
+  };
+  if (!edge) { return out; }
+  out.inside = inside;
+  out.perSide = {};
+  sides.forEach(function (k) {
+   var q = per[k];
+   if (!q.n) { out.perSide[k] = { painted: 0 }; return; }
+   var sr = mean(q.ring, q.n);
+   var sb = mean(q.back, q.n);
+   out.perSide[k] = { painted: q.n, ringColor: sr, behindColor: sb, contrast: contrast(sr, sb) };
+  });
+  return out;
+ });
+}
+
 // ---- the passes that fill the report ----
 
 // The gallery left alone for half a minute, reached from a page before it so that Back has
@@ -312,15 +444,25 @@ async function useTableBox(page) {
  await page.keyboard.press("ArrowRight");
  await page.waitForTimeout(150);
  var afterOne = await scrolledTo();
- // Twenty five presses carry 1000px at Chromium's 40px a press, past the widest run either example
- // holds out of view.
- for (var p = 1; p < 25; p++) { await page.keyboard.press("ArrowRight"); }
- await page.waitForTimeout(250);
- var afterMany = await scrolledTo();
- await page.keyboard.press("ArrowLeft");
- await page.waitForTimeout(150);
+ // Chromium carries 40px a press and animates it, and a press sent while the last one is still
+ // animating is coalesced rather than queued. So a count of presses measures the machine as much as
+ // the box: twenty five sent back to back carried the whole 474px on one run, 160px on the next, and
+ // a single ArrowLeft after them moved nothing at all, with no change between the runs. What these
+ // readings want is where the box comes to rest, so a key is pressed until it has got there rather
+ // than a fixed number of times, on a budget well past the widest run either example hides.
+ var pressUntil = async function (key, reached) {
+  var at = await scrolledTo();
+  for (var p = 0; p < 60 && !reached(at); p++) {
+   await page.keyboard.press(key);
+   await page.waitForTimeout(40);
+   at = await scrolledTo();
+  }
+  return at;
+ };
+ var afterMany = await pressUntil("ArrowRight", function (at) { return at >= ring.max - 1; });
+ var afterLeft = await pressUntil("ArrowLeft", function (at) { return at < afterMany; });
  return { landedAt: landedAt, ring: ring, afterOne: afterOne, afterMany: afterMany,
-  afterLeft: await scrolledTo() };
+  afterLeft: afterLeft };
 }
 
 // Each example opened directly rather than inside the frame, which is how a reader reaches one from
@@ -354,8 +496,232 @@ async function readExamples() {
  return pages;
 }
 
+// The box reached by Tab, shot focused, then shot again with focus taken off it at the same scroll
+// position. Tab rather than box.focus(), because :focus-visible answers to how the element was
+// reached: a programmatic focus is not a keyboard one, so the ring under test would not be drawn.
+async function shootRing(page, decoder) {
+ await page.evaluate(function () {
+  if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+  window.scrollTo(0, 0);
+ });
+ var onBox = function () {
+  return page.evaluate(function () {
+   var a = document.activeElement;
+   return !!a && typeof a.className === "string"
+    && a.className.indexOf("tableScrollPasteReady") >= 0;
+  });
+ };
+ var landed = false;
+ for (var i = 1; i <= 12 && !landed; i++) {
+  await page.keyboard.press("Tab");
+  landed = await onBox();
+ }
+ if (!landed) { return { error: "twelve presses of Tab never landed on the box" }; }
+ var box = await page.evaluate(function () {
+  var a = document.activeElement;
+  a.scrollLeft = 0;
+  var r = a.getBoundingClientRect();
+  return { focusVisible: a.matches(":focus-visible"), x: r.left, y: r.top, w: r.width, h: r.height };
+ });
+ // A margin either side of the box, so the ring and the page it is drawn over are both in the clip,
+ // and no more of a tall box than the viewport holds.
+ var pad = 10;
+ var size = page.viewportSize();
+ var clip = {
+  x: Math.max(0, Math.floor(box.x - pad)),
+  y: Math.max(0, Math.floor(box.y - pad)),
+  width: Math.ceil(box.w + pad * 2),
+  height: Math.ceil(Math.min(box.h, 220) + pad * 2)
+ };
+ clip.width = Math.min(clip.width, size.width - clip.x);
+ clip.height = Math.min(clip.height, size.height - clip.y);
+ if (clip.width <= 0 || clip.height <= 0) { return { error: "the box is out of the viewport" }; }
+ var focused = (await page.screenshot({ clip: clip })).toString("base64");
+ await page.evaluate(function () {
+  if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+ });
+ await page.waitForTimeout(150);
+ var blurred = (await page.screenshot({ clip: clip })).toString("base64");
+ var read = await decoder.evaluate(diffShots, { focused: focused, blurred: blurred, changed: CHANGED });
+ read.focusVisible = box.focusVisible;
+ return read;
+}
+
+// The ring measured on every example and width whose box is a stop, once in each colour scheme. The
+// scheme is emulated on the one page rather than given to a context of its own, so a width costs one
+// browser context however many schemes are read in it.
+async function readRings(targets) {
+ var browser = await playwright.chromium.launch();
+ var found = {};
+ try {
+  var decoder = await (await browser.newContext()).newPage();
+  for (var v = 0; v < VIEWPORTS.length; v++) {
+   var viewport = VIEWPORTS[v];
+   var here = targets.filter(function (t) { return t.width === viewport.width; });
+   if (!here.length) { continue; }
+   var ctx = await browser.newContext({ viewport: viewport });
+   var page = await ctx.newPage();
+   await serveRoot(page);
+   for (var s = 0; s < SCHEMES.length; s++) {
+    await page.emulateMedia({ colorScheme: SCHEMES[s] });
+    for (var t = 0; t < here.length; t++) {
+     await page.goto(origin + "/examples/" + here[t].file, { waitUntil: "load" });
+     // The pages write themselves with document.write and then tidy their own markup on a timer.
+     await page.waitForTimeout(800);
+     var read = await shootRing(page, decoder);
+     read.scheme = SCHEMES[s];
+     read.at = here[t].file + " @" + viewport.width + "px";
+     found[read.at + " " + SCHEMES[s]] = read;
+    }
+   }
+   await ctx.close();
+  }
+ } finally {
+  await browser.close();
+ }
+ return found;
+}
+
+// The gallery showing one chosen example, stopped the way a reader stops it. Hovering a nav link
+// sets the page's own slide flag and the click then sets the clicked flag, so the slide show does
+// not step on a reading halfway through it.
+//
+// The press is near the link's left edge rather than at its centre, because at 390px the floated
+// frame is painted over the right 29px of every 49px-wide nav link and takes the press: that is the
+// first ## Current item's work, queued, and not what this pass reads.
+async function showFramed(page, file) {
+ await page.goto(origin + "/index.html", { waitUntil: "load" });
+ await page.waitForTimeout(400);
+ var link = page.locator("div.sideNav a[href$='" + file + "']").first();
+ var spot = { position: { x: 6, y: 10 } };
+ await link.hover(spot);
+ await link.click(spot);
+ await page.waitForTimeout(1800);
+ var frame = page.frames().find(function (f) {
+  return f !== page.mainFrame() && f.url().indexOf(file) >= 0;
+ });
+ if (!frame) { return null; }
+ await frame.waitForLoadState("load").catch(function () { });
+ await page.waitForTimeout(600);
+ return frame;
+}
+
+// The same ring, read on the page as the gallery frames it. A frame paints nothing outside its own
+// rect, so this is where an edge could take a side of the ring away, and the whole clip's mean
+// colour would still read 4.9:1 on the three sides that survived. So the reading is split by side,
+// and a side is owed a ring only where the ring's reach lands inside both the frame's rect and the
+// shot. Tab rather than box.focus(), for the reason shootRing gives.
+async function shootFramedRing(page, frame, decoder) {
+ var onBox = function () {
+  return frame.evaluate(function () {
+   var a = document.activeElement;
+   var is = !!a && typeof a.className === "string"
+    && a.className.indexOf("tableScrollPasteReady") >= 0;
+   if (is) { a.setAttribute("data-ring-under-test", "1"); }
+   return is;
+  });
+ };
+ var landed = false;
+ for (var i = 1; i <= 24 && !landed; i++) {
+  await page.keyboard.press("Tab");
+  landed = await onBox();
+ }
+ if (!landed) { return { error: "twenty four presses of Tab never reached the box in the frame" }; }
+ var seen = await frame.evaluate(function () {
+  var a = document.activeElement;
+  a.scrollLeft = 0;
+  return { focusVisible: a.matches(":focus-visible"), outline: getComputedStyle(a).outlineColor };
+ });
+ await page.waitForTimeout(120);
+ // Located in the frame, because a page locator never reaches into one, but measured in main frame
+ // coordinates, which is what boundingBox returns whatever frame the element sits in. So one clip
+ // of the top level holds the ring the frame drew.
+ var box = await frame.locator("[data-ring-under-test='1']").first().boundingBox();
+ if (!box) { return { error: "the focused box has no box in the top level" }; }
+ var size = page.viewportSize();
+ var holder = await page.locator("iframe#examples").boundingBox();
+ var edge = { left: box.x, right: box.x + box.width, top: box.y, bottom: box.y + box.height };
+ var pad = 10;
+ var clip = {
+  x: Math.max(0, Math.floor(edge.left - pad)),
+  y: Math.max(0, Math.floor(edge.top - pad)),
+  width: Math.ceil(box.width + pad * 2),
+  height: Math.ceil(box.height + pad * 2)
+ };
+ clip.width = Math.min(clip.width, size.width - clip.x);
+ clip.height = Math.min(clip.height, size.height - clip.y);
+ if (clip.width <= 0 || clip.height <= 0) { return { error: "the box is out of the viewport" }; }
+ // A 3px outline at 2px offset reaches 5px past the border edge.
+ var reach = 5;
+ var holds = {
+  left: Math.max(0, holder.x, clip.x),
+  top: Math.max(0, holder.y, clip.y),
+  right: Math.min(size.width, holder.x + holder.width, clip.x + clip.width),
+  bottom: Math.min(size.height, holder.y + holder.height, clip.y + clip.height)
+ };
+ var owed = {
+  left: edge.left - reach >= holds.left, right: edge.right + reach <= holds.right,
+  top: edge.top - reach >= holds.top, bottom: edge.bottom + reach <= holds.bottom
+ };
+ var focused = (await page.screenshot({ clip: clip })).toString("base64");
+ await frame.evaluate(function () {
+  if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+ });
+ await page.waitForTimeout(150);
+ var blurred = (await page.screenshot({ clip: clip })).toString("base64");
+ var read = await decoder.evaluate(diffShots,
+  { focused: focused, blurred: blurred, changed: CHANGED, clip: clip, box: edge });
+ read.focusVisible = seen.focusVisible;
+ read.outline = seen.outline;
+ read.owed = owed;
+ read.boxAt = { x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.width),
+  h: Math.round(box.height) };
+ read.holds = holds;
+ return read;
+}
+
+// The framed reading over the same targets and the same two schemes as readRings, one browser
+// context a width. A fresh gallery is opened for each, because stopping the slide show is a thing
+// done to a page once and the next reading wants it running again from the start.
+async function readFramedRings(targets) {
+ var browser = await playwright.chromium.launch();
+ var found = {};
+ try {
+  var decoder = await (await browser.newContext()).newPage();
+  for (var v = 0; v < VIEWPORTS.length; v++) {
+   var viewport = VIEWPORTS[v];
+   var here = targets.filter(function (t) { return t.width === viewport.width; });
+   if (!here.length) { continue; }
+   for (var s = 0; s < SCHEMES.length; s++) {
+    var ctx = await browser.newContext({ viewport: viewport, colorScheme: SCHEMES[s] });
+    var page = await ctx.newPage();
+    await serveRoot(page);
+    for (var t = 0; t < here.length; t++) {
+     var frame = await showFramed(page, here[t].file);
+     var at = here[t].file + " @" + viewport.width + "px framed";
+     if (!frame) {
+      found[at + " " + SCHEMES[s]] = { at: at, scheme: SCHEMES[s],
+       error: "the frame never showed " + here[t].file };
+      continue;
+     }
+     var read = await shootFramedRing(page, frame, decoder);
+     read.scheme = SCHEMES[s];
+     read.at = at;
+     found[at + " " + SCHEMES[s]] = read;
+    }
+    await ctx.close();
+   }
+  }
+ } finally {
+  await browser.close();
+ }
+ return found;
+}
+
 var watched = null;
 var examples = null;
+var rings = null;
+var framedRings = null;
 
 function eachExample(run) {
  Object.keys(examples).forEach(function (at) { run(at, examples[at]); });
@@ -364,7 +730,20 @@ function eachExample(run) {
 test.before(async function () {
  watched = await watchGallery();
  examples = await readExamples();
-}, { timeout: 300000 });
+ // Only a box Tab reaches has a ring to measure, and which boxes those are is what the pass above
+ // has just read, so the ring pass is handed its targets rather than opening all five pages to find
+ // them. SocialMediaMarketing at 1280px holds nothing out of view, is correctly no stop at all, and
+ // so is not among them.
+ var targets = [];
+ Object.keys(examples).forEach(function (at) {
+  var found = examples[at];
+  if (!found.tables.length || !found.tables[0].boxScrolls) { return; }
+  if (!found.keyboard || !found.keyboard.landedAt) { return; }
+  targets.push({ file: at.split(" @")[0], width: Number(/@(\d+)px/.exec(at)[1]) });
+ });
+ rings = await readRings(targets);
+ framedRings = await readFramedRings(targets);
+}, { timeout: 600000 });
 
 // ----------------------------------------------------------------------------------------------- //
 // The slide show, left alone
@@ -509,6 +888,91 @@ test("Tab lands on a table box that scrolls, and passes one whose table fits", f
   }
  });
 });
+
+test("the focus ring on a table box is visible against the page as it is painted, in both schemes",
+ function () {
+  var ids = Object.keys(rings);
+  assert.ok(ids.length >= 2, "the ring should have been read in both schemes, it was read at "
+   + JSON.stringify(ids));
+  SCHEMES.forEach(function (scheme) {
+   assert.ok(ids.some(function (id) { return rings[id].scheme === scheme; }),
+    "nothing was read in the " + scheme + " scheme: " + JSON.stringify(ids));
+  });
+  ids.forEach(function (id) {
+   var r = rings[id];
+   assert.ok(!r.error, id + ": " + r.error);
+   assert.strictEqual(r.focusVisible, true, id + ": the box was reached by Tab, so it should match "
+    + ":focus-visible and be given a ring");
+   assert.ok(r.changed > 0, id + ": focusing the box changed no pixel in the clip, so whatever the "
+    + "ring is declared as, none was painted");
+   assert.ok(r.contrast >= RING_CONTRAST, id + ": the ring is rgb(" + r.ringColor + ") over rgb("
+    + r.behindColor + "), a contrast of " + r.contrast + ":1, under the " + RING_CONTRAST
+    + ":1 WCAG 1.4.11 asks of a focus indicator");
+  });
+ });
+
+// The same ring where a reader on the site actually meets it, inside index.html's frame, and split
+// by side. The reading above opens the example on its own, which is the other way in; neither
+// stands for the other, because the frame is the thing that could clip a side of the ring away, and
+// a mean colour over the whole clip reads the same whether four sides were painted or three.
+test("the focus ring survives the gallery frame, on every side the frame holds, in both schemes",
+ function () {
+  var ids = Object.keys(framedRings);
+  assert.ok(ids.length >= 2, "the framed ring should have been read in both schemes, it was read at "
+   + JSON.stringify(ids));
+  SCHEMES.forEach(function (scheme) {
+   assert.ok(ids.some(function (id) { return framedRings[id].scheme === scheme; }),
+    "nothing was read framed in the " + scheme + " scheme: " + JSON.stringify(ids));
+  });
+  ids.forEach(function (id) {
+   var r = framedRings[id];
+   assert.ok(!r.error, id + ": " + r.error);
+   assert.strictEqual(r.focusVisible, true, id + ": the box was reached by Tab through the frame, "
+    + "so it should match :focus-visible and be given a ring");
+   assert.ok(r.changed > 0, id + ": focusing the box changed no pixel in the clip, so the frame is "
+    + "showing a box the ring is not painted on");
+   assert.ok(r.contrast >= RING_CONTRAST, id + ": framed, the ring is rgb(" + r.ringColor
+    + ") over rgb(" + r.behindColor + "), a contrast of " + r.contrast + ":1, under the "
+    + RING_CONTRAST + ":1 WCAG 1.4.11 asks of a focus indicator");
+   Object.keys(r.owed).forEach(function (side) {
+    if (!r.owed[side]) { return; }
+    var got = r.perSide[side];
+    assert.ok(got && got.painted > 0, id + ": the " + side + " of the ring reaches no further than "
+     + "the frame's own rect and the shot, and not a pixel of it was painted - the box is at "
+     + JSON.stringify(r.boxAt) + " on a surface of " + JSON.stringify(r.holds) + ", so the frame "
+     + "edge has clipped that side of it");
+    assert.ok(got.contrast >= RING_CONTRAST, id + ": the " + side + " of the ring is rgb("
+     + got.ringColor + ") over rgb(" + got.behindColor + "), " + got.contrast + ":1, under "
+     + RING_CONTRAST + ":1");
+   });
+  });
+ });
+
+// The reading that explains the one above, and the one to change if the saved page is ever given a
+// real dark mode: the ring carries a single colour because there is a single surface to draw it on.
+test("the saved page is painted alike in both schemes, which is why the ring carries one colour",
+ function () {
+  var byPage = {};
+  Object.keys(rings).forEach(function (id) {
+   var r = rings[id];
+   if (r.error) { return; }
+   byPage[r.at] = byPage[r.at] || {};
+   byPage[r.at][r.scheme] = r.behindColor;
+  });
+  var pages = Object.keys(byPage);
+  assert.ok(pages.length > 0, "no ring was read, so there is nothing to compare");
+  pages.forEach(function (at) {
+   var light = byPage[at].light;
+   var dark = byPage[at].dark;
+   assert.ok(light && dark, at + ": the page was not read in both schemes");
+   var apart = Math.max(Math.abs(light[0] - dark[0]), Math.abs(light[1] - dark[1]),
+    Math.abs(light[2] - dark[2]));
+   assert.ok(apart <= 2, at + ": the page behind the box is rgb(" + light + ") in light and rgb("
+    + dark + ") in dark, " + apart + " apart per channel. It was alike in both until now, which is "
+    + "why one outline-color serves both. A page that darkens wants a ring coloured for a dark "
+    + "surface: give the dark scheme its own outline-color again, and measure it here.");
+  });
+ });
 
 test("the arrow keys bring the hidden columns into view, and take them back out", function () {
  eachExample(function (at, found) {
