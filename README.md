@@ -90,7 +90,8 @@
 <!-- Description -->
 <div>
 
-`Ctrl + click` to see example of some [bookmarklets](https://isocialpractice.github.io/bookmarklets/)
+`Ctrl + click` to see example of some [bookmarklets](https://isocialpractice.github.io/bookmarklets/),
+where the gallery also lists the practice pages to try the bookmarklets that work on any page on.
 
 This is a running list of browser bookmarklets. Each bookmarklet lives
 in the folder JSFormatted as readable JavaScript, and each entry below

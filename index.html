@@ -1,187 +1,459 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bookmarklet Examples</title>
+<meta name="description" content="Pages the ChatGPT - Paste Ready Bookmark Response bookmarklet saved as bookmarks, shown as a reader sees them on opening one, with practice pages for the bookmarklets that work anywhere.">
+<link rel="icon" href="favicon.png">
 <style>
 * {
  font-family: sans-serif, system-ui, helvetica;
  box-sizing: border-box;
 }
-h1 {
- margin-left: 30px;
+body {
+ margin: 0;
+ padding: 0 20px 40px;
 }
-div.sideNav,
-div.sideNav a,
-div.sideNav h3,
-div.sideNav a[data-active="0"] {
+h1 {
+ margin-left: 10px;
+}
+a:focus-visible,
+button:focus-visible,
+iframe:focus-visible {
+ outline: 3px solid #0969da;
+ outline-offset: 2px;
+}
+.intro,
+.practice {
+ max-width: 70ch;
+ margin: 0 10px 30px;
+}
+.intro p,
+.practice p,
+.practice li {
+ line-height: 1.5;
+}
+.install img {
+ display: block;
+ max-width: 100%;
+ height: auto;
+ margin-top: 10px;
+ border: 1px solid #021;
+ border-radius: 5px;
+}
+.install summary {
+ cursor: pointer;
+}
+.showControl {
+ margin: 0 10px 10px;
+}
+.showControl button {
+ padding: 8px 14px;
+ border: 1px solid #021;
+ border-radius: 5px;
+ background: white;
+ color: #021;
+ font-size: 1rem;
+ cursor: pointer;
+}
+.showState {
+ margin-left: 10px;
+ color: #021;
+}
+/* The gallery is a grid, so the navigation and the frame can never overlap and the navigation
+   stacks above the frame on a narrow screen. It replaced an absolutely positioned 15% navigation
+   beside a floated 80% frame, which on a phone laid one over the other. */
+.gallery {
+ display: grid;
+ grid-template-columns: minmax(190px, 20%) 1fr;
+ gap: 20px;
+ align-items: start;
+ margin: 0 10px;
+}
+@media (max-width: 760px) {
+ .gallery {
+  grid-template-columns: 1fr;
+ }
+}
+.sideNav,
+.sideNav a,
+.sideNav h3 {
  background: #021;
  color: white;
 }
-div.sideNav {
- display: inline-block;
- position: absolute;
- width: 15%; 
- min-height: 500px;
- margin-left: 30px;
+.sideNav {
+ min-width: 0;
  padding: 20px 5px;
- top: auto;
- border: 0px solid;
- border-radius: 5px; 
+ border-radius: 5px;
 }
-div.sideNav a {
+.sideNav h3 {
+ margin: 0 5px 10px;
+ font-size: 1rem;
+}
+.sideNav a {
  display: block;
+ margin-bottom: 4px;
  padding: 10px;
- text-decoration: none; 
+ text-decoration: none;
 }
-div.sideNav a[data-active="1"] {
+/* The open example is marked with aria-current, which a screen reader announces, in place of the
+   data-active attribute that only ever showed in the style sheet. */
+.sideNav a[aria-current="page"] {
  background: white;
- color: #021; 
+ color: #021;
 }
-main.examples {
- display: inline-block;
- position: relative;
- float: right;
- width: 80%;
- right: 20px;
- margin-left: 30px;
- min-height: 800px;
- height: auto;
- max-height: none;
+.examples {
+ min-width: 0;
 }
 iframe {
- display: inline-block;
- position: relative;
+ display: block;
  width: 100%;
- height: 100%;
+ min-height: 420px;
+ border: 1px solid #021;
+ border-radius: 5px;
 }
 </style>
-<script>
- var slide = 0;
-</script>
 </head>
 
 <body>
 
-<h1>Bookmarklets Examples</h1><hr>
+<h1>Bookmarklet Examples</h1>
+<hr>
 
-<div class="sideNav">
- <h3>ChatGPT - Paste Ready Bookmark Response</h3><hr>
- <a href="examples/chatGPT_Bookmark_Schedule.html" 
-    data-active="0"
-    target="examples"
-    onmouseover="slide = 1;"
-    onclick="sizeExample(this)">ChatGPT - Schedule</a>
- <a href="examples/chatGPT_Bookmark_BroadwayMusical.html" 
-    data-active="0"
-    target="examples"
-    onmouseover="slide = 1;"
-    onclick="sizeExample(this)">ChatGPT - Broadway Musical</a>
- <a href="examples/chatGPT_Bookmark_GreenMarketing.html" 
-    data-active="0"
-    target="examples"
-    onmouseover="slide = 1;"
-    onclick="sizeExample(this)">ChatGPT - Green Marketing</a>
- <a href="examples/chatGPT_Bookmark_IntroToComputerScience.html" 
-    data-active="0"
-    target="examples"
-    onmouseover="slide = 1;"
-    onclick="sizeExample(this)">ChatGPT - Intro To Computer Science</a>
- <a href="examples/chatGPT_Bookmark_SocialMediaMarketing.html" 
-    data-active="0"
-    target="examples"
-    onmouseover="slide = 1;"
-    onclick="sizeExample(this)">ChatGPT - Social Media Marketing</a>
-<!--    
- RECYCLE - Copy/Paste
- <a href="examples/chatGPT_Bookmark_CHANGE_PAGE.html" 
-    data-active="0"
-    target="examples"
-    onmouseover="slide = 1;"
-    onclick="sizeExample(this)">ChatGPT - CHANGE_TEXT</a>
--->    
+<section class="intro">
+ <h2>What these examples are</h2>
+ <p>Each example below is a page that
+  <a href="https://github.com/isocialPractice/bookmarklets#chatgpt---paste-ready-bookmark-response">ChatGPT
+  - Paste Ready Bookmark Response</a> saved as a bookmark. The bookmarklet copies a ChatGPT answer
+  to the clipboard as a bookmarklet of its own; pasting that as the URL of a bookmark gives a
+  bookmark that writes the answer back out as a page. What the frame shows is what a reader sees on
+  opening one of those bookmarks, answer, table and all.</p>
+ <p>The bookmarklet that wrote them:
+  <a href="https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js">the
+  raw file to paste</a>,
+  <a href="https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2">its gist</a>, and
+  <a href="https://www.youtube.com/shorts/iXENQRIalRo">a short showing it run</a>. Every bookmarklet
+  in the repository is listed in the
+  <a href="https://github.com/isocialPractice/bookmarklets">repository README</a>.</p>
+
+ <div class="install">
+  <h3>Installing one</h3>
+  <p>Open the raw file, press <kbd>Ctrl</kbd> + <kbd>A</kbd> then <kbd>Ctrl</kbd> + <kbd>C</kbd>, and
+   paste the whole of it as the URL of a new bookmark. The line breaks come out when it is pasted,
+   which is why the files are written the way they are.</p>
+  <!-- The animation is 11 MB, which is a page nobody on a phone asked to download. Behind a
+       disclosure, and lazily loaded, it is fetched when a reader opens it and not before. -->
+  <details>
+   <summary>Watch it done - an animation of 11 MB</summary>
+   <img src="support/Demo-ReadyToUse.gif" width="720" height="390" loading="lazy"
+    alt="A raw bookmarklet file is selected, copied, and pasted as the URL of a new bookmark.">
+  </details>
+ </div>
+</section>
+
+<h2>The examples</h2>
+
+<div class="showControl">
+ <button type="button" id="showToggle">Pause the slide show</button>
+ <span class="showState" id="showState" role="status">The examples change every three seconds.</span>
 </div>
 
-<main class="examples">
- <iframe name="examples" id="examples" 
-  src="examples/chatGPT_Bookmark_Schedule.html"frameborder="0"></iframe>
-</main>
+<div class="gallery">
+ <nav class="sideNav" aria-label="Examples">
+  <h3>ChatGPT - Paste Ready Bookmark Response</h3>
+  <a href="examples/chatGPT_Bookmark_Schedule.html"
+     data-example="chatGPT_Bookmark_Schedule"
+     target="examples">ChatGPT - Schedule</a>
+  <a href="examples/chatGPT_Bookmark_BroadwayMusical.html"
+     data-example="chatGPT_Bookmark_BroadwayMusical"
+     target="examples">ChatGPT - Broadway Musical</a>
+  <a href="examples/chatGPT_Bookmark_GreenMarketing.html"
+     data-example="chatGPT_Bookmark_GreenMarketing"
+     target="examples">ChatGPT - Green Marketing</a>
+  <a href="examples/chatGPT_Bookmark_IntroToComputerScience.html"
+     data-example="chatGPT_Bookmark_IntroToComputerScience"
+     target="examples">ChatGPT - Intro To Computer Science</a>
+  <a href="examples/chatGPT_Bookmark_SocialMediaMarketing.html"
+     data-example="chatGPT_Bookmark_SocialMediaMarketing"
+     target="examples">ChatGPT - Social Media Marketing</a>
+<!--
+ RECYCLE - Copy/Paste
+  <a href="examples/chatGPT_Bookmark_CHANGE_PAGE.html"
+     data-example="chatGPT_Bookmark_CHANGE_PAGE"
+     target="examples">ChatGPT - CHANGE_TEXT</a>
+-->
+ </nav>
+
+ <main class="examples">
+  <iframe name="examples" id="examples" title="The open example"
+   src="examples/chatGPT_Bookmark_Schedule.html"></iframe>
+ </main>
+</div>
+
+<section class="practice">
+ <h2>Practice pages</h2>
+ <p>Pages to try the bookmarklets that work on any page on, rather than on a site of your own. They
+  are the same pages the test harness runs against, so a page you can try is a page a test has
+  already checked, and nothing on them reaches the network.</p>
+ <ul>
+  <li><a href="test/fixtures/pages/article.html">An article</a> - try
+   <strong>Clutter - click to hide</strong>, <strong>Clipboard - make a markdown link list</strong>,
+   <strong>DOM search page</strong>, <strong>Window style - bold, italic, underline,
+   highlight</strong> and <strong>URI - anchor highlighted text</strong>.</li>
+  <li><a href="test/fixtures/pages/table.html">A table</a> - try
+   <strong>Clipboard - convert page to markdown</strong>, which brings the tables back as pipe
+   tables, and <strong>Clipboard - make a markdown link list</strong>.</li>
+  <li><a href="test/fixtures/pages/form.html">A form</a> - try
+   <strong>Note - take page notes</strong> and <strong>Clutter - click to hide</strong>. The form
+   sends nothing.</li>
+  <li><a href="test/fixtures/pages/sidebar.html">A page with a sidebar</a> - try
+   <strong>Sidebar - fix and scroll the side menu</strong>,
+   <strong>Sidebar - underline the anchor link</strong> and
+   <strong>Sidebar - highlight the current page</strong>.</li>
+  <li><a href="test/fixtures/pages/video.html">A page with a video</a> - try
+   <strong>Video - take video notes</strong> and <strong>Note - take page notes</strong>.</li>
+  <li><a href="test/fixtures/pages/lazy.html">A page that keeps loading</a> - try
+   <strong>Parse - stop page parsing</strong> and
+   <strong>Parse - stop page parsing at the parsed height</strong>.</li>
+  <li><a href="test/fixtures/pages/scroll.html">A long page</a> - try
+   <strong>PageOffset - custom page down</strong>.</li>
+  <li><a href="test/fixtures/pages/snippet.html">One of each</a> - try
+   <strong>Clipboard - convert page to markdown</strong>, whose whole output fits on a screen
+   here.</li>
+ </ul>
+ <p>Each page repeats its own list, and
+  <a href="test/fixtures/pages/index.html">the index of the practice pages</a> holds all eight.</p>
+</section>
 
 <script>
- var navDataActive = document.querySelectorAll("[data-active]");
- var navDataActiveLen = navDataActive.length;
- var example = document.getElementsByTagName("iframe")[0];
- var exampleHasBeenClicked = 0;
- var sizeToExample, exampleHeight;
- // The links the slide show steps: the five whose target is the frame, named rather than
- // collected from every <a> on the page. An anchor without that target navigates the top level,
- // so a link added anywhere here - a README link, a gist link, a short - used to send a reader
- // off the site within one cycle of nobody touching the page.
- var exampleLinks = document.querySelectorAll("div.sideNav a[target='examples']");
- 
- // Resize iframe to fit example.
- function sizeExample(cur) {
-  if (slide == 1) { exampleHasBeenClicked = 1; }
-  sizeToExample = setInterval(function() {
-   let exampleFrame = example.contentWindow || example.document;  
-   if (exampleFrame.contentWindow) exampleFrame = exampleFrame.contentWindow;
-   else exampleFrame = exampleFrame.document;
-   let frameBody = exampleFrame.body;  
-   if (frameBody) exampleHeight = frameBody.scrollHeight;
-   if (example.height != exampleHeight || example.height != exampleHeight+100) {
-    if (exampleHeight < 800) {
-     example.style.height = exampleHeight + 100 + "px";
-    } else {
-     example.style.height = exampleHeight + "px";
-    }
-   } else {
-    return;
-   }
-   
-  }, 100);  
-  setTimeout(function() { clearInterval(sizeToExample); }, 300);
-  let resetDataSets = function() {
-   for (i = 0; i < navDataActiveLen; i++) {
-    navDataActive[i].dataset.active = "0";
-   }
-  };  
-  resetDataSets();
-  cur.dataset.active = "1";  
- }
- 
- // Show an example without adding a session history entry. Clicking a link whose target is the
- // frame is a frame navigation, and a frame navigation is an entry: left alone, the page grew one
- // entry every three seconds, so Back rewound the slide show rather than leaving the gallery.
- // Replacing the frame's own location leaves history.length where it is, and only a reader's own
- // click pushes an entry. sizeExample does the rest, as it does for a click.
- function replaceExample(cur) {
+(function () {
+ "use strict";
+
+ var frame = document.getElementById("examples");
+ var links = Array.prototype.slice.call(document.querySelectorAll(".sideNav a[data-example]"));
+ var toggle = document.getElementById("showToggle");
+ var state = document.getElementById("showState");
+ var SHOW_MS = 3000;
+
+ var shownAt = 0;
+ var showTimer = null;
+ var showRunning = false;
+ var watcher = null;
+ var sizedTo = 0;
+ var asked = null;
+
+ /* ---- the frame's height ---- */
+
+ /* The frame is sized from the example's own root box, which is content height and does not grow
+    with the frame it sits in. document.documentElement.scrollHeight does grow with it, so sizing
+    from that and observing the result is a loop: 578px of content in a 1400px frame reports 1400.
+    This replaced an interval that ran every 100 ms and was cleared after 300, whether or not the
+    example had arrived by then. */
+ function contentHeight() {
   try {
-   example.contentWindow.location.replace(cur.href);
+   var doc = frame.contentDocument;
+   if (!doc || !doc.documentElement) { return 0; }
+   return Math.ceil(doc.documentElement.getBoundingClientRect().height);
   } catch (err) {
-   // A frame this page cannot reach into. The examples share its origin, so this is the odd
-   // case rather than the usual one, and the attribute is the only way left to show the page.
-   example.setAttribute("src", cur.href);
+   /* A frame this page cannot read into. The examples share its origin, so this is the odd case,
+      and the CSS min-height is what holds the frame open when it happens. */
+   return 0;
   }
-  sizeExample(cur);
  }
 
- // Play slide show of examples until clicked.
- var curExample = 0;
- function exampleSlideShow() {
-  if (exampleHasBeenClicked == 0) {
-   let curEx = exampleLinks;
-   if (curEx.length > 0) {
-    replaceExample(curEx[curExample]);
-    if (curExample == curEx.length-1) {
-     curExample = 0;
-    } else {
-     curExample++;
-    }
-   }
-   setTimeout(exampleSlideShow, 3000);
+ /* The frame is a border box, like everything else on the page, so a height set to the height of
+    the page inside it leaves the border's two pixels taken out of the viewport the page gets - and
+    the example then scrolls inside the frame by exactly that much. */
+ function frameBorder() {
+  var style = getComputedStyle(frame);
+  if (style.boxSizing !== "border-box") { return 0; }
+  return (parseFloat(style.borderTopWidth) || 0) + (parseFloat(style.borderBottomWidth) || 0);
+ }
+
+ function sizeToExample() {
+  var inside = contentHeight();
+  if (inside <= 0) { return; }
+  var want = Math.ceil(inside + frameBorder());
+  if (Math.abs(want - sizedTo) < 2) { return; }
+  sizedTo = want;
+  frame.style.height = want + "px";
+ }
+
+ /* Watch the example's own root box, so an example that reflows - a wider window, a late image, a
+    table that rewraps - resizes the frame without anything polling for it. */
+ function watchExample() {
+  if (watcher) { watcher.disconnect(); watcher = null; }
+  if (typeof ResizeObserver !== "function") { return; }
+  try {
+   var doc = frame.contentDocument;
+   if (!doc || !doc.documentElement) { return; }
+   watcher = new ResizeObserver(sizeToExample);
+   watcher.observe(doc.documentElement);
+  } catch (err) {
+   watcher = null;
   }
  }
- exampleSlideShow();
+
+ frame.addEventListener("load", function () {
+  sizedTo = 0;
+  sizeToExample();
+  watchExample();
+ });
+
+ /* ---- which example is shown ---- */
+
+ function nameOf(link) {
+  return link.getAttribute("data-example");
+ }
+
+ function linkFor(name) {
+  for (var i = 0; i < links.length; i++) {
+   if (nameOf(links[i]) === name) { return links[i]; }
+  }
+  return null;
+ }
+
+ function nameInAddress() {
+  var asked = (location.hash || "").replace(/^#/, "");
+  return linkFor(asked) ? asked : null;
+ }
+
+ function showing(href) {
+  try {
+   var file = href.split("/").pop();
+   var at = frame.contentWindow.location.pathname;
+   return at.slice(-file.length) === file;
+  } catch (err) {
+   return false;
+  }
+ }
+
+ /* Replacing the frame's own location leaves history.length where it is. Clicking a link whose
+    target is the frame is a frame navigation, and a frame navigation is a session history entry:
+    left alone, the slide show grew one every three seconds and Back rewound the show rather than
+    leaving the gallery. */
+ function showExample(name) {
+  var link = linkFor(name);
+  if (!link) { return; }
+  shownAt = links.indexOf(link);
+  for (var i = 0; i < links.length; i++) {
+   if (links[i] === link) { links[i].setAttribute("aria-current", "page"); }
+   else { links[i].removeAttribute("aria-current"); }
+  }
+  frame.setAttribute("title", "Example: " + (link.textContent || "").trim());
+  var href = link.getAttribute("href");
+  /* A reader's click sets the address and shows the example, and the address change then asks for
+     the same example again. The name last asked for is what makes the second ask free: without
+     it the frame is sent to the page it is already going to, since its location does not read as
+     the new one until the navigation commits. */
+  var already = asked === name || showing(href);
+  asked = name;
+  if (already) { sizeToExample(); return; }
+  try {
+   frame.contentWindow.location.replace(href);
+  } catch (err) {
+   frame.setAttribute("src", href);
+  }
+ }
+
+ /* The address bar names the example a reader is looking at, so an example can be linked to and
+    reopened. A reader's own click pushes an entry, which is what Back goes back through; an
+    automatic advance replaces the entry it is already on, so the show adds none. */
+ function putInAddress(name, push) {
+  if (("#" + name) === location.hash) { return; }
+  try {
+   if (push) { location.hash = name; }
+   else { history.replaceState(null, "", "#" + name); }
+  } catch (err) {
+   /* An origin that refuses the history API, such as a page opened from disk. The frame is still
+      showing the right example; only the address bar is behind. */
+  }
+ }
+
+ /* ---- the slide show ---- */
+
+ function say(text) {
+  if (state) { state.textContent = text; }
+ }
+
+ function startShow(told) {
+  if (showRunning) { return; }
+  showRunning = true;
+  toggle.textContent = "Pause the slide show";
+  toggle.setAttribute("aria-label", "Pause the slide show");
+  say(told || "The examples change every three seconds.");
+  showTimer = setTimeout(advance, SHOW_MS);
+ }
+
+ function stopShow(told) {
+  showRunning = false;
+  if (showTimer) { clearTimeout(showTimer); showTimer = null; }
+  toggle.textContent = "Play the slide show";
+  toggle.setAttribute("aria-label", "Play the slide show");
+  say(told || "The slide show is paused.");
+ }
+
+ function advance() {
+  showTimer = null;
+  if (!showRunning || links.length === 0) { return; }
+  shownAt = (shownAt + 1) % links.length;
+  var name = nameOf(links[shownAt]);
+  showExample(name);
+  putInAddress(name, false);
+  showTimer = setTimeout(advance, SHOW_MS);
+ }
+
+ toggle.addEventListener("click", function () {
+  if (showRunning) { stopShow(); } else { startShow(); }
+ });
+
+ /* Any click, any key and any focus elsewhere on the page stops the show, because each of them is
+    a reader doing something the show would interrupt. The button is the one exception: its own
+    click is how a reader asks for the show, and the focus that click brings with it. */
+ function readerActed(ev) {
+  var at = ev.target;
+  if (at && toggle && (at === toggle || (toggle.contains && toggle.contains(at)))) { return; }
+  if (showRunning) { stopShow(); }
+ }
+ document.addEventListener("click", readerActed, true);
+ document.addEventListener("keydown", readerActed, true);
+ document.addEventListener("focusin", readerActed, true);
+
+ /* A reader's click on an example: one history entry, named for the example, and the show stopped.
+    A click asking for a new tab or a new window is left to the browser. */
+ for (var i = 0; i < links.length; i++) {
+  links[i].addEventListener("click", function (ev) {
+   if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) { return; }
+   ev.preventDefault();
+   var name = nameOf(ev.currentTarget);
+   putInAddress(name, true);
+   showExample(name);
+  });
+ }
+
+ window.addEventListener("hashchange", function () {
+  var name = nameInAddress();
+  showExample(name || nameOf(links[0]));
+ });
+
+ /* ---- opening the page ---- */
+
+ var opensOn = nameInAddress();
+ showExample(opensOn || nameOf(links[0]));
+ sizeToExample();
+ watchExample();
+
+ /* Content that moves on its own needs a way to pause it (WCAG 2.2.2), and a reader whose system
+    asks for reduced motion has already said so, so the show waits for the button instead. */
+ var reduced = window.matchMedia
+  && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+ if (reduced) {
+  stopShow("Your system asks for reduced motion, so the slide show is paused.");
+ } else {
+  startShow();
+ }
+})();
 </script>
 </body>
 </html>
