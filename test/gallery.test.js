@@ -61,7 +61,8 @@ var types = {
  ".css": "text/css; charset=utf-8",
  ".js": "text/javascript; charset=utf-8",
  ".svg": "image/svg+xml",
- ".png": "image/png"
+ ".png": "image/png",
+ ".gif": "image/gif"
 };
 
 // The five pages the gallery frames, each with the word its own title has to carry. All five shared
@@ -83,6 +84,22 @@ var VIEWPORTS = [{ width: 1280, height: 800 }, { width: 390, height: 844 }];
 // show added a history entry every tick and reached every anchor on the page within one cycle, so a
 // wait this long is what makes either defect unmistakable rather than marginal.
 var WATCH_MS = 30000;
+
+// The widths the gallery's own layout is read at: a desktop, a narrow laptop, and a phone. The
+// phone width is the one the absolutely positioned navigation and the floated frame failed at, each
+// laid over the other; 1024 is the width either side of the stacking break worth reading, since the
+// grid stacks below 760.
+var GALLERY_WIDTHS = [1280, 1024, 390];
+
+// Long enough for two advances at three seconds, and a little over, which is what makes "it stopped"
+// and "it is between ticks" different readings.
+var SHOW_WATCH_MS = 7400;
+
+// The two examples the sizing is read with: the tallest of the five and the shortest. A frame left
+// at the height of the page before is only visible as a defect when the two differ, so the pair is
+// named rather than taken in file order.
+var TALLEST = "chatGPT_Bookmark_IntroToComputerScience";
+var SHORTEST = "chatGPT_Bookmark_Schedule";
 
 // The href the appended anchor points at. Nothing serves it, and that is the point: a 404 is still
 // a navigation, so if the slide show clicks it the top level leaves /index.html and says so.
@@ -146,9 +163,13 @@ function readGallery() {
   entries: history.length,
   here: location.pathname,
   shown: shown,
-  marked: Array.prototype.filter.call(document.querySelectorAll("[data-active]"), function (a) {
-   return a.dataset.active === "1";
-  }).map(function (a) { return (a.textContent || "").trim(); })
+  hash: location.hash,
+  // The open example is marked with aria-current, which a screen reader announces. It was
+  // data-active until 11.23.2026, an attribute nothing but the style sheet ever read.
+  marked: Array.prototype.filter.call(document.querySelectorAll(".sideNav a"), function (a) {
+   return a.getAttribute("aria-current") === "page";
+  }).map(function (a) { return (a.textContent || "").trim(); }),
+  stale: document.querySelectorAll("[data-active]").length
  };
 }
 
@@ -156,12 +177,12 @@ function readGallery() {
 // queued "Explain the page above the gallery" item adds will be: a README link, a raw file link, a
 // gist link, a short.
 function appendPlainAnchor(href) {
- var nav = document.querySelector("div.sideNav");
+ var nav = document.querySelector(".sideNav");
  var added = document.createElement("a");
  added.href = href;
  added.textContent = "An ordinary link";
  nav.appendChild(added);
- return document.querySelectorAll("div.sideNav a").length;
+ return document.querySelectorAll(".sideNav a").length;
 }
 
 // Every glyph run on the page against every element the page has taken out of the flow and left
@@ -366,6 +387,140 @@ function diffShots(args) {
  });
 }
 
+// What the gallery says about itself in its own markup: the parts a validator reads, the parts a
+// phone needs, and the parts a reader is owed above the frame. Read from the rendered page rather
+// than from the file, so an attribute the parser dropped is absent here too.
+function readIdentity() {
+ function at(sel, name) {
+  var el = document.querySelector(sel);
+  return el ? el.getAttribute(name) : null;
+ }
+ var frame = document.getElementById("examples");
+ var toggle = document.getElementById("showToggle");
+ var text = (document.body.textContent || "").replace(/\s+/g, " ");
+ return {
+  lang: document.documentElement.lang,
+  viewport: at("meta[name='viewport']", "content"),
+  description: at("meta[name='description']", "content"),
+  icon: at("link[rel~='icon']", "href"),
+  title: document.title,
+  h1: Array.prototype.map.call(document.querySelectorAll("h1"), function (h) {
+   return (h.textContent || "").trim();
+  }),
+  outline: Array.prototype.map.call(document.querySelectorAll("h1,h2,h3,h4,h5,h6"),
+   function (h) { return Number(h.tagName.slice(1)); }),
+  frameTitle: frame ? frame.getAttribute("title") : null,
+  frameBorder: frame ? frame.getAttribute("frameborder") : null,
+  frameName: frame ? frame.getAttribute("name") : null,
+  // The attribute the open example used to be marked with, and the inline handlers the hover
+  // behaviour used to live in. Both should be gone from the page entirely.
+  staleActive: document.querySelectorAll("[data-active]").length,
+  inlineHandlers: Array.prototype.filter.call(document.querySelectorAll("*"), function (el) {
+   return el.hasAttribute("onclick") || el.hasAttribute("onmouseover");
+  }).length,
+  controls: toggle ? 1 : 0,
+  toggleText: toggle ? (toggle.textContent || "").trim() : null,
+  links: Array.prototype.map.call(document.querySelectorAll(".sideNav a[data-example]"),
+   function (a) { return a.getAttribute("data-example"); }),
+  practice: Array.prototype.map.call(document.querySelectorAll(".practice a"),
+   function (a) { return a.getAttribute("href"); }),
+  practiceNames: Array.prototype.map.call(document.querySelectorAll(".practice li"),
+   function (li) { return (li.textContent || "").replace(/\s+/g, " ").trim(); }),
+  installImg: at(".install img", "src"),
+  installAlt: at(".install img", "alt"),
+  // An 11 MB animation is a page nobody on a phone asked to download, so it waits for a
+  // disclosure and loads lazily. Both together are what keep it off the first paint.
+  installLazy: at(".install img", "loading"),
+  installFolded: !!document.querySelector(".install details img"),
+  tells: text
+ };
+}
+
+// The navigation against the frame, at whatever width the viewport is set to. The two were an
+// absolutely positioned block and a float until 11.23.2026, so at 390px the frame was painted over
+// the right 29px of every 49px-wide nav link and took any press aimed there.
+function readGalleryLayout() {
+ var nav = document.querySelector(".sideNav");
+ var frame = document.getElementById("examples");
+ nav.scrollIntoView({ block: "start" });
+ var navBox = nav.getBoundingClientRect();
+ var frameBox = frame.getBoundingClientRect();
+ var over = Math.min(navBox.right, frameBox.right) - Math.max(navBox.left, frameBox.left);
+ var tall = Math.min(navBox.bottom, frameBox.bottom) - Math.max(navBox.top, frameBox.top);
+ var covered = [];
+ var clipped = [];
+ Array.prototype.forEach.call(document.querySelectorAll(".sideNav a[data-example]"),
+  function (a) {
+   var name = a.getAttribute("data-example");
+   var box = a.getBoundingClientRect();
+   // A link's own words against the box they are laid in. A block link wraps, so this only ever
+   // fires on a box too narrow for one word of it or on an overflow that hides the rest.
+   if (a.scrollWidth > a.clientWidth + 1 || a.scrollHeight > a.clientHeight + 1) {
+    clipped.push(name + " " + a.scrollWidth + "x" + a.scrollHeight + " in "
+     + a.clientWidth + "x" + a.clientHeight);
+   }
+   var x = Math.round(box.left + Math.min(box.width / 2, 40));
+   var y = Math.round(box.top + box.height / 2);
+   if (y < 0 || y > window.innerHeight - 1 || x < 0 || x > window.innerWidth - 1) {
+    covered.push(name + " is off screen at " + x + "," + y);
+    return;
+   }
+   var top = document.elementFromPoint(x, y);
+   if (!top || !(top === a || a.contains(top))) {
+    covered.push(name + " at " + x + "," + y + " is under "
+     + (top ? top.tagName.toLowerCase() + "." + String(top.className || "") : "nothing"));
+   }
+  });
+ return {
+  // Overlap only counts where both axes overlap: two boxes side by side share a band of rows and
+  // no columns, which is not one painted over the other.
+  overlaps: over > 1 && tall > 1,
+  overlap: Math.round(over) + "x" + Math.round(tall),
+  nav: Math.round(navBox.left) + "," + Math.round(navBox.top)
+   + " " + Math.round(navBox.width) + "x" + Math.round(navBox.height),
+  frame: Math.round(frameBox.left) + "," + Math.round(frameBox.top)
+   + " " + Math.round(frameBox.width) + "x" + Math.round(frameBox.height),
+  stacked: Math.round(navBox.bottom) <= Math.round(frameBox.top) + 1,
+  covered: covered,
+  clipped: clipped,
+  sideways: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  scrollWidth: document.documentElement.scrollWidth,
+  clientWidth: document.documentElement.clientWidth
+ };
+}
+
+// The frame's height against the height of the page inside it. The old sizing ran an interval every
+// 100 ms and cleared it after 300, whether or not the example had arrived, so a frame could be left
+// at the height of the page before.
+function readFit() {
+ var frame = document.getElementById("examples");
+ var inside = null;
+ try {
+  var doc = frame.contentDocument;
+  inside = {
+   content: Math.round(doc.documentElement.getBoundingClientRect().height),
+   scrollsInside: doc.documentElement.scrollHeight > doc.documentElement.clientHeight + 1
+  };
+ } catch (err) {
+  inside = null;
+ }
+ var shows = "(unreachable)";
+ try { shows = frame.contentWindow.location.pathname; } catch (err2) { shows = "(unreachable)"; }
+ var style = getComputedStyle(frame);
+ return {
+  frameHeight: Math.round(frame.getBoundingClientRect().height),
+  minHeight: Math.round(parseFloat(style.minHeight) || 0),
+  // The frame is a border box, so its two pixels of border come out of the viewport the example
+  // gets. A height set to the example's own height leaves it scrolling inside the frame by that.
+  border: style.boxSizing === "border-box"
+   ? Math.round((parseFloat(style.borderTopWidth) || 0) + (parseFloat(style.borderBottomWidth) || 0))
+   : 0,
+  shows: shows,
+  content: inside ? inside.content : 0,
+  scrollsInside: inside ? inside.scrollsInside : false
+ };
+}
+
 // ---- the passes that fill the report ----
 
 // The gallery left alone for half a minute, reached from a page before it so that Back has
@@ -395,6 +550,217 @@ async function watchGallery() {
   });
   await ctx.close();
   return { navLinks: navLinks, atStart: atStart, atEnd: atEnd, asked: asked, back: back };
+ } finally {
+  await browser.close();
+ }
+}
+
+// The gallery page itself: what it says in its markup, how it lays out at three widths, where Tab
+// goes, what it logs, how the frame is sized, and what the address bar holds. One page serves all
+// of it, because every reading is of the same unchanged page and the only thing that costs time is
+// opening it.
+async function readSite() {
+ var browser = await playwright.chromium.launch();
+ try {
+  var ctx = await browser.newContext({ viewport: { width: GALLERY_WIDTHS[0], height: 800 } });
+  var page = await ctx.newPage();
+  await serveRoot(page);
+  var logged = [];
+  page.on("console", function (msg) { logged.push(msg.type() + ": " + msg.text()); });
+  page.on("pageerror", function (err) { logged.push("pageerror: " + String(err && err.message)); });
+  await page.goto(origin + "/index.html", { waitUntil: "load" });
+  await page.waitForTimeout(900);
+  var identity = await page.evaluate(readIdentity);
+
+  var layout = {};
+  for (var w = 0; w < GALLERY_WIDTHS.length; w++) {
+   await page.setViewportSize({ width: GALLERY_WIDTHS[w], height: 844 });
+   await page.waitForTimeout(400);
+   layout[GALLERY_WIDTHS[w]] = await page.evaluate(readGalleryLayout);
+  }
+  await page.setViewportSize({ width: GALLERY_WIDTHS[0], height: 800 });
+  await page.waitForTimeout(300);
+
+  // Tab from the top of the page. The first press is also a key press, which stops the slide show,
+  // so focus stays where it is put for the rest of the walk.
+  await page.evaluate(function () {
+   window.scrollTo(0, 0);
+   if (document.activeElement && document.activeElement.blur) { document.activeElement.blur(); }
+  });
+  var stops = [];
+  for (var t = 0; t < 24; t++) {
+   await page.keyboard.press("Tab");
+   var at = await page.evaluate(function () {
+    var a = document.activeElement;
+    if (!a || a === document.body) { return null; }
+    var s = getComputedStyle(a);
+    return {
+     tag: a.tagName.toLowerCase(),
+     example: a.getAttribute ? a.getAttribute("data-example") : null,
+     // A ring a reader can see, read from the focused element rather than from the style sheet:
+     // :focus-visible is what decides whether the ring is drawn at all.
+     marked: a.matches(":focus-visible") && s.outlineStyle !== "none"
+      && (parseFloat(s.outlineWidth) || 0) >= 1,
+     text: (a.textContent || "").replace(/\s+/g, " ").trim().slice(0, 40)
+    };
+   });
+   stops.push(at);
+   if (at && at.tag === "iframe") { break; }
+  }
+
+  // The frame sized to the example it is showing. The tallest of the five, then the shortest: a
+  // frame left at the height of the page before shows as the second reading matching the first.
+  var fit = {};
+  var names = [TALLEST, SHORTEST];
+  for (var f = 0; f < names.length; f++) {
+   await page.locator(".sideNav a[data-example='" + names[f] + "']").click();
+   await page.waitForTimeout(1500);
+   fit[names[f]] = await page.evaluate(readFit);
+  }
+
+  // The address bar, and Back through it. Reached from a page before the gallery so the count of
+  // entries this page adds can be told from the entries that were already there.
+  await page.goto(origin + BEFORE, { waitUntil: "load" });
+  await page.goto(origin + "/index.html", { waitUntil: "load" });
+  await page.waitForTimeout(600);
+  var atOpen = await page.evaluate(readGallery);
+  await page.locator(".sideNav a[data-example='chatGPT_Bookmark_GreenMarketing']").click();
+  await page.waitForTimeout(900);
+  var firstPick = await page.evaluate(readGallery);
+  await page.locator(".sideNav a[data-example='chatGPT_Bookmark_SocialMediaMarketing']").click();
+  await page.waitForTimeout(900);
+  var secondPick = await page.evaluate(readGallery);
+  // history.back() rather than Playwright's goBack: this is a same-document navigation, and what
+  // is being read is what the page does with it.
+  await page.evaluate(function () { history.back(); });
+  await page.waitForTimeout(900);
+  var afterBack = await page.evaluate(readGallery);
+
+  // The address a reader was given, used as an address: the gallery opened on it directly.
+  await page.goto(origin + "/index.html#chatGPT_Bookmark_BroadwayMusical", { waitUntil: "load" });
+  await page.waitForTimeout(1200);
+  var opened = await page.evaluate(readGallery);
+
+  await ctx.close();
+  return { identity: identity, layout: layout, stops: stops, fit: fit, logged: logged,
+   atOpen: atOpen, firstPick: firstPick, secondPick: secondPick, afterBack: afterBack,
+   opened: opened };
+ } finally {
+  await browser.close();
+ }
+}
+
+// The pause control used. Content that moves on its own owes a reader a way to stop it (WCAG
+// 2.2.2), and the only reading that settles whether it has one is pressing it: watch the frame
+// advance, press pause, watch it not advance, press play, watch it advance again.
+async function usePauseControl() {
+ var browser = await playwright.chromium.launch();
+ try {
+  var ctx = await browser.newContext({ viewport: { width: GALLERY_WIDTHS[0], height: 800 } });
+  var page = await ctx.newPage();
+  await serveRoot(page);
+  var asked = [];
+  page.on("request", function (req) {
+   if (req.resourceType() === "document" && req.url().indexOf("/examples/") >= 0) {
+    asked.push(new URL(req.url()).pathname);
+   }
+  });
+  var toggle = page.locator("#showToggle");
+  await page.goto(origin + "/index.html", { waitUntil: "load" });
+  await page.waitForTimeout(SHOW_WATCH_MS);
+  var running = asked.length;
+  var saysRunning = (await toggle.textContent()).trim();
+  await toggle.click();
+  await page.waitForTimeout(300);
+  var atPause = asked.length;
+  var saysPaused = (await toggle.textContent()).trim();
+  await page.waitForTimeout(SHOW_WATCH_MS);
+  var paused = asked.length;
+  await toggle.click();
+  await page.waitForTimeout(SHOW_WATCH_MS);
+  var played = asked.length;
+  var saysPlaying = (await toggle.textContent()).trim();
+  await ctx.close();
+  return { running: running, atPause: atPause, paused: paused, played: played,
+   saysRunning: saysRunning, saysPaused: saysPaused, saysPlaying: saysPlaying };
+ } finally {
+  await browser.close();
+ }
+}
+
+// The gallery opened by a reader whose system asks for reduced motion. The frame's own src is one
+// document request and is not the show moving, so one request over this wait is the show never
+// having started.
+async function readReducedMotion() {
+ var browser = await playwright.chromium.launch();
+ try {
+  var ctx = await browser.newContext({ viewport: { width: GALLERY_WIDTHS[0], height: 800 },
+   reducedMotion: "reduce" });
+  var page = await ctx.newPage();
+  await serveRoot(page);
+  var asked = [];
+  page.on("request", function (req) {
+   if (req.resourceType() === "document" && req.url().indexOf("/examples/") >= 0) {
+    asked.push(new URL(req.url()).pathname);
+   }
+  });
+  await page.goto(origin + "/index.html", { waitUntil: "load" });
+  await page.waitForTimeout(SHOW_WATCH_MS + 2000);
+  var found = await page.evaluate(function () {
+   var toggle = document.getElementById("showToggle");
+   var state = document.getElementById("showState");
+   return {
+    asks: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    toggleText: toggle ? (toggle.textContent || "").trim() : null,
+    stateText: state ? (state.textContent || "").trim() : null
+   };
+  });
+  var atRest = asked.length;
+  // The reader asking for reduced motion is still owed the show if they want it, so the control
+  // is pressed here too: paused by default is not the same as taken away.
+  await page.locator("#showToggle").click();
+  await page.waitForTimeout(SHOW_WATCH_MS);
+  var afterPlay = asked.length;
+  await ctx.close();
+  return { asks: found.asks, toggleText: found.toggleText, stateText: found.stateText,
+   navs: asked.slice(0, 8), atRest: atRest, afterPlay: afterPlay };
+ } finally {
+  await browser.close();
+ }
+}
+
+// The install animation costs 11 MB, and two things together keep it off the first paint: the
+// disclosure it sits behind, and loading="lazy". readIdentity reads both from the markup, and the
+// markup and the behaviour can part company here as everywhere else - a details given an open
+// attribute, an img lifted out of it, a lazy attribute dropped - each of which reads the same in
+// one of the two attributes and still costs a phone 11 MB before anything is asked for. So the
+// request itself is counted: every URL the page asks for while it paints, then every URL it asks
+// for once the disclosure is opened. Read at the phone width, since that is the reader the
+// download is heaviest for.
+async function readInstallCost() {
+ var browser = await playwright.chromium.launch();
+ try {
+  var ctx = await browser.newContext({ viewport: { width: GALLERY_WIDTHS[2], height: 844 } });
+  var page = await ctx.newPage();
+  var asked = [];
+  page.on("request", function (req) { asked.push(new URL(req.url()).pathname); });
+  await serveRoot(page);
+  await page.goto(origin + "/index.html", { waitUntil: "load" });
+  await page.waitForTimeout(1500);
+  var onPaint = asked.slice();
+  await page.evaluate(function () {
+   var summary = document.querySelector(".install details summary");
+   if (summary) { summary.click(); }
+  });
+  await page.waitForTimeout(2500);
+  var shown = await page.evaluate(function () {
+   var details = document.querySelector(".install details");
+   var img = document.querySelector(".install img");
+   return { open: !!(details && details.open), complete: !!(img && img.complete),
+    natural: img ? img.naturalWidth : 0 };
+  });
+  await ctx.close();
+  return { onPaint: onPaint, afterOpening: asked.slice(), shown: shown };
  } finally {
   await browser.close();
  }
@@ -586,16 +952,14 @@ async function readRings(targets) {
 // sets the page's own slide flag and the click then sets the clicked flag, so the slide show does
 // not step on a reading halfway through it.
 //
-// The press is near the link's left edge rather than at its centre, because at 390px the floated
-// frame is painted over the right 29px of every 49px-wide nav link and takes the press: that is the
-// first ## Current item's work, queued, and not what this pass reads.
+// The press lands on the link itself. Until 11.23.2026 it had to be aimed near the link's left edge,
+// because at 390px the floated frame was painted over the right 29px of every 49px-wide nav link and
+// took the press; the grid that replaced the float leaves the two side by side at every width.
 async function showFramed(page, file) {
  await page.goto(origin + "/index.html", { waitUntil: "load" });
  await page.waitForTimeout(400);
- var link = page.locator("div.sideNav a[href$='" + file + "']").first();
- var spot = { position: { x: 6, y: 10 } };
- await link.hover(spot);
- await link.click(spot);
+ var link = page.locator(".sideNav a[href$='" + file + "']").first();
+ await link.click();
  await page.waitForTimeout(1800);
  var frame = page.frames().find(function (f) {
   return f !== page.mainFrame() && f.url().indexOf(file) >= 0;
@@ -722,6 +1086,10 @@ var watched = null;
 var examples = null;
 var rings = null;
 var framedRings = null;
+var site = null;
+var paused = null;
+var reduced = null;
+var install = null;
 
 function eachExample(run) {
  Object.keys(examples).forEach(function (at) { run(at, examples[at]); });
@@ -729,6 +1097,10 @@ function eachExample(run) {
 
 test.before(async function () {
  watched = await watchGallery();
+ site = await readSite();
+ paused = await usePauseControl();
+ reduced = await readReducedMotion();
+ install = await readInstallCost();
  examples = await readExamples();
  // Only a box Tab reaches has a ring to measure, and which boxes those are is what the pass above
  // has just read, so the ring pass is handed its targets rather than opening all five pages to find
@@ -782,6 +1154,245 @@ test("the slide show steps the example links only, and never navigates the top l
   + " time(s)");
  assert.ok(watched.atEnd.shown.indexOf("/examples/") === 0,
   "the frame should be showing an example, it is showing " + watched.atEnd.shown);
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// The slide show, with a reader at it
+// ----------------------------------------------------------------------------------------------- //
+
+test("a reader is given a control that pauses the slide show, and starts it again", function () {
+ assert.strictEqual(site.identity.controls, 1, "the page should carry one slide show control, it "
+  + "carries " + site.identity.controls);
+ assert.ok(paused.running >= 3, "in " + (SHOW_WATCH_MS / 1000) + " seconds the show should have "
+  + "moved the frame at least twice past its own src, it asked for " + paused.running
+  + " example(s) in all");
+ assert.strictEqual(paused.saysRunning, "Pause the slide show", "while the show runs the control "
+  + "should offer to pause it, it reads " + JSON.stringify(paused.saysRunning));
+ assert.strictEqual(paused.paused, paused.atPause, "paused, the show should move the frame no "
+  + "further: it went from " + paused.atPause + " to " + paused.paused + " examples over "
+  + (SHOW_WATCH_MS / 1000) + " seconds");
+ assert.strictEqual(paused.saysPaused, "Play the slide show", "paused, the control should offer to "
+  + "play it, it reads " + JSON.stringify(paused.saysPaused));
+ assert.ok(paused.played > paused.paused, "played again, the show should move the frame: it stayed "
+  + "at " + paused.played + " examples");
+ assert.strictEqual(paused.saysPlaying, "Pause the slide show", "playing again, the control should "
+  + "offer to pause it, it reads " + JSON.stringify(paused.saysPlaying));
+});
+
+test("the slide show never starts for a reader who asks for reduced motion", function () {
+ assert.ok(reduced.asks, "the context should be asking for reduced motion");
+ assert.strictEqual(reduced.atRest, 1, "the frame's own src is one document request and is not the "
+  + "show moving, so " + (SHOW_WATCH_MS + 2000) / 1000 + " seconds should hold exactly that one: "
+  + JSON.stringify(reduced.navs));
+ assert.strictEqual(reduced.toggleText, "Play the slide show", "the control should offer to play "
+  + "the show, it reads " + JSON.stringify(reduced.toggleText));
+ assert.ok(/reduced motion/i.test(String(reduced.stateText)), "the page should say why the show is "
+  + "not running, it says " + JSON.stringify(reduced.stateText));
+ assert.ok(reduced.afterPlay > reduced.atRest, "a reader asking for reduced motion who presses "
+  + "play should get the show: it stayed at " + reduced.afterPlay + " example(s)");
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// The example a reader is looking at, and its address
+// ----------------------------------------------------------------------------------------------- //
+
+test("choosing an example names it in the address bar, and adds one entry per choice", function () {
+ assert.strictEqual(site.firstPick.hash, "#chatGPT_Bookmark_GreenMarketing",
+  "choosing an example should name it in the address bar, it reads "
+  + JSON.stringify(site.firstPick.hash));
+ assert.ok(site.firstPick.shown.indexOf("GreenMarketing") >= 0,
+  "the frame should be showing the chosen example, it shows " + site.firstPick.shown);
+ assert.strictEqual(site.secondPick.entries - site.atOpen.entries, 2,
+  "two choices should add two history entries, they added "
+  + (site.secondPick.entries - site.atOpen.entries));
+});
+
+test("Back returns to the example chosen before it", function () {
+ assert.strictEqual(site.afterBack.hash, "#chatGPT_Bookmark_GreenMarketing",
+  "one press of Back should return to the example chosen before, the address reads "
+  + JSON.stringify(site.afterBack.hash));
+ assert.ok(site.afterBack.shown.indexOf("GreenMarketing") >= 0,
+  "and the frame should be showing it, it shows " + site.afterBack.shown);
+ assert.deepStrictEqual(site.afterBack.marked, ["ChatGPT - Green Marketing"],
+  "and its link should be the one marked as open, these are: "
+  + JSON.stringify(site.afterBack.marked));
+});
+
+test("opening the gallery on an example's address shows that example", function () {
+ assert.ok(site.opened.shown.indexOf("BroadwayMusical") >= 0,
+  "opened on #chatGPT_Bookmark_BroadwayMusical the frame should show that example, it shows "
+  + site.opened.shown);
+ assert.deepStrictEqual(site.opened.marked, ["ChatGPT - Broadway Musical"],
+  "and its link should be the one marked as open, these are: "
+  + JSON.stringify(site.opened.marked));
+});
+
+test("the open example is marked with aria-current, and nothing with data-active", function () {
+ assert.strictEqual(site.identity.staleActive, 0, "data-active was read by the style sheet alone "
+  + "and says nothing to a screen reader: " + site.identity.staleActive + " element(s) carry it");
+ assert.strictEqual(site.atOpen.stale, 0, "and none should appear once the page has run");
+ assert.strictEqual(site.atOpen.marked.length, 1, "one link should be marked as the open one, "
+  + site.atOpen.marked.length + " are");
+});
+
+// ----------------------------------------------------------------------------------------------- //
+// The gallery page itself
+// ----------------------------------------------------------------------------------------------- //
+
+test("the gallery names its language, asks a phone to lay it out, and describes itself",
+ function () {
+  assert.ok(site.identity.lang, "the page should name its language, so a screen reader does not "
+   + "guess it");
+  assert.ok(/width=device-width/.test(String(site.identity.viewport)),
+   "the page should carry a viewport meta, so a phone lays it out at its own width rather than at "
+   + "980px scaled down: " + JSON.stringify(site.identity.viewport));
+  assert.ok(String(site.identity.description).length > 40, "the page should carry a description, "
+   + "it carries " + JSON.stringify(site.identity.description));
+  assert.strictEqual(site.identity.icon, "favicon.png", "the page should use the repository's own "
+   + "favicon, it names " + JSON.stringify(site.identity.icon));
+ });
+
+test("the tab's title and the page's heading read the same", function () {
+ assert.deepStrictEqual(site.identity.h1, [site.identity.title], "the title and the one h1 should "
+  + "read alike; the title is " + JSON.stringify(site.identity.title) + " and the h1s are "
+  + JSON.stringify(site.identity.h1));
+});
+
+test("the frame is named for a reader, and carries no obsolete attribute", function () {
+ assert.ok(/example/i.test(String(site.identity.frameTitle)), "the frame should carry a title "
+  + "naming what it holds, it carries " + JSON.stringify(site.identity.frameTitle));
+ assert.strictEqual(site.identity.frameBorder, null, "the frameborder attribute is obsolete and is "
+  + "a validator error; the border is CSS. It reads "
+  + JSON.stringify(site.identity.frameBorder));
+ assert.strictEqual(site.identity.frameName, "examples", "the frame should keep its name, so a "
+  + "link's target still reaches it with the page's script off");
+ assert.strictEqual(site.identity.inlineHandlers, 0, "the hover that the slide show read as a "
+  + "click lived in an inline handler; " + site.identity.inlineHandlers + " element(s) still carry "
+  + "one");
+});
+
+test("no heading level is skipped going down the gallery's outline", function () {
+ var levels = site.identity.outline;
+ assert.ok(levels.length >= 4, "the page should have an outline to read, it has " + levels.length
+  + " heading(s)");
+ assert.strictEqual(levels[0], 1, "the outline should open at h1, it opens at h" + levels[0]);
+ for (var i = 1; i < levels.length; i++) {
+  assert.ok(levels[i] <= levels[i - 1] + 1, "h" + levels[i - 1] + " is followed by h" + levels[i]
+   + ", which skips a level");
+ }
+});
+
+test("the page says what the examples are and where they came from", function () {
+ var tells = site.identity.tells;
+ assert.ok(/bookmarklet/i.test(tells), "the page should say the examples came from a bookmarklet");
+ assert.ok(/Paste Ready Bookmark Response/.test(tells), "and name the bookmarklet that saved them");
+ assert.ok(/github\.com|repositor/i.test(tells), "and point at the repository");
+ assert.ok(/gist/i.test(tells), "and link its gist");
+ assert.ok(/short/i.test(tells), "and link its short");
+ assert.strictEqual(site.identity.installImg, "support/Demo-ReadyToUse.gif",
+  "the install note should show the repository's own install animation, it shows "
+  + JSON.stringify(site.identity.installImg));
+ assert.ok(String(site.identity.installAlt).length > 20, "the animation should describe itself for "
+  + "a reader who cannot see it, its alt reads " + JSON.stringify(site.identity.installAlt));
+ assert.strictEqual(site.identity.installLazy, "lazy", "an 11 MB animation should load when it is "
+  + "asked for, not on the first paint; its loading attribute reads "
+  + JSON.stringify(site.identity.installLazy));
+ assert.ok(site.identity.installFolded, "and it should sit behind a disclosure, which is what "
+  + "keeps a lazy image out of the first paint");
+});
+
+test("the install animation is fetched when a reader opens it, and never on the first paint",
+ function () {
+  var gif = site.identity.installImg;
+  var where = GALLERY_WIDTHS[2] + "px";
+  var onPaint = install.onPaint.filter(function (url) { return url.indexOf(gif) >= 0; });
+  assert.deepStrictEqual(onPaint, [], where + ": the page should paint without fetching the 11 MB "
+   + "animation, it asked for " + JSON.stringify(onPaint) + " of "
+   + install.onPaint.length + " requests");
+  var afterOpening = install.afterOpening.filter(function (url) { return url.indexOf(gif) >= 0; });
+  assert.strictEqual(afterOpening.length, 1, where + ": opening the disclosure should fetch the "
+   + "animation once, it was fetched " + afterOpening.length + " time(s)");
+  assert.ok(install.shown.open, where + ": the disclosure should be open after its summary is "
+   + "pressed");
+  assert.ok(install.shown.complete && install.shown.natural > 0, where + ": and the animation "
+   + "should have arrived, it reads complete=" + install.shown.complete + " naturalWidth="
+   + install.shown.natural);
+ });
+
+test("the gallery lists the practice pages, each with what to try on it", function () {
+ var wanted = ["article", "table", "form", "sidebar", "video", "lazy", "scroll", "snippet"];
+ wanted.forEach(function (page) {
+  var href = "test/fixtures/pages/" + page + ".html";
+  assert.ok(site.identity.practice.indexOf(href) >= 0, "the practice list should link " + href
+   + ", it links " + JSON.stringify(site.identity.practice));
+ });
+ assert.ok(site.identity.practice.indexOf("test/fixtures/pages/index.html") >= 0,
+  "and the index of the practice pages");
+ assert.strictEqual(site.identity.practiceNames.length, wanted.length, "one entry per page: "
+  + site.identity.practiceNames.length + " entries for " + wanted.length + " pages");
+ site.identity.practiceNames.forEach(function (said) {
+  assert.ok(/try/i.test(said), "each entry should name the bookmarklets to try on its page: "
+   + JSON.stringify(said.slice(0, 60)));
+ });
+});
+
+test("the navigation and the frame never overlap, at a desktop, a laptop or a phone", function () {
+ GALLERY_WIDTHS.forEach(function (width) {
+  var at = site.layout[width];
+  var where = width + "px";
+  assert.ok(!at.overlaps, where + ": the navigation and the frame should not be laid over each "
+   + "other, they overlap by " + at.overlap + " (nav " + at.nav + ", frame " + at.frame + ")");
+  assert.deepStrictEqual(at.covered, [], where + ": every example link should be the thing under "
+   + "the pointer at its own middle");
+  assert.deepStrictEqual(at.clipped, [], where + ": a link's own words should fit the box they are "
+   + "laid in");
+  assert.ok(!at.sideways, where + ": the page should not scroll sideways, it is " + at.scrollWidth
+   + " wide in " + at.clientWidth);
+ });
+ assert.ok(site.layout[390].stacked, "390px: the navigation should stack above the frame rather "
+  + "than beside it (nav " + site.layout[390].nav + ", frame " + site.layout[390].frame + ")");
+ assert.ok(!site.layout[1280].stacked, "1280px: the navigation should sit beside the frame (nav "
+  + site.layout[1280].nav + ", frame " + site.layout[1280].frame + ")");
+});
+
+test("Tab reaches the five example links in the order they are listed, each visibly marked",
+ function () {
+  var reached = site.stops.filter(function (at) { return at && at.example; });
+  assert.deepStrictEqual(reached.map(function (at) { return at.example; }),
+   site.identity.links, "Tab should reach the five example links in the order the navigation "
+   + "lists them, it reached " + JSON.stringify(reached.map(function (at) { return at.example; })));
+  var unmarked = reached.filter(function (at) { return !at.marked; })
+   .map(function (at) { return at.example; });
+  assert.deepStrictEqual(unmarked, [], "every focused link should be drawn with a ring a reader "
+   + "can see; these were not: " + JSON.stringify(unmarked));
+ });
+
+test("the frame is sized to the example it is showing, not to the one before it", function () {
+ var tall = site.fit[TALLEST];
+ var short = site.fit[SHORTEST];
+ assert.ok(tall.shows.indexOf(TALLEST) >= 0, "the first reading should be of " + TALLEST
+  + ", it is of " + tall.shows);
+ assert.ok(short.shows.indexOf(SHORTEST) >= 0, "the second reading should be of " + SHORTEST
+  + ", it is of " + short.shows);
+ assert.ok(tall.content - short.content > 100, "the two examples should differ in height by enough "
+  + "for a frame left at the first one's height to show: " + tall.content + " and " + short.content);
+ [[TALLEST, tall], [SHORTEST, short]].forEach(function (pair) {
+  var at = pair[1];
+  var want = Math.max(at.content + at.border, at.minHeight);
+  assert.ok(Math.abs(at.frameHeight - want) <= 4, pair[0] + ": the frame should be "
+   + want + "px for " + at.content + "px of page, plus " + at.border + "px of border (min-height "
+   + at.minHeight + "), it is " + at.frameHeight + "px");
+  assert.ok(!at.scrollsInside, pair[0] + ": the example should be read down the gallery rather "
+   + "than inside a frame with a scrollbar of its own");
+ });
+});
+
+test("the gallery's own script logs nothing", function () {
+ var bad = site.logged.filter(function (said) {
+  return !/^(log|debug|info):/.test(said);
+ });
+ assert.deepStrictEqual(bad, [], "the page should raise nothing over a run that opens it, resizes "
+  + "it three times, walks it with Tab and clicks through it: " + JSON.stringify(bad));
 });
 
 // ----------------------------------------------------------------------------------------------- //

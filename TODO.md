@@ -27,64 +27,64 @@ its README entry linking that gist. Runs post and update gists with
 
 ## Current
 
-- [ ] Make `index.html` work on a phone and pass the W3C validator
-  - Add `lang="en"`, `<meta name="viewport">`, a description, and the
-    repository's `favicon.png`. Give the frame a `title`.
-  - Replace the absolutely positioned 15% side navigation and the floated 80%
-    frame with a grid that stacks the navigation above the frame on narrow
-    screens.
-  - Style the frame's border with CSS in place of the deprecated
-    `frameborder` attribute, which also lacks a space before it today.
-  - Make the `<title>` and the `<h1>` agree. They read "Bookmarklet Examples"
-    and "Bookmarklets Examples" today.
+- [ ] Check the deployed site in the scheduled run
+  - Open the live site, open every example and practice page from its
+    navigation, and fail on a broken link, a missing page, or a console error
+    from the site's own script.
+  - After a push that changes the site, wait for the Pages build to finish
+    (`gh api repos/isocialPractice/bookmarklets/pages/builds/latest`) before
+    checking.
   - From: Improve GitHub Pages Site
-- [ ] Give each example its own address
-  - Choosing an example sets `#<example-file-name>` in the address bar,
-    opening the page with that hash shows that example, and Back returns to
-    the previous one. The README can then link straight to an example.
-  - Mark the open example's link with `aria-current="page"` in place of
-    `data-active`, with a visible focus style.
-  - Size the frame from the example's `load` event and a `ResizeObserver` on
-    its body. The examples share the site's origin, so this replaces the
-    polling loop that runs every 100 ms and stops after 300.
-  - From: Improve GitHub Pages Site
-- [ ] Let a reader control the slideshow
-  - It advances every three seconds until something is clicked, and treats a
-    hover as a click. Give it a visible pause and play button.
-  - Stop it on any click, focus or key press, and never start it when the
-    reader's system asks for reduced motion (`prefers-reduced-motion`).
-    Content that moves on its own needs a way to pause it (WCAG 2.2.2).
-  - Two parts of this landed on 11.20.2026 with the UI/UX override's found
-    issues, because the gallery was sending readers off the site without them:
-    it now steps the five example links rather than every `<a>` on the page,
-    and an automatic advance replaces the frame's location rather than clicking
-    a link, so it adds no session history entry. `test/gallery.test.js` guards
-    both. The control and `prefers-reduced-motion` are what is left.
-  - From: Improve GitHub Pages Site
-- [ ] Explain the page above the gallery
-  - Say what the examples are: pages that
-    `ChatGPT - Paste Ready Bookmark Response` saved as bookmarks, each shown
-    as a reader would see it on opening the bookmark. Link the bookmarklet's
-    README entry, raw file, gist and short.
-  - Add a short how-to-install with `support/Demo-ReadyToUse.gif`, and a link
-    to the README for the full list.
-  - From: Improve GitHub Pages Site
-- [ ] Add practice pages, where a reader can try the bookmarklets that work on
-  any page (`dom_`, `nav_`, `style_` and `window_`): an article with headings
-  and long text, a table, a form, a page with a sidebar, and one with a video
-  - Link them from the gallery under their own heading, each listing the
-    bookmarklets to try on it.
-  - Make them the same pages as the test fixtures under `## Test Harness`, so
-    one set serves both the site and the tests. They are in
-    `test/fixtures/pages/` as of 11.08.2026 - an article, a table, a form, a
-    sidebar, a video, a page whose loader never finishes, a long page, a small
-    page holding one of each thing a converter handles, and an index listing
-    them. Pages already serves them; this item is the gallery link.
+- [ ] Give the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes a
+  real dark colour scheme, or take its dark rules out
+  - Its `@media (prefers-color-scheme: dark)` block still darkens the code blocks
+    on a page that never darkens. `body` carries `background: rgb(47 79 79 / 3%)`,
+    which propagates to the canvas, so the saved page is painted near-white in both
+    schemes. A dark code block on it is readable on its own terms, so this is a look
+    rather than a break - but it is the same shape of problem the focus ring had,
+    fixed on 11.22.2026 by dropping its dark branch. Either darken the canvas, the
+    table, the headings and the body text together and keep the dark rules, giving
+    the ring its `#58a6ff` back with them, or drop them. The reading in
+    `test/gallery.test.js` that says the page is painted alike in both schemes is
+    the one to change if the page is given a real dark mode, and it says so.
+  - From: Existing Bookmarklets
+- [ ] Add an install page with a drag-to-install link for each bookmarklet
+  - A site can render `<a href="javascript:...">` for a reader to drag onto
+    the bookmarks bar, which a GitHub README cannot. Build each `href` from the
+    same join `test-bm.js` checks, percent-encoded, so what installs is what
+    was tested.
+  - One row per bookmarklet: name, one-line description, status ("ready to
+    use" or "requires N changes"), the link to drag, and links to its README
+    entry, gist and short.
+  - Pages runs no build here, so a script generates the page and the result is
+    committed. Regenerate it whenever a bookmarklet is added or repaired.
   - From: Improve GitHub Pages Site
 
 ### Create and Deploy GitHub Pages Override
 
 - No site
+
+### UI/UX Override - gallery at a phone width
+
+#### Found Issues
+
+- [ ] The saved page's corner badge paints its own label off the badge at a
+  phone width
+  - **Issue**: In the gallery frame at 390px, the `ChatGPT Bookmark` label in
+    `div[data-side='1']` is painted outside the black shape it is written on -
+    white text on a near-white page - and what is left of it lands on the `h1`
+    beside it, by 8x17px and 18x5px. The block is `width: 20%`, which is 70px
+    in the 328px the frame lays the example out in, and the label needs about
+    100px; `overflow` is `visible`, so the rest is painted rather than clipped.
+    It shows on the example opened on its own too, smaller (2x5px over the
+    `h1`), and not at all at 1280px. The rule is written by
+    `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` and copied inline into
+    all five `examples/chatGPT_Bookmark_*.html` pages, so both need the change.
+    `test/gallery.test.js` passes here: its byline reading skips runs inside the
+    block as the block's own text, so a label that leaves the block is invisible
+    to it.
+  - **Goal**: Resolve to [byline-label-narrow.prompt.md](.claude/prompts/byline-label-narrow.prompt.md)
+  - From: UI/UX Override - gallery at a phone width
 
 ## Test Harness
 
@@ -96,40 +96,13 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-- [ ] Promote a `test/gallery.test.js` that opens `index.html` and the five
-  `examples/` pages, the parts of the deployed site no test opens
-  - `test/pages.test.js` covers `test/fixtures/pages/` only, so the gallery's
-    script has never been read by a test: not the sizing interval that runs
-    every 100 ms and is cleared after 300, not the slideshow that clicks every
-    `<a>` every three seconds, and not `data-active`. A working driver is in
-    `.tmp/ui-ux-gallery/` (ignored): `gallery.test.js`, 34 assertions, and
-    `read.test.js`, 49 across the examples and the practice pages. Both follow
-    `pages.test.js`: `node --test`, `playwright.chromium.launch()`, the files
-    served by `page.route` on an origin of its own so the framed pages are
-    same-origin, collectors evaluated whole inside the page, and one measuring
-    pass shared by many small assertions.
-  - It asserts what the `## Current` gallery batch is for, so it is that
-    batch's regression guard and should land with it: the slideshow stops and
-    can be paused, it steps only the example links, it adds no history entry on
-    its own, it does not run under `prefers-reduced-motion`, the navigation and
-    the frame do not overlap at 1280, 1024 and 390, no nav link is covered or
-    clipped, the frame is sized to the example it is showing rather than the one
-    before it, Tab reaches the five links in order and each is visibly marked,
-    the `<title>` and the `<h1>` agree, and the page says what the examples are.
-  - 17 of the gallery driver's 34 assertions fail against the page as it
-    stands, by design - that is the batch's work list. Wire it into
-    `package.json` as its own `test:gallery` script once it is green, so
-    `npm test` is not red in the meantime.
-  - `test/gallery.test.js` and `test:gallery` already exist as of 11.20.2026,
-    holding 12 green tests as of 11.21.2026: the three that guard the slide
-    show's history entries and the links it steps, and the nine that read the
-    five examples at 1280 and 390. They were landed with the UI/UX
-    override's found issues, in the same shape the driver uses. What is
-    left of this item is the rest of the list above - the sizing interval,
-    the pause control, `prefers-reduced-motion`, the navigation and frame
-    at three widths, Tab order, the title and heading agreeing, and the
-    page saying what the examples are - added to that file as the regular
-    gallery items land.
+Every item in this section is finished and archived in `## Complete`, the last
+of them on 11.23.2026. What they built is `test-bm.js` with its
+`test-bm.json` schema, `docs/testing.md`, and the three `node --test` files
+`npm test` runs ahead of the bookmarklets: `test/harness.test.js` (121),
+`test/pages.test.js` (17) and `test/gallery.test.js` (31). New harness work is
+queued here when there is some; the section stays as the record of what the
+harness is and why it is Playwright.
 
 ## Test Configurations
 
@@ -219,18 +192,6 @@ files its failures here. A fix is finished when its posted gist carries it too.
 
 - [ ] Add an `s, s` key sequence to `siteSpecific_chatGPT_NavigateAnswers.js`
   that returns the page to normal
-- [ ] Give the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes a
-  real dark colour scheme, or take its dark rules out
-  - Its `@media (prefers-color-scheme: dark)` block still darkens the code blocks
-    on a page that never darkens. `body` carries `background: rgb(47 79 79 / 3%)`,
-    which propagates to the canvas, so the saved page is painted near-white in both
-    schemes. A dark code block on it is readable on its own terms, so this is a look
-    rather than a break - but it is the same shape of problem the focus ring had,
-    fixed on 11.22.2026 by dropping its dark branch. Either darken the canvas, the
-    table, the headings and the body text together and keep the dark rules, giving
-    the ring its `#58a6ff` back with them, or drop them. The reading in
-    `test/gallery.test.js` that says the page is painted alike in both schemes is
-    the one to change if the page is given a real dark mode, and it says so.
 
 ### From the Open Issues
 
@@ -295,23 +256,6 @@ committed here is a page on the site.
     the file. The five existing pages predate that script and needed no
     escaping; a page saved from the bookmarklet as it stands does, or the
     wrapper closes early and the page writes nothing.
-- [ ] Add an install page with a drag-to-install link for each bookmarklet
-  - A site can render `<a href="javascript:...">` for a reader to drag onto
-    the bookmarks bar, which a GitHub README cannot. Build each `href` from the
-    same join `test-bm.js` checks, percent-encoded, so what installs is what
-    was tested.
-  - One row per bookmarklet: name, one-line description, status ("ready to
-    use" or "requires N changes"), the link to drag, and links to its README
-    entry, gist and short.
-  - Pages runs no build here, so a script generates the page and the result is
-    committed. Regenerate it whenever a bookmarklet is added or repaired.
-- [ ] Check the deployed site in the scheduled run
-  - Open the live site, open every example and practice page from its
-    navigation, and fail on a broken link, a missing page, or a console error
-    from the site's own script.
-  - After a push that changes the site, wait for the Pages build to finish
-    (`gh api repos/isocialPractice/bookmarklets/pages/builds/latest`) before
-    checking.
 
 ## Short Videos
 
@@ -1773,5 +1717,109 @@ roadmap section each one came from.
     run either example hides, so what is asserted is still that the arrow keys
     reach the end of what is out of view and bring it back.
   - From: UI/UX Override - the table box's focus ring in the dark scheme
+- [x] Make `index.html` work on a phone and pass the W3C validator
+  - Add `lang="en"`, `<meta name="viewport">`, a description, and the
+    repository's `favicon.png`. Give the frame a `title`.
+  - Replace the absolutely positioned 15% side navigation and the floated 80%
+    frame with a grid that stacks the navigation above the frame on narrow
+    screens.
+  - Style the frame's border with CSS in place of the deprecated
+    `frameborder` attribute, which also lacks a space before it today.
+  - Make the `<title>` and the `<h1>` agree. They read "Bookmarklet Examples"
+    and "Bookmarklets Examples" today.
+  - Checked on 11.23.2026 against the W3C Nu validator, which reported nothing
+    at all: no error, no warning, no informational message. The page before it
+    reported two errors - no space between attributes, where
+    `src="..."frameborder="0"` parsed as one, and a heading level skipped from
+    `h1` to `h3` - and two warnings, the obsolete `frameborder` and the missing
+    `lang`. `test/gallery.test.js` reads each of those from the rendered page,
+    so they are guarded without the service.
+  - From: Improve GitHub Pages Site
+- [x] Give each example its own address
+  - Choosing an example sets `#<example-file-name>` in the address bar,
+    opening the page with that hash shows that example, and Back returns to
+    the previous one. The README can then link straight to an example.
+  - Mark the open example's link with `aria-current="page"` in place of
+    `data-active`, with a visible focus style.
+  - Size the frame from the example's `load` event and a `ResizeObserver` on
+    its body. The examples share the site's origin, so this replaces the
+    polling loop that runs every 100 ms and stops after 300.
+  - From: Improve GitHub Pages Site
+- [x] Let a reader control the slideshow
+  - It advances every three seconds until something is clicked, and treats a
+    hover as a click. Give it a visible pause and play button.
+  - Stop it on any click, focus or key press, and never start it when the
+    reader's system asks for reduced motion (`prefers-reduced-motion`).
+    Content that moves on its own needs a way to pause it (WCAG 2.2.2).
+  - Two parts of this landed on 11.20.2026 with the UI/UX override's found
+    issues, because the gallery was sending readers off the site without them:
+    it now steps the five example links rather than every `<a>` on the page,
+    and an automatic advance replaces the frame's location rather than clicking
+    a link, so it adds no session history entry. `test/gallery.test.js` guards
+    both. The control and `prefers-reduced-motion` are what is left.
+  - From: Improve GitHub Pages Site
+- [x] Explain the page above the gallery
+  - Say what the examples are: pages that
+    `ChatGPT - Paste Ready Bookmark Response` saved as bookmarks, each shown
+    as a reader would see it on opening the bookmark. Link the bookmarklet's
+    README entry, raw file, gist and short.
+  - Add a short how-to-install with `support/Demo-ReadyToUse.gif`, and a link
+    to the README for the full list.
+  - From: Improve GitHub Pages Site
+- [x] Add practice pages, where a reader can try the bookmarklets that work on
+  any page (`dom_`, `nav_`, `style_` and `window_`): an article with headings
+  and long text, a table, a form, a page with a sidebar, and one with a video
+  - Link them from the gallery under their own heading, each listing the
+    bookmarklets to try on it.
+  - Make them the same pages as the test fixtures under `## Test Harness`, so
+    one set serves both the site and the tests. They are in
+    `test/fixtures/pages/` as of 11.08.2026 - an article, a table, a form, a
+    sidebar, a video, a page whose loader never finishes, a long page, a small
+    page holding one of each thing a converter handles, and an index listing
+    them. Pages already serves them; this item is the gallery link.
+  - From: Improve GitHub Pages Site
+- [x] Promote a `test/gallery.test.js` that opens `index.html` and the five
+  `examples/` pages, the parts of the deployed site no test opens
+  - `test/pages.test.js` covers `test/fixtures/pages/` only, so the gallery's
+    script has never been read by a test: not the sizing interval that runs
+    every 100 ms and is cleared after 300, not the slideshow that clicks every
+    `<a>` every three seconds, and not `data-active`. A working driver is in
+    `.tmp/ui-ux-gallery/` (ignored): `gallery.test.js`, 34 assertions, and
+    `read.test.js`, 49 across the examples and the practice pages. Both follow
+    `pages.test.js`: `node --test`, `playwright.chromium.launch()`, the files
+    served by `page.route` on an origin of its own so the framed pages are
+    same-origin, collectors evaluated whole inside the page, and one measuring
+    pass shared by many small assertions.
+  - It asserts what the `## Current` gallery batch is for, so it is that
+    batch's regression guard and should land with it: the slideshow stops and
+    can be paused, it steps only the example links, it adds no history entry on
+    its own, it does not run under `prefers-reduced-motion`, the navigation and
+    the frame do not overlap at 1280, 1024 and 390, no nav link is covered or
+    clipped, the frame is sized to the example it is showing rather than the one
+    before it, Tab reaches the five links in order and each is visibly marked,
+    the `<title>` and the `<h1>` agree, and the page says what the examples are.
+  - 17 of the gallery driver's 34 assertions fail against the page as it
+    stands, by design - that is the batch's work list. Wire it into
+    `package.json` as its own `test:gallery` script once it is green, so
+    `npm test` is not red in the meantime.
+  - `test/gallery.test.js` and `test:gallery` landed on 11.20.2026 with the
+    UI/UX override's found issues, in the same shape the driver uses, and held
+    15 green tests by 11.22.2026: the three that guard the slide show's history
+    entries and the links it steps, and twelve that read the five examples at
+    1280 and 390, their table box's stop and the ring it is drawn with.
+  - Finished on 11.23.2026, with the `## Current` gallery batch it is the
+    regression guard for, as this item said it should be. Sixteen readings
+    were added for the rest of the list above and the file now holds 31 green
+    tests: the markup a validator and a phone need, the navigation against the
+    frame at 1280, 1024 and 390, Tab order through the five links with a ring
+    on each, the frame's height against the page inside it, the page saying
+    what the examples are, the practice list, `aria-current` in place of
+    `data-active`, the address bar and Back through it, the pause control
+    pressed, reduced motion, and that the page's script raises nothing over a
+    run that opens it, resizes it three times, walks it with Tab and clicks
+    through it. The sizing interval is gone rather than guarded: the frame is
+    sized from a `load` event and a `ResizeObserver`, and the frame-height
+    reading is what holds that. `docs/testing.md` describes each one.
+  - From: Test Harness
 
 </details>
