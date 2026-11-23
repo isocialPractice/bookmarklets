@@ -6,6 +6,68 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.23.2026]
+
+### Added
+
+- The gallery says what it is showing. Above the frame, `index.html` now names
+  `ChatGPT - Paste Ready Bookmark Response` as the bookmarklet that saved every example as a
+  bookmark, says that the frame shows what a reader sees on opening one of those bookmarks, and
+  links the raw file to paste, the gist, the short and the repository README. Under it is a
+  how-to-install: the three keystrokes, and `support/Demo-ReadyToUse.gif` showing them. The
+  animation is 11 MB, which is a page nobody on a phone asked to download, so it sits behind a
+  disclosure and carries `loading="lazy"`: it is fetched when a reader opens it and not before.
+- The gallery lists the eight practice pages, each with the bookmarklets to try on it, and links
+  their index. They are the same pages the harness runs against, so a page a reader can try is a
+  page a test has already checked.
+- Each example has an address of its own. Choosing one sets `#<example file name>`, opening the
+  page on that address shows that example, and the link can be shared or bookmarked. A reader's
+  own choice pushes one history entry, so Back returns to the example chosen before it; an
+  automatic advance replaces the entry it is already on, so the slide show still adds none.
+- A reader can stop the slide show. A pause and play button sits above the gallery, and any click,
+  any key press and any focus elsewhere on the page stops the show as well, because each of them is
+  a reader doing something the show would interrupt. A reader whose system asks for
+  `prefers-reduced-motion: reduce` gets the show paused from the start, with the page saying why,
+  and the button still starts it: content that moves on its own needs a way to pause it
+  (WCAG 2.2.2), and paused by default is not the same as taken away.
+- `test/gallery.test.js` holds seventeen more readings, which are what the work above is guarded by:
+  the markup a validator and a phone need, the navigation against the frame at 1280, 1024 and 390
+  pixels, Tab order through the five links with a ring on each, the frame's height against the page
+  inside it, the page saying what the examples are, the practice list, `aria-current` in place of
+  `data-active`, the address bar and Back through it, the pause control pressed, reduced motion, the
+  install animation fetched only once a reader opens its disclosure, and that the page's own script
+  raises nothing over a run that opens it, resizes it three times, walks it with Tab and clicks
+  through it. The suite is 32 tests, all green. `docs/testing.md` describes each reading.
+
+### Changed
+
+- `index.html` is laid out with a grid, so the navigation and the frame can never be laid over each
+  other. It was an absolutely positioned 15% navigation beside a floated 80% frame, which at 390
+  pixels painted the frame over the right 29px of every 49px-wide navigation link and took any
+  press aimed there. Below 760 pixels the navigation now stacks above the frame.
+- The frame is sized from a `load` event and a `ResizeObserver` on the example's own root box, in
+  place of an interval that ran every 100 ms and was cleared after 300 whether or not the example
+  had arrived. The example's root box is content height and does not grow with the frame it sits
+  in, which is what makes observing it safe: `documentElement.scrollHeight` does grow with the
+  frame, so sizing from that and observing the result is a loop - 578px of content in a 1400px
+  frame reports 1400. The height set includes the frame's own two pixels of border, since the frame
+  is a border box and those two pixels otherwise come out of the viewport the example gets.
+- The open example is marked with `aria-current="page"`, which a screen reader announces, in place
+  of the `data-active` attribute that nothing but the style sheet ever read. Every link, and the
+  pause button and the frame, draw a `:focus-visible` ring at 3:1 against both surfaces it can land
+  on.
+- The hover that the slide show read as a click is gone, with the inline handlers it lived in. A
+  hover now does nothing, and the show is stopped by the things a reader actually does.
+
+### Fixed
+
+- `index.html` carries the parts it was missing: `lang="en"`, a `width=device-width` viewport, a
+  description, the repository's own `favicon.png`, and a `title` on the frame. The obsolete
+  `frameborder` attribute is gone, which was also written with no space in front of it, so the
+  parser read `src="..."frameborder="0"` as one attribute; the frame's border is CSS. The `<title>`
+  and the `<h1>` read the same, "Bookmarklet Examples", where they read "Bookmarklet Examples" and
+  "Bookmarklets Examples".
+
 ## [11.22.2026]
 
 ### Fixed

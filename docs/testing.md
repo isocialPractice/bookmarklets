@@ -825,10 +825,55 @@ queued, so a count of presses measures the machine as much as the box: twenty
 five sent back to back carried the whole 474px on one run and 160px on the next,
 with nothing changed between them.
 
-The wider reading of the gallery - the sizing interval, the navigation and frame
-at three widths, Tab order, a pause control - is the roadmap item under
-`## Test Harness` in `TODO.md`, which proposes the rest of that driver be
-promoted here beside these.
+Then it reads the gallery page as a page in its own right, which is what the
+11.23.2026 batch of gallery work is guarded by. One load serves most of it,
+because every reading is of the same unchanged page:
+
+- the parts a validator and a phone need: `lang`, a `width=device-width`
+  viewport, a description, the repository's own `favicon.png`, a `title` on the
+  frame, no obsolete `frameborder`, no inline handler left anywhere, and a
+  `<title>` and `<h1>` that read the same;
+- the navigation against the frame at 1280, 1024 and 390 pixels: that the two
+  are never laid over each other, that every example link is the thing under
+  the pointer at its own middle, that no link's words are clipped, that the
+  page never scrolls sideways, and that the navigation stacks above the frame
+  on the phone width and sits beside it on the desktop one;
+- that Tab reaches the five example links in the order the navigation lists
+  them, each drawn with a ring `:focus-visible` says is there;
+- that the frame is sized to the example it is showing rather than to the one
+  before it, read as the tallest of the five and then the shortest, against the
+  height of the page inside the frame plus the frame's own border - a border
+  box takes those two pixels out of the viewport the example gets, and an
+  example scrolling inside the frame by exactly that much is the defect;
+- that the page says what the examples are: the bookmarklet that saved them by
+  name, its gist, its short, and the repository;
+- that it lists the eight practice pages with what to try on each;
+- that the open example is marked with `aria-current`, and that nothing on the
+  page still carries the `data-active` the style sheet alone used to read;
+- that the address bar names the example a reader is looking at, that two
+  choices add two history entries and no more, that one press of Back returns
+  to the example chosen before, and that the gallery opened on an example's own
+  address shows that example;
+- that the page's script raises nothing over a run that opens it, resizes it
+  three times, walks it with Tab and clicks through it.
+
+The pause control and reduced motion are each read in a browser of their own,
+because both are about what the show does over time rather than what the markup
+says. The control is pressed: the frame is watched advancing, paused, watched
+not advancing, played, and watched advancing again, with the button's own words
+read at each step. Reduced motion is read in a context that asks for it, where
+the frame's own `src` is one document request and the show never starting means
+exactly that one request - and the control is pressed there too, because paused
+by default is not the same as taken away.
+
+The install animation gets a browser of its own for the same reason: what
+settles it is the requests, not the markup. `loading="lazy"` on the image and
+the image sitting inside a `<details>` are both read from the page above, and
+neither of them says the 11 MB was never fetched - a `<details>` given an `open`
+attribute reads the same in one and still costs a phone the download. So the
+paths the page asks for are collected at the phone width: none of them the
+animation while the page paints, exactly one of them once the disclosure is
+opened, and the image arrived when it is.
 
 ### `test:bookmarklets`
 

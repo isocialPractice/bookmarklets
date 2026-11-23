@@ -100,7 +100,7 @@ Every item in this section is finished and archived in `## Complete`, the last
 of them on 11.23.2026. What they built is `test-bm.js` with its
 `test-bm.json` schema, `docs/testing.md`, and the three `node --test` files
 `npm test` runs ahead of the bookmarklets: `test/harness.test.js` (121),
-`test/pages.test.js` (17) and `test/gallery.test.js` (31). New harness work is
+`test/pages.test.js` (17) and `test/gallery.test.js` (32). New harness work is
 queued here when there is some; the section stays as the record of what the
 harness is and why it is Playwright.
 
@@ -1809,7 +1809,7 @@ roadmap section each one came from.
     1280 and 390, their table box's stop and the ring it is drawn with.
   - Finished on 11.23.2026, with the `## Current` gallery batch it is the
     regression guard for, as this item said it should be. Sixteen readings
-    were added for the rest of the list above and the file now holds 31 green
+    were added for the rest of the list above, taking the file to 31 green
     tests: the markup a validator and a phone need, the navigation against the
     frame at 1280, 1024 and 390, Tab order through the five links with a ring
     on each, the frame's height against the page inside it, the page saying
