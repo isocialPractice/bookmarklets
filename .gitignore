@@ -6,3 +6,5 @@ _TEMP*
 !.gitignore
 node_modules/
 test-results/
+CHANGELOG-*.md 
+TODO-archive.md 
