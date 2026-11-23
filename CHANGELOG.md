@@ -61,6 +61,25 @@ this file.
 
 ### Fixed
 
+- `siteSpecific_chatGPT_NavigateAnswers.js` works on ChatGPT's conversation as it is now. The page
+  no longer has an `article` for each turn or an element with the id `main`, which is what the
+  bookmarklet read, so it found nothing to show. It now finds each question by the block that keeps
+  its line breaks, and its answer where the question's part of the conversation and the answer's
+  part divide, whether the two share one element or sit side by side, and it reads the conversation
+  again on every key press, so an answer that arrives later is included. One answer shows at a
+  time, with its question hidden, as before; `PageDown`, `PageUp`, the toggle button and the
+  instructions are unchanged. The button is styled through the CSSOM and sits at the top of the
+  conversation, and a second run reuses the first run's button and key listener rather than adding
+  another of each. Its entry opens the most recent conversation in the everyday browser and passes.
+- `siteSpecific_chatGPT_ResizePrompt.js` works on the prompt box as it is now. The box has no id
+  and sits more than ten levels inside the prompt form, so the fixed chain of parents and child
+  positions the bookmarklet walked no longer reached it. It now finds the editable element in the
+  prompt form, takes the nearest element around it that scrolls, and makes that box resizable from
+  its corner, growing to 600px; a second run puts the box back exactly as it was. The flipped
+  layout that put the drag handle on top is gone, because it also turned the scroll direction
+  around, and so is the width resizing, because the prompt's width now follows its column. Checked
+  in the everyday browser by setting the box to 400px: the box and the whole prompt grow with it and
+  stay on screen. Its entry runs it on the chat page and passes.
 - `index.html` carries the parts it was missing: `lang="en"`, a `width=device-width` viewport, a
   description, the repository's own `favicon.png`, and a `title` on the frame. The obsolete
   `frameborder` attribute is gone, which was also written with no space in front of it, so the

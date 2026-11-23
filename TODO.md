@@ -155,7 +155,13 @@ resolve; a run never works one.
     - a local fixture page that reproduces a notice short's structure, the description and action bar markup the bookmarklet reads, filled with placeholder text and graphics;
     - a recorded page state of a short behind the notice, saved once and replayed offline, with its content replaced by placeholders.
   - Done when an entry for the notice's structure passes and the issue is closed with `Fixes #11`.
-- [ ] **User todo**: Confirm that `siteSpecific_chatGPT_NavigateAnswers.js` still works on the site
+- [x] **User todo**: Confirm that `siteSpecific_chatGPT_NavigateAnswers.js` still works on the site
+  - Resolved 11.23.2026, at the maintainer's request, by the first way below: the bookmarklet was
+    rewritten for the conversation as it is now, worked out from selector counts alone, and its
+    entry passes signed in, in the maintainer's everyday browser, on the most recent conversation.
+    It finds each question by the block that keeps its line breaks and each answer where the two
+    divide, so it no longer depends on `article` or `#main`. Its gist carries the fix; its short
+    is owed under `## Short Videos`.
   - Not tested: the entry's run, which checks that the bookmarklet adds its toggle button to the conversation (`#main .normal-chat`).
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
   - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has no `#main`, where the bookmarklet adds its button, and a conversation opened from the sidebar showed no `article` within ten seconds. The run read nothing else from the page, so whether the conversation's markup changed or the click did not open it is not known. Its entry keeps a skip with that reason.
@@ -165,7 +171,13 @@ resolve; a run never works one.
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
     - a local fixture page with the conversation markup the page has now (its `main`, and the elements that hold each turn), filled with placeholder text, so the fix can be built and checked on it.
   - Done when the entry passes signed in, or on a fixture page with that markup.
-- [ ] **User todo**: Confirm that `siteSpecific_chatGPT_ResizePrompt.js` still works on the site
+- [x] **User todo**: Confirm that `siteSpecific_chatGPT_ResizePrompt.js` still works on the site
+  - Resolved 11.23.2026, at the maintainer's request, by the first way below: the bookmarklet was
+    rewritten to find the editable element in the prompt form and the box it scrolls in, and to
+    make that box resizable from its corner, up to 600px. Its entry passes signed in, in the
+    maintainer's everyday browser, on the chat page. The look was checked by numbers rather than a
+    picture: set to 400px, the box and the whole prompt grow with it and stay on screen. Its gist
+    carries the fix; its short is owed under `## Short Videos`.
   - Not tested: the entry's run, which checks that the bookmarklet makes the prompt box resizable (its style element first in the body), on a page with the prompt `form` and `#prompt-textarea`.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
   - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has a `form` but no `#prompt-textarea`, the prompt box the bookmarklet reads by its id, so the run went no further. Nothing was typed into the prompt box. Its entry keeps a skip with that reason.
@@ -362,6 +374,9 @@ the bookmarklet has a demo.
   - A run renders these and stops before posting. The maintainer checks each
     for an account name, address, avatar, conversation or message in view,
     and posts it.
+  - `siteSpecific_chatGPT_NavigateAnswers.js` and
+    `siteSpecific_chatGPT_ResizePrompt.js` were rewritten on 11.23.2026, so
+    record them as they are now.
 - [ ] Make a short part of every new bookmarklet: extend the paragraph at the
   top of this file so a new bookmarklet's item ends with its short posted and
   its video block in the README
