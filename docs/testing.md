@@ -81,9 +81,10 @@ node test-bm.js --list
 ```
 
 One line per bookmarklet, saying whether it gets the default safe run, is
-configured, is signed in or is skipped, with its page and what its entry adds.
-The last line counts the bookmarklets, the configured, the scheduled and the
-signed-in ones. No browser is opened.
+configured, is signed in, is skipped, is deprecated or is tested by hand, with
+its page and what its entry adds, or its reason. The last line counts the
+bookmarklets, the configured, the scheduled, the signed-in, the everyday, the
+deprecated and the by-hand ones. No browser is opened.
 
 ## Flags
 
@@ -160,7 +161,7 @@ made from:
 
 | Code | Meaning |
 | --- | --- |
-| `0` | Nothing failed. Skips are allowed: a skip never fails a run. |
+| `0` | Nothing failed. Skips are allowed: a skip never fails a run, and neither does a deprecated or a by-hand entry. |
 | `1` | At least one bookmarklet failed. |
 | `2` | A usage or configuration error: an unknown flag, a `test-bm.json` the harness refuses, Playwright or a browser engine not installed, or a sign-in launcher that is set but wrong. These stop the run before any entry runs. An error inside the harness itself also exits 2. |
 
@@ -177,7 +178,7 @@ written into it, so a quiet run of one bookmarklet leaves none.
 | File | Written by | Holds |
 | --- | --- | --- |
 | `report.json` | `--all` and `--scheduled` | The mode, the engine asked for and the engines used, the start and finish times, the counts, and every result: name, engine, verdict, reason, page, time, notes, dialogs, popups, console messages and errors. |
-| `summary.txt` | `--all` and `--scheduled` | One line per result, then the tally, such as `test-bm: 12 run, 10 passed, 1 failed, 1 skipped`. |
+| `summary.txt` | `--all` and `--scheduled` | One line per result, then the tally, such as `test-bm: 12 run, 10 passed, 1 failed, 1 skipped`. A run that met a deprecated or a by-hand entry adds both counts, as `, 1 deprecated, 1 by hand`. |
 | `failure.md` | any run where something failed, a run of one included | One section per failing bookmarklet, holding what is needed to act on it without running anything again. |
 | `capture/<name>/` | `--capture`, `"capture": true`, and any failure | The screenshots and the video. A failure keeps `failure.png`, the page as it stood when it failed, whether or not the entry was captured. |
 
@@ -266,6 +267,8 @@ page or a fixture page like it, is what turns a pass into "it still works".
 | `dialogs` | Answers to `alert`, `confirm` and `prompt`, in the order they appear. Each is `accept` (default `false`) and, for a prompt, `text`. A dialog with no answer left is dismissed. | `"dialogs": [{ "accept": true, "text": "Jane Doe" }]` |
 | `permissions` | Browser permissions the context grants. An `expect` on the clipboard needs `clipboard-read`. Firefox has no clipboard permissions to grant, so a run there leaves those two out. | `"permissions": ["clipboard-read", "clipboard-write"]` |
 | `skip` | A reason to list the entry as skipped without running it. | `"skip": "the page serves a consent wall to a headless browser"` |
+| `deprecated` | The bookmarklet is kept as it is and no longer tested or updated: `why`, the reason, or `see`, the address of what replaces it. The entry holds nothing else. See [Kept out of every run](#kept-out-of-every-run-deprecated-and-byhand). | `"deprecated": { "see": "https://example.org/the-replacement" }` |
+| `byHand` | The bookmarklet is still maintained, but a person tests it, because its page is unsafe to automate. The entry keeps its page and steps as the record of how. See [Kept out of every run](#kept-out-of-every-run-deprecated-and-byhand). | `"byHand": "it works on a signed-in mailbox, so a person tests and updates it"` |
 | `timeout` | Milliseconds the whole entry is allowed. Defaults to `30000`. | `"timeout": 45000` |
 | `settle` | Milliseconds to wait after the last step, for anything the bookmarklet started. Defaults to `500`. | `"settle": 1000` |
 | `network` | The hosts other than the page's own that the bookmarklet may send a request to, each with its reason. A request to any other host fails the entry. `*.` and a domain allows its subdomains. | `"network": [{ "host": "api.example.com", "reason": "the totals come from the site's own API" }]` |
@@ -277,6 +280,50 @@ page or a fixture page like it, is what turns a pass into "it still works".
 | `personal` | Marks a page that shows what the account holds, and keeps the entry to selectors, counts and states. Takes only `true`, and goes with `drive`. | `"personal": true` |
 
 A property the schema does not list is a configuration error.
+
+### Kept out of every run: `deprecated` and `byHand`
+
+Two properties keep a bookmarklet out of every run, each with the reason it
+is kept out.
+
+```json
+"siteSpecific_Example_OldFeature": {
+ "deprecated": { "why": "the site now has this feature itself" }
+},
+"siteSpecific_Example_Replaced": {
+ "deprecated": { "see": "https://example.org/the-replacement" }
+},
+"siteSpecific_Example_Mailbox": {
+ "byHand": "it works on a signed-in mailbox, so a person tests and updates it",
+ "url": "https://mail.example.com/",
+ "drive": "everyday",
+ "personal": true,
+ "signedIn": "#account-menu",
+ "steps": [
+  { "run": true },
+  { "expect": { "selector": "#sidebar-handle", "count": 1 } }
+ ]
+}
+```
+
+- **`deprecated`** is a bookmarklet its site or a better tool has overtaken.
+  It stays in `JSFormatted/` as it is, and is no longer tested or updated. It
+  takes `why`, the reason, or `see`, the `https` address of what replaces it,
+  one of the two. The entry holds nothing else, so nothing in it reads as
+  still tested.
+- **`byHand`** is a bookmarklet whose page is unsafe to automate, such as a
+  signed-in mailbox. It is still maintained, by a person, and its entry keeps
+  its page and steps as the record of how a person checks it. It takes no
+  `skip`, `"scheduled": true` or `capture`, since no run reaches it.
+- **Neither is ever run,** by a name, `--all`, `--scheduled`, `--short` or the
+  everyday driver. The file is not checked, no browser starts for it, and
+  neither the sign-in launcher nor the everyday driver is loaded for it.
+- **Each has its own verdict,** `deprecated` or `by-hand`, with its reason; a
+  `see` reads `replaced by <address>`, and the result carries `see` too. Both
+  are counted in `report.json` and on the tally, and neither fails a run.
+- An entry with both, `deprecated` with neither `why` nor `see` or with both,
+  a `see` that is not an `https` address, or a deprecated entry holding any
+  other property is a configuration error.
 
 ### Steps
 
@@ -728,7 +775,8 @@ the refusals of anything that could pass for malicious, the `network` rule,
 fixture pages, signed-in entries, `--capture`, `--short` and its 15 second
 cut, `failure.md`, `matches`, `clear`, urls held in a variable, `set`,
 `answer`, `detach` and `attach`, `viewport`, both engines, the `bookmarklet`,
-`hover`, `storage` and clipboard shape steps, and everyday entries.
+`hover`, `storage` and clipboard shape steps, everyday entries, and
+`deprecated` and `byHand` entries, which no command runs.
 
 No test here reaches a real sign-in or the everyday browser. Every run clears
 `TEST_BM_AUTH_LAUNCHER` and `_TEST_BM_EVERYDAY_DRIVER` unless the test sets

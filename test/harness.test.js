@@ -2636,3 +2636,138 @@ test("--list names an everyday entry and counts it", function () {
  assert.match(answer.run.out, /fixture_Everyday_SignInWall\s+everyday\s+https:\/\/www\.example\.com\/  drive everyday  personal/);
  assert.match(answer.run.out, /2 bookmarklets, 2 configured, 0 scheduled, 0 signed in, 2 everyday/);
 });
+
+// ----------------------------------------------------------------------------------------------- //
+// Entries kept out of every run: deprecated, and tested by hand
+// ----------------------------------------------------------------------------------------------- //
+
+// Every file here is the fixture whose line comment fails the parse, so an entry the harness checked
+// or ran would fail rather than pass. A launcher and a driver named by paths that hold nothing, and
+// a Playwright that has no browser to start, would each stop the run at once if anything reached
+// for them. A run that ends in exit 0 is a run that reached for none of them.
+var keptSource = fs.readFileSync(path.join(rootDir, jsDir, "fixture_Comment_LineCommentSwallowsIt.js"), "utf8");
+var keptEntries = {
+ fixture_Kept_SiteFeature: { deprecated: { why: "the site now has this feature itself" } },
+ fixture_Kept_Replaced: { deprecated: { see: "https://example.org/the-replacement" } },
+ fixture_Kept_Mailbox: {
+  byHand: "it works on a signed-in mailbox, so a person tests and updates it",
+  url: "https://www.example.com/", drive: "everyday", personal: true, signedIn: "#account",
+  steps: [{ run: true }, { expect: { selector: "#panel", count: 1 } }]
+ },
+ fixture_Kept_SignedIn: {
+  byHand: "it works on a signed-in dashboard, so a person tests and updates it",
+  url: "fixture:article.html", auth: "fixture-site", signedIn: "main", browsers: ["chromium"]
+ }
+};
+
+function keptApart(entries, args, extra) {
+ var empty = fs.mkdtempSync(path.join(os.tmpdir(), "test-bm-kept-no-browsers-"));
+ var nowhere = path.join(os.tmpdir(), "test-bm-kept-nowhere-" + process.pid);
+ try {
+  return runFiles(copiesOf(keptSource, Object.keys(entries)), entries, args, Object.assign({
+   PLAYWRIGHT_BROWSERS_PATH: empty,
+   TEST_BM_AUTH_LAUNCHER: path.join(nowhere, "missing-launcher.mjs"),
+   _TEST_BM_EVERYDAY_DRIVER: path.join(nowhere, "missing-driver.mjs")
+  }, extra || {}));
+ } finally {
+  removeDir(empty);
+ }
+}
+
+test("a deprecated or by-hand entry is never run by --all: no check, no browser, no launcher, no driver", function () {
+ var answer = keptApart(keptEntries, ["--all"]);
+ assert.strictEqual(answer.run.status, 0, answer.run.out + answer.run.err);
+
+ var feature = resultIn(answer, "fixture_Kept_SiteFeature");
+ assert.strictEqual(feature.verdict, "deprecated");
+ assert.strictEqual(feature.reason, "the site now has this feature itself");
+ var replaced = resultIn(answer, "fixture_Kept_Replaced");
+ assert.strictEqual(replaced.verdict, "deprecated");
+ assert.strictEqual(replaced.reason, "replaced by https://example.org/the-replacement");
+ assert.strictEqual(replaced.see, "https://example.org/the-replacement");
+ var mailbox = resultIn(answer, "fixture_Kept_Mailbox");
+ assert.strictEqual(mailbox.verdict, "by-hand");
+ assert.strictEqual(mailbox.reason, "it works on a signed-in mailbox, so a person tests and updates it");
+ assert.strictEqual(resultIn(answer, "fixture_Kept_SignedIn").verdict, "by-hand");
+
+ answer.report.results.forEach(function (r) {
+  assert.doesNotMatch(r.notes.join("\n"), /one line: /, "the file of " + r.name + " was never checked");
+ });
+ assert.deepStrictEqual(answer.report.browsers, [], "no engine ran anything");
+ assert.strictEqual(answer.report.counts.deprecated, 2);
+ assert.strictEqual(answer.report.counts.byHand, 2);
+ assert.strictEqual(answer.report.counts.failed, 0);
+ assert.match(answer.summary, /^test-bm: 4 run, 0 passed, 0 failed, 0 skipped, 2 deprecated, 2 by hand$/m);
+ assert.match(answer.summary, /^fixture_Kept_Replaced\s+deprecated\s.*replaced by https:\/\/example\.org\/the-replacement$/m);
+});
+
+test("a deprecated or by-hand entry is never run by its name, --short or --scheduled either", function () {
+ var one = keptApart(keptEntries, ["fixture_Kept_Mailbox"]);
+ assert.strictEqual(one.run.status, 0, one.run.out + one.run.err);
+ assert.match(one.run.out, /^fixture_Kept_Mailbox\s+by-hand\s.*it works on a signed-in mailbox, so a person tests and updates it$/m);
+ var deprecated = keptApart(keptEntries, ["fixture_Kept_SiteFeature"]);
+ assert.strictEqual(deprecated.run.status, 0, deprecated.run.out + deprecated.run.err);
+ assert.match(deprecated.run.out, /^fixture_Kept_SiteFeature\s+deprecated\s.*the site now has this feature itself$/m);
+
+ var shorts = shortsFolder();
+ try {
+  var short = keptApart(keptEntries, ["--all", "--short"], { TEST_BM_SHORTS_DIR: shorts });
+  assert.strictEqual(short.run.status, 0, short.run.out + short.run.err);
+  assert.ok(resultIn(short, "fixture_Kept_SiteFeature").notes.indexOf("no short: a deprecated bookmarklet is not recorded") >= 0);
+  assert.ok(resultIn(short, "fixture_Kept_Mailbox").notes
+   .indexOf("no short: a bookmarklet tested by hand is recorded by a person, never by a run") >= 0);
+  short.report.results.forEach(function (r) { assert.strictEqual(r.short, undefined, r.name + " has no short"); });
+  assert.deepStrictEqual(fs.readdirSync(shorts), [], "nothing was recorded");
+ } finally {
+  removeDir(shorts);
+ }
+
+ var scheduled = keptApart(keptEntries, ["--scheduled"]);
+ assert.strictEqual(scheduled.run.status, 0, scheduled.run.out + scheduled.run.err);
+ assert.strictEqual(scheduled.report.results.length, 0, "neither kind is ever scheduled");
+});
+
+test("--list names a deprecated and a by-hand entry, and counts each under its own word only", function () {
+ var answer = runFiles(copiesOf(keptSource, Object.keys(keptEntries)), keptEntries, ["--list"]);
+ assert.strictEqual(answer.run.status, 0, answer.run.err);
+ assert.match(answer.run.out, /fixture_Kept_SiteFeature\s+deprecated\s+the site now has this feature itself/);
+ assert.match(answer.run.out, /fixture_Kept_Replaced\s+deprecated\s+replaced by https:\/\/example\.org\/the-replacement/);
+ assert.match(answer.run.out, /fixture_Kept_Mailbox\s+by-hand\s+it works on a signed-in mailbox, so a person tests and updates it/);
+ assert.match(answer.run.out, /4 bookmarklets, 4 configured, 0 scheduled, 0 signed in, 0 everyday, 2 deprecated, 2 by hand/);
+});
+
+test("each way a deprecated or by-hand entry is written wrong is a configuration error, named", function () {
+ var entries = {
+  fixture_Kept_NotAnObject: { deprecated: "the site does this now" },
+  fixture_Kept_Neither: { deprecated: {} },
+  fixture_Kept_Both: { deprecated: { why: "the site now has this feature itself", see: "https://example.org/" } },
+  fixture_Kept_Unknown: { deprecated: { why: "the site now has this feature itself", link: "https://example.org/" } },
+  fixture_Kept_EmptyWhy: { deprecated: { why: " " } },
+  fixture_Kept_PlainSee: { deprecated: { see: "http://example.org/the-replacement" } },
+  fixture_Kept_HoldsMore: { deprecated: { why: "the site now has this feature itself" }, url: "fixture:article.html", steps: [{ run: true }] },
+  fixture_Kept_BothKeys: { deprecated: { why: "the site now has this feature itself" }, byHand: "a person tests it" },
+  fixture_Kept_EmptyByHand: { byHand: "" },
+  fixture_Kept_ByHandSkip: { byHand: "a person tests it", skip: "kept back" },
+  fixture_Kept_ByHandScheduled: { byHand: "a person tests it", url: "fixture:article.html", scheduled: true },
+  fixture_Kept_ByHandCapture: { byHand: "a person tests it", url: "fixture:article.html", capture: true }
+ };
+ var answer = runFiles(copiesOf(keptSource, Object.keys(entries)), entries, ["--list"]);
+ assert.strictEqual(answer.run.status, 2, "a configuration error exits 2");
+ assert.strictEqual(answer.run.out, "", "nothing is listed once the configuration is refused");
+ [
+  "fixture_Kept_NotAnObject: deprecated takes { \"why\": <the reason> } or { \"see\": <the address of what replaces it> }",
+  "fixture_Kept_Neither: deprecated takes why, the reason, or see, the address of what replaces it",
+  "fixture_Kept_Both: deprecated takes why or see, not both",
+  "fixture_Kept_Unknown: deprecated has no link - it takes why or see",
+  "fixture_Kept_EmptyWhy: deprecated why takes the reason",
+  "fixture_Kept_PlainSee: deprecated see takes the https address of what replaces it",
+  "fixture_Kept_HoldsMore: a deprecated entry holds nothing else, since nothing runs it - url, steps",
+  "fixture_Kept_BothKeys: deprecated and byHand - an entry is one or the other",
+  "fixture_Kept_EmptyByHand: byHand takes the reason a person tests it rather than a run",
+  "fixture_Kept_ByHandSkip: a by-hand entry is never run, so it takes no skip",
+  "fixture_Kept_ByHandScheduled: a by-hand entry is never run, so it is never scheduled",
+  "fixture_Kept_ByHandCapture: a by-hand entry is never run, so it captures nothing"
+ ].forEach(function (said) {
+  assert.ok(answer.run.err.indexOf(said) >= 0, "the error should say: " + said + "\n" + answer.run.err);
+ });
+});

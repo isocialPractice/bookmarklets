@@ -58,6 +58,22 @@
      "description": "A reason to list the entry as skipped without running it. A skip never fails a run.",
      "examples": ["the page serves a consent wall to a headless browser"]
     },
+    "deprecated": {
+     "type": "object",
+     "description": "The bookmarklet is kept in JSFormatted as it is, and no longer tested or updated: its site now does the job itself (why), or a better tool does (see, its address). The entry holds nothing else, so nothing in it reads as still tested. No run reaches it, by a name, --all, --scheduled, --short or the everyday driver: its file is not checked and no browser starts for it. It is reported as deprecated, with its reason, and never fails a run.",
+     "additionalProperties": false,
+     "properties": {
+      "why": { "type": "string", "minLength": 1, "description": "The reason, in one sentence fit for the README.", "examples": ["the site now has this feature itself"] },
+      "see": { "type": "string", "pattern": "^https://\\S+$", "description": "The https address of what replaces the bookmarklet.", "examples": ["https://example.org/the-replacement"] }
+     },
+     "oneOf": [{ "required": ["why"] }, { "required": ["see"] }]
+    },
+    "byHand": {
+     "type": "string",
+     "minLength": 1,
+     "description": "The bookmarklet is still maintained, but its page is unsafe to automate, so a person tests and updates it. The entry keeps its page and steps as the record of how a person checks it, and takes no skip, schedule or capture. No run reaches it, and neither the launcher nor the everyday driver is loaded for it. It is reported as by-hand, with this reason, and never fails a run.",
+     "examples": ["it works on a signed-in mailbox, so a person tests and updates it"]
+    },
     "timeout": {
      "type": "number",
      "description": "Milliseconds the whole entry is allowed, after which it fails.",
@@ -115,6 +131,14 @@
     "personal": ["drive", "signedIn"]
    },
    "allOf": [
+    {
+     "if": { "required": ["deprecated"] },
+     "then": { "maxProperties": 1 }
+    },
+    {
+     "if": { "required": ["byHand"] },
+     "then": { "properties": { "deprecated": false, "skip": false, "scheduled": { "const": false }, "capture": false } }
+    },
     {
      "if": { "required": ["auth"] },
      "then": { "properties": { "scheduled": { "const": false }, "capture": false, "browsers": { "items": { "const": "chromium" } } } }

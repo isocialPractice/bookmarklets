@@ -10,6 +10,22 @@ this file.
 
 ### Added
 
+- `test-bm.json` can keep a bookmarklet out of every run, in one of two ways.
+  `"deprecated": { "why": ... }` or `{ "see": ... }` is a bookmarklet its site or a better tool
+  has overtaken: kept in `JSFormatted/` as it is, no longer tested or updated, and its entry holds
+  nothing else. `"byHand": "<reason>"` is one whose page is unsafe to automate: still maintained,
+  by a person, with its entry's page and steps kept as the record of how a person checks it. No
+  command runs either one, whether by a name, `--all`, `--scheduled`, `--short` or the everyday
+  driver: the file is not checked, no browser starts for it, and neither the sign-in launcher nor
+  the everyday driver is loaded for it. Each is reported under its own verdict, `deprecated` or
+  `by-hand`, with its reason, counted in `report.json`, on the tally and on `--list`'s last line,
+  and never fails a run. The schema takes both keys, and each way of writing one wrong is a
+  configuration error. No entry uses either yet.
+- `test/harness.test.js` holds four tests for them: neither kind is run by `--all`, a name,
+  `--short` or `--scheduled`, against a launcher and a driver that are not there and a Playwright
+  with no browser to start; `--list` names and counts them; and twelve ways of writing one wrong
+  each give their own configuration error. `docs/testing.md` describes both keys beside `skip`,
+  with placeholder entries.
 - The gallery says what it is showing. Above the frame, `index.html` now names
   `ChatGPT - Paste Ready Bookmark Response` as the bookmarklet that saved every example as a
   bookmark, says that the frame shows what a reader sees on opening one of those bookmarks, and

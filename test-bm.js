@@ -229,6 +229,16 @@
 // driver sends it, and expect { "check": "<name>" } names a check the driver holds, for what no
 // selector can say, such as a distance read within a tolerance. Both go only in an everyday entry.
 //
+// An entry can keep its bookmarklet out of every run. "deprecated": { "why": "<reason>" }, or
+// { "see": "<the https address of what replaces it>" }, is a bookmarklet its site or a better tool
+// has overtaken: kept in JSFormatted as it is, and the entry holds nothing else, so nothing in it
+// reads as still tested. "byHand": "<reason>" is a bookmarklet whose page is unsafe to automate:
+// still maintained, by a person, and the entry keeps its page and steps as the record of how a
+// person checks it, with no skip, no schedule and no capture. Neither is ever run, by a name, --all,
+// --scheduled, --short or the everyday driver: the file is not checked, no browser starts for it,
+// and neither the launcher nor the driver is loaded for it. Each is reported under its own verdict,
+// deprecated or by-hand, with its reason, and counted on the summary line.
+//
 // No bookmarklet may do anything that could pass for malicious. Before any browser starts, a file
 // that touches document.cookie, runs a string as code (eval, new Function, a string handed to
 // setTimeout or setInterval, import()), or loads a <script> by its src without an integrity hash
@@ -237,8 +247,8 @@
 // with the reason. A bookmarklet's own notes and settings in localStorage are
 // its business, and nothing here judges them.
 //
-// Exit 0 nothing failed, 1 something failed, 2 usage or configuration error. A skip never fails a
-// run. --all and --scheduled write test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json and
+// Exit 0 nothing failed, 1 something failed, 2 usage or configuration error. A skip, a deprecated
+// entry and a by-hand entry never fail a run. --all and --scheduled write test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json and
 // summary.txt. A run that starts in a second another run already has takes <YYYY-MM-DD_HHMMSS>-2,
 // then -3 and so on.
 
@@ -296,7 +306,8 @@ var exitConfig = 2;
 
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
- "timeout", "settle", "auth", "signedIn", "network", "capture", "browsers", "drive", "personal"];
+ "timeout", "settle", "auth", "signedIn", "network", "capture", "browsers", "drive", "personal",
+ "deprecated", "byHand"];
 // A host a network entry names: an exact host, or "*." and a domain for any of its subdomains, as
 // a media server picked per request is.
 var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d+)?$/;
@@ -1198,6 +1209,8 @@ function validateConfig(config, names) {
   }
   if (entry.scheduled !== undefined && typeof entry.scheduled != "boolean") { problems.push(name + ": scheduled takes true or false"); }
   if (entry.skip !== undefined && (typeof entry.skip != "string" || !entry.skip.length)) { problems.push(name + ": skip takes a reason"); }
+  if (entry.deprecated !== undefined) { validateDeprecated(entry, name, problems); }
+  if (entry.byHand !== undefined) { validateByHand(entry, name, problems); }
   if (entry.timeout !== undefined && typeof entry.timeout != "number") { problems.push(name + ": timeout takes milliseconds"); }
   if (entry.settle !== undefined && typeof entry.settle != "number") { problems.push(name + ": settle takes milliseconds"); }
   if (entry.auth !== undefined && (typeof entry.auth != "string" || !siteNamePattern.test(entry.auth))) {
@@ -1344,6 +1357,66 @@ function validateConfig(config, names) {
   }
  });
  if (problems.length) { configError(shownPath(configFile) + ":\n  " + problems.join("\n  ")); }
+}
+
+// A deprecated entry is the bookmarklet kept as it is: one reason, or the address of what replaces
+// it, and nothing else, since nothing runs it and a step or a page left in the entry would read as
+// still tested.
+function validateDeprecated(entry, name, problems) {
+ var said = entry.deprecated;
+ if (!said || typeof said != "object" || Array.isArray(said)) {
+  problems.push(name + ": deprecated takes { \"why\": <the reason> } or { \"see\": <the address of what replaces it> }");
+  return;
+ }
+ Object.keys(said).forEach(function (k) {
+  if (k != "why" && k != "see") { problems.push(name + ": deprecated has no " + k + " - it takes why or see"); }
+ });
+ var why = said.why !== undefined;
+ var see = said.see !== undefined;
+ if (why && see) { problems.push(name + ": deprecated takes why or see, not both"); }
+ if (!why && !see) { problems.push(name + ": deprecated takes why, the reason, or see, the address of what replaces it"); }
+ if (why && (typeof said.why != "string" || !said.why.trim())) { problems.push(name + ": deprecated why takes the reason"); }
+ if (see && (typeof said.see != "string" || !/^https:\/\/\S+$/.test(said.see))) {
+  problems.push(name + ": deprecated see takes the https address of what replaces it");
+ }
+ if (entry.byHand !== undefined) { problems.push(name + ": deprecated and byHand - an entry is one or the other"); }
+ var others = Object.keys(entry).filter(function (k) { return k != "deprecated" && k != "byHand"; });
+ if (others.length) {
+  problems.push(name + ": a deprecated entry holds nothing else, since nothing runs it - " + others.join(", "));
+ }
+}
+
+// A by-hand entry keeps its page and steps as the record of how a person checks it, and nothing only
+// a run would use: a skip, a schedule or a capture would each say a run still reaches it.
+function validateByHand(entry, name, problems) {
+ if (typeof entry.byHand != "string" || !entry.byHand.trim()) {
+  problems.push(name + ": byHand takes the reason a person tests it rather than a run");
+ }
+ if (entry.skip !== undefined) { problems.push(name + ": a by-hand entry is never run, so it takes no skip"); }
+ if (entry.scheduled === true) { problems.push(name + ": a by-hand entry is never run, so it is never scheduled"); }
+ if (entry.capture === true) { problems.push(name + ": a by-hand entry is never run, so it captures nothing"); }
+}
+
+// An entry that keeps its bookmarklet out of every run, and the verdict it is reported under. Nothing
+// on the way to a browser is done for one: its file is not checked, and no engine, launcher or driver
+// is started or loaded for it.
+function keptOut(entry) {
+ return !!(entry && typeof entry == "object" && (entry.deprecated !== undefined || entry.byHand !== undefined));
+}
+
+function keptOutVerdict(entry) {
+ if (entry.deprecated !== undefined) {
+  var said = entry.deprecated;
+  return said.see !== undefined
+   ? { verdict: "deprecated", reason: "replaced by " + said.see, see: said.see }
+   : { verdict: "deprecated", reason: said.why };
+ }
+ return { verdict: "by-hand", reason: entry.byHand };
+}
+
+// A result that says nothing about any engine, because nothing was run for it.
+function ranNothing(result) {
+ return result.verdict == "skip" || result.verdict == "deprecated" || result.verdict == "by-hand";
 }
 
 // What an entry with drive everyday cannot ask for, because the everyday browser is the maintainer's
@@ -3092,6 +3165,16 @@ async function runOne(browser, name, entry, session, options, engine) {
  if (!fs.existsSync(file)) {
   return close("fail", "not found: " + shownPath(file));
  }
+ if (keptOut(entry)) {
+  var kept = keptOutVerdict(entry);
+  if (kept.see) { result.see = kept.see; }
+  if (options.short) {
+   result.notes.push(kept.verdict == "deprecated"
+    ? "no short: a deprecated bookmarklet is not recorded"
+    : "no short: a bookmarklet tested by hand is recorded by a person, never by a run");
+  }
+  return close(kept.verdict, kept.reason);
+ }
  if (entry && entry.skip) { return close("skip", entry.skip); }
 
  var check = checkFile(file, name);
@@ -3398,13 +3481,19 @@ function countOf(results) {
   run: results.length,
   passed: results.filter(function (r) { return r.verdict == "pass"; }).length,
   failed: results.filter(function (r) { return r.verdict == "fail"; }).length,
-  skipped: results.filter(function (r) { return r.verdict == "skip"; }).length
+  skipped: results.filter(function (r) { return r.verdict == "skip"; }).length,
+  deprecated: results.filter(function (r) { return r.verdict == "deprecated"; }).length,
+  byHand: results.filter(function (r) { return r.verdict == "by-hand"; }).length
  };
 }
 
+// The two counts of entries kept out of every run join the line only when there are any, so a run
+// of none of them reads as it always has.
 function tally(counts) {
  return "test-bm: " + counts.run + " run, " + counts.passed + " passed, " + counts.failed
-  + " failed, " + counts.skipped + " skipped";
+  + " failed, " + counts.skipped + " skipped"
+  + (counts.deprecated || counts.byHand
+   ? ", " + counts.deprecated + " deprecated, " + counts.byHand + " by hand" : "");
 }
 
 function seconds(ms) { return (ms / 1000).toFixed(1) + "s"; }
@@ -3427,7 +3516,7 @@ function writeReport(results, mode, started, finished, engine) {
  var dir = runDir();
  var asked = engine || defaultEngine;
  var ran = [];
- results.forEach(function (r) { if (r.verdict != "skip" && ran.indexOf(r.browser) < 0) { ran.push(r.browser); } });
+ results.forEach(function (r) { if (!ranNothing(r) && ran.indexOf(r.browser) < 0) { ran.push(r.browser); } });
 
  fs.writeFileSync(path.join(dir, "report.json"), JSON.stringify({
   tool: "test-bm",
@@ -3600,7 +3689,11 @@ function printList(names, config) {
   var entry = config[name];
   var what = "default safe run";
   var extra = defaultUrl;
-  if (entry && entry.skip) {
+  if (keptOut(entry)) {
+   var kept = keptOutVerdict(entry);
+   what = kept.verdict;
+   extra = kept.reason;
+  } else if (entry && entry.skip) {
    what = "skip";
    extra = entry.skip;
   } else if (entry) {
@@ -3617,13 +3710,19 @@ function printList(names, config) {
   }
   console.log(pad(name, width) + "  " + pad(what, 16) + "  " + extra);
  });
+ // An entry kept out of every run is counted under its own word and under none of the ways a run
+ // reaches a page.
+ var reached = function (n) { return config[n] && !keptOut(config[n]); };
  var configured = names.filter(function (n) { return config[n]; }).length;
- var scheduled = names.filter(function (n) { return config[n] && config[n].scheduled; }).length;
- var signedIn = names.filter(function (n) { return config[n] && config[n].auth; }).length;
- var everyday = names.filter(function (n) { return config[n] && config[n].drive; }).length;
+ var scheduled = names.filter(function (n) { return reached(n) && config[n].scheduled; }).length;
+ var signedIn = names.filter(function (n) { return reached(n) && config[n].auth; }).length;
+ var everyday = names.filter(function (n) { return reached(n) && config[n].drive; }).length;
+ var deprecated = names.filter(function (n) { return config[n] && config[n].deprecated !== undefined; }).length;
+ var byHand = names.filter(function (n) { return config[n] && config[n].byHand !== undefined; }).length;
  console.log("");
  console.log("test-bm: " + names.length + " bookmarklets, " + configured + " configured, "
-  + scheduled + " scheduled, " + signedIn + " signed in, " + everyday + " everyday");
+  + scheduled + " scheduled, " + signedIn + " signed in, " + everyday + " everyday, "
+  + deprecated + " deprecated, " + byHand + " by hand");
 }
 
 function printDetail(result) {
@@ -3783,25 +3882,29 @@ async function main() {
  var results = [];
 
  // Each bookmarklet in each engine it runs in: the one --browser names for every entry, or else
- // Chromium and whatever else the entry's own browsers asks for.
+ // Chromium and whatever else the entry's own browsers asks for. An entry kept out of every run is
+ // one job whatever it names, since no engine runs it.
  var jobs = [];
  queue.forEach(function (n) {
-  var wanted = options.browser ? [options.browser] : ((config[n] && config[n].browsers) || [defaultEngine]);
+  var wanted = keptOut(config[n]) ? [options.browser || defaultEngine]
+   : options.browser ? [options.browser] : ((config[n] && config[n].browsers) || [defaultEngine]);
   wanted.forEach(function (engine) { jobs.push({ name: n, engine: engine }); });
  });
 
  if (jobs.length) {
-  // An everyday entry runs in the maintainer's own browser, so a queue of nothing else starts none.
+  // An everyday entry runs in the maintainer's own browser, and an entry kept out of every run in
+  // none, so a queue of nothing else starts no browser.
   var everydayJob = function (j) { return !!(config[j.name] && config[j.name].drive); };
-  var playwright = jobs.some(function (j) { return !everydayJob(j); }) ? requirePlaywright() : null;
+  var runsJob = function (j) { return !keptOut(config[j.name]); };
+  var playwright = jobs.some(function (j) { return runsJob(j) && !everydayJob(j); }) ? requirePlaywright() : null;
   // The launcher and the driver are each loaded only when an entry needs one, and before any
   // browser starts, so one that is set but wrong stops the run at once. Only Chromium's runs of an
   // entry use either.
   var needsLauncher = jobs.some(function (j) {
-   return j.engine == defaultEngine && config[j.name] && config[j.name].auth && !config[j.name].skip;
+   return j.engine == defaultEngine && runsJob(j) && config[j.name] && config[j.name].auth && !config[j.name].skip;
   });
   var needsDriver = jobs.some(function (j) {
-   return j.engine == defaultEngine && everydayJob(j) && !config[j.name].skip;
+   return j.engine == defaultEngine && runsJob(j) && everydayJob(j) && !config[j.name].skip;
   });
   var session = {
    chromium: playwright ? playwright.chromium : null,
@@ -3811,7 +3914,7 @@ async function main() {
   // Whether anything in this queue is going to be captured decides how the browser is started, so it
   // is worked out before the launch rather than per entry.
   var capturing = options.capture || options.short || queue.some(function (n) {
-   return config[n] && config[n].capture === true && !config[n].auth;
+   return config[n] && config[n].capture === true && !config[n].auth && !keptOut(config[n]);
   });
   var browsers = {};
   var width = 0;
@@ -3824,7 +3927,7 @@ async function main() {
    // stops the run at once rather than after an hour of the other one.
    for (var e = 0; e < engines.length; e++) {
     var engine = engines[e];
-    if (!jobs.some(function (j) { return j.engine == engine && !everydayJob(j); })) { continue; }
+    if (!jobs.some(function (j) { return j.engine == engine && runsJob(j) && !everydayJob(j); })) { continue; }
     try {
      browsers[engine] = await launchEngine(playwright, engine, options, capturing);
     } catch (err) {
