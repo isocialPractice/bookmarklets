@@ -42,6 +42,20 @@
 // that could take a side of the ring away, and a mean colour over the whole clip reads the same
 // whether four sides were painted or three.
 //
+// A seventh was in the corner badge the saved page carries its byline on. The block is a share of
+// the page wide and its label was a fixed 12pt, so the two parted company as the page narrowed: at a
+// phone width the words were painted outside the black shape they are written on, white on a
+// near-white page, and what was left of them landed on the h1 beside it. The guard above passes
+// here, and correctly: it skips every run inside the block as the block's own text, so a label that
+// leaves the block is invisible to it.
+//
+// The seventh's companion reads the block's own runs twice over - against the block's painted box,
+// and against the heading's runs - on the example opened on its own and on the example as the
+// gallery frames it. Both failed, and the framed one by more: there the label ended 21px and 31px
+// past the block's right edge and covered 8x17px and 18x5px of the h1, against 8px and 18px past
+// the edge and 3x5px of the h1 on the page opened on its own. The frame is 330px of a 390px
+// viewport and lays the example out in 328px of that.
+//
 // What this file holds are the guards for those, measured from the rendered page. The wider gallery
 // reading - the sizing interval, the navigation and frame at three widths, Tab order, the slide
 // show pause control - is the roadmap item under ## Test Harness in TODO.md, which proposes the
@@ -233,6 +247,79 @@ function readCoveredText() {
   }
  }
  return { overlays: named, total: hits.length, hits: hits.slice(0, 6) };
+}
+
+// The byline block's own label, read against the block it is written on and against the heading
+// beside it. readCoveredText above cannot answer either question: it skips every run inside the
+// block as the block's own text, which is what the block is for, so a label that leaves the block
+// is invisible to it.
+//
+// Both readings are glyph runs rather than element boxes, for the reason readCoveredText gives. The
+// right and bottom edges are the two that matter: the block is fixed at the top left corner, so
+// nothing can leave it by the left or the top.
+//
+// The svg carries its accessible name as a <text> parked at -9999, which no reader ever sees. A run
+// that ends at or before the block's left edge is that name and nothing else, since the block's
+// visible content starts inside it.
+function readByline() {
+ var block = document.querySelector("div[data-side='1']");
+ if (!block) { return { error: "the page carries no byline block" }; }
+ var box = block.getBoundingClientRect();
+ var heading = [];
+ var h1 = document.querySelector("h1");
+ if (h1) {
+  var headWalker = document.createTreeWalker(h1, NodeFilter.SHOW_TEXT, null);
+  var headNode = null;
+  while ((headNode = headWalker.nextNode())) {
+   if (!headNode.nodeValue || !headNode.nodeValue.trim()) { continue; }
+   var headRange = document.createRange();
+   headRange.selectNodeContents(headNode);
+   var headRuns = headRange.getClientRects();
+   for (var h = 0; h < headRuns.length; h++) {
+    if (headRuns[h].width > 0 && headRuns[h].height > 0) { heading.push(headRuns[h]); }
+   }
+  }
+ }
+ var walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, null);
+ var label = [];
+ var past = [];
+ var onHeading = [];
+ var node = null;
+ while ((node = walker.nextNode())) {
+  if (!node.nodeValue || !node.nodeValue.trim()) { continue; }
+  var range = document.createRange();
+  range.selectNodeContents(node);
+  var runs = range.getClientRects();
+  for (var i = 0; i < runs.length; i++) {
+   var t = runs[i];
+   if (!(t.width > 0 && t.height > 0) || t.right <= box.left) { continue; }
+   var said = node.nodeValue.trim().slice(0, 24);
+   label.push(said + " at " + Math.round(t.left) + "," + Math.round(t.top)
+    + " to " + Math.round(t.right) + "," + Math.round(t.bottom));
+   // A pixel either way is a rounding edge, not a word a reader watches leave the shape.
+   if (t.right > box.right + 1) {
+    past.push(said + " ends " + Math.round(t.right - box.right) + "px past the right edge");
+   }
+   if (t.bottom > box.bottom + 1) {
+    past.push(said + " ends " + Math.round(t.bottom - box.bottom) + "px below the bottom edge");
+   }
+   for (var j = 0; j < heading.length; j++) {
+    var w = Math.min(heading[j].right, t.right) - Math.max(heading[j].left, t.left);
+    var d = Math.min(heading[j].bottom, t.bottom) - Math.max(heading[j].top, t.top);
+    if (w > 1 && d > 1) {
+     onHeading.push(said + " is painted over the heading by "
+      + Math.round(w) + "x" + Math.round(d) + "px");
+    }
+   }
+  }
+ }
+ return {
+  page: document.documentElement.clientWidth,
+  block: Math.round(box.left) + "," + Math.round(box.top) + " "
+   + Math.round(box.width) + "x" + Math.round(box.height),
+  label: label, past: past, onHeading: onHeading,
+  heading: heading.map(function (r) { return Math.round(r.left) + ".." + Math.round(r.right); })
+ };
 }
 
 function readExample() {
@@ -848,6 +935,7 @@ async function readExamples() {
     await page.waitForTimeout(800);
     var found = await page.evaluate(readExample);
     found.covered = await page.evaluate(readCoveredText);
+    found.byline = await page.evaluate(readByline);
     found.status = resp ? resp.status() : 0;
     // Only the two examples that hold a table have a box to press keys at. Last of the three, so
     // the presses and the scrolling they cause cannot disturb the two readings above.
@@ -1082,10 +1170,41 @@ async function readFramedRings(targets) {
  return found;
 }
 
+// The byline reading on each example as index.html frames it, over all five and both widths. One
+// browser context a width and a fresh gallery for each, as readFramedRings does. All five rather
+// than the ring pass's targets, because every one of them carries the block and the defect this
+// answers showed on every one of them.
+async function readFramedBylines() {
+ var browser = await playwright.chromium.launch();
+ var found = {};
+ try {
+  for (var v = 0; v < VIEWPORTS.length; v++) {
+   var viewport = VIEWPORTS[v];
+   var ctx = await browser.newContext({ viewport: viewport });
+   var page = await ctx.newPage();
+   await serveRoot(page);
+   for (var e = 0; e < EXAMPLES.length; e++) {
+    var at = EXAMPLES[e].file + " @" + viewport.width + "px framed";
+    var frame = await showFramed(page, EXAMPLES[e].file);
+    if (!frame) {
+     found[at] = { error: "the frame never showed " + EXAMPLES[e].file };
+     continue;
+    }
+    found[at] = await frame.evaluate(readByline);
+   }
+   await ctx.close();
+  }
+ } finally {
+  await browser.close();
+ }
+ return found;
+}
+
 var watched = null;
 var examples = null;
 var rings = null;
 var framedRings = null;
+var framedBylines = null;
 var site = null;
 var paused = null;
 var reduced = null;
@@ -1093,6 +1212,14 @@ var install = null;
 
 function eachExample(run) {
  Object.keys(examples).forEach(function (at) { run(at, examples[at]); });
+}
+
+// Both ways a reader meets an example, for the byline readings: opened on its own, and framed by
+// the gallery. Neither stands for the other, since the frame is narrower than the viewport holding
+// it, so a label that fits standalone can still leave the block in the frame.
+function eachByline(run) {
+ Object.keys(examples).forEach(function (at) { run(at, examples[at].byline); });
+ Object.keys(framedBylines).forEach(function (at) { run(at, framedBylines[at]); });
 }
 
 test.before(async function () {
@@ -1115,6 +1242,7 @@ test.before(async function () {
  });
  rings = await readRings(targets);
  framedRings = await readFramedRings(targets);
+ framedBylines = await readFramedBylines();
 }, { timeout: 600000 });
 
 // ----------------------------------------------------------------------------------------------- //
@@ -1629,5 +1757,26 @@ test("the fixed byline block covers none of the article's text", function () {
    at + ": the byline block should be fixed over the page, nothing on it is");
   assert.strictEqual(found.covered.total, 0, at + ": the block " + found.covered.overlays[0]
    + " covers " + found.covered.total + " text run(s): " + JSON.stringify(found.covered.hits));
+ });
+});
+
+test("the byline block's own label stays inside the block", function () {
+ assert.strictEqual(Object.keys(framedBylines).length, EXAMPLES.length * VIEWPORTS.length,
+  "the framed reading should cover all five examples at both widths, it covers "
+  + Object.keys(framedBylines).length);
+ eachByline(function (at, read) {
+  assert.ok(read && !read.error, at + ": " + (read ? read.error : "no byline reading"));
+  assert.ok(read.label.length > 0, at + ": the block should hold a label, it holds none");
+  assert.deepStrictEqual(read.past, [], at + ": the block is " + read.block + " on a " + read.page
+   + "px page, and its own label leaves it: " + JSON.stringify(read.past));
+ });
+});
+
+test("the byline block's own label is painted over none of the heading beside it", function () {
+ eachByline(function (at, read) {
+  assert.ok(read && !read.error, at + ": " + (read ? read.error : "no byline reading"));
+  assert.deepStrictEqual(read.onHeading, [], at + ": the label is at " + JSON.stringify(read.label)
+   + " and the heading's runs at " + JSON.stringify(read.heading) + ": "
+   + JSON.stringify(read.onHeading));
  });
 });

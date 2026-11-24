@@ -83,7 +83,10 @@ javascript:(function(){
     painted near-white whatever colour scheme the reader asks for. The focus ring is coloured for that
     surface and for no other: #0969da reads at 4.97:1 against it, where the #58a6ff meant for a dark
     surface read at 2.42:1, under the 3:1 WCAG 1.4.11 asks of a focus indicator. A dark override
-    belongs here only once the page itself darkens, so that the two move together. */
+    belongs here only once the page itself darkens, so that the two move together. The corner badge is
+    a share of the page, so its label is sized as one too: at a phone width a fixed 12pt label left
+    the black shape it is written on and was painted over the heading beside it. The padding keeps
+    the label clear of the rounded corner, and the overflow clips anything that still is not. */
  {
  var bookmarkPageStyle = `
 <style>
@@ -161,6 +164,8 @@ javascript:(function(){
   top: 0px;
   width:20%;
   height:auto;
+  padding-bottom: 2rem;
+  overflow: hidden;
   border: 2px solid black;
   border-bottom-right-radius: 80px;
   background: #000;
@@ -175,13 +180,13 @@ javascript:(function(){
   background: white;
   border-radius: 100%;
   margin-top: 20px;
-  margin-left: 20px;
+  margin-left: min(20px, 2vw);
   padding:3px;    
  }
  div[data-side='1'] h2 {    
   position: relative;   
-  font-size: 12pt;
-  margin-left: 20px;
+  font-size: min(12pt, 3.2vw);
+  margin-left: min(20px, 2vw);
   top: -15px !important;
   color: white;
  }   

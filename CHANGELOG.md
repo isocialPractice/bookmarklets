@@ -6,6 +6,33 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.24.2026]
+
+### Fixed
+
+- The corner badge on the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes keeps
+  its label inside itself at every width. The block is a share of the page wide and its label was
+  a fixed 12pt, so the two parted company as the page narrowed: at a phone width the words
+  `ChatGPT Bookmark` were painted outside the black shape they are written on, white on a page
+  that is painted near-white, and what was left of them landed on the heading beside it - by 3x5
+  pixels on the page opened on its own and by 8x17 and 18x5 in the gallery frame, which lays the
+  example out in 328 pixels of a 390 pixel viewport. The label is now sized as a share of the
+  page too, the block reserves the depth its rounded corner takes, and the block clips anything
+  that still does not fit, so the words can no longer be painted on the page behind it. Read
+  across widths from 320 to 1600 pixels the label left the badge's shape at fourteen of twenty
+  three before and at none after. The five saved pages under `examples/` carry their own copy of
+  the rule, written when they were saved, and each has the same change.
+
+### Added
+
+- `test/gallery.test.js` holds the two readings that would have caught it, over all five examples
+  at both widths, on the page opened on its own and on the page as `index.html` frames it: the
+  block's own text runs against the block's painted box, where nothing may end past its right or
+  bottom edge, and the same runs against the `h1`'s runs, where nothing may overlap. The guard
+  beside them, that the block covers none of the article's text, passes either way, because it
+  skips every run inside the block as the block's own text. The two fail on the pages as they
+  stood and pass on the pages as they are. `docs/testing.md` describes both.
+
 ## [11.23.2026]
 
 ### Added

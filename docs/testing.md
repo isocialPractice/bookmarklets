@@ -881,6 +881,17 @@ side of the ring away, and a mean colour over the whole clip reads the same whet
 four sides were painted or three. A side is held to the 3:1 only where the ring's
 reach lands inside both the frame's rect and the shot.
 
+The byline block in the corner of each saved page is read twice over, and on
+both the standalone page and the framed one, because the block's own words are
+the one thing on the page the overlay reading above cannot see: it skips every
+run inside the block as the block's own text, which is what the block is for.
+So the block's runs are measured against the block's painted box, where nothing
+may end past its right or bottom edge, and against the `h1`'s runs, where
+nothing may overlap at all. The framed reading is not the standalone one over
+again: the frame is 330 pixels of a 390 pixel viewport and lays the example out
+in 328, so a label that fits the block standalone can still leave it in the
+frame, which is how the deployed site shows it.
+
 The keyboard readings press a key until the box has come to rest rather than a
 fixed number of times. Chromium carries 40px a press and animates it, and a
 press sent while the last one is still animating is coalesced rather than
