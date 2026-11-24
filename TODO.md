@@ -14,7 +14,8 @@ passing run, rather than being tested after the fact.
 A new bookmarklet is one item from file to gist: its file in `JSFormatted/`,
 its entry in `test-bm.json`, a passing `node test-bm.js <name>`, its gist, and
 its README entry linking that gist. Runs post and update gists with
-`gitHubTask`:
+`gitHubTask`, a local tool on the maintainer's `PATH` and not part of this
+repository:
 
 - **New bookmarklet**: post its gist with
   `gitHubTask /gr "JSFormatted\<name>.js" "<description>"`, add the README

@@ -29,14 +29,27 @@ npm install
 npx playwright install chromium
 ```
 
-`npm install` brings in Playwright, and the second line downloads the Chromium
-build it drives. That is all a run needs. Two more are optional:
+`npm install` brings in Playwright and to-explorer, and the second line
+downloads the Chromium build Playwright drives. That is all a run needs. Two
+more are optional:
 
 - **Firefox**, for `--browser firefox`: `npx playwright install firefox`, once,
   on the machine that runs it. A run that needs Firefox where it is not
   installed stops with exit 2, naming that step.
 - **ffmpeg on the `PATH`**, for `--short`, which writes its recordings as GIFs.
   A machine without ffmpeg leaves every short owed rather than failing the run.
+
+### What the repository uses
+
+| Tool | What it is | What uses it | Without it |
+| --- | --- | --- | --- |
+| [Playwright](https://playwright.dev/) 1.65.0 | Dev dependency, `npm install` | `test-bm.js` and the three suites under `test/` | Nothing runs: a run says to install it |
+| [to-explorer](https://github.com/jhauga/to-explorer) 1.1.0 | Dev dependency, `npm install` | A reader opening a page by hand in a chosen Chrome profile, as the sections below show; no test calls it | The page is opened another way |
+| Chromium, and Firefox for `--browser firefox` | Browser builds, `npx playwright install` | Every run in that engine | Exit 2, naming the install step |
+| [ffmpeg](https://ffmpeg.org/) | A program on the `PATH` | `--short`, for its GIFs | Every short stays owed; the run does not fail |
+| [`@playwright/mcp`](https://www.npmjs.com/package/@playwright/mcp) | Optional, run with `npx` | An assistant given a browser of its own (see [Giving an assistant a browser](#giving-an-assistant-a-browser)) | The assistant works without a browser |
+| [GitHub CLI](https://cli.github.com/), `gh` | A program on the `PATH` | `TODO.md`'s check of the latest Pages build | The build is checked on GitHub instead |
+| `gitHubTask` | A local tool of the maintainer's, not part of this repository | Posting and updating each bookmarklet's gist, as `TODO.md` describes | A gist is posted and updated by hand |
 
 ## Run the tests
 
@@ -564,9 +577,10 @@ on a self-hosted dashboard does both:
   is never scheduled.
 
 To open the same page by hand, in a chosen Chrome profile, use
-[to-explorer](https://github.com/jhauga/to-explorer):
-`to-explorer --chrome [0-9]+ http://dashboard.local/#status`, where `[0-9]+` is
-the profile's number.
+[to-explorer](https://github.com/jhauga/to-explorer), a dev dependency that
+`npm install` brings in:
+`npx to-explorer --chrome [0-9]+ http://dashboard.local/#status`, where
+`[0-9]+` is the profile's number.
 
 ### The everyday browser: `drive`, `personal` and `_TEST_BM_EVERYDAY_DRIVER`
 
@@ -672,9 +686,11 @@ business, and nothing in the repository knows it. Whatever it uses, it:
 - holds no secret, and is never committed.
 
 One way to open the entry's page in a chosen Chrome profile is
-[to-explorer](https://github.com/jhauga/to-explorer):
-`to-explorer --chrome [0-9]+ https://app.example.org/inbox`, where `[0-9]+` is
-the profile's number. The driver then needs its own way to act in that one tab.
+[to-explorer](https://github.com/jhauga/to-explorer), a dev dependency that
+`npm install` brings in:
+`npx to-explorer --chrome [0-9]+ https://app.example.org/inbox`, where `[0-9]+`
+is the profile's number. The driver then needs its own way to act in that one
+tab.
 
 ## Scheduling a run
 

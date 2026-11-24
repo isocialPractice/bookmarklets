@@ -13,6 +13,7 @@
     "shorts": "node test-bm.js --all --short"
   },
   "devDependencies": {
-    "playwright": "1.65.0"
+    "playwright": "1.65.0",
+    "to-explorer": "1.1.0"
   }
 }

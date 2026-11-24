@@ -10,6 +10,14 @@ this file.
 
 ### Added
 
+- [to-explorer](https://github.com/jhauga/to-explorer) is a dev dependency, pinned at 1.1.0 as
+  Playwright is pinned, so `npm install` brings it in. `docs/testing.md` names it, as
+  `npx to-explorer --chrome [0-9]+ <address>`, where it tells a reader to open a page in a chosen
+  Chrome profile. No test calls it.
+- `docs/testing.md` lists what the repository uses, under `## Install`: each dev dependency,
+  browser build and program, what uses it, and what happens without it. `gitHubTask`, which
+  posts and updates the gists, is named there and in `TODO.md` as a local tool of the
+  maintainer's, not part of this repository.
 - `test-bm.json` can keep a bookmarklet out of every run, in one of two ways.
   `"deprecated": { "why": ... }` or `{ "see": ... }` is a bookmarklet its site or a better tool
   has overtaken: kept in `JSFormatted/` as it is, no longer tested or updated, and its entry holds
