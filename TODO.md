@@ -65,27 +65,41 @@ repository:
 
 - No site
 
-### UI/UX Override - gallery at a phone width
+### UI/UX Override - the badge label between the two widths
 
 #### Found Issues
 
-- [ ] The saved page's corner badge paints its own label off the badge at a
-  phone width
-  - **Issue**: In the gallery frame at 390px, the `ChatGPT Bookmark` label in
-    `div[data-side='1']` is painted outside the black shape it is written on -
-    white text on a near-white page - and what is left of it lands on the `h1`
-    beside it, by 8x17px and 18x5px. The block is `width: 20%`, which is 70px
-    in the 328px the frame lays the example out in, and the label needs about
-    100px; `overflow` is `visible`, so the rest is painted rather than clipped.
-    It shows on the example opened on its own too, smaller (2x5px over the
-    `h1`), and not at all at 1280px. The rule is written by
-    `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` and copied inline into
-    all five `examples/chatGPT_Bookmark_*.html` pages, so both need the change.
-    `test/gallery.test.js` passes here: its byline reading skips runs inside the
-    block as the block's own text, so a label that leaves the block is invisible
-    to it.
-  - **Goal**: Resolve to [byline-label-narrow.prompt.md](.claude/prompts/byline-label-narrow.prompt.md)
-  - From: UI/UX Override - gallery at a phone width
+- [ ] The badge's rounded corner shaves the end of its label at the widths
+  where the label just fits on one line
+  - **Issue**: The corner badge keeps its label inside itself at 390px and at
+    1280px, framed and standalone, on all five examples, and at almost every
+    width between them. Two narrow bands are the exception: the smaller
+    margins `min(20px, 2vw)` let `ChatGPT Bookmark` fit on one line a few
+    pixels before the block is wide enough for it, so the line's tail meets
+    the `border-bottom-right-radius` and `overflow: hidden` takes the end of
+    the final `k` off. Read by shooting the badge with the clip and again with
+    it released and differencing the two, the curve removes about one square
+    pixel at 840px to 842px and a quarter of one at 843px to 847px, and about
+    two square pixels at 1191px and 1192px and a quarter of one at 1193px to
+    1197px, each width being the example's own layout width. Both words still
+    read at both bands, so this is a look rather than a break. The gallery
+    reaches the same bands through its frame: a viewport of 1137px to 1146px
+    lays an example out at 840px to 847px, and 1576px to 1584px at 1191px to
+    1197px. Before the change the label wrapped at those widths and sat 30px
+    clear of the curve, so the bands came in with it. The rule is written by
+    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` and
+    copied inline into all five `examples/chatGPT_Bookmark_*.html` pages, so
+    both need the change. `test/gallery.test.js` passes here: its two byline
+    readings are taken at 390px and at 1280px, and neither is in either band.
+  - **Goal**: Give the label room at the badge's right edge, so a line that
+    only just fits cannot land on the curve - a `padding-right` on the block,
+    or a `margin-left` that keeps the line wrapping as it did. Add the reading
+    that found this beside the two byline readings in `test/gallery.test.js`:
+    step the example's own width across the range and assert at each step that
+    no label run crosses the block's rounded corner, the corner taken as the
+    used radius scaled the way CSS scales one that overruns its box. The
+    driver that read it is in `.tmp/ui-ux-badge/`.
+  - From: UI/UX Override - the badge label between the two widths
 
 ## Test Harness
 
@@ -100,8 +114,8 @@ browser for the same result.
 Every item in this section is finished and archived in `## Complete`, the last
 of them on 11.23.2026. What they built is `test-bm.js` with its
 `test-bm.json` schema, `docs/testing.md`, and the three `node --test` files
-`npm test` runs ahead of the bookmarklets: `test/harness.test.js` (121),
-`test/pages.test.js` (17) and `test/gallery.test.js` (32). New harness work is
+`npm test` runs ahead of the bookmarklets: `test/harness.test.js` (125),
+`test/pages.test.js` (17) and `test/gallery.test.js` (34). New harness work is
 queued here when there is some; the section stays as the record of what the
 harness is and why it is Playwright.
 
@@ -116,18 +130,6 @@ that show a bookmarklet did its job, rather than merely not crashing.
 Tests the automated runs could not finish. Each item is the maintainer's to
 resolve; a run never works one.
 
-- [x] **User todo**: Confirm that `siteSpecific_OctoPrint_ChangeGraphImage`, with `img` set, shows an image placed in OctoPrint's `webassets/img` folder as the graph's background
-  - Closed 11.23.2026: the bookmarklet is deprecated, at the maintainer's ruling, because the
-    [OctoPrint-CustomBackground](https://github.com/jneilliii/OctoPrint-CustomBackground) plugin
-    does the same job from OctoPrint itself. It is kept as it is and no longer tested or
-    updated, so this check is no longer needed.
-  - Not tested: whether the file is served and shown. The automated run checked only that the bookmarklet writes `/static/webassets/img/<img>` into the graph's style, and the test image's address answers 404 because no file is there.
-  - Why: placing the file needs a shell on the OctoPrint host, which the automated run does not have.
-  - On 11.18.2026 an automated shell session on the host typed the commands that place the test image, then stopped when one read-back of its output timed out, before the copy was checked. The test image's address still answered 404 signed out, so whether the file was written is not known, and this check waits for a later attempt.
-  - Ways an AI-safe automated procedure could resolve it:
-    - key-based SSH with a key restricted to one command and one folder (`authorized_keys` `restrict,command=`), which copies only the test image into `webassets/img`, so no password is ever handled;
-    - a local fixture page with OctoPrint's `#temperature-graph` and a test image served at `/static/webassets/img/`, so the image path is checked end to end without the host.
-  - Done when the test image's address answers 200 signed out, and the entry asserts the image is shown.
 - [ ] **User todo**: `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` breaks on an answer
   holding a `\u` sequence
   - **Issue**: An answer containing `\u` is written out without the backslash
@@ -160,65 +162,6 @@ resolve; a run never works one.
     - a local fixture page that reproduces a notice short's structure, the description and action bar markup the bookmarklet reads, filled with placeholder text and graphics;
     - a recorded page state of a short behind the notice, saved once and replayed offline, with its content replaced by placeholders.
   - Done when an entry for the notice's structure passes and the issue is closed with `Fixes #11`.
-- [x] **User todo**: Confirm that `siteSpecific_chatGPT_NavigateAnswers.js` still works on the site
-  - Resolved 11.23.2026, at the maintainer's request, by the first way below: the bookmarklet was
-    rewritten for the conversation as it is now, worked out from selector counts alone, and its
-    entry passes signed in, in the maintainer's everyday browser, on the most recent conversation.
-    It finds each question by the block that keeps its line breaks and each answer where the two
-    divide, so it no longer depends on `article` or `#main`. Its gist carries the fix; its short
-    is owed under `## Short Videos`.
-  - Fixed again later on 11.23.2026, after the maintainer's check by hand: the rewrite marked
-    the user's screen-reader heading as each answer, read only the turns the page had drawn,
-    and lost its hiding when the page drew a turn again. It now reads the page's own turn,
-    question and answer attributes, hides through a stylesheet of its own keyed on them,
-    scrolls to reach the turns the page has not drawn yet, and holds the answer in view while
-    the page settles. Its entry checks that each marked answer is a reply, that no heading is
-    marked, and that every other turn's reply stays hidden after moving both ways, and passes
-    in the maintainer's everyday browser. Its gist carries the fix; its short stays owed.
-  - Not tested: the entry's run, which checks that the bookmarklet adds its toggle button to the conversation (`#main .normal-chat`).
-  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
-  - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has no `#main`, where the bookmarklet adds its button, and a conversation opened from the sidebar showed no `article` within ten seconds. The run read nothing else from the page, so whether the conversation's markup changed or the click did not open it is not known. Its entry keeps a skip with that reason.
-  - Later on 11.18.2026, three probes in the everyday browser counted candidate selectors only, reading no text: the click does open the most recent conversation, whose page has a `main` element without the id `main`, and no `article`. Its turns carry no `article`, `data-testid` or `data-turn` marker, only class names, some nested inside others, and counts could not tie them to one element per turn, which the bookmarklet needs to show one answer at a time. So the bookmarklet stays as it is.
-  - Ways an AI-safe automated procedure could resolve it:
-    - a fix to the bookmarklet that reads the conversation as it is now, worked out from the site's markup with placeholder content, with the push, gist update and short a bookmarklet change brings; its entry already opens the most recent conversation by selector in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), and reads nothing from it;
-    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
-    - a local fixture page with the conversation markup the page has now (its `main`, and the elements that hold each turn), filled with placeholder text, so the fix can be built and checked on it.
-  - Done when the entry passes signed in, or on a fixture page with that markup.
-- [x] **User todo**: Confirm that `siteSpecific_chatGPT_ResizePrompt.js` still works on the site
-  - Resolved 11.23.2026, at the maintainer's request, by the first way below: the bookmarklet was
-    rewritten to find the editable element in the prompt form and the box it scrolls in, and to
-    make that box resizable from its corner, up to 600px. Its entry passes signed in, in the
-    maintainer's everyday browser, on the chat page. The look was checked by numbers rather than a
-    picture: set to 400px, the box and the whole prompt grow with it and stay on screen. Its gist
-    carries the fix; its short is owed under `## Short Videos`.
-  - Deprecated later on 11.23.2026: the site now has an expand control for the prompt box
-    itself. By hand the grip showed but did not drag, because the page cancels the press at the
-    grip. The bookmarklet is kept as it is and no longer tested or updated, and its short is no
-    longer owed.
-  - Not tested: the entry's run, which checks that the bookmarklet makes the prompt box resizable (its style element first in the body), on a page with the prompt `form` and `#prompt-textarea`.
-  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
-  - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has a `form` but no `#prompt-textarea`, the prompt box the bookmarklet reads by its id, so the run went no further. Nothing was typed into the prompt box. Its entry keeps a skip with that reason.
-  - Later on 11.18.2026, two probes in the everyday browser counted candidate selectors only, reading no text and typing nothing: the prompt box is now an editable element with no id, more than ten levels inside the prompt `form`, and the page has no `textarea`. The form's first two children, which the bookmarklet reads by position, are a hidden element and an empty one, so its fixed chain of parents and child positions no longer fits, and a reworked layout could not be checked to look right on a page that is checked by selectors and counts alone. So the bookmarklet stays as it is.
-  - Ways an AI-safe automated procedure could resolve it:
-    - a fix to the bookmarklet that finds the prompt box as it is now, with the push, gist update and short a bookmarklet change brings, then its entry run again in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer);
-    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
-    - a local fixture page with the prompt form markup the page has now (the `form`, its editable prompt box and the parents the bookmarklet styles), with an empty prompt, so the fix can be built and checked on it.
-  - Done when the entry passes signed in, or on a fixture page with that markup.
-- [x] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
-  - Closed 11.23.2026: the Gmail bookmarklets are tested by hand. Automating a signed-in mailbox
-    could get the account flagged, and nothing shows it cannot, so no run opens the page again and
-    its entry carries `byHand` in place of its skip. A person tests and updates it, as its README
-    entry says. Its one run for that decision, the same day, again marked no row within ten
-    seconds; whether the inbox held a sponsored row then is not known, so that is for the
-    maintainer's own check.
-  - Not tested: the bookmarklet on an inbox listing (`table` and `tr`), where it marks and styles the sponsored rows. Its entry runs only the default safe run, with no assertion of its own.
-  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
-  - On 11.18.2026, in the maintainer's everyday browser, signed in: the run held its mail tab and closed it, but no row was marked within ten seconds of the bookmarklet's run. The run reads no mail, so whether the inbox showed a sponsored row at that moment is not known, and its entry keeps a skip with that reason. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
-  - Ways an AI-safe automated procedure could resolve it:
-    - the same run in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), at a time the inbox shows a sponsored row;
-    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in;
-    - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
-  - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
 
 ## Existing Bookmarklets
 
@@ -1863,5 +1806,97 @@ roadmap section each one came from.
     sized from a `load` event and a `ResizeObserver`, and the frame-height
     reading is what holds that. `docs/testing.md` describes each one.
   - From: Test Harness
+- [x] The saved page's corner badge paints its own label off the badge at a
+  phone width
+  - **Issue**: In the gallery frame at 390px, the `ChatGPT Bookmark` label in
+    `div[data-side='1']` is painted outside the black shape it is written on -
+    white text on a near-white page - and what is left of it lands on the `h1`
+    beside it, by 8x17px and 18x5px. The block is `width: 20%`, which is 70px
+    in the 328px the frame lays the example out in, and the label needs about
+    100px; `overflow` is `visible`, so the rest is painted rather than clipped.
+    It shows on the example opened on its own too, smaller (2x5px over the
+    `h1`), and not at all at 1280px. The rule is written by
+    `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` and copied inline into
+    all five `examples/chatGPT_Bookmark_*.html` pages, so both need the change.
+    `test/gallery.test.js` passes here: its byline reading skips runs inside the
+    block as the block's own text, so a label that leaves the block is invisible
+    to it.
+  - **Goal**: Resolve to [byline-label-narrow.prompt.md](.claude/prompts/byline-label-narrow.prompt.md)
+  - From: UI/UX Override - gallery at a phone width
+- [x] **User todo**: Confirm that `siteSpecific_OctoPrint_ChangeGraphImage`, with `img` set, shows an image placed in OctoPrint's `webassets/img` folder as the graph's background
+  - Closed 11.23.2026: the bookmarklet is deprecated, at the maintainer's ruling, because the
+    [OctoPrint-CustomBackground](https://github.com/jneilliii/OctoPrint-CustomBackground) plugin
+    does the same job from OctoPrint itself. It is kept as it is and no longer tested or
+    updated, so this check is no longer needed.
+  - Not tested: whether the file is served and shown. The automated run checked only that the bookmarklet writes `/static/webassets/img/<img>` into the graph's style, and the test image's address answers 404 because no file is there.
+  - Why: placing the file needs a shell on the OctoPrint host, which the automated run does not have.
+  - On 11.18.2026 an automated shell session on the host typed the commands that place the test image, then stopped when one read-back of its output timed out, before the copy was checked. The test image's address still answered 404 signed out, so whether the file was written is not known, and this check waits for a later attempt.
+  - Ways an AI-safe automated procedure could resolve it:
+    - key-based SSH with a key restricted to one command and one folder (`authorized_keys` `restrict,command=`), which copies only the test image into `webassets/img`, so no password is ever handled;
+    - a local fixture page with OctoPrint's `#temperature-graph` and a test image served at `/static/webassets/img/`, so the image path is checked end to end without the host.
+  - Done when the test image's address answers 200 signed out, and the entry asserts the image is shown.
+  - From: User - Resolve Test Procedures
+- [x] **User todo**: Confirm that `siteSpecific_chatGPT_NavigateAnswers.js` still works on the site
+  - Resolved 11.23.2026, at the maintainer's request, by the first way below: the bookmarklet was
+    rewritten for the conversation as it is now, worked out from selector counts alone, and its
+    entry passes signed in, in the maintainer's everyday browser, on the most recent conversation.
+    It finds each question by the block that keeps its line breaks and each answer where the two
+    divide, so it no longer depends on `article` or `#main`. Its gist carries the fix; its short
+    is owed under `## Short Videos`.
+  - Fixed again later on 11.23.2026, after the maintainer's check by hand: the rewrite marked
+    the user's screen-reader heading as each answer, read only the turns the page had drawn,
+    and lost its hiding when the page drew a turn again. It now reads the page's own turn,
+    question and answer attributes, hides through a stylesheet of its own keyed on them,
+    scrolls to reach the turns the page has not drawn yet, and holds the answer in view while
+    the page settles. Its entry checks that each marked answer is a reply, that no heading is
+    marked, and that every other turn's reply stays hidden after moving both ways, and passes
+    in the maintainer's everyday browser. Its gist carries the fix; its short stays owed.
+  - Not tested: the entry's run, which checks that the bookmarklet adds its toggle button to the conversation (`#main .normal-chat`).
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
+  - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has no `#main`, where the bookmarklet adds its button, and a conversation opened from the sidebar showed no `article` within ten seconds. The run read nothing else from the page, so whether the conversation's markup changed or the click did not open it is not known. Its entry keeps a skip with that reason.
+  - Later on 11.18.2026, three probes in the everyday browser counted candidate selectors only, reading no text: the click does open the most recent conversation, whose page has a `main` element without the id `main`, and no `article`. Its turns carry no `article`, `data-testid` or `data-turn` marker, only class names, some nested inside others, and counts could not tie them to one element per turn, which the bookmarklet needs to show one answer at a time. So the bookmarklet stays as it is.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a fix to the bookmarklet that reads the conversation as it is now, worked out from the site's markup with placeholder content, with the push, gist update and short a bookmarklet change brings; its entry already opens the most recent conversation by selector in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), and reads nothing from it;
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
+    - a local fixture page with the conversation markup the page has now (its `main`, and the elements that hold each turn), filled with placeholder text, so the fix can be built and checked on it.
+  - Done when the entry passes signed in, or on a fixture page with that markup.
+  - From: User - Resolve Test Procedures
+- [x] **User todo**: Confirm that `siteSpecific_chatGPT_ResizePrompt.js` still works on the site
+  - Resolved 11.23.2026, at the maintainer's request, by the first way below: the bookmarklet was
+    rewritten to find the editable element in the prompt form and the box it scrolls in, and to
+    make that box resizable from its corner, up to 600px. Its entry passes signed in, in the
+    maintainer's everyday browser, on the chat page. The look was checked by numbers rather than a
+    picture: set to 400px, the box and the whole prompt grow with it and stay on screen. Its gist
+    carries the fix; its short is owed under `## Short Videos`.
+  - Deprecated later on 11.23.2026: the site now has an expand control for the prompt box
+    itself. By hand the grip showed but did not drag, because the page cancels the press at the
+    grip. The bookmarklet is kept as it is and no longer tested or updated, and its short is no
+    longer owed.
+  - Not tested: the entry's run, which checks that the bookmarklet makes the prompt box resizable (its style element first in the body), on a page with the prompt `form` and `#prompt-textarea`.
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
+  - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has a `form` but no `#prompt-textarea`, the prompt box the bookmarklet reads by its id, so the run went no further. Nothing was typed into the prompt box. Its entry keeps a skip with that reason.
+  - Later on 11.18.2026, two probes in the everyday browser counted candidate selectors only, reading no text and typing nothing: the prompt box is now an editable element with no id, more than ten levels inside the prompt `form`, and the page has no `textarea`. The form's first two children, which the bookmarklet reads by position, are a hidden element and an empty one, so its fixed chain of parents and child positions no longer fits, and a reworked layout could not be checked to look right on a page that is checked by selectors and counts alone. So the bookmarklet stays as it is.
+  - Ways an AI-safe automated procedure could resolve it:
+    - a fix to the bookmarklet that finds the prompt box as it is now, with the push, gist update and short a bookmarklet change brings, then its entry run again in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer);
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
+    - a local fixture page with the prompt form markup the page has now (the `form`, its editable prompt box and the parents the bookmarklet styles), with an empty prompt, so the fix can be built and checked on it.
+  - Done when the entry passes signed in, or on a fixture page with that markup.
+  - From: User - Resolve Test Procedures
+- [x] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
+  - Closed 11.23.2026: the Gmail bookmarklets are tested by hand. Automating a signed-in mailbox
+    could get the account flagged, and nothing shows it cannot, so no run opens the page again and
+    its entry carries `byHand` in place of its skip. A person tests and updates it, as its README
+    entry says. Its one run for that decision, the same day, again marked no row within ten
+    seconds; whether the inbox held a sponsored row then is not known, so that is for the
+    maintainer's own check.
+  - Not tested: the bookmarklet on an inbox listing (`table` and `tr`), where it marks and styles the sponsored rows. Its entry runs only the default safe run, with no assertion of its own.
+  - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
+  - On 11.18.2026, in the maintainer's everyday browser, signed in: the run held its mail tab and closed it, but no row was marked within ten seconds of the bookmarklet's run. The run reads no mail, so whether the inbox showed a sponsored row at that moment is not known, and its entry keeps a skip with that reason. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
+  - Ways an AI-safe automated procedure could resolve it:
+    - the same run in the maintainer's everyday browser, opened by [to-explorer](https://github.com/jhauga/to-explorer), at a time the inbox shows a sponsored row;
+    - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in;
+    - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
+  - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
+  - From: User - Resolve Test Procedures
 
 </details>
