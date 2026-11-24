@@ -38,7 +38,7 @@
   - [ChatGPT - Bookmark a specific response](#chatgpt---bookmark-a-specific-response) - requires 1 change
   - [ChatGPT - Navigate Answers](#chatgpt--navigate-answers) - ready to use
   - [ChatGPT - Paste Ready Bookmark Response](#chatgpt---paste-ready-bookmark-response) - ready to use
-  - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - ready to use
+  - [ChatGPT - Resize Prompt](#chatgpt---resize-prompt) - deprecated
   - [ChatGPT - Search Chat History](#chatgpt---search-chat-history) - ready to use
   - [GitHub - Alternate Row Color](#github---alternate-row-color) - ready to use
   - [GitHub - Commit Date Timestamp](#github---commit-date-timestamp) - ready to use
@@ -46,12 +46,12 @@
   - [GitHub - Navigate Commits Sequentially](#github---navigate-commits-sequentially) - ready to use
   - [GitHub - Resize Repo Table Columns](#github---resize-repo-table-columns) - ready to use
   - [GitHub - Show File Size](#github---show-file-size) - ready to use
-  - [Gmail - Expand Label Folder Mouse Move Email](#gmail---expand-label-folder-mouse-move-email) - ready to use 
-  - [Gmail - Resize Side Bar](#gmail---resize-side-bar) - ready to use
-  - [Gmail - Style Sponsored Email](#gmail---style-sponsored-email) - ready to use
+  - [Gmail - Expand Label Folder Mouse Move Email](#gmail---expand-label-folder-mouse-move-email) - tested by hand
+  - [Gmail - Resize Side Bar](#gmail---resize-side-bar) - tested by hand
+  - [Gmail - Style Sponsored Email](#gmail---style-sponsored-email) - tested by hand
   - [Google - Paste Ready Bookmark AI Response](#google---paste-ready-bookmark-ai-response) - ready to use
   - [Google Maps Custom Mearsure Distance](#google-maps---custom-mearsure-distance) - ready to use
-  - [OctoPrint - Change Graph Image](#octoprint---change-graph-image) - ready to use - <em>1 optional change</em>
+  - [OctoPrint - Change Graph Image](#octoprint---change-graph-image) - deprecated
   - [Stackoverflow - Add Answer Anchor Links](#stackoverflow---add-answer-anchor-links) - ready to use
   - [Stackoverflow - Copy Answer Anchor Links](#stackoverflow---copy-answer-anchor-links) - ready to use
   - [w3Schools - Example Line Numbers](#w3schools---example-line-numbers) - ready to use
@@ -474,6 +474,8 @@ Resize the ChatGPT text prompt. Works with:
 
 1. ChatGPT - Paste Ready Bookmark Response
 
+<strong>DEPRECATED</strong> - the site now has an expand control for the prompt box itself. Kept as it is, and no longer tested or updated.
+
 <strong>USE - ready to use</strong>
 
 Copy/paste: open [siteSpecific_chatGPT_ResizePrompt.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_ResizePrompt.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
@@ -629,6 +631,8 @@ Gmail - Expand Label Folder Mouse Move Email:
 
 Often Move Gmail emails to nested label folders, but forget to expand label before moving. <br><br>
 
+<strong>TESTED BY HAND</strong> - it works on a signed-in mailbox, so a person tests and updates it.
+
 <strong>USE - ready to use</strong>
 
 Copy/paste: open [siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
@@ -645,6 +649,8 @@ Gmail - Resize Side Bar:
 
 Resize the Gmail sidebar when labels have long and similar names <br><br>
 
+<strong>TESTED BY HAND</strong> - it works on a signed-in mailbox, so a person tests and updates it.
+
 <strong>USE - ready to use</strong>
 
 Copy/paste: open [siteSpecific_Gmail_ResizeSideBar.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_Gmail_ResizeSideBar.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
@@ -660,6 +666,8 @@ Gmail - Style Sponsored Email:
 <dl><dd><dl><dd>
 
 Use this bookmarklet to get contrast between regular emails and sponsored emails in gmail <br><br>
+
+<strong>TESTED BY HAND</strong> - it works on a signed-in mailbox, so a person tests and updates it.
 
 <strong>USE - ready to use</strong>
 
@@ -718,6 +726,8 @@ optional change, the graph's style pointed to the image's address in the "img" f
 the address the bookmarklet writes, not an image on the OctoPi host. No printer needs to be connected.
 
 To reach the page, open it with [to-explorer](https://github.com/jhauga/to-explorer): `to-explorer --chrome [0-9]+ http://octopi.local/?#temp`, where `[0-9]+` is the browser profile's number.
+
+<strong>DEPRECATED</strong> - use the <a href="https://github.com/jneilliii/OctoPrint-CustomBackground">OctoPrint-CustomBackground</a> plugin instead. Kept as it is, and no longer tested or updated.
 
 <strong>USE - ready to use</strong>
 

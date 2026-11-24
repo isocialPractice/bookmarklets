@@ -514,49 +514,48 @@ default export or as named exports:
 
 A page on the reader's own network can need a sign-in too. The two sections
 above fit together: the address comes from a url variable, and the sign-in from
-`auth`. The entry for `siteSpecific_OctoPrint_ChangeGraphImage`, which changes
-the temperature graph's image in [OctoPrint](https://github.com/OctoPrint/OctoPrint),
-does both:
+`auth`. An entry for a bookmarklet that changes the image behind a status graph
+on a self-hosted dashboard does both:
 
 ```json
-"siteSpecific_OctoPrint_ChangeGraphImage": {
- "url": "$OCTOPRINT_URL",
+"siteSpecific_Example_ChangeGraphImage": {
+ "url": "$EXAMPLE_DASHBOARD_URL",
  "scheduled": false,
- "auth": "octoprint",
- "signedIn": "#tabs",
- "requires": ["#temperature-graph"],
+ "auth": "example-dashboard",
+ "signedIn": "#account-menu",
+ "requires": ["#status-graph"],
  "timeout": 45000,
  "steps": [
   { "run": true },
-  { "expect": { "selector": "#temperature-graph[style*='background']", "count": 1 } },
-  { "run": { "set": { "img": "test-bm-graph.png" } } },
-  { "expect": { "selector": "#temperature-graph[style*='/static/webassets/img/test-bm-graph.png']", "count": 1 } }
+  { "expect": { "selector": "#status-graph[style*='background']", "count": 1 } },
+  { "run": { "set": { "img": "sample-graph.png" } } },
+  { "expect": { "selector": "#status-graph[style*='/static/img/sample-graph.png']", "count": 1 } }
  ]
 }
 ```
 
-- **The address.** `OCTOPRINT_URL` holds the OctoPrint page. Its usual address
-  on OctoPi is `http://octopi.local/?#temp`, which opens the Temperature tab:
+- **The address.** `EXAMPLE_DASHBOARD_URL` holds the dashboard's page, such as
+  `http://dashboard.local/#status`:
 
   ```bat
-  setx OCTOPRINT_URL "http://octopi.local/?#temp"
+  setx EXAMPLE_DASHBOARD_URL "http://dashboard.local/#status"
   ```
 
   ```sh
-  export OCTOPRINT_URL='http://octopi.local/?#temp'
+  export EXAMPLE_DASHBOARD_URL='http://dashboard.local/#status'
   ```
 
   `setx` sets it for the shells opened after it. With it unset, the entry is a
   skip.
-- **The sign-in.** `launch` is handed the site name, `octoprint`, and no
+- **The sign-in.** `launch` is handed the site name, `example-dashboard`, and no
   address, so a launcher that signs in to it has to find the address itself;
   reading the same variable keeps it out of the launcher too. With no launcher,
-  or one that has no sign-in for `octoprint`, the entry is a skip. A page that
-  comes up at OctoPrint's sign-in form has no `#tabs`, so a signed-out run is a
-  skip reading `signed out of octoprint`, never a failure.
-- **No printer needs to be connected.** OctoPrint shows the temperature graph
-  without one, and the entry asserts only `#temperature-graph` and its style.
-  Nothing in it connects a printer, sends a printer command or starts a print.
+  or one that has no sign-in for `example-dashboard`, the entry is a skip. A page
+  that comes up at the dashboard's sign-in form has no `#account-menu`, so a
+  signed-out run is a skip reading `signed out of example-dashboard`, never a
+  failure.
+- **Nothing on the device changes.** The entry asserts only `#status-graph` and
+  its style. Nothing in it sends a command to whatever the dashboard runs.
 - **The two paths.** The first `run` is the bookmarklet as published, which
   takes the graph's image away. The second sets `img`, as a reader would before
   saving the bookmark, and the last `expect` checks the address the bookmarklet
@@ -566,8 +565,8 @@ does both:
 
 To open the same page by hand, in a chosen Chrome profile, use
 [to-explorer](https://github.com/jhauga/to-explorer):
-`to-explorer --chrome [0-9]+ http://octopi.local/?#temp`, where `[0-9]+` is the
-profile's number.
+`to-explorer --chrome [0-9]+ http://dashboard.local/#status`, where `[0-9]+` is
+the profile's number.
 
 ### The everyday browser: `drive`, `personal` and `_TEST_BM_EVERYDAY_DRIVER`
 

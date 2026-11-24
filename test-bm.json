@@ -772,26 +772,7 @@
  },
 
  "siteSpecific_chatGPT_ResizePrompt": {
-  "url": "https://chatgpt.com/",
-  "drive": "everyday",
-  "personal": true,
-  "signedIn": "a[href*='/c/']",
-  "scheduled": false,
-  "requires": ["form", "form [contenteditable='true']", "body"],
-  "timeout": 60000,
-  "steps": [
-   { "run": true },
-   { "wait": 500 },
-   { "expect": { "selector": "form [data-resize-prompt='box']", "count": 1 } },
-   { "expect": { "selector": "[data-resize-prompt='box'] [contenteditable='true']", "count": 1 } },
-   { "expect": { "selector": "[data-resize-prompt='box'][style*='resize: vertical']", "count": 1 } },
-   { "expect": { "selector": "[data-resize-prompt='box'][style*='max-height: 600px']", "count": 1 } },
-   { "expect": { "selector": "[data-resize-prompt='box']", "visible": true } },
-   { "run": true },
-   { "wait": 500 },
-   { "expect": { "selector": "[data-resize-prompt]", "count": 0 } },
-   { "expect": { "selector": "[style*='resize: vertical']", "count": 0 } }
-  ]
+  "deprecated": { "why": "the site now has an expand control for the prompt box itself" }
  },
 
  "siteSpecific_chatGPT_SearchChatHistory": {
@@ -818,6 +799,7 @@
  },
 
  "siteSpecific_Gmail_ResizeSideBar": {
+  "byHand": "it works on a signed-in mailbox, so a person tests and updates it",
   "url": "https://mail.google.com/mail/u/0/",
   "drive": "everyday",
   "personal": true,
@@ -838,12 +820,12 @@
  },
 
  "siteSpecific_Gmail_StyleSponsoredEmail": {
+  "byHand": "it works on a signed-in mailbox, so a person tests and updates it",
   "url": "https://mail.google.com/mail/u/0/",
   "drive": "everyday",
   "personal": true,
   "signedIn": "div[gh='cm']",
   "scheduled": false,
-  "skip": "in the everyday browser the mail tab was held and closed, but no row was marked within ten seconds of the run; the run reads no mail, so whether the inbox showed a sponsored row then is not known",
   "requires": ["table", "tr"],
   "timeout": 60000,
   "steps": [
@@ -855,6 +837,7 @@
  },
 
  "siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail": {
+  "byHand": "it works on a signed-in mailbox, so a person tests and updates it",
   "url": "https://mail.google.com/mail/u/0/",
   "drive": "everyday",
   "personal": true,
@@ -873,17 +856,6 @@
  },
 
  "siteSpecific_OctoPrint_ChangeGraphImage": {
-  "url": "$OCTOPRINT_URL",
-  "scheduled": false,
-  "auth": "octoprint",
-  "signedIn": "#tabs",
-  "requires": ["#temperature-graph"],
-  "timeout": 45000,
-  "steps": [
-   { "run": true },
-   { "expect": { "selector": "#temperature-graph[style*='background']", "count": 1 } },
-   { "run": { "set": { "img": "test-bm-graph.png" } } },
-   { "expect": { "selector": "#temperature-graph[style*='/static/webassets/img/test-bm-graph.png']", "count": 1 } }
-  ]
+  "deprecated": { "see": "https://github.com/jneilliii/OctoPrint-CustomBackground" }
  }
 }

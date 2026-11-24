@@ -57,6 +57,23 @@ this file.
 
 ### Changed
 
+- Two bookmarklets are deprecated and three are tested by hand. Each README entry says so on a
+  line of its own above its `USE` line, the contents list carries the same word, and each
+  `test-bm.json` entry holds the key, so no run reaches any of them.
+  - `siteSpecific_OctoPrint_ChangeGraphImage` is deprecated: the
+    [OctoPrint-CustomBackground](https://github.com/jneilliii/OctoPrint-CustomBackground) plugin
+    does its job from OctoPrint itself. `docs/testing.md`'s worked example of a signed-in page on
+    the reader's own network is now a placeholder entry of the same shape.
+  - `siteSpecific_chatGPT_ResizePrompt` is deprecated: the site now has an expand control for the
+    prompt box itself.
+  - `siteSpecific_Gmail_ResizeSideBar`, `siteSpecific_Gmail_StyleSponsoredEmail` and
+    `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail` are tested by hand: they work on a
+    signed-in mailbox, so a person tests and updates them. Their entries keep their pages and
+    steps as the record of how; Style Sponsored Email's skip is gone, as a by-hand entry takes
+    none.
+  - `TODO.md` closes the OctoPrint image check and the Style Sponsored Email check, takes the two
+    deprecated bookmarklets out of the shorts and demo work, and leaves the Gmail shorts to the
+    maintainer's own recordings.
 - `index.html` is laid out with a grid, so the navigation and the frame can never be laid over each
   other. It was an absolutely positioned 15% navigation beside a floated 80% frame, which at 390
   pixels painted the frame over the right 29px of every 49px-wide navigation link and took any

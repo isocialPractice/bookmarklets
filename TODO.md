@@ -115,7 +115,11 @@ that show a bookmarklet did its job, rather than merely not crashing.
 Tests the automated runs could not finish. Each item is the maintainer's to
 resolve; a run never works one.
 
-- [ ] **User todo**: Confirm that `siteSpecific_OctoPrint_ChangeGraphImage`, with `img` set, shows an image placed in OctoPrint's `webassets/img` folder as the graph's background
+- [x] **User todo**: Confirm that `siteSpecific_OctoPrint_ChangeGraphImage`, with `img` set, shows an image placed in OctoPrint's `webassets/img` folder as the graph's background
+  - Closed 11.23.2026: the bookmarklet is deprecated, at the maintainer's ruling, because the
+    [OctoPrint-CustomBackground](https://github.com/jneilliii/OctoPrint-CustomBackground) plugin
+    does the same job from OctoPrint itself. It is kept as it is and no longer tested or
+    updated, so this check is no longer needed.
   - Not tested: whether the file is served and shown. The automated run checked only that the bookmarklet writes `/static/webassets/img/<img>` into the graph's style, and the test image's address answers 404 because no file is there.
   - Why: placing the file needs a shell on the OctoPrint host, which the automated run does not have.
   - On 11.18.2026 an automated shell session on the host typed the commands that place the test image, then stopped when one read-back of its output timed out, before the copy was checked. The test image's address still answered 404 signed out, so whether the file was written is not known, and this check waits for a later attempt.
@@ -186,6 +190,10 @@ resolve; a run never works one.
     maintainer's everyday browser, on the chat page. The look was checked by numbers rather than a
     picture: set to 400px, the box and the whole prompt grow with it and stay on screen. Its gist
     carries the fix; its short is owed under `## Short Videos`.
+  - Deprecated later on 11.23.2026: the site now has an expand control for the prompt box
+    itself. By hand the grip showed but did not drag, because the page cancels the press at the
+    grip. The bookmarklet is kept as it is and no longer tested or updated, and its short is no
+    longer owed.
   - Not tested: the entry's run, which checks that the bookmarklet makes the prompt box resizable (its style element first in the body), on a page with the prompt `form` and `#prompt-textarea`.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
   - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has a `form` but no `#prompt-textarea`, the prompt box the bookmarklet reads by its id, so the run went no further. Nothing was typed into the prompt box. Its entry keeps a skip with that reason.
@@ -195,7 +203,13 @@ resolve; a run never works one.
     - a dedicated test account whose login lives in the OS credential vault and is read only at sign-in, so the entry's signed-in run goes ahead;
     - a local fixture page with the prompt form markup the page has now (the `form`, its editable prompt box and the parents the bookmarklet styles), with an empty prompt, so the fix can be built and checked on it.
   - Done when the entry passes signed in, or on a fixture page with that markup.
-- [ ] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
+- [x] **User todo**: Confirm that `siteSpecific_Gmail_StyleSponsoredEmail.js` still works on the site
+  - Closed 11.23.2026: the Gmail bookmarklets are tested by hand. Automating a signed-in mailbox
+    could get the account flagged, and nothing shows it cannot, so no run opens the page again and
+    its entry carries `byHand` in place of its skip. A person tests and updates it, as its README
+    entry says. Its one run for that decision, the same day, again marked no row within ten
+    seconds; whether the inbox held a sponsored row then is not known, so that is for the
+    maintainer's own check.
   - Not tested: the bookmarklet on an inbox listing (`table` and `tr`), where it marks and styles the sponsored rows. Its entry runs only the default safe run, with no assertion of its own.
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and the site has no guest mode.
   - On 11.18.2026, in the maintainer's everyday browser, signed in: the run held its mail tab and closed it, but no row was marked within ten seconds of the bookmarklet's run. The run reads no mail, so whether the inbox showed a sponsored row at that moment is not known, and its entry keeps a skip with that reason. Its entry there waits for one row the bookmarklet marks, then checks that every marked row is also styled. A run opens only the inbox, and never clicks to another tab of it.
@@ -316,8 +330,9 @@ the bookmarklet has a demo.
     describe, then the video block in place of the entry's comment.
 - [ ] Make and post the shorts for the public site-specific bookmarklets
   - The same steps. A site that blocks a headless recording is listed for a
-    hand recording rather than skipped without a word. OctoPrint needs the
-    printer's address, as its test does.
+    hand recording rather than skipped without a word.
+    `siteSpecific_OctoPrint_ChangeGraphImage` is deprecated (11.23.2026) and
+    gets no short.
   - `siteSpecific_GitHub_ShowFileSize` is posted, 11.15.2026:
     [Short - GitHub - Show File Size](https://www.youtube.com/shorts/cTCOnRGBT-0),
     public, in the `Bookmarklet Shorts` playlist, and its README entry links
@@ -382,9 +397,11 @@ the bookmarklet has a demo.
   - A run renders these and stops before posting. The maintainer checks each
     for an account name, address, avatar, conversation or message in view,
     and posts it.
-  - `siteSpecific_chatGPT_NavigateAnswers.js` and
-    `siteSpecific_chatGPT_ResizePrompt.js` were rewritten on 11.23.2026, so
-    record them as they are now.
+  - `siteSpecific_chatGPT_NavigateAnswers.js` was rewritten on 11.23.2026,
+    so record it as it is now. `siteSpecific_chatGPT_ResizePrompt.js` is
+    deprecated (11.23.2026) and gets no short.
+  - The three Gmail bookmarklets are tested by hand (11.23.2026): no run
+    opens their page, so each short is the maintainer's own recording.
 - [ ] Make a short part of every new bookmarklet: extend the paragraph at the
   top of this file so a new bookmarklet's item ends with its short posted and
   its video block in the README
@@ -410,8 +427,9 @@ a change to the server.
   - List the channel's bookmarklet uploads first. The shorts made in the
     current format stay; every other bookmarklet upload is remade.
   - Each new demo replaces the old link in the README.
-    `ChatGPT - Paste Ready Bookmark Response` and
-    `OctoPrint - Change Graph Image` link old demos today.
+    `ChatGPT - Paste Ready Bookmark Response` links an old demo today.
+    `OctoPrint - Change Graph Image` does too, and keeps it: it is
+    deprecated (11.23.2026), so its demo is not remade.
 - [ ] Make and post demos for the bookmarklets without one, a type at a time
   - Public, in the demos playlist, titled with the entry's heading. The
     description starts from the entry's and is rewritten for someone watching:
