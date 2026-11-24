@@ -162,6 +162,14 @@ resolve; a run never works one.
     It finds each question by the block that keeps its line breaks and each answer where the two
     divide, so it no longer depends on `article` or `#main`. Its gist carries the fix; its short
     is owed under `## Short Videos`.
+  - Fixed again later on 11.23.2026, after the maintainer's check by hand: the rewrite marked
+    the user's screen-reader heading as each answer, read only the turns the page had drawn,
+    and lost its hiding when the page drew a turn again. It now reads the page's own turn,
+    question and answer attributes, hides through a stylesheet of its own keyed on them,
+    scrolls to reach the turns the page has not drawn yet, and holds the answer in view while
+    the page settles. Its entry checks that each marked answer is a reply, that no heading is
+    marked, and that every other turn's reply stays hidden after moving both ways, and passes
+    in the maintainer's everyday browser. Its gist carries the fix; its short stays owed.
   - Not tested: the entry's run, which checks that the bookmarklet adds its toggle button to the conversation (`#main .normal-chat`).
   - Why: on 11.16.2026 the site was signed out for the automated run, which never signs in, and a guest run met the site's bot check before any page loaded. The automated run never answers a bot check.
   - On 11.18.2026, in the maintainer's everyday browser, signed in: the chat page has no `#main`, where the bookmarklet adds its button, and a conversation opened from the sidebar showed no `article` within ten seconds. The run read nothing else from the page, so whether the conversation's markup changed or the click did not open it is not known. Its entry keeps a skip with that reason.

@@ -77,6 +77,19 @@ this file.
 
 ### Fixed
 
+- `siteSpecific_chatGPT_NavigateAnswers.js` shows the reply. The rewrite below marked each turn's
+  screen-reader heading, a one-pixel `h4` before the question, as its answer, so the page showed no
+  answer at all; and it read only the turns the page had drawn and hid them with inline styles,
+  which a turn the page draws again loses. It now reads the page's own marks for each turn, its
+  question and its answer, with the structure reading kept as the fallback. It shows one answer
+  through a stylesheet of its own keyed on those marks, so a turn drawn again is hidden or shown
+  as before, and it never hides a turn's own element, which the page watches. It scrolls to reach
+  the turns the page has not drawn yet, wraps at either end, holds the answer in view while the
+  page settles, and follows a turn the page draws again under a new key by where it sits. The
+  key it moves by no longer scrolls the conversation underneath. Its entry asserts that each
+  answer is a reply, that no heading is marked, and that every other turn's reply stays hidden
+  after a move each way; the waits after a key are three seconds, since a move now scrolls and
+  waits for the page to draw. It passes in the maintainer's everyday browser.
 - `siteSpecific_chatGPT_NavigateAnswers.js` works on ChatGPT's conversation as it is now. The page
   no longer has an `article` for each turn or an element with the id `main`, which is what the
   bookmarklet read, so it found nothing to show. It now finds each question by the block that keeps
