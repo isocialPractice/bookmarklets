@@ -707,7 +707,7 @@
   ]
  },
 
- "siteSpecific_chatGPT_BookmarkResponse": {
+ "siteSpecific_ChatGPT_BookmarkResponse": {
   "url": "fixture:snippet.html",
   "scheduled": true,
   "requires": ["body"],
@@ -718,7 +718,7 @@
   ]
  },
 
- "siteSpecific_chatGPT_NavigateAnswers": {
+ "siteSpecific_ChatGPT_NavigateAnswers": {
   "url": "https://chatgpt.com/",
   "drive": "everyday",
   "personal": true,
@@ -760,7 +760,7 @@
   ]
  },
 
- "siteSpecific_chatGPT_PasteReadyBookmarkResponse": {
+ "siteSpecific_ChatGPT_PasteReadyBookmarkResponse": {
   "url": "https://chatgpt.com/",
   "scheduled": false,
   "auth": "chatgpt",
@@ -771,11 +771,11 @@
   "timeout": 60000
  },
 
- "siteSpecific_chatGPT_ResizePrompt": {
+ "siteSpecific_ChatGPT_ResizePrompt": {
   "deprecated": { "why": "the site now has an expand control for the prompt box itself" }
  },
 
- "siteSpecific_chatGPT_SearchChatHistory": {
+ "siteSpecific_ChatGPT_SearchChatHistory": {
   "url": "https://chatgpt.com/",
   "drive": "everyday",
   "personal": true,

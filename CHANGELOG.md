@@ -21,8 +21,30 @@ this file.
   its host still being let through, and the value appearing nowhere in the output or the run's
   folder.
 
+### Changed
+
+- The five ChatGPT bookmarklets are named `siteSpecific_ChatGPT_<WhatItDoes>.js`, so GitHub lists
+  them in alphabetical order. It lists a folder with every upper-case letter ahead of any
+  lower-case one, so `siteSpecific_chatGPT_` came after `siteSpecific_YouTube_`. The keys in
+  `test-bm.json`, the raw link and gist link in each README entry, the raw link in `index.html`
+  and the file inside each gist carry the new name. No file's content changed for it, and a raw
+  link to an old name no longer opens. Entries in this file from before the change, and the items
+  under `## Complete` in `TODO.md`, keep the name they were written with.
+
 ### Fixed
 
+- `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` copies an answer from ChatGPT's conversation
+  as it is drawn now. None of the marks it read were on the page any more, so a click on Copy ended
+  in the repair notice with nothing on the clipboard. It finds the turn by `[data-virtualized-turn]`
+  and the answer by `[data-response-body]`, with the marks it read before kept as fallbacks, and
+  leaves a Copy button inside an answer alone.
+  - The page keeps each block's code whole in an attribute, for its own Copy code button. The code
+    is read from there, since the editor draws only the lines in view, and the attribute no longer
+    comes with the answer, where its quotes turned the code into broken markup on the saved page.
+  - The answer is written with none of the site's attributes, buttons, icons or hidden parts. Only
+    a web or mail address, a picture's words, a text direction, a list's first number and a cell's
+    span are kept, so a link on the saved page opens where it did on the site. A percent sign is
+    written as an entity, because a URL field reads one as an escape.
 - The corner badge on the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes keeps
   the end of its label off its own rounded corner. The 11.24.2026 change left two narrow bands
   where the label just fits on one line a few pixels before the block is wide enough for it, so
@@ -48,6 +70,12 @@ this file.
   rule is copied into each of them, so a copy left behind is what this catches - the two readings
   beside it are taken at 390 and 1280 pixels, and both bands lie between them. It fails on each
   page as it stood and passes on each as it is. `docs/testing.md` describes it.
+- `test/paste-ready.test.js`, which `npm test` runs as `test:paste-ready` ahead of the bookmarklets.
+  It runs the Paste Ready bookmarklet on a conversation built from the marks it reads, with placeholder
+  text, clicks Copy, puts what the clipboard holds through what a URL field does to it, opens it,
+  and reads the page it writes. Run on the file as it was, seven of its eight tests fail, the first
+  on the repair notice. Run on a copy with only the new marks named, six fail. `docs/testing.md`
+  describes it.
 
 ## [11.24.2026]
 

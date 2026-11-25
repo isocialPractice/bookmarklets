@@ -412,7 +412,7 @@ If any error, escape quotes and special characters in text and repaste. <br><br>
 
 <strong>USE - requires 1 change </strong>
 
-Copy/paste: open [siteSpecific_chatGPT_BookmarkResponse.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_BookmarkResponse.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
+Copy/paste: open [siteSpecific_ChatGPT_BookmarkResponse.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_ChatGPT_BookmarkResponse.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
 <strong>Required \(x1\)</strong>
  1. Paste response from clipboard in lieu of "PASTE_RESPONSE".
@@ -423,7 +423,7 @@ Copy/paste: open [siteSpecific_chatGPT_BookmarkResponse.js](https://raw.githubus
 
 <strong>NOTE</strong> - two spaces in pasted text will add line break.<br>
 
-Gist page for [siteSpecific_chatGPT_BookmarkResponse.js](https://gist.github.com/jhauga/328eccd84d072664c68bf2079fd11bab)
+Gist page for [siteSpecific_ChatGPT_BookmarkResponse.js](https://gist.github.com/jhauga/328eccd84d072664c68bf2079fd11bab)
 
 <!-- PASTE VIDEO HERE -->
 
@@ -437,9 +437,9 @@ Navigate through long chatGPT conversations one answer at a time. <br><br>
 
 <strong>USE - ready to use</strong>
 
-Copy/paste: open [siteSpecific_chatGPT_NavigateAnswers.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_NavigateAnswers.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
+Copy/paste: open [siteSpecific_ChatGPT_NavigateAnswers.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_ChatGPT_NavigateAnswers.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-Gist page for [siteSpecific_chatGPT_NavigateAnswers.js](https://gist.github.com/jhauga/ada256a97a9725a7ba117de31909b4cd)
+Gist page for [siteSpecific_ChatGPT_NavigateAnswers.js](https://gist.github.com/jhauga/ada256a97a9725a7ba117de31909b4cd)
 
 <!-- PASTE VIDEO HERE -->
 
@@ -455,9 +455,9 @@ Copy a ready bookmarklet to the clipboard. Once run all copied answers will be c
 
 <strong>USE - ready to use</strong>
 
-Copy/paste: open [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
+Copy/paste: open [siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-Gist page for [siteSpecific_chatGPT_PasteReadyBookmarkResponse.js](https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2).
+Gist page for [siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js](https://gist.github.com/jhauga/d8c3b593e6a7d38d2338b8092e86e3e2).
 
 <b>Video Demonstration for Use:</b>
 
@@ -478,9 +478,9 @@ Resize the ChatGPT text prompt. Works with:
 
 <strong>USE - ready to use</strong>
 
-Copy/paste: open [siteSpecific_chatGPT_ResizePrompt.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_ResizePrompt.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
+Copy/paste: open [siteSpecific_ChatGPT_ResizePrompt.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_ChatGPT_ResizePrompt.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-Gist page for [siteSpecific_chatGPT_ResizePrompt.js](https://gist.github.com/jhauga/edf8e8a842ebe8b00e1a5ff3ec24892c)
+Gist page for [siteSpecific_ChatGPT_ResizePrompt.js](https://gist.github.com/jhauga/edf8e8a842ebe8b00e1a5ff3ec24892c)
 
 <!-- PASTE VIDEO HERE -->
 
@@ -494,9 +494,9 @@ Search titles of chat history when chat history gets long. <br><br>
 
 <strong>USE - ready to use</strong>
 
-Copy/paste: open [siteSpecific_chatGPT_SearchChatHistory.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_chatGPT_SearchChatHistory.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
+Copy/paste: open [siteSpecific_ChatGPT_SearchChatHistory.js](https://raw.githubusercontent.com/isocialPractice/bookmarklets/main/JSFormatted/siteSpecific_ChatGPT_SearchChatHistory.js), press `Ctrl + A` then `Ctrl + C`, and paste it as the URL of a new bookmark.
 
-Gist page for [siteSpecific_chatGPT_SearchChatHistory.js](https://gist.github.com/jhauga/90ccd5e537c2bd08e5a9427c82d437ae)
+Gist page for [siteSpecific_ChatGPT_SearchChatHistory.js](https://gist.github.com/jhauga/90ccd5e537c2bd08e5a9427c82d437ae)
 
 <!-- PASTE VIDEO HERE -->
 

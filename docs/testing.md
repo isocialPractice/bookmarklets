@@ -766,13 +766,14 @@ exit "$code"
 npm test
 ```
 
-Four stages, in order, each run only when the one before it passed:
+Five stages, in order, each run only when the one before it passed:
 
 | Stage | Command | What it proves |
 | --- | --- | --- |
 | `test:harness` | `node --test test/harness.test.js` | That `test-bm.js` itself gives the right verdict. |
 | `test:pages` | `node --test test/pages.test.js` | That the practice pages are fit to show a reader. |
 | `test:gallery` | `node --test test/gallery.test.js` | That the deployed gallery and the pages it frames behave. |
+| `test:paste-ready` | `node --test test/paste-ready.test.js` | That an answer copied as a bookmark is a bookmark that opens. |
 | `test:bookmarklets` | `node test-bm.js --all` | That every bookmarklet still works where its entry says. |
 
 ### `test:harness`
@@ -976,6 +977,41 @@ attribute reads the same in one and still costs a phone the download. So the
 paths the page asks for are collected at the phone width: none of them the
 animation while the page paints, exactly one of them once the disclosure is
 opened, and the image arrived when it is.
+
+### `test:paste-ready`
+
+`siteSpecific_ChatGPT_PasteReadyBookmarkResponse` writes a bookmarklet to the
+clipboard, and its own entry in `test-bm.json` is a run on a signed-in page that
+clicks nothing and reads no clipboard, and a skip wherever nobody is signed in.
+**`test/paste-ready.test.js` is what says the bookmark it copies opens, and what
+that bookmark shows.**
+
+It builds a conversation from the marks the bookmarklet reads, filled with
+placeholder text: one answer drawn with the marks the site uses now, and one
+with those it used before, which the file keeps as fallbacks. It is not the
+site's page, so it cannot say that the site still draws those marks.
+
+It runs the bookmarklet, clicks the answer's Copy button, and puts what the
+clipboard holds through what a URL field does to it: the breaks taken out, and
+the percent escapes decoded. Then it runs that on an empty page, reads the page
+it writes, and checks that:
+
+- the click ends in the wait notice rather than the repair one, and what it
+  copied parses with its breaks taken out, with each replaced by a space, and
+  with its escapes decoded;
+- the headings, paragraphs, lists, table and inline code read as the answer
+  wrote them, quotes, backslashes, `\u` sequences and percent signs included;
+- a link keeps its address, escapes and all, and one that runs something keeps
+  none;
+- each code block is there once, whole and under its language, where the page's
+  editor has drawn only part of it;
+- none of the site's attributes, classes, buttons or hidden parts come with the
+  answer, and none of the bookmarklet's own markers are left behind;
+- a Copy button inside an answer starts nothing.
+
+The bookmark is opened rather than its text read alone. With only the new marks
+named, the clipboard held a bookmarklet that ran, and the page it opened carried
+each code block a second time as broken markup.
 
 ### `test:bookmarklets`
 

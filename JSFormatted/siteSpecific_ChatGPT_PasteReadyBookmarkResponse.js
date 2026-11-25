@@ -15,21 +15,28 @@ javascript:(function(){
 
  /* Copy buttons inside these are skipped - code block and prompt copy buttons. */
  var skipCopySelector =         /* HOT-GLUE - likely to change                 */
-  "pre, .markdown, [data-turn=\"user\"]";
+  "pre, .markdown, [data-response-body], [data-turn=\"user\"]";
 
  /* Conversation turn holding one response and its button row.                 */
  var turnSelector =             /* HOT-GLUE - likely to change                 */
-  "article, [data-turn], [data-testid^=\"conversation-turn\"]";
+  "[data-virtualized-turn], [data-turn-key], article, [data-turn], " +
+  "[data-testid^=\"conversation-turn\"]";
 
  /* Answer area in the turn - first selector with a match is used.             */
  var answerAreaSelector = [     /* HOT-GLUE - likely to change                 */
+  "[data-response-body]",
   "[data-message-author-role=\"assistant\"] .markdown",
   ".markdown",
   "[data-message-author-role=\"assistant\"]"
  ];
 
+ /* Whole code of a block, kept by the page for its own copy button.           */
+ var codeKeptAttributeChatGPTPasteReadyBookmark = /* HOT-GLUE                  */
+  "data-chatgpt-copy-code";
+
  /* Code block marked by the page, such as code with a Run button.             */
  var codeBlockSelector =        /* HOT-GLUE - likely to change                 */
+  "[" + codeKeptAttributeChatGPTPasteReadyBookmark + "], " +
   "[data-code-block], [data-markdown-copy=\"code-block\"]";
 
  /* Code text in a block - code editor lines first, then code, then pre.       */
@@ -38,6 +45,14 @@ javascript:(function(){
  /* Code block - parents climbed from code to the whole block with its toolbar. */
  var codeBlockClimbTags = ["DIV", "PRE", "SPAN"]; /* HOT-GLUE - likely to change */
  var codeBlockToolbarLimit = 60; /* most characters of toolbar text in a block   */
+
+ /* Parts of the answer that are the page's own controls, or not shown.         */
+ var leaveOutSelectorChatGPTPasteReadyBookmark = /* HOT-GLUE                   */
+  "button, svg, [hidden], [data-markdown-copy=\"exclude\"]";
+
+ /* Attributes the answer keeps - any other is the page's own, and stays there. */
+ var keepAttributesChatGPTPasteReadyBookmark =
+  ["href", "alt", "dir", "start", "colspan", "rowspan"];
 
  /* Switch variables. */
  var onOffPasteReadyBookmarkResponse = 1; /* 1 (default) on, 0 is off */
@@ -340,10 +355,13 @@ javascript:(function(){
   return [];
  };
 
- /* Plain text of code, from the code editor when the block has one. */
+ /* Plain text of code, as the page keeps it, else from its code editor. */
  const codeTextChatGPTPasteReadyBookmark = (curCode) => {
   let curText = "";
-  if (curCode.classList.contains("cm-content")) {
+  let curKept = curCode.closest("[" + codeKeptAttributeChatGPTPasteReadyBookmark + "]");
+  if (curKept && curKept.getAttribute(codeKeptAttributeChatGPTPasteReadyBookmark)) {
+   curText = curKept.getAttribute(codeKeptAttributeChatGPTPasteReadyBookmark);
+  } else if (curCode.classList.contains("cm-content")) {
    /* whole document from the editor, as long code may only draw lines in view */
    let curRef = curCode.cmView || curCode.cmTile;
    let curView = curRef && (curRef.view || (curRef.rootView && curRef.rootView.view) ||
@@ -469,6 +487,18 @@ javascript:(function(){
       "codeblock_paste_ready_" + curBlock.getAttribute("data-paste-ready-code") + "_end"
      );
     });
+    /* the page's controls and attributes stay on the page */
+    curClone.querySelectorAll(leaveOutSelectorChatGPTPasteReadyBookmark).forEach((curEl) => {
+     curEl.remove();
+    });
+    curClone.querySelectorAll("*").forEach((curEl) => {
+     Array.from(curEl.attributes).forEach((curAttr) => {
+      let curKeep = keepAttributesChatGPTPasteReadyBookmark.indexOf(curAttr.name) > -1;
+      /* an address is kept only where it opens a page or an email */
+      if (curAttr.name == "href" && !/^(https?:|mailto:)/i.test(curAttr.value)) curKeep = false;
+      if (!curKeep) curEl.removeAttribute(curAttr.name);
+     });
+    });
     /* each table in a scrolling box of its own, so a wide table scrolls and the page does not */
     curClone.querySelectorAll("table").forEach((curTable) => {
      if (!curTable.parentNode) { return; }
@@ -486,14 +516,20 @@ javascript:(function(){
    });
   }
 
+  /* attributes in single quotes, as the bookmarklet's string is in double quotes */
+  copiedContent = copiedContent.replace(/<[a-z](?:"[^"]*"|[^"<>])*>/gi, (curTag) =>
+   curTag.replace(/="([^"]*)"/g, (curAttr, curValue) =>
+    "='" + curValue.replace(/'/g, "&#39;") + "'"
+   )
+  );
+
   /* clean up a bit */       
+  copiedContent = copiedContent.replace(/%/g, "&#37;");           /* a URL field reads a percent sign as an escape     */
   copiedContent = copiedContent.replace(/\n/g, "--new-line_unlikely_line-new--"); /* new line marker replaced later    */
   copiedContent = copiedContent.replace(/\"/g, '&#92;&quot;');    /* use html encoding for escaped double quotes       */
   copiedContent = copiedContent.replace(/"/g, '\"');              /* keep double quotes as needed for inline html      */
   copiedContent = copiedContent.replace(/\'/g, "&#92;&apos;'");   /* use html encoding for escaped single quotes       */
   copiedContent = copiedContent.replace(/'/g, "'");               /* keep single quotes as needed for inline html      */
-  copiedContent = copiedContent.replace(/class=&#92;&quot;/g, "class='"); /* HOT-GLUE - correct open class  - HOT-GLUE */
-  copiedContent = copiedContent.replace(/&#92;&quot;>/g, "'>");           /* HOT-GLUE - correct close class - HOT-GLUE */
 
   /* utilize "RUNNING_FIX" to correctly write unexpected outputs */
   copiedContent = runningFixChatGPTPasteReadyBookmark(copiedContent);

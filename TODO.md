@@ -36,7 +36,7 @@ repository:
     (`gh api repos/isocialPractice/bookmarklets/pages/builds/latest`) before
     checking.
   - From: Improve GitHub Pages Site
-- [ ] Give the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes a
+- [ ] Give the page `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` writes a
   real dark colour scheme, or take its dark rules out
   - Its `@media (prefers-color-scheme: dark)` block still darkens the code blocks
     on a page that never darkens. `body` carries `background: rgb(47 79 79 / 3%)`,
@@ -60,7 +60,6 @@ repository:
   - Pages runs no build here, so a script generates the page and the result is
     committed. Regenerate it whenever a bookmarklet is added or repaired.
   - From: Improve GitHub Pages Site
-- [ ] Resolve user-feedback
 
 ### Create and Deploy GitHub Pages Override
 
@@ -78,10 +77,11 @@ browser for the same result.
 
 Every item that built this section is finished and archived in `## Complete`,
 the last of them on 11.23.2026. What they built is `test-bm.js` with its
-`test-bm.json` schema, `docs/testing.md`, and the three `node --test` files
-`npm test` runs ahead of the bookmarklets: `test/harness.test.js` (125),
-`test/pages.test.js` (17) and `test/gallery.test.js` (35). New harness work is
-queued here when there is some; the section stays as the record of what the
+`test-bm.json` schema, `docs/testing.md`, and the first three of the four
+`node --test` files `npm test` runs ahead of the bookmarklets:
+`test/harness.test.js` (128), `test/pages.test.js` (17),
+`test/gallery.test.js` (35) and `test/paste-ready.test.js` (8). New harness work
+is queued here when there is some; the section stays as the record of what the
 harness is and why it is Playwright.
 
 - [ ] Read the badge's label itself in the corner sweep, not only its distance
@@ -156,7 +156,7 @@ resolve; a run never works one.
 Fixes and changes to bookmarklets already published. The first full test run
 files its failures here. A fix is finished when its posted gist carries it too.
 
-- [ ] Add an `s, s` key sequence to `siteSpecific_chatGPT_NavigateAnswers.js`
+- [ ] Add an `s, s` key sequence to `siteSpecific_ChatGPT_NavigateAnswers.js`
   that returns the page to normal
 
 ### From the Open Issues
@@ -329,8 +329,8 @@ the bookmarklet has a demo.
   - A run renders these and stops before posting. The maintainer checks each
     for an account name, address, avatar, conversation or message in view,
     and posts it.
-  - `siteSpecific_chatGPT_NavigateAnswers.js` was rewritten on 11.23.2026,
-    so record it as it is now. `siteSpecific_chatGPT_ResizePrompt.js` is
+  - `siteSpecific_ChatGPT_NavigateAnswers.js` was rewritten on 11.23.2026,
+    so record it as it is now. `siteSpecific_ChatGPT_ResizePrompt.js` is
     deprecated (11.23.2026) and gets no short.
   - The three Gmail bookmarklets are tested by hand (11.23.2026): no run
     opens their page, so each short is the maintainer's own recording.
@@ -459,15 +459,15 @@ Bookmarklets for one site each, filed under `# Site Specific Bookmarklets` in
 the README. A site's markup is the part most likely to change, so every item
 here lists its selectors in `requires`.
 
-- [ ] `siteSpecific_chatGPT_ResizeSidebar.js` - drag to resize the chat
+- [ ] `siteSpecific_ChatGPT_ResizeSidebar.js` - drag to resize the chat
   history sidebar, with the width remembered
-- [ ] `siteSpecific_chatGPT_AnswerAnchorLinks.js` - add an anchor link to each
+- [ ] `siteSpecific_ChatGPT_AnswerAnchorLinks.js` - add an anchor link to each
   answer and show them, following the pattern of the two Stack Overflow anchor
   link bookmarklets
-- [ ] `siteSpecific_chatGPT_PinAnswerToSide.js` - pin an answer to a side panel
+- [ ] `siteSpecific_ChatGPT_PinAnswerToSide.js` - pin an answer to a side panel
   that stays put while the conversation scrolls, with the pinned answers
-  bookmarkable in the format `siteSpecific_chatGPT_BookmarkResponse.js` uses
-- [ ] `siteSpecific_chatGPT_BookmarkMultipleResponses.js` - collect several
+  bookmarkable in the format `siteSpecific_ChatGPT_BookmarkResponse.js` uses
+- [ ] `siteSpecific_ChatGPT_BookmarkMultipleResponses.js` - collect several
   copied responses in `sessionStorage`, then build one bookmark from all of them
   with an inserted button
 - [ ] `siteSpecific_GitHub_SortRepoTableColumns.js` - click a column header in
@@ -1917,5 +1917,64 @@ roadmap section each one came from.
     used radius scaled the way CSS scales one that overruns its box. The
     driver that read it is in `.tmp/ui-ux-badge/`.
   - From: UI/UX Override - the badge label between the two widths
+- [x] Resolve user-feedback
+  - From: version.control = null
+- [x] `chatgpt-file-names`: Name the five ChatGPT bookmarklets
+  `siteSpecific_ChatGPT_<WhatItDoes>`, so GitHub lists them in alphabetical order
+  - **Issue**: The five `JSFormatted/siteSpecific_chatGPT_*.js` files open the
+    site's part of the name with a lower-case letter. GitHub lists a folder by
+    character code, every upper-case letter ahead of any lower-case one, so they
+    come after `siteSpecific_YouTube_*` rather than between
+    `siteSpecific_Amazon_*` and `siteSpecific_GitHub_*`.
+  - **Goal**: All five files open `siteSpecific_ChatGPT_`, the deprecated one with
+    the rest, and no file's content changes for it. What names them follows: the
+    keys in `test-bm.json`, the raw link and the gist link's text in each README
+    entry, the raw link in `index.html`, the planned ChatGPT names in this roadmap,
+    and the file name inside each of the five gists. The `CHANGELOG.md` entries and
+    the items under `## Complete` keep the name they were written with, and so do
+    the pages under `examples/`, which are not named after a bookmarklet file.
+  - **Done when**: `git ls-files JSFormatted` lists no `siteSpecific_chatGPT_`,
+    `npm test` passes, the README check reports no error, and the gist check passes
+    for the five.
+  - Done 11.25.2026, with all four of those holding. The maintainer's local gist
+    list still holds the five old names, and no tool rewrites a name in it, so
+    `gitHubTask /rg` passes over these five until it is corrected. The issue #4
+    item under `## User - Resolve Test Procedures` is the maintainer's, and keeps
+    the old name too.
+  - From: Existing Bookmarklets
+- [x] `siteSpecific_chatGPT_PasteReadyBookmarkResponse`: Copy a paste ready
+  bookmark from ChatGPT's conversation page as it is drawn now
+  - **Issue**: ChatGPT redrew its conversation, and nothing on the page matches
+    `turnSelector` or `answerAreaSelector` in the bookmarklet any more. A turn is
+    now `[data-virtualized-turn]` and the answer in it is `[data-response-body]`.
+    `findAnswerAreaChatGPTPasteReadyBookmark` falls through to its climb past the
+    button's siblings, finds no answer there, and the click ends in the "REPAIR
+    NEEDED" alert with nothing on the clipboard. Naming the two new marks is not
+    enough by itself: each code block now sits in an element whose
+    `data-chatgpt-copy-code` attribute repeats the whole code, and the clean up in
+    `pasteReadyBookmarkResponse` turns the quotes inside that attribute into loose
+    attributes, so the code is in the pasted bookmark a second time as broken markup.
+  - **Goal**: Find the turn and the answer by the marks the page has now, with the
+    older ones kept as fallbacks, and write the answer without the site's own
+    attributes. Clicking Copy under an answer puts a bookmarklet on the clipboard
+    that parses as a URL field leaves it, and the page it opens shows the answer:
+    its headings, paragraphs, lists, tables and links, and each code block once, as
+    plain text under its language.
+  - **Repro**: Open a ChatGPT conversation, run the bookmarklet, and click the Copy
+    button under an answer.
+  - **Done when**: A test runs the file on a fixture page with that markup and
+    placeholder text, clicks Copy, opens what the clipboard holds and reads the
+    answer on the page it writes; and `node test-bm.js` on the file still gives the
+    verdict its signed-in entry gives.
+  - **Evidence**: `.user-feedback/html/siteSpecific_chatGPT_PasteReadyBookmarkResponse.htm` (local only;
+    one turn as the site draws it now: the prompt, an answer with headings, rules
+    and seven code blocks, and the row of buttons under the answer)
+  - Done 11.25.2026, in `test/paste-ready.test.js` and on the saved turn, where the
+    bookmark opens with all seven code blocks. Not tested on the site: the signed-in
+    entry is the skip it was, `signed out of chatgpt`.
+  - The deprecation check, asked before the fix, answered `by-hand`. It is not
+    applied: the ask was for the fix, a run cannot take that status back, and the
+    entry's signed-in run is the maintainer's to stop or keep.
+  - From: Existing Bookmarklets
 
 </details>
