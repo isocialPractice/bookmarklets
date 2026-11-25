@@ -65,42 +65,6 @@ repository:
 
 - No site
 
-### UI/UX Override - the badge label between the two widths
-
-#### Found Issues
-
-- [ ] The badge's rounded corner shaves the end of its label at the widths
-  where the label just fits on one line
-  - **Issue**: The corner badge keeps its label inside itself at 390px and at
-    1280px, framed and standalone, on all five examples, and at almost every
-    width between them. Two narrow bands are the exception: the smaller
-    margins `min(20px, 2vw)` let `ChatGPT Bookmark` fit on one line a few
-    pixels before the block is wide enough for it, so the line's tail meets
-    the `border-bottom-right-radius` and `overflow: hidden` takes the end of
-    the final `k` off. Read by shooting the badge with the clip and again with
-    it released and differencing the two, the curve removes about one square
-    pixel at 840px to 842px and a quarter of one at 843px to 847px, and about
-    two square pixels at 1191px and 1192px and a quarter of one at 1193px to
-    1197px, each width being the example's own layout width. Both words still
-    read at both bands, so this is a look rather than a break. The gallery
-    reaches the same bands through its frame: a viewport of 1137px to 1146px
-    lays an example out at 840px to 847px, and 1576px to 1584px at 1191px to
-    1197px. Before the change the label wrapped at those widths and sat 30px
-    clear of the curve, so the bands came in with it. The rule is written by
-    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` and
-    copied inline into all five `examples/chatGPT_Bookmark_*.html` pages, so
-    both need the change. `test/gallery.test.js` passes here: its two byline
-    readings are taken at 390px and at 1280px, and neither is in either band.
-  - **Goal**: Give the label room at the badge's right edge, so a line that
-    only just fits cannot land on the curve - a `padding-right` on the block,
-    or a `margin-left` that keeps the line wrapping as it did. Add the reading
-    that found this beside the two byline readings in `test/gallery.test.js`:
-    step the example's own width across the range and assert at each step that
-    no label run crosses the block's rounded corner, the corner taken as the
-    used radius scaled the way CSS scales one that overruns its box. The
-    driver that read it is in `.tmp/ui-ux-badge/`.
-  - From: UI/UX Override - the badge label between the two widths
-
 ## Test Harness
 
 A script that answers one question for any bookmarklet: does it still work on
@@ -111,13 +75,36 @@ it can reuse a signed-in session without the session ever entering the
 repository. Puppeteer covers Chromium only, and Selenium needs a driver per
 browser for the same result.
 
-Every item in this section is finished and archived in `## Complete`, the last
-of them on 11.23.2026. What they built is `test-bm.js` with its
+Every item that built this section is finished and archived in `## Complete`,
+the last of them on 11.23.2026. What they built is `test-bm.js` with its
 `test-bm.json` schema, `docs/testing.md`, and the three `node --test` files
 `npm test` runs ahead of the bookmarklets: `test/harness.test.js` (125),
-`test/pages.test.js` (17) and `test/gallery.test.js` (34). New harness work is
+`test/pages.test.js` (17) and `test/gallery.test.js` (35). New harness work is
 queued here when there is some; the section stays as the record of what the
 harness is and why it is Playwright.
+
+- [ ] Read the badge's label itself in the corner sweep, not only its distance
+  from the corner
+  - The sweep added on 11.25.2026 steps each example's own layout width from
+    320px to 1600px on all five pages and asserts that no glyph run of the
+    label crosses the rounded corner the block is clipped by. It cannot see
+    the label. A word broken across two lines, a label that stops lining up
+    with the icon above it, a wrap that comes and goes twice as the page
+    widens, and five inline copies that have drifted apart are all inside the
+    shape, and all pass it.
+  - Read the label's own words at the steps that sweep already takes, so the
+    pass costs one more evaluate a width rather than a second sweep of its
+    own. Assert at every width that the label reads `ChatGPT Bookmark` on one
+    line, or `ChatGPT` and `Bookmark` one whole word to a line, and never a
+    word broken across two; that its lines start at one left edge, and at the
+    icon's left edge while they sit under it; that the badge takes its three
+    shapes - the label stacked under the icon, the label on one line under it,
+    the label on one line beside it - once each and in that order as the page
+    widens; and that the five pages lay the label out alike at every width.
+  - The reading that verified the reserve is in `.tmp/ui-ux-badge-wrap/`, as a
+    `node --test` file with those collectors. `_BADGE_WRAP_BARE=1` takes the
+    label's `padding-right` back off, which is the control: run that way it
+    fails at 840px and at 1191px, standalone and framed, and passes the rest.
 
 ## Test Configurations
 
@@ -1898,5 +1885,36 @@ roadmap section each one came from.
     - a local fixture page with an inbox table of placeholder rows, one of them sponsored, so an entry can assert the row is marked.
   - Done when the entry passes signed in with an assertion that a sponsored row is marked, or on a fixture page with that markup.
   - From: User - Resolve Test Procedures
+- [x] The badge's rounded corner shaves the end of its label at the widths
+  where the label just fits on one line
+  - **Issue**: The corner badge keeps its label inside itself at 390px and at
+    1280px, framed and standalone, on all five examples, and at almost every
+    width between them. Two narrow bands are the exception: the smaller
+    margins `min(20px, 2vw)` let `ChatGPT Bookmark` fit on one line a few
+    pixels before the block is wide enough for it, so the line's tail meets
+    the `border-bottom-right-radius` and `overflow: hidden` takes the end of
+    the final `k` off. Read by shooting the badge with the clip and again with
+    it released and differencing the two, the curve removes about one square
+    pixel at 840px to 842px and a quarter of one at 843px to 847px, and about
+    two square pixels at 1191px and 1192px and a quarter of one at 1193px to
+    1197px, each width being the example's own layout width. Both words still
+    read at both bands, so this is a look rather than a break. The gallery
+    reaches the same bands through its frame: a viewport of 1137px to 1146px
+    lays an example out at 840px to 847px, and 1576px to 1584px at 1191px to
+    1197px. Before the change the label wrapped at those widths and sat 30px
+    clear of the curve, so the bands came in with it. The rule is written by
+    `JSFormatted/siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` and
+    copied inline into all five `examples/chatGPT_Bookmark_*.html` pages, so
+    both need the change. `test/gallery.test.js` passes here: its two byline
+    readings are taken at 390px and at 1280px, and neither is in either band.
+  - **Goal**: Give the label room at the badge's right edge, so a line that
+    only just fits cannot land on the curve - a `padding-right` on the block,
+    or a `margin-left` that keeps the line wrapping as it did. Add the reading
+    that found this beside the two byline readings in `test/gallery.test.js`:
+    step the example's own width across the range and assert at each step that
+    no label run crosses the block's rounded corner, the corner taken as the
+    used radius scaled the way CSS scales one that overruns its box. The
+    driver that read it is in `.tmp/ui-ux-badge/`.
+  - From: UI/UX Override - the badge label between the two widths
 
 </details>
