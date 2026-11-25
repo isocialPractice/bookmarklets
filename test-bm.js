@@ -76,9 +76,10 @@
 // edge rather than text a reader cannot read.
 //
 // It may instead name an environment variable, as "$OCTOPRINT_URL", for a page whose address does not
-// belong in the repository. The address is read when the entry runs and never written down: every
-// reason, report.json and summary.txt names the variable in its place, and the address is taken back
-// out of anything the page itself said. An unset variable is a skip, not a failure.
+// belong in the repository. The name is upper case and may open with an underscore, as "$_MY_PAGE_URL".
+// The address is read when the entry runs and never written down: every reason, report.json and
+// summary.txt names the variable in its place, and the address, and the parts of it that identify the
+// page, are taken back out of anything the page itself said. An unset variable is a skip, not a failure.
 //
 // A run step may set variables first: { "run": { "set": { "img": "pic.png" } } } runs the bookmarklet
 // with the one var img = "..." its file declares holding "pic.png" instead, which is the edit a reader
@@ -217,8 +218,10 @@
 // computer's own mouse and keyboard; and how many real runs it made. Nothing else it returns is kept,
 // so nothing a page showed reaches the report through it. Without a driver the entry is a skip. An
 // everyday entry is never scheduled, takes no auth, captures nothing, grants no permissions, opens a
-// site's own https page, answers no prompt, and presses only keys that submit nothing: Tab, Escape,
-// the arrows, Home, End, PageUp, PageDown, Backspace and Delete. It names no network either: the
+// site's own https page, named in url or held by a variable it names, answers no prompt, and presses
+// only keys that submit nothing: Tab, Escape, the arrows, Home, End, PageUp, PageDown, Backspace and
+// Delete. A variable that holds anything but an https address fails the entry, and the driver's own
+// reason is cleaned of the address before it is written down. It names no network either: the
 // everyday browser does not watch the requests a bookmarklet sends, so the check of the source before
 // the run is all that holds a bookmarklet to its page there, and one that sends any is tested in the
 // harness's own browser. "signedIn" names a selector only the signed-in page has, which the driver
@@ -228,6 +231,16 @@
 // clipboard, a stored value, matches or a check. "via" on a click, hover, fill or press says how the
 // driver sends it, and expect { "check": "<name>" } names a check the driver holds, for what no
 // selector can say, such as a distance read within a tolerance. Both go only in an everyday entry.
+//
+// An entry may hold one "signedInRun": a second run of the same bookmarklet, on a signed-in page, for a
+// bookmarklet whose entry is a check on a fixture page. It is checked as an entry of its own, under
+// "<name> (signed in)": it has auth, or drive everyday, with signedIn and a url, takes no scheduled, and
+// holds no signedInRun of its own. The entry stays what it is, so a fixture entry keeps its schedule, and
+// --scheduled runs the entry only. A run by name and --all run the entry and then the signed-in run, as
+// two results, <name> and <name> (signed in), each counted on the summary line. A signed-in run that
+// skips - signed out, a sign-in wall, a variable that is not set, no launcher or no driver - never
+// changes the entry's own verdict, and records no short. A deprecated or by-hand entry takes none, and
+// an entry with skip runs neither.
 //
 // An entry can keep its bookmarklet out of every run. "deprecated": { "why": "<reason>" }, or
 // { "see": "<the https address of what replaces it>" }, is a bookmarklet its site or a better tool
@@ -311,7 +324,9 @@ var exitConfig = 2;
 // Entry and step shapes, which is also what validateConfig refuses anything outside of.
 var entryKeys = ["url", "scheduled", "requires", "steps", "dialogs", "permissions", "skip",
  "timeout", "settle", "auth", "signedIn", "network", "capture", "browsers", "drive", "personal",
- "deprecated", "byHand"];
+ "deprecated", "byHand", "signedInRun"];
+// What the name of an entry's second run, on a signed-in page, is followed by wherever it is reported.
+var signedInSuffix = " (signed in)";
 // A host a network entry names: an exact host, or "*." and a domain for any of its subdomains, as
 // a media server picked per request is.
 var hostPattern = /^(\*\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d+)?$/;
@@ -334,8 +349,12 @@ var offsetLimit = 4000;
 var clipboardKeys = ["selector", "attr", "startsWith", "singleLine", "nonEmpty"];
 var storageAreas = ["local", "session"];
 
-// A url that names an environment variable holding the address, rather than holding it itself.
-var urlVariablePattern = /^\$[A-Z][A-Z0-9_]*$/;
+// A url that names an environment variable holding the address, rather than holding it itself. The
+// name may open with an underscore.
+var urlVariablePattern = /^\$[A-Z_][A-Z0-9_]*$/;
+// How long a part of a hidden address has to be before it is taken out on its own: a word such as
+// "inbox" is in any sentence, and an id is not.
+var hiddenPartLength = 12;
 
 // A site name is all an entry with auth hands the sign-in launcher, so it is held to a shape that
 // cannot carry anything else.
@@ -605,9 +624,41 @@ function carriesSignIn(url) {
 function scrubbed(ctx, text) {
  var out = String(text);
  if (!ctx || !ctx.hidden) { return out; }
- if (ctx.url) { out = out.split(ctx.url).join(ctx.shown); }
- if (ctx.host) { out = out.split(ctx.host).join(ctx.shown); }
- return out;
+ if (ctx.forms === undefined) { ctx.forms = hiddenForms(ctx); }
+ return ctx.forms ? out.replace(ctx.forms, function () { return ctx.shown; }) : out;
+}
+
+// Every way a hidden address could be written back, as one expression: the address as it was given
+// and as a browser writes it, with and without its scheme and closing slash; the host; and the parts
+// of it that name the page rather than the site, such as the id in a chat's path. Longest first, in
+// one pass, so a short part never cuts a longer one and a name put in is never read again.
+function hiddenForms(ctx) {
+ var forms = [];
+ function add(text) {
+  text = String(text || "");
+  if (text.length > 1 && forms.indexOf(text) < 0) { forms.push(text); }
+ }
+ function addBoth(text) { add(text); add(String(text || "").replace(/\/+$/, "")); }
+ addBoth(ctx.url);
+ add(ctx.host);
+ try {
+  var read = new nodeUrl.URL(ctx.url);
+  var tail = read.pathname + read.search + read.hash;
+  addBoth(read.href);
+  addBoth(read.host + tail);
+  add(read.host);
+  if (read.hostname.indexOf(".") > 0) { add(read.hostname); }
+  if (tail.length >= hiddenPartLength) { addBoth(tail); }
+  (read.pathname + "/" + read.search.replace(/^\?/, "").replace(/[&=]/g, "/") + "/" + read.hash.replace(/^#/, ""))
+   .split("/").forEach(function (part) {
+    if (part.length < hiddenPartLength) { return; }
+    add(part);
+    try { add(decodeURIComponent(part)); } catch (err) { add(part); }
+   });
+ } catch (err) { /* an address URL cannot read is held by the forms above */ }
+ if (!forms.length) { return null; }
+ forms.sort(function (a, b) { return b.length - a.length; });
+ return new RegExp(forms.map(function (f) { return f.replace(/[.*+?^${}()|[\]\\\/-]/g, "\\$&"); }).join("|"), "gi");
 }
 
 // The file a fixture name is served from, or "" when it climbs out of the fixture folder.
@@ -1197,12 +1248,9 @@ function validateStep(step, where, problems) {
 
 function validateConfig(config, names) {
  var problems = [];
- Object.keys(config).forEach(function (name) {
-  if (names.indexOf(name) < 0) {
-   problems.push(name + ": there is no " + shownPath(bookmarkletFile(name)));
-   return;
-  }
-  var entry = config[name];
+ // One entry, as test-bm.json writes it or as the signedInRun inside one. name is how a message names
+ // it, and bookmarklet the file it is for: the two are one, except in a signedInRun.
+ function checkEntry(name, bookmarklet, entry, inner) {
   if (!entry || typeof entry != "object" || Array.isArray(entry)) {
    problems.push(name + ": the entry is not an object");
    return;
@@ -1210,6 +1258,7 @@ function validateConfig(config, names) {
   Object.keys(entry).forEach(function (key) {
    if (entryKeys.indexOf(key) < 0) { problems.push(name + ": unknown property " + key); }
   });
+  if (inner) { validateSignedInRun(entry, name, problems); }
   if (entry.url !== undefined && typeof entry.url != "string") { problems.push(name + ": url takes a string"); }
   // A sign-in in the address is a credential in this file. The message never repeats the address.
   if (typeof entry.url == "string" && carriesSignIn(entry.url)) { problems.push(name + ": url carries a sign-in"); }
@@ -1320,11 +1369,11 @@ function validateConfig(config, names) {
      // A set that is well formed is read against the file it changes, so a name the bookmarklet does
      // not declare, or a value that would break it, stops the run here rather than in a browser.
      if (problems.length == before && setOf(step)) {
-      var refused = setRefusal(name, setOf(step));
+      var refused = setRefusal(bookmarklet, setOf(step));
       if (refused) { problems.push(where + ": " + refused); }
      }
      if (typeof step.bookmarklet == "string" && step.bookmarklet.length) {
-      if (step.bookmarklet == name) {
+      if (step.bookmarklet == bookmarklet) {
        problems.push(where + ": bookmarklet runs another bookmarklet first, and a run step runs this one");
       } else if (names.indexOf(step.bookmarklet) < 0) {
        problems.push(where + ": there is no " + shownPath(bookmarkletFile(step.bookmarklet)) + " to run first");
@@ -1375,6 +1424,16 @@ function validateConfig(config, names) {
     }
    }
   }
+  if (!inner && entry.signedInRun !== undefined) {
+   checkEntry(name + signedInSuffix, bookmarklet, entry.signedInRun, true);
+  }
+ }
+ Object.keys(config).forEach(function (name) {
+  if (names.indexOf(name) < 0) {
+   problems.push(name + ": there is no " + shownPath(bookmarkletFile(name)));
+   return;
+  }
+  checkEntry(name, name, config[name], false);
  });
  if (problems.length) { configError(shownPath(configFile) + ":\n  " + problems.join("\n  ")); }
 }
@@ -1415,6 +1474,25 @@ function validateByHand(entry, name, problems) {
  if (entry.skip !== undefined) { problems.push(name + ": a by-hand entry is never run, so it takes no skip"); }
  if (entry.scheduled === true) { problems.push(name + ": a by-hand entry is never run, so it is never scheduled"); }
  if (entry.capture === true) { problems.push(name + ": a by-hand entry is never run, so it captures nothing"); }
+ if (entry.signedInRun !== undefined) { problems.push(name + ": a by-hand entry is never run, so it takes no signedInRun"); }
+}
+
+// What a signedInRun has to be, on top of everything any entry is held to: a run on a page that needs
+// a sign-in, named by its own address and by what only the signed-in page has. It is run only beside
+// an entry that is run by name or by --all, so it takes no schedule, and it holds no run of its own.
+function validateSignedInRun(entry, name, problems) {
+ var is = name + ": a signedInRun ";
+ if (entry.auth === undefined && entry.drive !== "everyday") {
+  problems.push(is + "has auth, or drive everyday - it is the run on a page that needs a sign-in");
+ }
+ if (entry.auth === undefined && (typeof entry.signedIn != "string" || !entry.signedIn.length)) {
+  problems.push(is + "names signedIn, a selector only a signed-in page has");
+ }
+ if (typeof entry.url != "string" || !entry.url.trim()) { problems.push(is + "names the url it opens"); }
+ if (entry.scheduled !== undefined) { problems.push(is + "takes no scheduled - it runs by name and by --all only"); }
+ if (entry.signedInRun !== undefined) { problems.push(is + "holds no signedInRun of its own"); }
+ if (entry.deprecated !== undefined) { problems.push(is + "is run, so it takes no deprecated"); }
+ if (entry.byHand !== undefined) { problems.push(is + "is run, so it takes no byHand"); }
 }
 
 // An entry that keeps its bookmarklet out of every run, and the verdict it is reported under. Nothing
@@ -1460,8 +1538,9 @@ function validateEveryday(entry, name, problems) {
   problems.push(is + "names no network - the everyday browser does not watch the requests a bookmarklet sends, so"
    + " a bookmarklet that sends any is tested in the harness's own browser");
  }
- if (typeof entry.url != "string" || !/^https:\/\/[^\/\s?#]+/i.test(entry.url.trim())) {
-  problems.push(is + "opens a site's own https page, named in url - never a fixture, a variable or the default");
+ if (typeof entry.url != "string" || !(urlVariable(entry.url) || /^https:\/\/[^\/\s?#]+/i.test(entry.url.trim()))) {
+  problems.push(is + "opens a site's own https page, named in url or held by a variable url names - never a fixture"
+   + " or the default");
  }
  if (entry.personal === true && entry.signedIn === undefined) {
   problems.push(name + ": a personal everyday entry names signedIn, a selector only the signed-in page has");
@@ -3162,11 +3241,13 @@ function labelOf(result) {
  return result.name + (result.browser && result.browser != defaultEngine ? " [" + result.browser + "]" : "");
 }
 
-async function runOne(browser, name, entry, session, options, engine) {
+// A bookmarklet's second run, on a signed-in page, is reported under a name of its own. It is the same
+// bookmarklet, so its file and what it is recorded under are still the first run's.
+async function runOne(browser, name, entry, session, options, engine, signedInRun) {
  var started = Date.now();
  engine = engine || defaultEngine;
  var result = {
-  name: name,
+  name: name + (signedInRun ? signedInSuffix : ""),
   browser: engine,
   verdict: "pass",
   reason: "",
@@ -3180,6 +3261,8 @@ async function runOne(browser, name, entry, session, options, engine) {
   console: [],
   errors: []
  };
+
+ if (signedInRun) { result.bookmarklet = name; }
 
  function close(verdict, reason) {
   result.verdict = verdict;
@@ -3252,21 +3335,29 @@ async function runOne(browser, name, entry, session, options, engine) {
  var cannot = engineSkip(entry, engine);
  if (cannot) { return close("skip", cannot); }
 
- if (entry && entry.drive == "everyday") {
-  return runEveryday(name, entry, session, options, check, firsts, result, close);
+ var everyday = !!(entry && entry.drive == "everyday");
+ if (everyday) {
+  result.drive = entry.drive;
+  result.personal = entry.personal === true;
  }
 
  // The address the entry asks for. A variable that names it is read here and nowhere else, so the
- // address reaches the browser and nothing that is written down.
+ // address reaches the browser, or the everyday driver, and nothing that is written down. The
+ // everyday browser opens a site's own https page and nothing less.
  var asked = (entry && entry.url) || defaultUrl;
  var named = urlVariable(asked);
  if (named) {
+  result.url = named;
   var held = String(process.env[named.slice(1)] || "").trim();
   if (!held) { return close("skip", "the page comes from " + named + ", which is not set"); }
-  if (!/^https?:\/\//i.test(held)) {
-   return close("fail", named + " holds something other than an http address");
+  if (!(everyday ? /^https:\/\//i : /^https?:\/\//i).test(held)) {
+   return close("fail", named + " holds something other than an " + (everyday ? "https" : "http") + " address");
   }
   asked = held;
+ }
+
+ if (everyday) {
+  return runEveryday(name, entry, session, options, check, firsts, result, close, asked, named);
  }
 
  var ctx = {
@@ -3333,6 +3424,10 @@ async function runOne(browser, name, entry, session, options, engine) {
  if (ctx.short && engine != defaultEngine) {
   ctx.short = false;
   result.notes.push("no short: a short is recorded in " + defaultEngine + ", and this run is " + engine + "'s");
+ }
+ if (ctx.short && signedInRun) {
+  ctx.short = false;
+  result.notes.push("no short: the short is a recording of the entry this run is beside");
  }
  if (ctx.short && fs.existsSync(shortFile(name))) {
   ctx.short = false;
@@ -3443,11 +3538,14 @@ async function runOne(browser, name, entry, session, options, engine) {
 // An entry with drive everyday, handed whole to the driver, which runs it in the maintainer's own
 // browser. What comes back is cut down to the verdict, the driver's own reason, which input each step
 // sent and how many real runs it made: anything else a driver returns is dropped here rather than
-// trusted, so nothing a page showed can reach the report through it.
-async function runEveryday(name, entry, session, options, check, firsts, result, close) {
- result.drive = entry.drive;
- result.personal = entry.personal === true;
- result.url = entry.url;
+// trusted, so nothing a page showed can reach the report through it. An address that came from a
+// variable is the driver's to open and the report's to name by the variable: what the driver says is
+// cleaned of it before anything is cut short, so no part of it is left at the cut.
+async function runEveryday(name, entry, session, options, check, firsts, result, close, address, named) {
+ var cover = named
+  ? { hidden: true, url: address, host: originOf(address).replace(/^https?:\/\//, ""), shown: named }
+  : null;
+ result.url = named || entry.url;
  result.notes.push("run by the everyday driver, which does not watch the requests the bookmarklet sends:"
   + " the check of its source before the run is what holds it to its page");
  if (options && options.capture) { result.notes.push("nothing was captured: the harness records nothing in the everyday browser"); }
@@ -3459,7 +3557,7 @@ async function runEveryday(name, entry, session, options, check, firsts, result,
   name: name,
   file: path.resolve(bookmarkletFile(name)),
   code: check.code,
-  url: entry.url.trim(),
+  url: String(address).trim(),
   requires: (entry.requires || []).slice(),
   steps: JSON.parse(JSON.stringify(entry.steps || [])),
   dialogs: JSON.parse(JSON.stringify(entry.dialogs || [])),
@@ -3477,7 +3575,11 @@ async function runEveryday(name, entry, session, options, check, firsts, result,
   said = await withTimeout(Promise.resolve().then(function () { return session.driver.api.run(job); }),
    everydayLimit(job.timeout), "the everyday driver gave no verdict inside " + everydayLimit(job.timeout) + "ms");
  } catch (err) {
-  return close("fail", err && err.expected ? err.message : "the everyday driver failed: " + oneSentence(firstLine(err)));
+  return close("fail", err && err.expected ? err.message
+   : "the everyday driver failed: " + oneSentence(scrubbed(cover, firstLine(err))));
+ }
+ if (cover && said && typeof said == "object" && typeof said.reason == "string") {
+  said = Object.assign({}, said, { reason: scrubbed(cover, said.reason) });
  }
  var kept = keptVerdict(said, job.steps.length);
  if (kept.inputs.length) { result.inputs = kept.inputs; }
@@ -3611,7 +3713,7 @@ function failureSection(result, diagnosis) {
  var out = ["## " + labelOf(result), ""];
  out.push("- **Verdict**: " + (result.reason || "fail"));
  out.push("- **Page**: " + (result.url || defaultUrl));
- out.push("- **File**: `" + shownPath(bookmarkletFile(result.name)) + "`");
+ out.push("- **File**: `" + shownPath(bookmarkletFile(result.bookmarklet || result.name)) + "`");
  if (result.browser && result.browser != defaultEngine) {
   out.push("- **Browser**: " + result.browser + " - run it again with `--browser " + result.browser + "`");
  }
@@ -3746,6 +3848,9 @@ function printList(names, config) {
     + (entry.browsers ? "  browsers " + entry.browsers.join(", ") : "")
     + (entry.requires && entry.requires.length ? "  requires " + entry.requires.length : "")
     + (entry.steps && entry.steps.length ? "  " + entry.steps.length + " steps" : "");
+   if (entry.signedInRun) {
+    extra += "  signed-in run " + (entry.signedInRun.auth ? "auth " + entry.signedInRun.auth : "drive " + entry.signedInRun.drive);
+   }
   }
   console.log(pad(name, width) + "  " + pad(what, 16) + "  " + extra);
  });
@@ -3754,8 +3859,14 @@ function printList(names, config) {
  var reached = function (n) { return config[n] && !keptOut(config[n]); };
  var configured = names.filter(function (n) { return config[n]; }).length;
  var scheduled = names.filter(function (n) { return reached(n) && config[n].scheduled; }).length;
- var signedIn = names.filter(function (n) { return reached(n) && config[n].auth; }).length;
- var everyday = names.filter(function (n) { return reached(n) && config[n].drive; }).length;
+ // A bookmarklet with a second run on a signed-in page is counted where that run is, as well as where
+ // its own entry is.
+ var uses = function (n, key) {
+  var entry = config[n];
+  return reached(n) && !!(entry[key] || (entry.signedInRun && entry.signedInRun[key]));
+ };
+ var signedIn = names.filter(function (n) { return uses(n, "auth"); }).length;
+ var everyday = names.filter(function (n) { return uses(n, "drive"); }).length;
  var deprecated = names.filter(function (n) { return config[n] && config[n].deprecated !== undefined; }).length;
  var byHand = names.filter(function (n) { return config[n] && config[n].byHand !== undefined; }).length;
  console.log("");
@@ -3922,28 +4033,37 @@ async function main() {
 
  // Each bookmarklet in each engine it runs in: the one --browser names for every entry, or else
  // Chromium and whatever else the entry's own browsers asks for. An entry kept out of every run is
- // one job whatever it names, since no engine runs it.
+ // one job whatever it names, since no engine runs it. An entry's signedInRun is a job of its own,
+ // after the entry's, by name and in --all: nobody is there to sign in when --scheduled runs, and an
+ // entry that skips itself keeps its second run out too.
  var jobs = [];
  queue.forEach(function (n) {
-  var wanted = keptOut(config[n]) ? [options.browser || defaultEngine]
-   : options.browser ? [options.browser] : ((config[n] && config[n].browsers) || [defaultEngine]);
-  wanted.forEach(function (engine) { jobs.push({ name: n, engine: engine }); });
+  var entry = config[n] || null;
+  function add(from, signedInRun) {
+   var wanted = keptOut(from) ? [options.browser || defaultEngine]
+    : options.browser ? [options.browser] : ((from && from.browsers) || [defaultEngine]);
+   wanted.forEach(function (engine) { jobs.push({ name: n, engine: engine, entry: from, signedInRun: signedInRun }); });
+  }
+  add(entry, false);
+  if (entry && entry.signedInRun && options.mode != "scheduled" && !keptOut(entry) && !entry.skip) {
+   add(entry.signedInRun, true);
+  }
  });
 
  if (jobs.length) {
   // An everyday entry runs in the maintainer's own browser, and an entry kept out of every run in
   // none, so a queue of nothing else starts no browser.
-  var everydayJob = function (j) { return !!(config[j.name] && config[j.name].drive); };
-  var runsJob = function (j) { return !keptOut(config[j.name]); };
+  var everydayJob = function (j) { return !!(j.entry && j.entry.drive); };
+  var runsJob = function (j) { return !keptOut(j.entry); };
   var playwright = jobs.some(function (j) { return runsJob(j) && !everydayJob(j); }) ? requirePlaywright() : null;
   // The launcher and the driver are each loaded only when an entry needs one, and before any
   // browser starts, so one that is set but wrong stops the run at once. Only Chromium's runs of an
   // entry use either.
   var needsLauncher = jobs.some(function (j) {
-   return j.engine == defaultEngine && runsJob(j) && config[j.name] && config[j.name].auth && !config[j.name].skip;
+   return j.engine == defaultEngine && runsJob(j) && j.entry && j.entry.auth && !j.entry.skip;
   });
   var needsDriver = jobs.some(function (j) {
-   return j.engine == defaultEngine && runsJob(j) && everydayJob(j) && !config[j.name].skip;
+   return j.engine == defaultEngine && runsJob(j) && everydayJob(j) && !j.entry.skip;
   });
   var session = {
    chromium: playwright ? playwright.chromium : null,
@@ -3958,7 +4078,7 @@ async function main() {
   var browsers = {};
   var width = 0;
   jobs.forEach(function (j) {
-   var shown = labelOf({ name: j.name, browser: j.engine });
+   var shown = labelOf({ name: j.name + (j.signedInRun ? signedInSuffix : ""), browser: j.engine });
    if (shown.length > width) { width = shown.length; }
   });
   try {
@@ -3978,7 +4098,7 @@ async function main() {
    }
    for (var i = 0; i < jobs.length; i++) {
     var job = jobs[i];
-    var result = await runOne(browsers[job.engine], job.name, config[job.name] || null, session, options, job.engine);
+    var result = await runOne(browsers[job.engine], job.name, job.entry, session, options, job.engine, job.signedInRun);
     results.push(result);
     console.log(summaryLine(result, width));
     if (!batch) { printDetail(result); }

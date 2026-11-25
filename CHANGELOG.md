@@ -59,6 +59,24 @@ this file.
 
 ### Added
 
+- A `test-bm.json` entry may hold one `signedInRun`: a second run of the same bookmarklet on a
+  signed-in page, beside an entry that is a check on a fixture. It is checked as an entry of its
+  own, under `<name> (signed in)`: it has `auth` or `"drive": "everyday"`, with `signedIn` and a
+  `url`, takes no `scheduled`, and holds no `signedInRun`. A `deprecated` or `byHand` entry takes
+  none. The entry stays what it is, so a fixture keeps its schedule and `--scheduled` runs it
+  alone; a run by name and `--all` run both, as two results, each counted on the summary line. A
+  signed-in run that skips, for a sign-in, a wall, an unset variable or no launcher or driver,
+  leaves the entry's verdict alone, and an entry with `skip` runs neither. `--list` names the run,
+  and `--short` records none for it.
+- An everyday entry's `url` may name an environment variable, resolved where every other entry's
+  is, so an unset one is a skip naming it and one that is not an `https` address fails. The driver
+  gets the address; every reason, `report.json` and `summary.txt` names the variable, and the
+  driver's own reason is cleaned of it before anything is cut short. A variable's name may open
+  with an underscore.
+- What a page or a driver says is cleaned of more than the whole address an entry's variable
+  holds: the host, the address without its scheme, and the parts of it that identify the page,
+  such as an id in its path. `test/harness.test.js` checks each, ten tests in all, and
+  `docs/testing.md` and `test-bm.schema.json` describe them.
 - `test/gallery.test.js` holds the reading that found it, beside the two byline readings: the
   example's own layout width is stepped from 320 to 1600 pixels, a pixel at a time, on all five
   pages, and no glyph run of the label may cross the corner the block is clipped by. The corner is

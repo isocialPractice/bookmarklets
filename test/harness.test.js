@@ -2868,3 +2868,276 @@ test("a fill into a password field fails the entry before it types, and never re
  assert.strictEqual((answer.run.out + answer.run.err).indexOf(heldSecret), -1, "the value is never printed");
  assert.strictEqual(runFolderText(answer.run).indexOf(heldSecret), -1, "nor written into the run's folder");
 });
+
+// ----------------------------------------------------------------------------------------------- //
+// A page address held in a variable, and a signed-in run beside a fixture
+// ----------------------------------------------------------------------------------------------- //
+
+// The address a variable holds, and the parts of it that name the page. None of them may be written
+// down anywhere, in full or in part.
+var hiddenId = "aaaabbbb-1111-2222-3333-ccccddddeeee";
+var hiddenAddress = "https://app.example.org/c/" + hiddenId;
+var hiddenEnv = { _TEST_BM_PAGE_URL: hiddenAddress };
+
+function tellsNothing(answer) {
+ var all = [answer.run.out, answer.run.err, JSON.stringify(answer.report), answer.summary, answer.failures].join("\n");
+ ["app.example.org", hiddenId, "/c/aaaabbbb"].forEach(function (part) {
+  assert.strictEqual(all.indexOf(part), -1, "nothing written down should hold " + part);
+ });
+}
+
+test("a variable's name may open with an underscore, and an existing name reads as it always has", function () {
+ var entries = {
+  fixture_Variable_Underscore: { url: "$_TEST_BM_PAGE_URL" },
+  fixture_Variable_Plain: { url: "$OCTOPRINT_URL" },
+  fixture_Variable_Digits: { url: "$_A1" }
+ };
+ var run = runFiles(copiesOf(passSource, Object.keys(entries)), entries, ["--list"]);
+ assert.strictEqual(run.run.status, 0, run.run.err);
+ ["$lower", "$_lower", "$1PAGE", "$_PAGE-URL", "$"].forEach(function (url) {
+  var refused = runFiles(copiesOf(passSource, ["fixture_Variable_Bad"]), { fixture_Variable_Bad: { url: url } }, ["--list"]);
+  assert.strictEqual(refused.run.status, 2, url + " should be refused: " + refused.run.out);
+  assert.match(refused.run.err, /a url naming an environment variable is written as \$NAME/);
+ });
+ var unset = runFiles(copiesOf(passSource, ["fixture_Variable_Underscore"]),
+  { fixture_Variable_Underscore: { url: "$_TEST_BM_PAGE_URL" } }, ["--all"], { _TEST_BM_PAGE_URL: "" });
+ var result = resultIn(unset, "fixture_Variable_Underscore");
+ assert.strictEqual(result.verdict, "skip");
+ assert.strictEqual(result.reason, "the page comes from $_TEST_BM_PAGE_URL, which is not set");
+});
+
+// Logs where it is, the way a page or a bookmarklet might, so the run has an address to take out.
+var tellsWhere = [
+ "javascript:(function(){",
+ " /* A fixture that says where it is. */",
+ " console.error(\"at \" + location.href + \" in \" + location.pathname + location.search);",
+ "})();",
+ ""
+].join("\n");
+
+test("the address a variable holds is taken out of what a page says, in full and in the parts that name the page", function () {
+ var answer = runFiles(copiesOf(tellsWhere, ["fixture_Variable_TellsWhere"]),
+  { fixture_Variable_TellsWhere: { url: "$_TEST_BM_PAGE_URL" } }, ["--all"],
+  { _TEST_BM_PAGE_URL: "https://fixtures.test/article.html?room=" + hiddenId });
+ var result = resultIn(answer, "fixture_Variable_TellsWhere");
+ assert.ok(result.console.length, "the page's own words should still be there");
+ assert.strictEqual(JSON.stringify(answer.report).indexOf(hiddenId), -1, JSON.stringify(result.console));
+ assert.strictEqual(JSON.stringify(result.console).indexOf("article.html"), -1);
+ assert.match(result.console[0].text, /\$_TEST_BM_PAGE_URL/);
+ assert.strictEqual(result.url, "$_TEST_BM_PAGE_URL");
+});
+
+// A driver that says the address it was handed, every way it might.
+var tellingDriver = [
+ "import fs from \"node:fs\";",
+ "import path from \"node:path\";",
+ "import { fileURLToPath } from \"node:url\";",
+ "var here = path.dirname(fileURLToPath(import.meta.url));",
+ "export async function run(job) {",
+ " fs.writeFileSync(path.join(here, job.name + \".json\"), JSON.stringify(job));",
+ " var at = new URL(job.url);",
+ " var id = at.pathname.split(\"/\").pop();",
+ " if (job.name == \"fixture_Variable_Throws\") { throw new Error(\"no tab for \" + job.url); }",
+ " if (job.name == \"fixture_Variable_Long\") {",
+ "  return { verdict: \"fail\", reason: \"step 1 did not hold \" + \"x\".repeat(250) + \" \" + job.url };",
+ " }",
+ " return { verdict: \"fail\", reason: \"step 1: \" + job.url + \" and \" + id + \" and \" + at.pathname + \" and \" + at.host };",
+ "}"
+].join("\n") + "\n";
+
+function runTelling(entries, env) {
+ var driver = makeDriver(tellingDriver);
+ try {
+  var answer = runFiles(copiesOf(passSource, Object.keys(entries)), entries, ["--all"],
+   Object.assign({ _TEST_BM_EVERYDAY_DRIVER: driver.file }, env));
+  answer.job = function (name) {
+   var file = path.join(driver.dir, name + ".json");
+   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : null;
+  };
+  answer.jobs = {};
+  Object.keys(entries).forEach(function (name) { answer.jobs[name] = answer.job(name); });
+  return answer;
+ } finally {
+  removeDir(driver.dir);
+ }
+}
+
+test("an everyday entry naming a variable hands the driver the address, and writes down the variable", function () {
+ var everyday = { url: "$_TEST_BM_PAGE_URL", drive: "everyday", signedIn: "#account", steps: [{ run: true }] };
+ var answer = runTelling({
+  fixture_Variable_Everyday: everyday,
+  fixture_Variable_Throws: everyday,
+  fixture_Variable_Long: everyday
+ }, hiddenEnv);
+ ["fixture_Variable_Everyday", "fixture_Variable_Throws", "fixture_Variable_Long"].forEach(function (name) {
+  assert.strictEqual(answer.jobs[name].url, hiddenAddress, "the driver opens the address");
+  assert.strictEqual(resultIn(answer, name).url, "$_TEST_BM_PAGE_URL");
+  assert.strictEqual(resultIn(answer, name).verdict, "fail");
+ });
+ assert.match(resultIn(answer, "fixture_Variable_Everyday").reason, /^step 1: \$_TEST_BM_PAGE_URL and \$_TEST_BM_PAGE_URL/);
+ assert.strictEqual(resultIn(answer, "fixture_Variable_Throws").reason, "the everyday driver failed: no tab for $_TEST_BM_PAGE_URL");
+ tellsNothing(answer);
+});
+
+test("an everyday entry's variable that is not set is a skip naming it, and one that is not https fails", function () {
+ var everyday = { url: "$_TEST_BM_PAGE_URL", drive: "everyday", signedIn: "#account" };
+ var unset = runTelling({ fixture_Variable_Everyday: everyday }, { _TEST_BM_PAGE_URL: "" });
+ var skipped = resultIn(unset, "fixture_Variable_Everyday");
+ assert.strictEqual(skipped.verdict, "skip");
+ assert.strictEqual(skipped.reason, "the page comes from $_TEST_BM_PAGE_URL, which is not set");
+ assert.strictEqual(skipped.drive, "everyday");
+ assert.strictEqual(unset.jobs.fixture_Variable_Everyday, null, "the driver is not asked to open nothing");
+ assert.strictEqual(unset.run.status, 0, "a skip never fails a run");
+
+ var plain = runTelling({ fixture_Variable_Everyday: everyday }, { _TEST_BM_PAGE_URL: "http://app.example.org/c/" + hiddenId });
+ var failed = resultIn(plain, "fixture_Variable_Everyday");
+ assert.strictEqual(failed.verdict, "fail");
+ assert.strictEqual(failed.reason, "$_TEST_BM_PAGE_URL holds something other than an https address");
+ assert.strictEqual(failed.url, "$_TEST_BM_PAGE_URL");
+ assert.strictEqual(plain.jobs.fixture_Variable_Everyday, null);
+ tellsNothing(plain);
+});
+
+// A fixture entry with a signed-in run of the same bookmarklet beside it, on the stub launcher.
+var besidePanel = { expect: { selector: panelSelector, visible: true } };
+
+function besideEntry(inner) {
+ return Object.assign({ url: "fixture:article.html", scheduled: true, steps: [{ run: true }, besidePanel] },
+  inner === undefined ? {} : { signedInRun: inner });
+}
+
+var signedInThere = {
+ auth: "fixture-site", url: "fixture:article.html", signedIn: "main", steps: [{ run: true }, besidePanel]
+};
+
+function runBeside(entries, args, env) {
+ var stub = makeStub();
+ try {
+  var answer = runFiles(copiesOf(passSource, Object.keys(entries)), entries, args,
+   Object.assign({ TEST_BM_AUTH_LAUNCHER: stub.file }, env || {}));
+  return answer;
+ } finally {
+  removeDir(stub.dir);
+ }
+}
+
+test("a fixture entry with a signed-in run is one result under --scheduled, and the launcher is not loaded", function () {
+ var nowhere = path.join(os.tmpdir(), "test-bm-no-launcher-" + process.pid, "missing-launcher.mjs");
+ var answer = runFiles(copiesOf(passSource, ["fixture_Beside_Both"]), { fixture_Beside_Both: besideEntry(signedInThere) },
+  ["--scheduled"], { TEST_BM_AUTH_LAUNCHER: nowhere });
+ assert.strictEqual(answer.run.status, 0, answer.run.out + answer.run.err);
+ assert.deepStrictEqual(answer.report.results.map(function (r) { return r.name; }), ["fixture_Beside_Both"]);
+ assert.strictEqual(resultIn(answer, "fixture_Beside_Both").verdict, "pass");
+ assert.match(answer.run.out, /1 run, 1 passed, 0 failed, 0 skipped/);
+});
+
+test("by name and in --all the signed-in run is a second result after the entry, each counted", function () {
+ var entries = { fixture_Beside_Both: besideEntry(signedInThere) };
+ var byName = runBeside(entries, ["fixture_Beside_Both"]);
+ assert.strictEqual(byName.run.status, 0, byName.run.out + byName.run.err);
+ var first = byName.run.out.search(/^fixture_Beside_Both\s+pass/m);
+ var second = byName.run.out.search(/^fixture_Beside_Both \(signed in\)\s+pass/m);
+ assert.ok(first >= 0 && second > first, "the entry is reported first:\n" + byName.run.out);
+
+ var all = runBeside(entries, ["--all"]);
+ assert.strictEqual(all.run.status, 0, all.run.out + all.run.err);
+ assert.deepStrictEqual(all.report.results.map(function (r) { return r.name; }),
+  ["fixture_Beside_Both", "fixture_Beside_Both (signed in)"]);
+ assert.strictEqual(resultIn(all, "fixture_Beside_Both").verdict, "pass");
+ var signed = resultIn(all, "fixture_Beside_Both (signed in)");
+ assert.strictEqual(signed.verdict, "pass", signed.reason);
+ assert.strictEqual(signed.auth, "fixture-site");
+ assert.strictEqual(signed.signedIn, true);
+ assert.strictEqual(signed.bookmarklet, "fixture_Beside_Both");
+ assert.match(all.run.out, /2 run, 2 passed, 0 failed, 0 skipped/);
+ assert.match(all.summary, /^fixture_Beside_Both \(signed in\)\s+pass/m);
+});
+
+test("a signed-in run that skips, for each reason it can, leaves the fixture's verdict alone", function () {
+ var entries = {
+  fixture_Beside_SignedOut: besideEntry(Object.assign({}, signedInThere, { auth: "fixture-signed-out", signedIn: "#no-such-account-menu" })),
+  fixture_Beside_NoSite: besideEntry(Object.assign({}, signedInThere, { auth: "fixture-unknown" })),
+  fixture_Beside_Unset: besideEntry(Object.assign({}, signedInThere, { url: "$_TEST_BM_PAGE_URL" })),
+  fixture_Beside_Everyday: besideEntry({ drive: "everyday", url: "https://www.example.com/", signedIn: "#account" }),
+  fixture_Beside_Fails: besideEntry(Object.assign({}, signedInThere, { steps: [{ run: true }, { expect: { selector: "#nothing-here", count: 1 } }] }))
+ };
+ var answer = runBeside(entries, ["--all"], { _TEST_BM_PAGE_URL: "" });
+ ["fixture_Beside_SignedOut", "fixture_Beside_NoSite", "fixture_Beside_Unset", "fixture_Beside_Everyday"].forEach(function (name) {
+  assert.strictEqual(resultIn(answer, name).verdict, "pass", name + ": " + resultIn(answer, name).reason);
+  assert.strictEqual(resultIn(answer, name + " (signed in)").verdict, "skip", name);
+ });
+ assert.strictEqual(resultIn(answer, "fixture_Beside_SignedOut (signed in)").reason,
+  "signed out of fixture-signed-out: #no-such-account-menu is not on the page");
+ assert.strictEqual(resultIn(answer, "fixture_Beside_NoSite (signed in)").reason, "the sign-in launcher has no sign-in for fixture-unknown");
+ assert.strictEqual(resultIn(answer, "fixture_Beside_Unset (signed in)").reason,
+  "the page comes from $_TEST_BM_PAGE_URL, which is not set");
+ assert.strictEqual(resultIn(answer, "fixture_Beside_Everyday (signed in)").reason,
+  "no everyday driver: _TEST_BM_EVERYDAY_DRIVER is not set");
+
+ // A signed-in run that fails is a failure of its own, and not the fixture's.
+ assert.strictEqual(resultIn(answer, "fixture_Beside_Fails").verdict, "pass");
+ assert.strictEqual(resultIn(answer, "fixture_Beside_Fails (signed in)").verdict, "fail");
+ assert.strictEqual(answer.run.status, 1, "a failed signed-in run fails the run");
+ assert.match(answer.run.out, /10 run, 5 passed, 1 failed, 4 skipped/);
+ var section = sectionOf(answer.failures, "fixture_Beside_Fails (signed in)");
+ assert.match(section, /\*\*File\*\*: `[^`]*fixture_Beside_Fails\.js`/);
+
+ var noLauncher = runFiles(copiesOf(passSource, ["fixture_Beside_Both"]), { fixture_Beside_Both: besideEntry(signedInThere) }, ["--all"]);
+ assert.strictEqual(noLauncher.run.status, 0, noLauncher.run.out + noLauncher.run.err);
+ assert.strictEqual(resultIn(noLauncher, "fixture_Beside_Both").verdict, "pass");
+ assert.strictEqual(resultIn(noLauncher, "fixture_Beside_Both (signed in)").reason, "no sign-in launcher: TEST_BM_AUTH_LAUNCHER is not set");
+});
+
+test("an entry that skips itself runs neither, and a run kept out of every run has no second one", function () {
+ var entries = { fixture_Beside_Skipped: Object.assign(besideEntry(signedInThere), { skip: "kept back by its own entry", scheduled: false }) };
+ var answer = runBeside(entries, ["--all"]);
+ assert.deepStrictEqual(answer.report.results.map(function (r) { return r.name + " " + r.verdict; }), ["fixture_Beside_Skipped skip"]);
+ assert.strictEqual(answer.run.status, 0, answer.run.err);
+});
+
+test("a signed-in run is checked as an entry of its own, and each way it is written wrong is named", function () {
+ var entries = {
+  fixture_Beside_NotObject: besideEntry("fixture-site"),
+  fixture_Beside_NoAuth: besideEntry({ url: "fixture:article.html", signedIn: "main" }),
+  fixture_Beside_NoSignedIn: besideEntry({ drive: "everyday", url: "https://www.example.com/" }),
+  fixture_Beside_AuthNoSignedIn: besideEntry({ auth: "fixture-site", url: "fixture:article.html" }),
+  fixture_Beside_NoUrl: besideEntry({ auth: "fixture-site", signedIn: "main" }),
+  fixture_Beside_Scheduled: besideEntry(Object.assign({}, signedInThere, { scheduled: false })),
+  fixture_Beside_Nested: besideEntry(Object.assign({}, signedInThere, { signedInRun: signedInThere })),
+  fixture_Beside_Unknown: besideEntry(Object.assign({}, signedInThere, { label: "x" })),
+  fixture_Beside_InnerKept: besideEntry(Object.assign({}, signedInThere, { deprecated: { why: "no" } })),
+  fixture_Beside_InnerByHand: besideEntry(Object.assign({}, signedInThere, { byHand: "a person" })),
+  fixture_Beside_BadStep: besideEntry(Object.assign({}, signedInThere, { steps: [{ click: 5 }] })),
+  fixture_Beside_ByHand: Object.assign(besideEntry(signedInThere), { byHand: "a person tests it", scheduled: undefined }),
+  fixture_Beside_Deprecated: { deprecated: { why: "the site now has this feature itself" }, signedInRun: signedInThere }
+ };
+ var answer = runFiles(copiesOf(passSource, Object.keys(entries)), entries, ["--list"]);
+ assert.strictEqual(answer.run.status, 2, "a configuration error exits 2");
+ assert.strictEqual(answer.run.out, "", "nothing is listed once the configuration is refused");
+ var label = " (signed in): a signedInRun ";
+ [
+  "fixture_Beside_NotObject (signed in): the entry is not an object",
+  "fixture_Beside_NoAuth" + label + "has auth, or drive everyday",
+  "fixture_Beside_NoSignedIn" + label + "names signedIn, a selector only a signed-in page has",
+  "fixture_Beside_AuthNoSignedIn (signed in): an entry with auth names signedIn",
+  "fixture_Beside_NoUrl" + label + "names the url it opens",
+  "fixture_Beside_Scheduled" + label + "takes no scheduled",
+  "fixture_Beside_Nested" + label + "holds no signedInRun of its own",
+  "fixture_Beside_Unknown (signed in): unknown property label",
+  "fixture_Beside_InnerKept" + label + "is run, so it takes no deprecated",
+  "fixture_Beside_InnerByHand" + label + "is run, so it takes no byHand",
+  "fixture_Beside_BadStep (signed in) step 1",
+  "fixture_Beside_ByHand: a by-hand entry is never run, so it takes no signedInRun",
+  "fixture_Beside_Deprecated: a deprecated entry holds nothing else, since nothing runs it - signedInRun"
+ ].forEach(function (said) {
+  assert.ok(answer.run.err.indexOf(said) >= 0, "the error should say: " + said + "\n" + answer.run.err);
+ });
+});
+
+test("--list names an entry's signed-in run, and counts it where it signs in", function () {
+ var entries = { fixture_Beside_Both: besideEntry(signedInThere), fixture_Beside_Plain: besideEntry() };
+ var answer = runFiles(copiesOf(passSource, Object.keys(entries)), entries, ["--list"]);
+ assert.strictEqual(answer.run.status, 0, answer.run.err);
+ assert.match(answer.run.out, /fixture_Beside_Both\s+configured\s+fixture:article\.html  scheduled  2 steps  signed-in run auth fixture-site/);
+ assert.match(answer.run.out, /2 bookmarklets, 2 configured, 2 scheduled, 1 signed in, 0 everyday/);
+});

@@ -291,6 +291,7 @@ page or a fixture page like it, is what turns a pass into "it still works".
 | `signedIn` | A selector only the signed-in page has. Goes with `auth` or `drive`, and only with them. | `"signedIn": "#account-menu"` |
 | `drive` | Run the entry in the reader's everyday browser, through a driver outside the repository (see [The everyday browser](#the-everyday-browser-drive-personal-and-_test_bm_everyday_driver)). Takes only `"everyday"`. | `"drive": "everyday"` |
 | `personal` | Marks a page that shows what the account holds, and keeps the entry to selectors, counts and states. Takes only `true`, and goes with `drive`. | `"personal": true` |
+| `signedInRun` | A second run of the same bookmarklet on a signed-in page (see [A signed-in run beside a fixture](#a-signed-in-run-beside-a-fixture-signedinrun)). | `"signedInRun": { "auth": "example-app", "url": "$_EXAMPLE_PAGE_URL", "signedIn": "#account-menu" }` |
 
 A property the schema does not list is a configuration error.
 
@@ -459,12 +460,14 @@ nothing there, because the page's address is `https://fixtures.test/`.
 "url": "$EXAMPLE_PAGE_URL"
 ```
 
-A url written as `$` and an upper-case name, such as a page on the reader's own
-network, is read from that environment variable when the entry runs. The
+A url written as `$` and an upper-case name, which may open with an underscore,
+such as a page on the reader's own network, is read from that environment
+variable when the entry runs. The
 address is never written down: every reason, `report.json` and `summary.txt`
-names the variable in its place. An unset variable is a skip, not a failure,
-and a variable holding anything other than an `http` or `https` address fails
-the entry.
+names the variable in its place, and the parts of the address that identify the
+page, such as an id in its path, are taken out of anything the page said. An unset
+variable is a skip, not a failure, and a variable holding anything other than an
+`http` or `https` address fails the entry.
 
 ### Signed-in sites: `auth`, `signedIn` and `TEST_BM_AUTH_LAUNCHER`
 
@@ -582,6 +585,43 @@ To open the same page by hand, in a chosen Chrome profile, use
 `npx to-explorer --chrome [0-9]+ http://dashboard.local/#status`, where
 `[0-9]+` is the profile's number.
 
+### A signed-in run beside a fixture: `signedInRun`
+
+An entry that is a check on a fixture page can hold a second run of the same
+bookmarklet, on the page it is for:
+
+```json
+"siteSpecific_Example_HighlightRows": {
+ "url": "fixture:table.html",
+ "scheduled": true,
+ "steps": [
+  { "run": true },
+  { "expect": { "selector": "tr[data-highlighted]", "count": 3 } }
+ ],
+ "signedInRun": {
+  "auth": "example-app",
+  "url": "$_EXAMPLE_PAGE_URL",
+  "signedIn": "#account-menu",
+  "steps": [
+   { "run": true },
+   { "expect": { "selector": "tr[data-highlighted]", "count": 3 } }
+  ]
+ }
+}
+```
+
+- **It is checked as an entry of its own**, under `<name> (signed in)`. It has
+  `auth`, or `"drive": "everyday"`, with `signedIn` and a `url`, takes no
+  `scheduled`, and holds no `signedInRun`. A `deprecated` or `byHand` entry takes
+  none.
+- **The entry stays what it is**, so a fixture entry keeps `"scheduled": true`.
+  `--scheduled` runs the entry only.
+- **A run by name and `--all`** run the entry, then the signed-in run, as two
+  results, each counted on the summary line. An entry with `skip` runs neither.
+- **A signed-in run that skips**, for a sign-in, a wall, a variable that is not set
+  or a launcher or driver that is not there, never changes the entry's verdict.
+- **No short is recorded for it**: the short is the entry's.
+
 ### The everyday browser: `drive`, `personal` and `_TEST_BM_EVERYDAY_DRIVER`
 
 Some pages never reach the harness's own browser: a site that answers an
@@ -616,8 +656,10 @@ its sign-in from the launcher:
   own, it is not run unattended, and the harness does not watch the requests a
   bookmarklet sends there. A bookmarklet that sends any is tested in the
   harness's own browser.
-- Its `url` is a site's own `https` page, never a fixture, a variable or the
-  default.
+- Its `url` is a site's own `https` page, or a variable that holds one, never a
+  fixture or the default. A variable that is not set is a skip naming it, one that
+  holds anything but an `https` address fails the entry, and the driver's own
+  reason is cleaned of the address before any of it is written down.
 - It types into no prompt, and presses only keys that submit nothing: `Tab`,
   `Escape`, the arrows, `Home`, `End`, `PageUp`, `PageDown`, `Backspace` and
   `Delete`.

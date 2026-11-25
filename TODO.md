@@ -79,7 +79,7 @@ Every item that built this section is finished and archived in `## Complete`,
 the last of them on 11.23.2026. What they built is `test-bm.js` with its
 `test-bm.json` schema, `docs/testing.md`, and the first three of the four
 `node --test` files `npm test` runs ahead of the bookmarklets:
-`test/harness.test.js` (128), `test/pages.test.js` (17),
+`test/harness.test.js` (138), `test/pages.test.js` (17),
 `test/gallery.test.js` (35) and `test/paste-ready.test.js` (8). New harness work
 is queued here when there is some; the section stays as the record of what the
 harness is and why it is Playwright.

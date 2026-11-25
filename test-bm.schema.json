@@ -19,9 +19,9 @@
    "properties": {
     "url": {
      "type": "string",
-     "description": "The page to open. Defaults to https://example.com/, which is reserved for documentation. A url of the form fixture:<file>.html is a page in test/fixtures/pages, served from https://fixtures.test/ without a network: a real origin, so localStorage, the clipboard and location behave as they do on a site. A hash may follow the file name. A fixture naming a page that is not there is a configuration error. A url of the form $NAME names an environment variable holding the address, for a page whose address does not belong in the repository: the address is read when the entry runs and never written down, every reason and report naming the variable in its place, and an unset variable is a skip rather than a failure.",
+     "description": "The page to open. Defaults to https://example.com/, which is reserved for documentation. A url of the form fixture:<file>.html is a page in test/fixtures/pages, served from https://fixtures.test/ without a network: a real origin, so localStorage, the clipboard and location behave as they do on a site. A hash may follow the file name. A fixture naming a page that is not there is a configuration error. A url of the form $NAME names an environment variable holding the address, for a page whose address does not belong in the repository: the address is read when the entry runs and never written down, every reason and report naming the variable in its place, and an unset variable is a skip rather than a failure. The name is upper case and may open with an underscore. An everyday entry may name one too, holding an https address.",
      "default": "https://example.com/",
-     "examples": ["https://example.com/", "fixture:article.html", "fixture:sidebar.html#intro", "$OCTOPRINT_URL"]
+     "examples": ["https://example.com/", "fixture:article.html", "fixture:sidebar.html#intro", "$OCTOPRINT_URL", "$_TEST_PAGE_URL"]
     },
     "capture": {
      "const": true,
@@ -110,7 +110,7 @@
     },
     "drive": {
      "enum": ["everyday"],
-     "description": "Run the entry in the maintainer's everyday browser rather than in one test-bm.js starts, for a site that answers an automated browser with a bot check or a page only the maintainer's own profile shows. test-bm.js never reaches that browser itself: it hands the entry to the module _TEST_BM_EVERYDAY_DRIVER names, an absolute path outside the repository, and keeps only the verdict, the driver's own reason, which input each step sent and how many real runs it made. Without a driver the entry is a skip. An everyday entry is never scheduled, takes no auth, captures nothing, grants no permissions, names no network, opens a site's own https page, answers no prompt, and presses only Tab, Escape, the arrows, Home, End, PageUp, PageDown, Backspace and Delete."
+     "description": "Run the entry in the maintainer's everyday browser rather than in one test-bm.js starts, for a site that answers an automated browser with a bot check or a page only the maintainer's own profile shows. test-bm.js never reaches that browser itself: it hands the entry to the module _TEST_BM_EVERYDAY_DRIVER names, an absolute path outside the repository, and keeps only the verdict, the driver's own reason, which input each step sent and how many real runs it made. Without a driver the entry is a skip. An everyday entry is never scheduled, takes no auth, captures nothing, grants no permissions, names no network, opens a site's own https page or a variable that holds one, answers no prompt, and presses only Tab, Escape, the arrows, Home, End, PageUp, PageDown, Backspace and Delete."
     },
     "personal": {
      "const": true,
@@ -123,6 +123,17 @@
      "uniqueItems": true,
      "items": { "enum": ["chromium", "firefox"] },
      "examples": [["chromium", "firefox"]]
+    },
+    "signedInRun": {
+     "description": "A second run of the same bookmarklet, on a page that needs a sign-in, for a bookmarklet whose entry is a check on a fixture page. Written as an entry of its own: it has auth, or drive everyday, with signedIn and a url, takes no scheduled, and holds no signedInRun. A run by name and --all run the entry and then this, as two results, <name> and <name> (signed in); --scheduled runs the entry only. A signed-in run that skips never changes the entry's own verdict. A deprecated or by-hand entry takes none, and an entry with skip runs neither.",
+     "allOf": [
+      { "$ref": "#/definitions/entry" },
+      {
+       "required": ["url", "signedIn"],
+       "anyOf": [{ "required": ["auth"] }, { "required": ["drive"] }],
+       "properties": { "scheduled": false, "signedInRun": false, "deprecated": false, "byHand": false }
+      }
+     ]
     }
    },
    "dependencies": {
@@ -137,7 +148,7 @@
     },
     {
      "if": { "required": ["byHand"] },
-     "then": { "properties": { "deprecated": false, "skip": false, "scheduled": { "const": false }, "capture": false } }
+     "then": { "properties": { "deprecated": false, "skip": false, "scheduled": { "const": false }, "capture": false, "signedInRun": false } }
     },
     {
      "if": { "required": ["auth"] },
@@ -148,7 +159,7 @@
      "then": {
       "required": ["url"],
       "properties": {
-       "url": { "pattern": "^https://" },
+       "url": { "pattern": "^(https://|[$][A-Z_][A-Z0-9_]*$)" },
        "scheduled": { "const": false },
        "auth": false,
        "capture": false,
