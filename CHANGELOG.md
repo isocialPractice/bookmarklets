@@ -8,6 +8,19 @@ this file.
 
 ## [11.25.2026]
 
+### Security
+
+- `test-bm.js` keeps a sign-in out of `test-bm.json` by the two ways one could still be written
+  there, beside the unknown keys it already refused. An entry whose `url` carries a user name or a
+  password, as `https://name:secret@example.com/`, is a configuration error that exits 2 and reads
+  `<entry>: url carries a sign-in`. A `fill` step aimed at a password field, one with
+  `type="password"` or an `autocomplete` of `current-password` or `new-password`, or a label for
+  one, fails the entry before it types and reads `step <n> fills a password field`. Neither
+  message repeats the value, and the harness writes nothing back to the file. `--help` says so,
+  and three tests in `test/harness.test.js` check both refusals, an address with an `@` only after
+  its host still being let through, and the value appearing nowhere in the output or the run's
+  folder.
+
 ### Fixed
 
 - The corner badge on the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes keeps

@@ -2771,3 +2771,100 @@ test("each way a deprecated or by-hand entry is written wrong is a configuration
   assert.ok(answer.run.err.indexOf(said) >= 0, "the error should say: " + said + "\n" + answer.run.err);
  });
 });
+
+// ----------------------------------------------------------------------------------------------- //
+// No sign-in in test-bm.json
+// ----------------------------------------------------------------------------------------------- //
+
+// A value that stands for a credential. If it reaches anything the run wrote or printed, the
+// refusal said what it refused.
+var heldSecret = "s3cret-the-run-must-never-repeat";
+
+// Every file a run left in its own folder, read as one text.
+function runFolderText(run) {
+ var named = /^report: (.+)$/m.exec(run.out);
+ assert.ok(named, "the run should name the report it wrote:\n" + run.out + run.err);
+ var dir = path.join(rootDir, named[1].replace(/\//g, path.sep));
+ var text = "";
+ (function read(at) {
+  fs.readdirSync(at).forEach(function (f) {
+   var full = path.join(at, f);
+   if (fs.statSync(full).isDirectory()) { read(full); } else if (/\.(json|txt|md)$/.test(f)) { text += fs.readFileSync(full, "utf8"); }
+  });
+ })(dir);
+ return text;
+}
+
+test("a url that carries a sign-in is a configuration error that never repeats the address", function () {
+ ["https://demo-user:" + heldSecret + "@example.com/", "https://" + heldSecret + "@example.com/inbox",
+  "https:\\demo-user:" + heldSecret + "@example.com/"].forEach(function (url) {
+  var answer = runApart({ fixture_Pass_AddsAPanel: { url: url } }, ["--list"]);
+  assert.strictEqual(answer.run.status, 2, "a configuration error exits 2:\n" + answer.run.out + answer.run.err);
+  assert.strictEqual(answer.run.out, "", "nothing is listed once the configuration is refused");
+  assert.match(answer.run.err, /fixture_Pass_AddsAPanel: url carries a sign-in/);
+  assert.strictEqual((answer.run.out + answer.run.err).indexOf(heldSecret), -1, "the address is never repeated");
+  assert.strictEqual((answer.run.out + answer.run.err).indexOf("demo-user"), -1, "nor the name in it");
+ });
+});
+
+test("an address that only holds an @ after its host is not a sign-in", function () {
+ var answer = runApart({ fixture_Pass_AddsAPanel: { url: "https://example.com/team/@jane?to=jane@example.com" } }, ["--list"]);
+ assert.strictEqual(answer.run.status, 0, answer.run.err);
+});
+
+// Adds a password field, and a field marked for a new password, for a fill step to aim at.
+var passwordSource = [
+ "javascript:(function(){",
+ " /* A fixture that adds the two kinds of password field a fill must never type into. */",
+ " var formPasswordFieldsAdded = document.createElement(\"div\");",
+ " formPasswordFieldsAdded.id = \"fields--__-unlikely_-_name-__--fixturePasswordFields\";",
+ " var plainPasswordFieldsAdded = document.createElement(\"input\");",
+ " plainPasswordFieldsAdded.type = \"text\";",
+ " plainPasswordFieldsAdded.id = \"plain--__-unlikely_-_name-__--fixturePasswordFields\";",
+ " var typedPasswordFieldsAdded = document.createElement(\"input\");",
+ " typedPasswordFieldsAdded.type = \"password\";",
+ " typedPasswordFieldsAdded.id = \"typed--__-unlikely_-_name-__--fixturePasswordFields\";",
+ " var newPasswordFieldsAdded = document.createElement(\"input\");",
+ " newPasswordFieldsAdded.type = \"text\";",
+ " newPasswordFieldsAdded.setAttribute(\"autocomplete\", \"section-acme new-password\");",
+ " newPasswordFieldsAdded.id = \"new--__-unlikely_-_name-__--fixturePasswordFields\";",
+ " var labelPasswordFieldsAdded = document.createElement(\"label\");",
+ " labelPasswordFieldsAdded.id = \"label--__-unlikely_-_name-__--fixturePasswordFields\";",
+ " labelPasswordFieldsAdded.appendChild(document.createTextNode(\"Password\"));",
+ " var labelledPasswordFieldsAdded = document.createElement(\"input\");",
+ " labelledPasswordFieldsAdded.setAttribute(\"autocomplete\", \"current-password\");",
+ " labelPasswordFieldsAdded.appendChild(labelledPasswordFieldsAdded);",
+ " formPasswordFieldsAdded.appendChild(plainPasswordFieldsAdded);",
+ " formPasswordFieldsAdded.appendChild(typedPasswordFieldsAdded);",
+ " formPasswordFieldsAdded.appendChild(newPasswordFieldsAdded);",
+ " formPasswordFieldsAdded.appendChild(labelPasswordFieldsAdded);",
+ " document.body.appendChild(formPasswordFieldsAdded);",
+ "})();",
+ ""
+].join("\n");
+
+function passwordField(which) { return "#" + which + "--__-unlikely_-_name-__--fixturePasswordFields"; }
+
+test("a fill into a password field fails the entry before it types, and never repeats the value", function () {
+ var answer = runApart({
+  fixture_Password_Typed: { url: "fixture:article.html", steps: [{ fill: passwordField("typed"), value: heldSecret }] },
+  fixture_Password_New: { url: "fixture:article.html", steps: [{ fill: { selector: passwordField("new"), value: heldSecret } }] },
+  fixture_Password_Label: { url: "fixture:article.html", steps: [{ wait: 1 }, { fill: passwordField("label"), text: heldSecret }] },
+  fixture_Password_Plain: { url: "fixture:article.html", steps: [{ fill: passwordField("plain"), value: "a placeholder line" }] }
+ }, ["--all"], undefined, passwordSource);
+ assert.ok(answer.report, "the run should have written a report:\n" + answer.run.out + answer.run.err);
+ function reasonOf(name) {
+  var found = answer.report.results.filter(function (r) { return r.name === name; });
+  assert.strictEqual(found.length, 1, name + " should appear once in the report");
+  return found[0];
+ }
+ [["fixture_Password_Typed", 1], ["fixture_Password_New", 1], ["fixture_Password_Label", 2]].forEach(function (pair) {
+  var result = reasonOf(pair[0]);
+  assert.strictEqual(result.verdict, "fail");
+  assert.strictEqual(result.reason, "step " + pair[1] + " fills a password field");
+ });
+ assert.strictEqual(reasonOf("fixture_Password_Plain").verdict, "pass", "a plain field is typed into as before");
+ assert.match(answer.run.out, /fixture_Password_Typed\s+fail\s+\S+\s+step 1 fills a password field/);
+ assert.strictEqual((answer.run.out + answer.run.err).indexOf(heldSecret), -1, "the value is never printed");
+ assert.strictEqual(runFolderText(answer.run).indexOf(heldSecret), -1, "nor written into the run's folder");
+});

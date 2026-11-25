@@ -247,6 +247,10 @@
 // with the reason. A bookmarklet's own notes and settings in localStorage are
 // its business, and nothing here judges them.
 //
+// No sign-in goes in test-bm.json. A url that carries one, as https://name:secret@example.com/, is a
+// configuration error, and a fill aimed at a password field fails the entry before it types. Neither
+// message repeats the value, and nothing is ever written back to the file.
+//
 // Exit 0 nothing failed, 1 something failed, 2 usage or configuration error. A skip, a deprecated
 // entry and a by-hand entry never fail a run. --all and --scheduled write test-results/test-bm/<YYYY-MM-DD_HHMMSS>/report.json and
 // summary.txt. A run that starts in a second another run already has takes <YYYY-MM-DD_HHMMSS>-2,
@@ -579,6 +583,20 @@ function resolveUrl(url) {
 function urlVariable(url) {
  var text = String(url).trim();
  return urlVariablePattern.test(text) ? text : "";
+}
+
+// Whether a url holds a user name or a password, as "https://name:secret@host/" does. The part before
+// the host is read by hand as well as by URL, so an address that URL cannot parse is refused too,
+// and URL catches the forms a browser repairs, such as a backslash for a slash.
+function carriesSignIn(url) {
+ var text = String(url).trim();
+ if (/^[a-z][a-z0-9+.-]*:\/\/[^\/?#]*@/i.test(text)) { return true; }
+ try {
+  var parsed = new nodeUrl.URL(text);
+  return !!(parsed.username || parsed.password);
+ } catch (err) {
+  return false;
+ }
 }
 
 // Anything written down about an entry whose url came from a variable, with the address the variable
@@ -1193,6 +1211,8 @@ function validateConfig(config, names) {
    if (entryKeys.indexOf(key) < 0) { problems.push(name + ": unknown property " + key); }
   });
   if (entry.url !== undefined && typeof entry.url != "string") { problems.push(name + ": url takes a string"); }
+  // A sign-in in the address is a credential in this file. The message never repeats the address.
+  if (typeof entry.url == "string" && carriesSignIn(entry.url)) { problems.push(name + ": url carries a sign-in"); }
   if (typeof entry.url == "string" && /^\$/.test(entry.url.trim()) && !urlVariable(entry.url)) {
    problems.push(name + ": a url naming an environment variable is written as $NAME, in upper case");
   }
@@ -1596,6 +1616,21 @@ function classifyTarget(el) {
   || (tag == "button" && el.form && (type == "" || type == "submit"))) { return "a submit control"; }
  if (el.form || (el.closest && el.closest("form"))) { return "a form"; }
  return "";
+}
+
+// Whether a fill would type into a password field, on any page: a value an entry types there is a
+// credential written in test-bm.json. A fill aimed at a label types into the control the label is
+// for, so that control is the one read. Sent to the page as source, like classifyTarget.
+function isPasswordField(el) {
+ if (!el) { return false; }
+ var tag = String(el.tagName || "").toLowerCase();
+ if (tag != "input" && tag != "textarea" && !el.isContentEditable) {
+  var label = el.closest ? el.closest("label") : null;
+  if (label && label.control) { el = label.control; }
+ }
+ var type = String((el.getAttribute && el.getAttribute("type")) || "").toLowerCase();
+ var tokens = String((el.getAttribute && el.getAttribute("autocomplete")) || "").toLowerCase().split(/\s+/);
+ return type == "password" || tokens.indexOf("current-password") >= 0 || tokens.indexOf("new-password") >= 0;
 }
 
 async function writesTo(page, selector) {
@@ -3013,6 +3048,10 @@ async function doStep(page, ctx, step, index) {
   var value = typeof step.fill == "string"
    ? (step.value !== undefined ? step.value : step.text)
    : step.fill.value;
+  await page.waitForSelector(selector, { state: "attached" });
+  if (await page.locator(selector).first().evaluate(isPasswordField)) {
+   throw failure(where + " fills a password field");
+  }
   return page.fill(selector, String(value));
  }
  if (step.press !== undefined) {
