@@ -31,12 +31,19 @@
      </div>
      <p>The last placeholder paragraph.</p>
     </div>
-    <div><button type="button" aria-label="Copy" id="answer-copy">Copy</button></div>
+    <div class="turn-action-controls">
+     <div class="turn-action-buttons">
+      <button type="button" aria-label="Copy" id="answer-copy">Copy</button>
+      <button type="button" aria-label="Feedback">Feedback</button>
+      <button type="button" aria-label="Share">Share</button>
+     </div>
+    </div>
    </div>
   </div>
 
   <h2>What was copied, opened</h2>
-  <p><button type="button" id="open-copied">Open what was copied</button></p>
+  <p><button type="button" id="open-copied">Open what was copied</button>
+   <button type="button" id="clear-copied">Clear the clipboard</button></p>
   <p>The address a reader would paste is opened in the frames below, once with its line breaks taken
    out and once with each one replaced by a space, and what each one shows is read out underneath.</p>
   <p id="opened-dropped">nothing opened</p>
@@ -62,6 +69,16 @@
       var box = frame.contentDocument.getElementById("chatGPTPasteReadyBookmark");
       if (box) { document.getElementById("opened-" + made[0]).textContent = box.textContent.replace(/\s+/g, " ").trim(); }
      }, 1200);
+    });
+   });
+  });
+
+  /* Empties the clipboard and both read-outs, so the next copy is known to be its own. */
+  document.getElementById("clear-copied").addEventListener("click", function () {
+   navigator.clipboard.writeText("").then(function () {
+    ["dropped", "spaces"].forEach(function (made) {
+     document.getElementById("frame-" + made).removeAttribute("src");
+     document.getElementById("opened-" + made).textContent = "nothing opened";
     });
    });
   });

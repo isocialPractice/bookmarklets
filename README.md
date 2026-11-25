@@ -449,7 +449,7 @@ ChatGPT - Paste Ready Bookmark Response:
 ----
 <dl><dd><dl><dd>
 
-Copy a ready bookmarklet to the clipboard. Once run all copied answers will be copied and ready to paste as new bookmarklet. Works with:
+Copy a ready bookmarklet to the clipboard. Once run, a Bookmarklet button sits at the end of the row of buttons under each answer; a click on it, or on the answer's own copy button, copies that answer ready to paste as a new bookmarklet. Works with:
 
 1. ChatGPT - Resize Prompt
 

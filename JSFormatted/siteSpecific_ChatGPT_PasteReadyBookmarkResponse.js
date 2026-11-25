@@ -7,24 +7,39 @@ javascript:(function(){
  /* Optional variables. */
  var pageTitle = "ChatGPT Bookmark"; /* <-- OPTIONAL - change title */
  var pageHead  = "ChatGPT Response"; /* <-- OPTIONAL - change head  */
+ var buttonTextChatGPTPasteReadyBookmark = "Bookmarklet"; /* <-- OPTIONAL - button text */
 
  /* DOM variables. */
  /* Copy button that starts the bookmark, matched from the clicked element.    */
- var copyButtonSelector =       /* select copy button by attribute             */
-  "[aria-label=\"Copy\"]";
+ var copyButtonSelector =       /* HOT-GLUE - select copy button by attribute  */
+  "[aria-label=\"Copy\"], [aria-label=\"Copy response\"], " +
+  "[data-testid=\"copy-turn-action-button\"]";
 
  /* Copy buttons inside these are skipped - code block and prompt copy buttons. */
  var skipCopySelector =         /* HOT-GLUE - likely to change                 */
-  "pre, .markdown, [data-response-body], [data-turn=\"user\"]";
+  "pre, .markdown, [data-response-body], [data-turn=\"user\"], " +
+  "[data-code-block], [data-chatgpt-copy-code], [data-user-message-bubble], " +
+  "[data-paste-ready-bookmark]";
 
  /* Conversation turn holding one response and its button row.                 */
  var turnSelector =             /* HOT-GLUE - likely to change                 */
   "[data-virtualized-turn], [data-turn-key], article, [data-turn], " +
-  "[data-testid^=\"conversation-turn\"]";
+  "[data-testid^=\"conversation-turn\"], [data-content-search-turn-key]";
+
+ /* Row of buttons under a response - the bookmark button is added at its end.  */
+ var buttonRowSelectorChatGPTPasteReadyBookmark = /* HOT-GLUE - likely to change */
+  "[class*=\"turn-action-controls\"] > div, [class*=\"turn-action-controls\"], " +
+  "[data-testid*=\"turn-action\"]";
+
+ /* Marks the bookmark button, and the window key holding a run's state.        */
+ var markAttributeChatGPTPasteReadyBookmark = "data-paste-ready-bookmark";
+ var stateKeyChatGPTPasteReadyBookmark =
+  "pasteReady--__-unlikely_-_name-__--PasteReadyBookmarkResponse";
 
  /* Answer area in the turn - first selector with a match is used.             */
  var answerAreaSelector = [     /* HOT-GLUE - likely to change                 */
   "[data-response-body]",
+  "[data-markdown-text-style]",
   "[data-message-author-role=\"assistant\"] .markdown",
   ".markdown",
   "[data-message-author-role=\"assistant\"]"
@@ -265,9 +280,105 @@ javascript:(function(){
    /* run if copy button is not a code block or prompt copy button */
    if (copyButton && !copyButton.closest(skipCopySelector)) {
     /* call main function */
-    pasteReadyBookmarkResponse(copyButton);
+    pasteReadyBookmarkResponse(copyButton, 0);
    }
+  }, true); /* capture - runs before the page's own handlers can stop the click */
+ };
+
+ /* Write text to the clipboard, else through a selected text box and the copy command. */
+ const writeClipboardChatGPTPasteReadyBookmark = (curText, onDone) => {
+  let copyCommand = () => {
+   let curBox = document.createElement("textarea");
+   curBox.value = curText;
+   curBox.setAttribute("readonly", "");
+   curBox.style.setProperty("position", "fixed");
+   curBox.style.setProperty("top", "0");
+   curBox.style.setProperty("left", "0");
+   curBox.style.setProperty("opacity", "0");
+   document.body.appendChild(curBox);
+   curBox.select();
+   let curCopied = false;
+   try { curCopied = document.execCommand("copy"); } catch (err) { curCopied = false; }
+   curBox.remove();
+   return curCopied;
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+   navigator.clipboard.writeText(curText).then(
+    () => onDone(true),
+    () => onDone(copyCommand())
+   );
+  } else {
+   onDone(copyCommand());
+  }
+ };
+
+ /* Row of buttons under a response, found from its copy button. */
+ const findButtonRowChatGPTPasteReadyBookmark = (copyButton) =>
+  copyButton.closest(buttonRowSelectorChatGPTPasteReadyBookmark) || copyButton.parentElement;
+
+ /* Bookmark button, drawn like the page's copy button beside it. */
+ const makeButtonChatGPTPasteReadyBookmark = (copyButton) => {
+  let curButton = document.createElement("button");
+  curButton.type = "button";
+  curButton.className = copyButton.className; /* the page's own look for its row */
+  curButton.setAttribute(markAttributeChatGPTPasteReadyBookmark, "button");
+  curButton.setAttribute("aria-label", "Copy as bookmarklet");
+  curButton.title = "Copy as bookmarklet";
+  curButton.style.setProperty("display", "inline-flex");
+  curButton.style.setProperty("align-items", "center");
+  curButton.style.setProperty("gap", "4px");
+  curButton.style.setProperty("width", "auto");
+  curButton.style.setProperty("padding", "2px 8px");
+  curButton.style.setProperty("font-size", "13px");
+
+  /* bookmark icon */
+  let svgSpace = "http://www.w3.org/2000/svg";
+  let curIcon = document.createElementNS(svgSpace, "svg");
+  curIcon.setAttribute("width", "16");
+  curIcon.setAttribute("height", "16");
+  curIcon.setAttribute("viewBox", "0 0 24 24");
+  curIcon.setAttribute("fill", "none");
+  curIcon.setAttribute("stroke", "currentColor");
+  curIcon.setAttribute("stroke-width", "2");
+  curIcon.setAttribute("aria-hidden", "true");
+  let curPath = document.createElementNS(svgSpace, "path");
+  curPath.setAttribute("d", "M6 3h12v18l-6-4-6 4z");
+  curIcon.appendChild(curPath);
+  curButton.appendChild(curIcon);
+  curButton.appendChild(document.createTextNode(buttonTextChatGPTPasteReadyBookmark));
+
+  /* copy at once - no page copy to wait for, and the click still counts as the reader's */
+  curButton.addEventListener("click", function(event) {
+   event.preventDefault();
+   event.stopPropagation(); /* the row's own handlers never see this click */
+   pasteReadyBookmarkResponse(curButton, 1);
   });
+  return curButton;
+ };
+
+ /* Add the bookmark button to each response's button row that lacks one. */
+ const addButtonsChatGPTPasteReadyBookmark = () => {
+  document.querySelectorAll(copyButtonSelector).forEach((copyButton) => {
+   if (copyButton.closest(skipCopySelector)) return; /* code block or prompt copy button */
+   let curRow = findButtonRowChatGPTPasteReadyBookmark(copyButton);
+   if (!curRow) return;
+   if (curRow.querySelector("[" + markAttributeChatGPTPasteReadyBookmark + "]")) return;
+   curRow.appendChild(makeButtonChatGPTPasteReadyBookmark(copyButton));
+  });
+ };
+
+ /* Watch for rows the page draws later - new answers, and turns drawn again on scroll. */
+ const watchRowsChatGPTPasteReadyBookmark = () => {
+  let curTimer = 0;
+  let curWatch = new MutationObserver(function() {
+   if (curTimer) return;
+   curTimer = setTimeout(function() {
+    curTimer = 0;
+    addButtonsChatGPTPasteReadyBookmark();
+   }, 400);
+  });
+  curWatch.observe(document.body, {childList: true, subtree: true});
+  addButtonsChatGPTPasteReadyBookmark();
  };
  
  /* Find and replace items in object "RUNNING_FIX". */
@@ -454,8 +565,8 @@ javascript:(function(){
  /*********************************************************************************** 
   MAIN FUNCTION
   ***********************************************************************************/
- function pasteReadyBookmarkResponse(aWhat) {
-  /* select the answer area for the copy button that was clicked */
+ function pasteReadyBookmarkResponse(aWhat, ownButton) {
+  /* select the answer area for the button that was clicked */
   let answerArea = findAnswerAreaChatGPTPasteReadyBookmark(aWhat);
 
   /* dry alert - repair needed */
@@ -539,12 +650,6 @@ javascript:(function(){
    (curToken, curIndex) => codeBlockHTMLChatGPTPasteReadyBookmark(codeBlocks[curIndex])
   );
 
-  /* alert to wait - if pasted immediately = does not work */
-  alert(
-   "Wait 2 seconds for content to generate as bookmarklet on clipboard. \n" +
-   "Then open bookmark manager and make new bookmark by pasting into url field"
-  );
-  
   /* HOT-GLUE - replace new line characters only in pre tags with <br> */
              /* remove unlikely new line marker in remaining html      */
   var pageScript = `<script>
@@ -636,23 +741,67 @@ setTimeout(function() {
    /* HOT-GLUE - remove bactic as probably md styling - HOT-GLUE */
    bookmarklet = bookmarklet.replace(/`/g, "");
 
-   /* set timeout so bookmarklet content is copied after answers' text */
-   setTimeout(function () {
-    navigator.clipboard.writeText(bookmarklet);
-   }, 2000);   
+   /* the clipboard did not take it - say so, rather than leave the answer's text there */
+   let failedAlert = () => {
+    alert("COPY FAILED:\n\n" +
+          " The bookmarklet did not reach the clipboard.\n" +
+          " Click the page once, then click \"" + buttonTextChatGPTPasteReadyBookmark +
+          "\" under the answer again."
+         );
+   };
+
+   if (ownButton == 1) {
+    /* bookmark button - copy now, while the click still counts as the reader's */
+    writeClipboardChatGPTPasteReadyBookmark(bookmarklet, (curCopied) => {
+     if (!curCopied) { failedAlert(); return; }
+     alert(
+      "Copied as a bookmarklet. \n\n" +
+      "Open the bookmark manager, make a new bookmark, and paste into its URL field."
+     );
+    });
+   } else {
+    /* page copy button - wait, so the bookmarklet is copied after the answer's text */
+    alert(
+     "Wait 2 seconds for content to generate as bookmarklet on clipboard. \n" +
+     "Then open bookmark manager and make new bookmark by pasting into url field. \n\n" +
+     "The \"" + buttonTextChatGPTPasteReadyBookmark + "\" button under the answer " +
+     "copies it without the wait."
+    );
+    setTimeout(function () {
+     writeClipboardChatGPTPasteReadyBookmark(bookmarklet, (curCopied) => {
+      if (!curCopied) failedAlert();
+     });
+    }, 2000);
+   }
  }
  
- /* Run function that checks whenever a click event fires on page. */
- docEventChatGPTPasteReadyBookmark();
+ /* A second run reuses the first run's click handler and row watcher, turning it back on and
+    adding any missing buttons, rather than stacking a second copy of either. */
+ var runStateChatGPTPasteReadyBookmark = window[stateKeyChatGPTPasteReadyBookmark];
+ if (runStateChatGPTPasteReadyBookmark) {
+  runStateChatGPTPasteReadyBookmark.turnOn();
+  runStateChatGPTPasteReadyBookmark.addButtons();
+ } else {
+  /* run function that checks whenever a click event fires on page */
+  docEventChatGPTPasteReadyBookmark();
+  /* add the bookmark button under each response, now and as the page draws more */
+  watchRowsChatGPTPasteReadyBookmark();
+  window[stateKeyChatGPTPasteReadyBookmark] = {
+   turnOn: function() { onOffPasteReadyBookmarkResponse = 1; },
+   addButtons: addButtonsChatGPTPasteReadyBookmark
+  };
+ }
 
  /* If instruction alert is on. */
  if (instructionAlert == 1) {
   alert(
   "INSTRUCTIONS: \n" +
   "**************** \n" +
-  "IMPORTANT - click copy button around bottom. \n\n" +
+  "IMPORTANT - use the \"" + buttonTextChatGPTPasteReadyBookmark +
+  "\" button in the row of buttons below an answer. \n\n" +
   "1. Run bookmarklet. \n" +
-  "2. Click the copy button below the answer. \n" +
+  "2. Click \"" + buttonTextChatGPTPasteReadyBookmark + "\" below the answer. \n" +
+  "   The answer's own copy button works too, after a 2 second wait. \n" +
   "3. Create a new bookmark, pasting contents of clipboard in the URL box.");
  }
 }

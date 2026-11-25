@@ -44,6 +44,17 @@ this file.
 
 ### Fixed
 
+- `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` adds a Bookmarklet button at the end of the
+  row of buttons under each answer. A click on it copies that answer as a bookmarklet at once and
+  says so. The answer's own Copy button still starts one after the two-second wait, and the
+  bookmarklet now hears that click in the capture phase, before the page's own handlers can stop
+  it: a click on Copy did nothing while every mark the bookmarklet reads was still on the page.
+  - A watcher adds the button to answers the page draws later, and to turns it draws again on
+    scroll. A second run turns the bookmarklet back on and adds any missing button, rather than a
+    second click handler.
+  - A clipboard that refuses the bookmarklet is now named in an alert, where it failed silently.
+  - More fallback marks for the copy button, the copy buttons it leaves alone, the turn, the answer
+    and the button row.
 - `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` copies an answer from ChatGPT's conversation
   as it is drawn now. None of the marks it read were on the page any more, so a click on Copy ended
   in the repair notice with nothing on the clipboard. It finds the turn by `[data-virtualized-turn]`
