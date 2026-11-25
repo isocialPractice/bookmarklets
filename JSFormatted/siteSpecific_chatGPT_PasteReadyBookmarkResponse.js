@@ -86,7 +86,14 @@ javascript:(function(){
     belongs here only once the page itself darkens, so that the two move together. The corner badge is
     a share of the page, so its label is sized as one too: at a phone width a fixed 12pt label left
     the black shape it is written on and was painted over the heading beside it. The padding keeps
-    the label clear of the rounded corner, and the overflow clips anything that still is not. */
+    the label clear of the rounded corner, and the overflow clips anything that still is not. The
+    overflow clips along the padding box, whose bottom-right radius is the 80px asked for less the
+    2px border, so the label's own padding-right is what holds its line off that curve. A line that
+    only just fits on one line ends about 61px above the padding box's bottom edge, where the curve
+    has already come 1.8px in, and took the end of the final k off at 840px to 849px and 1191px to
+    1199px of page width. 8px is the least reserve that is not the binding figure at any width from
+    320px up: past it the longest word in the label is what ends the line, and it leaves 6px of
+    clearance at the closest approach. A wider label or a wider radius is read again. */
  {
  var bookmarkPageStyle = `
 <style>
@@ -187,6 +194,7 @@ javascript:(function(){
   position: relative;   
   font-size: min(12pt, 3.2vw);
   margin-left: min(20px, 2vw);
+  padding-right: 8px;
   top: -15px !important;
   color: white;
  }   

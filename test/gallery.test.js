@@ -135,6 +135,19 @@ var CHANGED = 8;
 var RING_CONTRAST = 3;
 var SCHEMES = ["light", "dark"];
 
+// The widths the byline block's own layout is stepped across, and the step between them. The two
+// readings above are taken at 390px and at 1280px, and the defect this one answers lies between
+// them: at 840px to 849px and at 1191px to 1199px of the example's own layout width the label just
+// fits on one line, so its tail reaches the block's rounded corner and the overflow that clips
+// there took the end of the final letter off. A 1px step is what makes a band ten widths wide
+// visible at all, and 1281 of them are read in a second.
+//
+// The range is of the example's own layout width rather than of a window, so it covers the example
+// as index.html frames it too: the frame lays an example out narrower than the viewport holding it,
+// and every width it can hand an example inside this range is a width stepped here. A viewport of
+// 1137px to 1146px laid one out at 840px to 847px, and 1576px to 1584px at 1191px to 1197px.
+var CORNER_WIDTHS = { from: 320, to: 1600, step: 1 };
+
 // The repository root, so index.html finds examples/ and the frame shares the origin of the page
 // framing it, as it does on the deployed site. A path that climbs out of the root is a 404 the page
 // sees.
@@ -319,6 +332,78 @@ function readByline() {
    + Math.round(box.width) + "x" + Math.round(box.height),
   label: label, past: past, onHeading: onHeading,
   heading: heading.map(function (r) { return Math.round(r.left) + ".." + Math.round(r.right); })
+ };
+}
+
+// The byline block's own label against the corner the block is clipped by. The two readings above
+// answer whether the label leaves the block; this one answers whether it lands on the curve while
+// still inside it, which is a different edge. overflow: hidden clips along the padding box, and the
+// curve it clips with is the border-box radius less the border width, so neither the border box nor
+// the radius the style sheet asks for is the figure to measure against: read against the border box
+// and the asked 80px, a label the clip was visibly biting into came out 0.3px clear.
+//
+// The used radius is read rather than taken from the declaration, because CSS scales every radius
+// on a box by one factor when a pair of them overruns the side they share. The block is a share of
+// the page wide, so below about 400px of page the 80px it asks for is wider than the block is and
+// the corner a reader sees is smaller than the one declared. The inner curve is an ellipse rather
+// than a circle where the two borders differ, so its axes are taken separately.
+//
+// A run's lowest pixel is the one nearest the curve, so the ellipse is solved at that pixel's
+// height above the padding box's bottom edge. The rect is the glyph run's own box and carries the
+// font's ascent and descent, so a crossing here runs a little ahead of the ink: this reads the
+// bands as 840px to 849px and 1191px to 1199px, where differencing a clipped shot of the badge
+// against a released one showed ink actually going at 840px to 847px and 1191px to 1197px.
+function readBadgeCorner() {
+ var block = document.querySelector("div[data-side='1']");
+ if (!block) { return { error: "the page carries no byline block" }; }
+ var box = block.getBoundingClientRect();
+ var style = getComputedStyle(block);
+ var borderRight = parseFloat(style.borderRightWidth) || 0;
+ var borderBottom = parseFloat(style.borderBottomWidth) || 0;
+ var asked = parseFloat(style.borderBottomRightRadius) || 0;
+ var scale = asked > 0 ? Math.min(1, box.width / asked, box.height / asked) : 1;
+ var rx = Math.max(0, asked * scale - borderRight);
+ var ry = Math.max(0, asked * scale - borderBottom);
+ var right = box.right - borderRight;
+ var bottom = box.bottom - borderBottom;
+ var walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT, null);
+ var worst = null;
+ var runs = 0;
+ var node = null;
+ while ((node = walker.nextNode())) {
+  if (!node.nodeValue || !node.nodeValue.trim()) { continue; }
+  var range = document.createRange();
+  range.selectNodeContents(node);
+  var rects = range.getClientRects();
+  for (var i = 0; i < rects.length; i++) {
+   var t = rects[i];
+   // The svg's accessible name is a <text> parked at -9999, which no reader ever sees; it ends
+   // left of the block, where the block's visible content never starts. readByline above skips it
+   // the same way.
+   if (!(t.width > 0 && t.height > 0) || t.right <= box.left) { continue; }
+   runs++;
+   var gap = bottom - t.bottom;
+   var limit = gap >= ry || ry <= 0 || rx <= 0
+    ? right
+    : right - rx + rx * Math.sqrt(Math.max(0, 1 - ((ry - gap) / ry) * ((ry - gap) / ry)));
+   var over = t.right - limit;
+   if (worst === null || over > worst.over) {
+    worst = {
+     said: node.nodeValue.trim().slice(0, 24),
+     right: Math.round(t.right * 10) / 10,
+     limit: Math.round(limit * 10) / 10,
+     gap: Math.round(gap * 10) / 10,
+     over: Math.round(over * 100) / 100
+    };
+   }
+  }
+ }
+ return {
+  page: document.documentElement.clientWidth,
+  block: Math.round(box.width * 10) / 10 + "x" + Math.round(box.height * 10) / 10,
+  radius: Math.round(rx * 10) / 10 + "x" + Math.round(ry * 10) / 10,
+  runs: runs,
+  worst: worst
  };
 }
 
@@ -1200,7 +1285,66 @@ async function readFramedBylines() {
  return found;
 }
 
+// The corner reading on each example at every width in CORNER_WIDTHS, over all five. All five
+// rather than one, because the rule lives in the bookmarklet and is copied inline into each of the
+// five pages, so the copies are where it can part company - and the two byline readings, taken at
+// 390px and at 1280px, are both outside either band, so a copy left unfixed would pass them.
+//
+// One context and one page for the whole pass: the viewport is what is stepped, and reloading
+// between steps would cost the 800ms each of these pages takes to write itself far more often than
+// it would buy anything. The height never changes, since the block is fixed to the top left corner
+// and its own height follows its content.
+async function readCornerSweep() {
+ var browser = await playwright.chromium.launch();
+ var found = {};
+ try {
+  var ctx = await browser.newContext({ viewport: { width: 900, height: 900 } });
+  var page = await ctx.newPage();
+  await serveRoot(page);
+  for (var e = 0; e < EXAMPLES.length; e++) {
+   await page.goto(origin + "/examples/" + EXAMPLES[e].file, { waitUntil: "load" });
+   // The pages write themselves with document.write and then tidy their own markup on a timer.
+   await page.waitForTimeout(800);
+   var on = [];
+   var closest = null;
+   var steps = 0;
+   var broke = null;
+   for (var w = CORNER_WIDTHS.from; w <= CORNER_WIDTHS.to; w += CORNER_WIDTHS.step) {
+    await page.setViewportSize({ width: w, height: 900 });
+    var read = await page.evaluate(readBadgeCorner);
+    if (read.error) {
+     broke = read.error;
+     break;
+    }
+    steps++;
+    if (!read.worst) {
+     broke = w + "px: the block holds no label run to read";
+     break;
+    }
+    if (closest === null || read.worst.over > closest.over) {
+     closest = { at: w, over: read.worst.over, block: read.block, radius: read.radius,
+      said: read.worst.said, right: read.worst.right, limit: read.worst.limit,
+      gap: read.worst.gap };
+    }
+    if (read.worst.over > 0) {
+     on.push(w + "px: " + JSON.stringify(read.worst.said) + " ends at " + read.worst.right
+      + ", " + read.worst.over + "px past the curve's " + read.worst.limit + " at "
+      + read.worst.gap + "px above the bottom edge (block " + read.block + ", radius "
+      + read.radius + ")");
+    }
+   }
+   found[EXAMPLES[e].file] = broke ? { error: broke }
+    : { steps: steps, on: on, closest: closest };
+  }
+  await ctx.close();
+ } finally {
+  await browser.close();
+ }
+ return found;
+}
+
 var watched = null;
+var cornerSweep = null;
 var examples = null;
 var rings = null;
 var framedRings = null;
@@ -1243,6 +1387,7 @@ test.before(async function () {
  rings = await readRings(targets);
  framedRings = await readFramedRings(targets);
  framedBylines = await readFramedBylines();
+ cornerSweep = await readCornerSweep();
 }, { timeout: 600000 });
 
 // ----------------------------------------------------------------------------------------------- //
@@ -1769,6 +1914,29 @@ test("the byline block's own label stays inside the block", function () {
   assert.ok(read.label.length > 0, at + ": the block should hold a label, it holds none");
   assert.deepStrictEqual(read.past, [], at + ": the block is " + read.block + " on a " + read.page
    + "px page, and its own label leaves it: " + JSON.stringify(read.past));
+ });
+});
+
+// The widths between the two the readings above are taken at. The label's tail reached the curve
+// the block is clipped by at 840px to 849px and at 1191px to 1199px, where it just fits on one
+// line, and the clip took about a square pixel off the final letter at the first band and two at
+// the second. Both words still read at both bands, so this was a look rather than a break, and it
+// is the same shape of thing as the dark focus ring was: correct at the two widths anybody read.
+test("the byline block's label lands on the block's rounded corner at no width", function () {
+ var names = Object.keys(cornerSweep);
+ assert.strictEqual(names.length, EXAMPLES.length, "the sweep should cover all five examples, it "
+  + "covers " + names.length + ": " + JSON.stringify(names));
+ var expected = Math.floor((CORNER_WIDTHS.to - CORNER_WIDTHS.from) / CORNER_WIDTHS.step) + 1;
+ names.forEach(function (file) {
+  var read = cornerSweep[file];
+  assert.ok(read && !read.error, file + ": " + (read ? read.error : "no corner reading"));
+  assert.strictEqual(read.steps, expected, file + ": the sweep should read " + expected
+   + " widths from " + CORNER_WIDTHS.from + "px, it read " + read.steps);
+  // No tolerance is allowed here, and none is wanted: this is layout geometry rather than pixels,
+  // so it repeats exactly, and the run rect crosses the curve a little before the ink does. The
+  // reserve on the label leaves 6px between the two at the closest approach.
+  assert.deepStrictEqual(read.on, [], file + ": the label lands on the block's rounded corner at "
+   + read.on.length + " of " + read.steps + " widths, the first of them " + read.on[0]);
  });
 });
 

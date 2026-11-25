@@ -892,6 +892,34 @@ again: the frame is 330 pixels of a 390 pixel viewport and lays the example out
 in 328, so a label that fits the block standalone can still leave it in the
 frame, which is how the deployed site shows it.
 
+A third reading answers a different edge: whether the label lands on the curve
+the block is clipped by while still inside it. It steps the example's own layout
+width from 320 to 1600 pixels, a pixel at a time, on all five pages, and solves
+the corner at the lowest pixel of each glyph run. Three figures in that are easy
+to take from the wrong place, and taking any of them from the wrong place reads a
+label the clip is visibly biting into as clear of it:
+
+- **the box.** `overflow: hidden` clips along the padding box, not the border
+  box, so the block's 2 pixel border is 2 pixels the label may use;
+- **the radius.** The curve the clip follows is the border-box radius less the
+  border width, and its two axes part company where the borders differ;
+- **the scaling.** CSS scales every radius on a box by one factor when a pair of
+  them overruns the side they share, so the 80 pixels the style sheet asks for is
+  not what a reader sees on a block narrower than that - which this one is, being
+  a share of the page wide, below about 400 pixels of page.
+
+Read against the border box and the declared radius instead, a label the clip was
+taking the end of the final letter off came out 0.3 pixels clear.
+
+A pixel at a time rather than at the widths already read, because the band is ten
+widths wide: the label just fits on one line at 840 to 849 pixels and at 1191 to
+1199 pixels of layout width, and nowhere else between 320 and 1600. The two
+readings above are taken at 390 and 1280, and both bands sit between them. All
+five pages rather than one, because the rule lives in the bookmarklet and is
+copied inline into each page, so a copy left behind is what this catches - and it
+would pass the two readings above, which stand outside either band. The whole
+sweep is 1281 widths a page and reads in about a second each.
+
 The keyboard readings press a key until the box has come to rest rather than a
 fixed number of times. Chromium carries 40px a press and animates it, and a
 press sent while the last one is still animating is coalesced rather than

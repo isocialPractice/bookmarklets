@@ -6,6 +6,36 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.25.2026]
+
+### Fixed
+
+- The corner badge on the page `siteSpecific_chatGPT_PasteReadyBookmarkResponse.js` writes keeps
+  the end of its label off its own rounded corner. The 11.24.2026 change left two narrow bands
+  where the label just fits on one line a few pixels before the block is wide enough for it, so
+  the line's tail met the `border-bottom-right-radius` and the block's own clipping took the end
+  of the final `k` off: at 840 to 847 pixels of the page's layout width, and at 1191 to 1197. Both
+  words still read at both bands, so this was a look rather than a break. The label now reserves
+  8 pixels at its right edge, which is the least reserve that is not the binding figure at any
+  width from 320 pixels up, and it leaves 6 pixels between the label and the curve at the closest
+  approach. Where the line no longer fits beside the reserve it wraps, as it did before
+  11.24.2026. The five saved pages under `examples/` carry their own copy of the rule and each
+  has the same change.
+
+### Added
+
+- `test/gallery.test.js` holds the reading that found it, beside the two byline readings: the
+  example's own layout width is stepped from 320 to 1600 pixels, a pixel at a time, on all five
+  pages, and no glyph run of the label may cross the corner the block is clipped by. The corner is
+  taken where the clip actually runs, which is three figures the obvious reading gets wrong: the
+  padding box rather than the border box, the radius less the border width rather than the radius
+  the style sheet asks for, and that radius scaled the way CSS scales one wider than the box it
+  sits in. Read the obvious way instead, a label the clip was biting into came out 0.3 pixels
+  clear. A pixel at a time because each band is ten widths wide, and all five pages because the
+  rule is copied into each of them, so a copy left behind is what this catches - the two readings
+  beside it are taken at 390 and 1280 pixels, and both bands lie between them. It fails on each
+  page as it stood and passes on each as it is. `docs/testing.md` describes it.
+
 ## [11.24.2026]
 
 ### Fixed
