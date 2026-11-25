@@ -23,6 +23,17 @@ this file.
 
 ### Changed
 
+- The ChatGPT entries run on the test conversation when the site is signed in, and each stays a
+  skip where it is not. The conversation's address is held in an environment variable and named by
+  it in `test-bm.json`. `siteSpecific_ChatGPT_BookmarkResponse` and
+  `siteSpecific_ChatGPT_PasteReadyBookmarkResponse` gain a `signedInRun` on it, and
+  `siteSpecific_ChatGPT_NavigateAnswers` opens it rather than the most recent conversation in the
+  list, so it clicks nothing to get there. `siteSpecific_ChatGPT_PasteReadyBookmarkResponse` is now
+  a check on a fixture page, `test/fixtures/pages/self-test-answer.html`, whose placeholder answer
+  holds `\u` in plain text, in inline code and in a code block. It is scheduled: it copies the
+  answer, opens what was copied as a bookmark is opened, and reads every sequence back as it was
+  written. Without the file's first `RUNNING_FIX` item it fails with "Invalid Unicode escape
+  sequence".
 - The five ChatGPT bookmarklets are named `siteSpecific_ChatGPT_<WhatItDoes>.js`, so GitHub lists
   them in alphabetical order. It lists a folder with every upper-case letter ahead of any
   lower-case one, so `siteSpecific_chatGPT_` came after `siteSpecific_YouTube_`. The keys in

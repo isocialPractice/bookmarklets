@@ -37,11 +37,12 @@ var types = {
  ".png": "image/png"
 };
 
-// The nine pages a reader is shown. Two more sit in the same folder and are not among them, both
-// for harness.test.js to read rather than for anyone to practise on: self-test-noisy.html logs a
-// console error and throws on purpose, and self-test-overflow.html paints a heading out of its own
-// cell on purpose, over a heading that paints its words in one table and over one served at
-// font-size 0 in the next.
+// The nine pages a reader is shown. Three more sit in the same folder and are not among them, for a
+// test to read rather than for anyone to practise on: self-test-noisy.html logs a console error and
+// throws on purpose, self-test-overflow.html paints a heading out of its own cell on purpose, over a
+// heading that paints its words in one table and over one served at font-size 0 in the next, and
+// self-test-answer.html holds an answer with backslash sequences in it, for the entry of the
+// bookmarklet that copies one.
 var PAGES = ["index.html", "article.html", "table.html", "form.html", "sidebar.html",
  "video.html", "lazy.html", "scroll.html", "snippet.html"];
 

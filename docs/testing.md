@@ -445,7 +445,8 @@ opaque origin and refuses all three.
 The folder holds nine practice pages (`index.html`, `article.html`,
 `table.html`, `form.html`, `sidebar.html`, `video.html`, `lazy.html`,
 `scroll.html` and `snippet.html`), which the deployed site also links to, and
-two self-test pages that `test/harness.test.js` reads. A fixture that names a
+three self-test pages: two that `test/harness.test.js` reads, and one that holds an
+answer for `siteSpecific_ChatGPT_PasteReadyBookmarkResponse`. A fixture that names a
 page that is not there, or reaches outside the folder, is a configuration
 error.
 
@@ -1023,8 +1024,9 @@ opened, and the image arrived when it is.
 ### `test:paste-ready`
 
 `siteSpecific_ChatGPT_PasteReadyBookmarkResponse` writes a bookmarklet to the
-clipboard, and its own entry in `test-bm.json` is a run on a signed-in page that
-clicks nothing and reads no clipboard, and a skip wherever nobody is signed in.
+clipboard. Its own entry in `test-bm.json` checks a fixture page whose answer holds
+backslash sequences, and the signed-in run beside it clicks nothing and reads no
+clipboard, and is a skip wherever nobody is signed in.
 **`test/paste-ready.test.js` is what says the bookmark it copies opens, and what
 that bookmark shows.**
 

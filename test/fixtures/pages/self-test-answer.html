@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="utf-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+ <title>Self-test page: an answer holding backslash sequences</title>
+ <meta name="description" content="A self-test page drawn with the marks the ChatGPT Paste Ready Bookmark Response bookmarklet reads, holding a placeholder answer with backslash sequences in plain text, in inline code and in a code block.">
+ <link rel="stylesheet" href="fixture.css">
+</head>
+<body>
+ <header class="page">
+  <h1>An answer holding backslash sequences</h1>
+  <p>This one is for the harness, not for practice. It is not a page of the site's: it carries the
+   marks a bookmarklet reads, with placeholder text in them.</p>
+ </header>
+
+ <main>
+  <h2>The conversation</h2>
+  <div data-virtualized-turn="">
+   <div data-turn-key="turn-one">
+    <div><div data-user-message-bubble="true">A placeholder question.</div></div>
+    <div data-response-body="answer-one">
+     <h3>Placeholder heading</h3>
+     <p>A placeholder path \users\demo and the escape \u0041 in plain text.</p>
+     <p>Inline <code>\u00g1 and \u0042</code> code.</p>
+     <div data-chatgpt-copy-code="path = &quot;\users\demo&quot;  # \u0043">
+      <div data-code-block="true" data-markdown-copy="code-block">
+       <div data-markdown-copy="exclude"><div>Python</div><button type="button" aria-label="Copy">Copy code</button></div>
+       <div class="cm-editor"><div class="cm-content" data-language="python"><div class="cm-line">path = "\users\demo"  # \u0043</div></div></div>
+      </div>
+     </div>
+     <p>The last placeholder paragraph.</p>
+    </div>
+    <div><button type="button" aria-label="Copy" id="answer-copy">Copy</button></div>
+   </div>
+  </div>
+
+  <h2>What was copied, opened</h2>
+  <p><button type="button" id="open-copied">Open what was copied</button></p>
+  <p>The address a reader would paste is opened in the frames below, once with its line breaks taken
+   out and once with each one replaced by a space, and what each one shows is read out underneath.</p>
+  <p id="opened-dropped">nothing opened</p>
+  <p id="opened-spaces">nothing opened</p>
+  <iframe id="frame-dropped" title="The copied bookmark, its line breaks taken out"></iframe>
+  <iframe id="frame-spaces" title="The copied bookmark, each line break replaced by a space"></iframe>
+ </main>
+
+ <footer class="page">
+  <a href="index.html">All practice pages</a>
+ </footer>
+
+ <script>
+  /* Opens the copied text as a browser opens a bookmark: the address of a frame. The frames hold no
+     page of their own until then, so a bookmark that does not parse leaves both as they were. */
+  document.getElementById("open-copied").addEventListener("click", function () {
+   navigator.clipboard.readText().then(function (text) {
+    if (!/^javascript:/.test(text)) { return; }
+    [["dropped", text], ["spaces", text.replace(/\s*\r?\n\s*/g, " ")]].forEach(function (made) {
+     var frame = document.getElementById("frame-" + made[0]);
+     frame.src = made[1];
+     setTimeout(function () {
+      var box = frame.contentDocument.getElementById("chatGPTPasteReadyBookmark");
+      if (box) { document.getElementById("opened-" + made[0]).textContent = box.textContent.replace(/\s+/g, " ").trim(); }
+     }, 1200);
+    });
+   });
+  });
+ </script>
+</body>
+</html>

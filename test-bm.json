@@ -715,11 +715,23 @@
    { "run": true },
    { "expect": { "selector": "body", "text": "PASTE_RESPONSE" } },
    { "expect": { "selector": "body > div", "count": 1 } }
-  ]
+  ],
+  "signedInRun": {
+   "url": "$_TEST_BM_CHATGPT_CHAT_URL",
+   "auth": "chatgpt",
+   "signedIn": "#history",
+   "requires": ["body"],
+   "timeout": 60000,
+   "steps": [
+    { "run": { "set": { "rawText": "PASTE_RESPONSE as placeholder text" } } },
+    { "expect": { "selector": "body", "text": "PASTE_RESPONSE" } },
+    { "expect": { "selector": "body > div", "count": 1 } }
+   ]
+  }
  },
 
  "siteSpecific_ChatGPT_NavigateAnswers": {
-  "url": "https://chatgpt.com/",
+  "url": "$_TEST_BM_CHATGPT_CHAT_URL",
   "drive": "everyday",
   "personal": true,
   "signedIn": "a[href*='/c/']",
@@ -728,7 +740,6 @@
   "dialogs": [{ "accept": true }],
   "timeout": 60000,
   "steps": [
-   { "click": "a[href*='/c/']" },
    { "wait": "main [data-response-body]" },
    { "wait": 3000 },
    { "run": true },
@@ -761,14 +772,35 @@
  },
 
  "siteSpecific_ChatGPT_PasteReadyBookmarkResponse": {
-  "url": "https://chatgpt.com/",
-  "scheduled": false,
-  "auth": "chatgpt",
-  "signedIn": "#history",
-  "requires": ["body"],
+  "url": "fixture:self-test-answer.html",
+  "scheduled": true,
+  "requires": ["[data-virtualized-turn]", "[data-response-body]", "[data-code-block]", "[aria-label='Copy']"],
   "permissions": ["clipboard-read", "clipboard-write"],
-  "dialogs": [{ "accept": true }],
-  "timeout": 60000
+  "dialogs": [{ "accept": true }, { "accept": true }],
+  "timeout": 60000,
+  "steps": [
+   { "run": true },
+   { "click": "#answer-copy" },
+   { "wait": 2600 },
+   { "expect": { "clipboard": { "startsWith": "javascript:(function() {document.write(", "nonEmpty": true } } },
+   { "click": "#open-copied" },
+   { "wait": 2000 },
+   { "expect": { "selector": "#opened-dropped", "text": "A placeholder path \\users\\demo and the escape \\u0041 in plain text." } },
+   { "expect": { "selector": "#opened-dropped", "text": "Inline \\u00g1 and \\u0042 code." } },
+   { "expect": { "selector": "#opened-dropped", "text": "path = \"\\users\\demo\" # \\u0043" } },
+   { "expect": { "selector": "#opened-spaces", "text": "A placeholder path \\users\\demo and the escape \\u0041 in plain text." } },
+   { "expect": { "selector": "#opened-spaces", "text": "Inline \\u00g1 and \\u0042 code." } },
+   { "expect": { "selector": "#opened-spaces", "text": "path = \"\\users\\demo\" # \\u0043" } }
+  ],
+  "signedInRun": {
+   "url": "$_TEST_BM_CHATGPT_CHAT_URL",
+   "auth": "chatgpt",
+   "signedIn": "#history",
+   "requires": ["body"],
+   "permissions": ["clipboard-read", "clipboard-write"],
+   "dialogs": [{ "accept": true }],
+   "timeout": 60000
+  }
  },
 
  "siteSpecific_ChatGPT_ResizePrompt": {

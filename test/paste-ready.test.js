@@ -7,10 +7,11 @@
 // file under a folder called test as a test file, and test/fixtures/bookmarklets holds fourteen that
 // are bookmarklets.
 //
-// The bookmarklet's own entry in test-bm.json is a run on a signed-in page, which is a skip on every
+// The bookmarklet's own entry in test-bm.json was a run on a signed-in page, which is a skip on every
 // machine that is not signed in, so until this file nothing here could say it works. On 11.25.2026 it
 // did not: the site had redrawn its conversation, none of the marks the file read were on the page,
-// and a click on Copy ended in its REPAIR NEEDED alert with nothing on the clipboard.
+// and a click on Copy ended in its REPAIR NEEDED alert with nothing on the clipboard. The entry is now a
+// check on a fixture page, with the signed-in run beside it.
 //
 // The conversation here is built from the marks the file reads, filled with placeholder text. It is
 // not the site's page, so it cannot say the site still draws those marks. What it does say is that a
