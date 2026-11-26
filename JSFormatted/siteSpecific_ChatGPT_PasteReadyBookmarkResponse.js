@@ -109,11 +109,15 @@ javascript:(function(){
  }
  };
 
- /* Style the bookmarked page. The body's background propagates to the canvas, so the saved page is
-    painted near-white whatever colour scheme the reader asks for. The focus ring is coloured for that
-    surface and for no other: #0969da reads at 4.97:1 against it, where the #58a6ff meant for a dark
-    surface read at 2.42:1, under the 3:1 WCAG 1.4.11 asks of a focus indicator. A dark override
-    belongs here only once the page itself darkens, so that the two move together. The corner badge is
+ /* Style the bookmarked page. The page follows the reader's colour scheme: the color-scheme meta
+    names both schemes, and the 3% background on the body propagates to the canvas, so what is
+    painted is rgb(249,250,250) in light and rgb(19,20,20) in dark, with the headings, the body
+    text, the table cells and the inline code taking their colour from the scheme. The dark rules
+    below are that page's own, and the focus ring carries a colour per surface: #0969da reads
+    4.97:1 on the light canvas and 3.55:1 on the dark, #58a6ff 2.42:1 on the light and 7.31:1 on
+    the dark, against the 3:1 WCAG 1.4.11 asks of a focus indicator. Until the meta arrived on
+    11.25.2026 the page was painted near-white whatever the reader asked for, which is why one
+    outline-color served both from 11.22.2026 until now. The corner badge is
     a share of the page, so its label is sized as one too: at a phone width a fixed 12pt label left
     the black shape it is written on and was painted over the heading beside it. The padding keeps
     the label clear of the rounded corner, and the overflow clips anything that still is not. The
@@ -244,6 +248,11 @@ javascript:(function(){
  div.tableScrollPasteReady:focus-visible {
   outline: 3px solid #0969da;
   outline-offset: 2px;
+ }
+ @media (prefers-color-scheme: dark) {
+  div.tableScrollPasteReady:focus-visible {
+   outline-color: #58a6ff;
+  }
  }
  th,td {
   padding: 5px 5px;     

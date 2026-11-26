@@ -24,17 +24,25 @@
 // behaviour can part company: a box carrying tabindex and role that the page scrolls past, or that
 // the arrow keys do not move, reads as repaired and is not.
 //
-// A sixth was in the ring that stop is drawn with. The saved page carries a background on its body,
-// which propagates to the canvas, so the page is painted near-white whatever scheme the reader asks
-// for - while a dark branch recoloured the ring alone, for a surface that never arrives. Read as
-// painted, the dark scheme gave 2.42:1 where WCAG 1.4.11 asks 3:1, and the light scheme 4.97:1, so
-// the dark branch made the ring harder to see than no branch at all.
+// A sixth was in the ring that stop is drawn with. These five pages carry a background on their
+// body, which propagates to the canvas, so each is painted near-white whatever scheme the reader
+// asks for - while a dark branch recoloured the ring alone, for a surface that never arrives. Read
+// as painted, the dark scheme gave 2.42:1 where WCAG 1.4.11 asks 3:1, and the light scheme 4.97:1,
+// so the dark branch made the ring harder to see than no branch at all.
 //
 // The sixth's guard reads pixels, because a declared colour cannot say what surface it landed on: a
 // clip of the box is shot focused and shot again unfocused, and the difference is the ring and the
-// page behind it. Its companion asserts the page is painted alike in both schemes, which is the whole
-// reason one outline-color serves both, and is the reading to change if the page is ever given a real
-// dark mode.
+// page behind it. Its companion asserts these five are painted alike in both schemes, which is the
+// whole reason one outline-color serves them.
+//
+// That is a reading of the five pages committed here and of nothing else. They were saved before the
+// color-scheme meta the bookmarklet added on 11.25.2026 and carry neither it nor a dark rule, so
+// they cannot darken and one ring colour is right for them. The page the bookmarklet writes now
+// does darken, and is read in test/paste-ready.test.js, which builds one from the file as it stands:
+// the canvas there is rgb(249,250,250) in light and rgb(19,20,20) in dark, and the ring carries
+// #0969da and #58a6ff. Bringing these five in step with it - the meta and the two dark rules, by
+// hand or by a re-save - is what would bring that reading here, and the pages would then want the
+// ring measured on both surfaces.
 //
 // That ring is read twice, because a reader meets it two ways and neither stands for the other: on
 // the example opened on its own, and on the example as index.html frames it, which is how the
@@ -129,9 +137,10 @@ var BEFORE = "/start.html";
 var CHANGED = 8;
 
 // The contrast a focus indicator owes the colour behind it (WCAG 1.4.11), and the two schemes a
-// reader can ask for. Until 11.22.2026 the dark scheme drew the ring at 2.42:1: the saved page never
-// darkens, since the background on its body propagates to the canvas, and the ring alone was
-// recoloured for a dark surface, so the dark branch made it harder to see rather than easier.
+// reader can ask for. Until 11.22.2026 the dark scheme drew the ring at 2.42:1 on these five pages:
+// none of them darkens, since the background on its body propagates to the canvas and no
+// color-scheme meta was saved with it, and the ring alone was recoloured for a dark surface, so the
+// dark branch made it harder to see rather than easier.
 var RING_CONTRAST = 3;
 var SCHEMES = ["light", "dark"];
 
@@ -1832,9 +1841,13 @@ test("the focus ring survives the gallery frame, on every side the frame holds, 
   });
  });
 
-// The reading that explains the one above, and the one to change if the saved page is ever given a
-// real dark mode: the ring carries a single colour because there is a single surface to draw it on.
-test("the saved page is painted alike in both schemes, which is why the ring carries one colour",
+// The reading that explains the one above: each of these five carries a single colour because there
+// is a single surface to draw it on. It is about the pages committed here and not about the
+// bookmarklet, whose own page has darkened with the reader's scheme since 11.25.2026 and is read in
+// test/paste-ready.test.js. What would change this reading is bringing these five in step with that
+// bookmarklet, which brings the color-scheme meta with it; the ring then wants measuring on each
+// surface, as it is measured there.
+test("each committed example is painted alike in both schemes, which is why its ring carries one colour",
  function () {
   var byPage = {};
   Object.keys(rings).forEach(function (id) {
@@ -1853,8 +1866,9 @@ test("the saved page is painted alike in both schemes, which is why the ring car
     Math.abs(light[2] - dark[2]));
    assert.ok(apart <= 2, at + ": the page behind the box is rgb(" + light + ") in light and rgb("
     + dark + ") in dark, " + apart + " apart per channel. It was alike in both until now, which is "
-    + "why one outline-color serves both. A page that darkens wants a ring coloured for a dark "
-    + "surface: give the dark scheme its own outline-color again, and measure it here.");
+    + "why one outline-color serves it. This page now darkens, so it was saved from a bookmarklet "
+    + "carrying the color-scheme meta: give it the ring's two colours, #0969da and #58a6ff, and "
+    + "measure each against the surface its own scheme paints here.");
   });
  });
 

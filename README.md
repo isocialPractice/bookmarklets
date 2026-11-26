@@ -110,6 +110,14 @@ the browser according to the bookmarklet's JavaScript.
 `Ctrl + C`, make a new bookmark, and paste in lieu of URL. Line breaks are
 fine; there is no need to condense the code.
 
+<strong>Or drag one:</strong> the
+[install page](https://isocialpractice.github.io/bookmarklets/install.html)
+lists every bookmarklet here with a link to drag straight onto the bookmarks
+bar, its status, and links back to its entry, gist and short. It is a page on
+the site rather than a section here because GitHub strips a `javascript:`
+address out of rendered markdown, so a README can only ever tell a reader to
+copy the file.
+
 <strong>NOTE</strong> - if modifying, use only block comments
 (<code>/* */</code>, never <code>//</code>) and end statements with
 semicolons, so the code still works once the browser removes the line

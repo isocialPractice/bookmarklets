@@ -240,11 +240,160 @@ async function copyWith(browser, selector) {
 }
 
 // ----------------------------------------------------------------------------------------------- //
+// The colour scheme of the page the bookmark opens
+// ----------------------------------------------------------------------------------------------- //
+
+// The saved page follows the reader's scheme, and has since the color-scheme meta arrived on
+// 11.25.2026: the meta names both schemes, and the 3% background on the body propagates to the
+// canvas, so the canvas is painted with the scheme and the browser's own defaults give the headings,
+// the body text and the table cells their colour from it. Before the meta it could not darken at
+// all, which is why one outline-color served both from 11.22.2026; the meta arrived on 11.25.2026
+// and the ring's second colour on 11.26.2026, the day this reading was written.
+//
+// It is read here rather than in gallery.test.js, which reads the five examples/ pages committed to
+// the site. Those were saved before the meta, carry neither it nor a dark rule, and are painted
+// alike in both schemes - so the reading there is true of them and says nothing about the page this
+// file builds from the bookmarklet as it stands.
+//
+// The canvas is read as a pixel, because a painted canvas is not a computed style: the body's
+// background composites over the browser's own base and nothing in the CSSOM says what came out. The
+// ring is read as declared, from the rules that apply in the scheme, because gallery.test.js already
+// shows that a ring declared on this box is painted; what is in question here is whether each
+// surface is given a colour of its own.
+var SCHEMES = ["light", "dark"];
+var RING_CONTRAST = 3;
+
+// How far two canvases must differ, in any channel, to count as two surfaces rather than one. The
+// two are rgb(249,250,250) and rgb(19,20,20), so the margin is wide; 2 is the figure gallery.test.js
+// calls alike, and this is its opposite.
+var SCHEMES_APART = 2;
+
+function lum(c) {
+ var f = [c[0], c[1], c[2]].map(function (v) {
+  v = v / 255;
+  return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+ });
+ return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+}
+
+function contrast(a, b) {
+ var la = lum(a);
+ var lb = lum(b);
+ return Math.round(((Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)) * 100) / 100;
+}
+
+function asRgb(text) {
+ var m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(String(text || ""));
+ return m ? [Math.round(+m[1]), Math.round(+m[2]), Math.round(+m[3])] : null;
+}
+
+// The mean of a clip, decoded in a page of its own: a canvas is the one PNG decoder to hand, as it
+// is in gallery.test.js, so no image library joins the manifest for this.
+function meanOfShot(shot) {
+ return new Promise(function (res, rej) {
+  var img = new Image();
+  img.onerror = rej;
+  img.onload = function () {
+   var c = document.createElement("canvas");
+   c.width = img.naturalWidth;
+   c.height = img.naturalHeight;
+   var g = c.getContext("2d", { willReadFrequently: true });
+   g.drawImage(img, 0, 0);
+   var d = g.getImageData(0, 0, c.width, c.height).data;
+   var sum = [0, 0, 0];
+   var n = d.length / 4;
+   for (var i = 0; i < d.length; i += 4) {
+    sum[0] += d[i]; sum[1] += d[i + 1]; sum[2] += d[i + 2];
+   }
+   res([Math.round(sum[0] / n), Math.round(sum[1] / n), Math.round(sum[2] / n)]);
+  };
+  img.src = "data:image/png;base64," + shot;
+ });
+}
+
+// What the scheme leaves on the saved page, read in the page itself.
+function readScheme() {
+ // The byline block paints its own black surface and carries the only other heading, so the words
+ // read here are the answer's own.
+ function of(selector, property) {
+  var box = document.getElementById("chatGPTPasteReadyBookmark");
+  var badge = box && box.querySelector("div[data-side='1']");
+  var found = Array.prototype.slice.call((box || document).querySelectorAll(selector))
+   .filter(function (el) { return !badge || !badge.contains(el); })[0];
+  return found ? getComputedStyle(found).getPropertyValue(property) : null;
+ }
+ // The outline-color the box would be ringed with, taken from the rules that apply rather than from
+ // a focused element: the fixture's table fits its box, so the box is no keyboard stop here and
+ // nothing on the page can be given the ring to read off.
+ var want = "div.tableScrollPasteReady:focus-visible";
+ var ring = null;
+ Array.prototype.slice.call(document.styleSheets).forEach(function (sheet) {
+  var rules;
+  try { rules = Array.prototype.slice.call(sheet.cssRules); } catch (err) { return; }
+  (function walk(list) {
+   list.forEach(function (rule) {
+    if (rule.media) {
+     if (window.matchMedia(rule.conditionText).matches) {
+      walk(Array.prototype.slice.call(rule.cssRules));
+     }
+     return;
+    }
+    if (rule.selectorText !== want) { return; }
+    var said = rule.style.getPropertyValue("outline-color");
+    if (said) { ring = said; }
+   });
+  })(rules);
+ });
+ return {
+  text: of("p", "color"),
+  heading: of("h1", "color"),
+  cell: of("td", "color"),
+  codeBlock: of("div.codeBlockPasteReady", "background-color"),
+  code: of("pre.codePasteReady", "color"),
+  ring: ring
+ };
+}
+
+// The page the bookmark opens, read in one scheme. The copy on the clipboard is reused rather than
+// made again: what the scheme changes is how that one page is painted, not what was copied.
+async function openIn(browser, copied, scheme) {
+ var context = await browser.newContext({ colorScheme: scheme, viewport: { width: 1280, height: 720 } });
+ try {
+  var page = await context.newPage();
+  await page.route(origin + "/**", function (route) {
+   return route.fulfill({ status: 200, contentType: "text/html; charset=utf-8",
+    body: "<!doctype html><html lang=en><title>Empty page</title></html>" }).catch(function () { });
+  });
+  var errors = [];
+  page.on("pageerror", function (err) { errors.push(String(err)); });
+  await page.goto(origin + "/opened", { waitUntil: "load" });
+  await page.evaluate(asRun(copied));
+  // The page's own script runs half a second in, as it does for the readings above.
+  await page.waitForTimeout(1000);
+  var read = await page.evaluate(readScheme);
+  // The body is half the page wide and centred, and the byline block is fixed to the left, so the
+  // top right corner is the one place the canvas shows on its own.
+  var shot = (await page.screenshot({ clip: { x: 1266, y: 4, width: 8, height: 8 } })).toString("base64");
+  var decoder = await context.newPage();
+  await decoder.goto("about:blank");
+  read.canvas = await decoder.evaluate(meanOfShot, shot);
+  read.errors = errors;
+  read.scheme = scheme;
+  return read;
+ } finally {
+  await context.close();
+ }
+}
+
+// ----------------------------------------------------------------------------------------------- //
 // Tests
 // ----------------------------------------------------------------------------------------------- //
 
 // One browser and one copy of each answer, shared: every reading below is of the same unchanged page.
+// The copy the answer's own button makes is then opened once in each colour scheme, which is one
+// page load apiece and no second copy.
 var now, before, inCode;
+var painted = {};
 
 test.before(async function () {
  var browser = await playwright.chromium.launch();
@@ -252,6 +401,11 @@ test.before(async function () {
   now = await copyWith(browser, "#copy-now");
   before = await copyWith(browser, "#copy-before");
   inCode = await copyWith(browser, "#copy-in-code");
+  if (now.opened) {
+   for (var s = 0; s < SCHEMES.length; s++) {
+    painted[SCHEMES[s]] = await openIn(browser, now.copied, SCHEMES[s]);
+   }
+  }
  } finally {
   await browser.close();
  }
@@ -332,4 +486,57 @@ test("an answer drawn with the marks the site used before is copied too", functi
  assert.deepStrictEqual(before.opened.blocks, [{ language: "python", code: "total = 1\nprint(total)" }]);
  assert.deepStrictEqual(before.errors, []);
  assert.deepStrictEqual(before.opened.leftOver, []);
+});
+
+test("the page the bookmark opens is painted for the scheme the reader asked for", function () {
+ SCHEMES.forEach(function (scheme) {
+  assert.ok(painted[scheme], "the page was not opened in the " + scheme + " scheme");
+  assert.deepStrictEqual(painted[scheme].errors, [], scheme + ": the page it opens should not throw");
+ });
+ var light = painted.light.canvas;
+ var dark = painted.dark.canvas;
+ var apart = Math.max(Math.abs(light[0] - dark[0]), Math.abs(light[1] - dark[1]),
+  Math.abs(light[2] - dark[2]));
+ assert.ok(apart > SCHEMES_APART, "the canvas is rgb(" + light + ") in light and rgb(" + dark
+  + ") in dark, " + apart + " apart per channel. The color-scheme meta and the background on the "
+  + "body are what darken it; a page painted alike in both has lost one of them, and the ring's "
+  + "two colours then have one surface between them.");
+ assert.ok(lum(dark) < lum(light), "the dark scheme should paint the darker canvas, it painted rgb("
+  + dark + ") against rgb(" + light + ") in light");
+});
+
+test("the words on it are readable on the canvas the scheme painted, in both schemes", function () {
+ SCHEMES.forEach(function (scheme) {
+  var read = painted[scheme];
+  var on = read.canvas;
+  ["text", "heading", "cell", "code"].forEach(function (part) {
+   var colour = asRgb(read[part]);
+   assert.ok(colour, scheme + ": the " + part + " has no colour to read, it is "
+    + JSON.stringify(read[part]));
+   // The code block paints its own surface, so its words answer to that and not to the canvas.
+   var behind = part === "code" ? asRgb(read.codeBlock) : on;
+   var got = contrast(colour, behind);
+   assert.ok(got >= 4.5, scheme + ": the " + part + " is rgb(" + colour + ") over rgb(" + behind
+    + "), a contrast of " + got + ":1, under the 4.5:1 WCAG 1.4.3 asks of body text");
+  });
+ });
+});
+
+test("the table box's ring is coloured for the canvas of each scheme", function () {
+ var colours = {};
+ SCHEMES.forEach(function (scheme) {
+  var read = painted[scheme];
+  var ring = asRgb(read.ring);
+  assert.ok(ring, scheme + ": no outline-color applies to the table box, the rules gave "
+   + JSON.stringify(read.ring));
+  colours[scheme] = ring;
+  var got = contrast(ring, read.canvas);
+  assert.ok(got >= RING_CONTRAST, scheme + ": the ring is rgb(" + ring + ") over the rgb("
+   + read.canvas + ") the scheme paints, a contrast of " + got + ":1, under the " + RING_CONTRAST
+   + ":1 WCAG 1.4.11 asks of a focus indicator");
+ });
+ assert.notDeepStrictEqual(colours.light, colours.dark, "both schemes draw the ring rgb("
+  + colours.light + "). The page is painted light or dark with the scheme, so one colour is read on "
+  + "two surfaces: #0969da is 4.97:1 on the light canvas and 3.55:1 on the dark, #58a6ff 2.42:1 on "
+  + "the light and 7.31:1 on the dark.");
 });

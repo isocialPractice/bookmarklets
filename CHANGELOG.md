@@ -6,6 +6,83 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.26.2026]
+
+### Added
+
+- An install page on the deployed site, `install.html`, with a link to drag onto the bookmarks bar
+  for each of the 54 bookmarklets, beside its one-line description, its status, and links to its
+  README entry, its gist and its raw file. A README cannot carry such a link - GitHub strips a
+  `javascript:` address out of rendered markdown - so the only place this can live is a page on the
+  site. Each link holds the join `test-bm.js` checks, every line of the file with nothing between
+  them, percent-encoded whole so a per cent sign survives: what installs from the page is the code
+  a verdict was given on, and a file whose join does not parse is given no link. A deprecated
+  bookmarklet is listed with its status and no link, since it is kept as a record rather than
+  offered to install. The page is written by `make-install-page.js`, which takes everything but the
+  code out of `README.md` - and takes the HTML comments out of an entry before it reads one, since
+  an entry with no short keeps the line for one commented out and the first reading put
+  `https://www.youtube.com/shorts/<id>` on the page as a link. `npm run install-page` regenerates
+  it; Pages runs no build here, so the result is committed. `index.html` and the README intro link
+  it. The page is 760 KB, nearly all of it encoded code, and gzips to about 136 KB, which is what
+  Pages serves; nothing on it is fetched after the page itself.
+- `test/install.test.js`, the fourth `node --test` file `npm test` runs, as `npm run test:install`.
+  Eleven tests: the committed page is what the generator writes now, a row for every file in
+  `JSFormatted/` and no row for anything else, each drag link decoding to its file's join character
+  for character and parsing, a status the page recognizes on every row, a deprecated bookmarklet
+  not offered to install, the three links beside each one, the headings and the table structure, the
+  rows stacked and labelled under 760px with nothing scrolling the page sideways at 1280px, 761px or
+  400px, no table holding anything out of view and so no box on the page being a keyboard stop, and
+  one link clicked to show that a click on the page runs the bookmarklet it names. It runs in
+  Chromium, as the other `node --test` files here do; the width sweep and the click were read in
+  Firefox by hand on 11.26.2026 and agreed. Those last two readings are the page's own first. It
+  scrolled the document 78px sideways at 400px, because a file name is one unbreakable word, the
+  longest 52 characters, and a `display: table` box is sized from
+  the widest thing in it whatever its width says - so the blocks were laid out inside a box the name
+  had already widened. `overflow-wrap: anywhere` on the name is what lowers that minimum, since
+  `break-word` leaves it where it was, and a `17ch` floor on the first cell is what stops the column
+  being crushed once it can be; without the floor every table held a column out of view between
+  761px and about 1030px. And each table had been given `role="region"` and a `tabindex` for columns
+  it turns out never to hold at any width from 320px up, which is a stop with nothing to do on it,
+  the defect `test/gallery.test.js` reads for on the saved pages. `overflow-x` stays as the safety
+  net, and the reading that no box scrolls is what says the day a column overflows.
+- `test/site.test.js`, the deployed site read as it is served, as `npm run test:site`. It is the
+  second command an unattended run calls, beside `node test-bm.js --scheduled`, and is
+  deliberately not in `npm test`, which needs no network until its last stage. The two are not
+  chained: a failing bookmarklet would hide a site that is down, and each carries its own exit
+  code, so `docs/testing.md` runs both from one wrapper and reads them one at a time. It asks `gh`
+  what the latest Pages build is doing and waits while one is still running, opens the gallery and
+  follows its own navigation - fifteen pages, bounded
+  at forty - and fails on a page the site does not serve, on anything of the site's own that failed
+  to load, and on a console error logged by one of the site's own scripts. A page the built commit
+  never held is waiting for a build rather than missing, told apart with `git cat-file -e <built
+  commit>:<path>`, and anything git cannot answer counts the page as owed. Links to other sites are
+  reported and never failed on; the install page's generated rows are left out of that reading,
+  since `node ._bookmarklet.js verify --online` checks every raw link at once.
+
+### Changed
+
+- `siteSpecific_ChatGPT_PasteReadyBookmarkResponse` gives the table box's focus ring a colour for
+  each surface, `#0969da` in light and `#58a6ff` in dark, and keeps the dark rules on its code
+  blocks. The reading they were questioned under had gone stale one commit earlier: the page carries
+  `<meta name='color-scheme' content='light dark'>` since 11.25.2026, and with the 3% background on
+  its body propagating to the canvas it is painted rgb(249,250,250) in light and rgb(19,20,20) in
+  dark, with the headings, the body text, the table cells and the inline code taking their colour
+  from the scheme. So the page does darken, the dark rules are its own, and one ring colour was
+  being read on two surfaces: `#0969da` is 4.97:1 on the light canvas and 3.55:1 on the dark,
+  `#58a6ff` 2.42:1 on the light and 7.31:1 on the dark, against the 3:1 WCAG 1.4.11 asks of a focus
+  indicator. The file's own comment said the page never darkened, and now says what it does.
+- `test/paste-ready.test.js` reads the page the bookmark opens in both colour schemes, in three
+  tests: the canvas is painted for the scheme asked for, the words on it clear 4.5:1 against the
+  surface behind them, and the ring carries a colour per surface at or above 3:1. The canvas is read
+  as a pixel, because a painted canvas is not a computed style, and the ring from the rules that
+  apply, since the fixture's table fits its box and is no keyboard stop. Without the dark ring rule
+  the third test fails and the other two pass.
+- `test/gallery.test.js` says what its own scheme reading is about. It reads the five pages
+  committed in `examples/`, which were saved before that meta and carry neither it nor a dark rule,
+  so they cannot darken and one ring colour is right for them - which is true of them and was being
+  stated of the bookmarklet's output. The test is now named for the committed examples, and its
+  comments point at `test/paste-ready.test.js` for the page the bookmarklet writes.
+
 ## [11.25.2026]
 
 ### Security
