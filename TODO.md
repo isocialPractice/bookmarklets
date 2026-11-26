@@ -28,62 +28,6 @@ repository:
 
 ## Current
 
-- [ ] Check the deployed site in the scheduled run
-  - Open the live site, open every example and practice page from its
-    navigation, and fail on a broken link, a missing page, or a console error
-    from the site's own script.
-  - After a push that changes the site, wait for the Pages build to finish
-    (`gh api repos/isocialPractice/bookmarklets/pages/builds/latest`) before
-    checking.
-  - From: Improve GitHub Pages Site
-- [ ] Give the page `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` writes a
-  real dark colour scheme, or take its dark rules out
-  - Its `@media (prefers-color-scheme: dark)` block still darkens the code blocks
-    on a page that never darkens. `body` carries `background: rgb(47 79 79 / 3%)`,
-    which propagates to the canvas, so the saved page is painted near-white in both
-    schemes. A dark code block on it is readable on its own terms, so this is a look
-    rather than a break - but it is the same shape of problem the focus ring had,
-    fixed on 11.22.2026 by dropping its dark branch. Either darken the canvas, the
-    table, the headings and the body text together and keep the dark rules, giving
-    the ring its `#58a6ff` back with them, or drop them. The reading in
-    `test/gallery.test.js` that says the page is painted alike in both schemes is
-    the one to change if the page is given a real dark mode, and it says so.
-  - From: Existing Bookmarklets
-- [ ] Add an install page with a drag-to-install link for each bookmarklet
-  - A site can render `<a href="javascript:...">` for a reader to drag onto
-    the bookmarks bar, which a GitHub README cannot. Build each `href` from the
-    same join `test-bm.js` checks, percent-encoded, so what installs is what
-    was tested.
-  - One row per bookmarklet: name, one-line description, status ("ready to
-    use" or "requires N changes"), the link to drag, and links to its README
-    entry, gist and short.
-  - Pages runs no build here, so a script generates the page and the result is
-    committed. Regenerate it whenever a bookmarklet is added or repaired.
-  - From: Improve GitHub Pages Site
-
-### Create and Deploy GitHub Pages Override
-
-- No site
-
-## Test Harness
-
-A script that answers one question for any bookmarklet: does it still work on
-the page it was written for? Playwright drives a real Chromium, which is the
-nearest thing to a user clicking the bookmark: real layout, real content
-security policies, real dialogs and clipboard. It records video when asked, and
-it can reuse a signed-in session without the session ever entering the
-repository. Puppeteer covers Chromium only, and Selenium needs a driver per
-browser for the same result.
-
-Every item that built this section is finished and archived in `## Complete`,
-the last of them on 11.23.2026. What they built is `test-bm.js` with its
-`test-bm.json` schema, `docs/testing.md`, and the first three of the four
-`node --test` files `npm test` runs ahead of the bookmarklets:
-`test/harness.test.js` (138), `test/pages.test.js` (17),
-`test/gallery.test.js` (35) and `test/paste-ready.test.js` (8). New harness work
-is queued here when there is some; the section stays as the record of what the
-harness is and why it is Playwright.
-
 - [ ] Read the badge's label itself in the corner sweep, not only its distance
   from the corner
   - The sweep added on 11.25.2026 steps each example's own layout width from
@@ -106,6 +50,183 @@ harness is and why it is Playwright.
     `node --test` file with those collectors. `_BADGE_WRAP_BARE=1` takes the
     label's `padding-right` back off, which is the control: run that way it
     fails at 840px and at 1191px, standalone and framed, and passes the rest.
+  - From: Test Harness
+- [ ] Bring the five committed examples in step with the page the bookmarklet
+  writes now, so they follow the reader's colour scheme
+  - All five predate the `<meta name='color-scheme' content='light dark'>` the
+    bookmarklet added on 11.25.2026, and carry neither it nor the dark rules on
+    the code blocks and the focus ring. So each is painted near-white in both
+    schemes, where a page saved today is rgb(249,250,250) in light and
+    rgb(19,20,20) in dark, and the gallery shows a reader in dark mode five
+    pages that do not behave like the bookmarklet's own output.
+  - It is an edit to the five files, not a re-save: re-running the bookmarklet
+    needs the original answers on a signed-in site, which no run reaches. Add
+    the meta to each head and the two `@media (prefers-color-scheme: dark)`
+    blocks to each style, copied from the bookmarklet, the way the badge and
+    ring work of 11.22.2026 and 11.25.2026 edited these same pages.
+  - The reading in `test/gallery.test.js` that each committed example is
+    painted alike in both schemes is the one to change when they are: its
+    message says what to put in its place, which is the ring measured at
+    `#0969da` against the light canvas and `#58a6ff` against the dark, as
+    `test/paste-ready.test.js` measures them on the page the bookmarklet
+    writes.
+  - Each example's own title and heading, set on 11.20.2026, are kept. Found on
+    11.26.2026, working the dark colour scheme item.
+  - From: Improve GitHub Pages Site
+- [ ] Document which bookmarklets, alone or as a set, are worth porting to a
+  browser extension, in `docs/extensions.md` linked from the README
+  - One row per bookmarklet or set: what the port would gain, the permissions
+    it would ask for (`activeTab` rather than broad host permissions wherever
+    it can), what would block it, and whether a userscript is the lighter
+    route.
+  - Sets that belong together, such as the `window_style_` family, the
+    YouTube notes and time-mark bookmarklets, the GitHub repository-table
+    bookmarklets, and the ChatGPT answer bookmarklets.
+  - A port keeps the safety rule under `## Test Harness`, and asks for no
+    permission it does not use.
+  - Nothing is built here; the document decides what would be.
+  - From: Browser Extensions
+- [ ] Make a short part of every new bookmarklet: extend the paragraph at the
+  top of this file so a new bookmarklet's item ends with its short posted and
+  its video block in the README
+  - From: Short Videos
+
+### UI/UX Override - install page and saved page
+
+#### Resolve Issues
+
+- [ ] Install Page Names 1: every file name on the install page is broken
+  mid-word, at both widths the page lays the rows out as a table
+  - **Issue**: `code.file` carries `overflow-wrap: anywhere` in its
+    unconditional rule as well as inside `@media (max-width: 760px)`, so the
+    break the media query reserves for the narrow layout applies at every
+    width. Read off the committed page: 51 of the 54 names are painted on more
+    than one line at 1280px and 53 of 54 at 761px, and they break mid-word -
+    `dom_Clipboard_ConvertPageT` / `oMarkdown.js` at 1280px, and
+    `dom_Clipboard_Conv` / `ertPageToMarkdown.` / `js` across three lines at
+    761px, where the first column also sits at its `17ch` floor of 151px and
+    the drag link beside it wraps onto five. The media query's own comment in
+    `make-install-page.js` says `anywhere` is applied "here and not above the
+    breakpoint" because "lowering it where the table lays out columns lets the
+    browser crush the first one and break every name across two lines for no
+    reason" - which is what the duplicate declaration above it does. The
+    400px layout, where the break is wanted, reads correctly.
+  - **Goal**: take `overflow-wrap: anywhere` out of the base `code.file` rule
+    in `STYLE` and leave the copy in the media query, then `npm run
+    install-page` and `node --test test/install.test.js`. Confirm at 761px
+    that the first column still holds the longest name with the page not
+    scrolling sideways and no column out of view; if an unbroken name pushes
+    one out, the answer is a different `min-width` floor or `anywhere`
+    returned at a width above 760px, not at every width.
+  - **Also**: `test/install.test.js` reads that no table has anything to
+    scroll and that the rows stack under 760px, and passes throughout, because
+    nothing there counts the line boxes a name is painted on. Add that
+    reading with the fix: a range over each `code.file` returns one client
+    rect a line, so asserting one rect per name above the breakpoint pins
+    this where a person would otherwise have to look.
+  - From: Improve GitHub Pages Site
+
+#### Found Issues
+
+- [ ] The saved page's table keeps its light-mode grid when the reader asks
+  for dark
+  - **Issue**: in `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` the
+    `@media (prefers-color-scheme: dark)` block overrides
+    `div.codeBlockPasteReady`, `div.codeLangPasteReady` and
+    `pre.codePasteReady`, but nothing overrides `table,th,td { border: 1px
+    solid #d9d9e3; }`. Measured on the page the bookmarklet writes, with a
+    nine column table in the answer: that grid reads 1.34:1 against the light
+    canvas and 13.17:1 against the dark one, so the one value that is a quiet
+    rule in light is a near-white grid on a near-black page, while the code
+    block's border two paragraphs below it is `#3d444d` at 1.87:1. The table
+    is the only part of the saved page that still reads as a light-mode
+    element in dark.
+  - **Goal**: add the table's dark rules beside the code block's, with a grid
+    near `#3d444d` so both boxes are drawn at the same weight, and keep it
+    under about 3:1 against rgb(19,20,20) so it reads as a rule and not a
+    highlight. The header wash already follows the scheme - `rgba(236,236,241,
+    .2)` paints `#f6f7f8` in light and `#3e3f40` in dark - so it needs
+    nothing. The figure belongs in `test/paste-ready.test.js` beside the ring
+    reading added this turn.
+  - From: UI/UX Override - install page and saved page
+- [ ] `deprecated` and `tested by hand` are painted as the same pill
+  - **Issue**: `.state.deprecated`, `.state.byHand` and `.state.unknown` share
+    one rule in `make-install-page.js`, so the two statuses that appear are
+    the same `#59636e` text on the same 1px border of the same colour, at the
+    same 10px radius and 400 weight. CIE76 dE between them is 0: nothing but
+    the words separates them, and they mean opposite things - one is withdrawn
+    and not offered to install, the other is maintained and tested by a
+    person. Contrast is not the problem; every pill clears AA on the white row
+    (`ready to use` `#1a7f37` 5.08:1, `requires N changes` `#9a6700` 4.87:1,
+    both greys 6.11:1), and ready against requires N changes is dE 62.5,
+    falling to 14.5 as a reader with protanopia sees it, which still reads.
+  - **Goal**: separate the two greys by something that is not colour, since a
+    third colour would weaken the three-way reading that works. A dashed
+    border on `.state.deprecated` against the solid one on `.state.byHand` is
+    the smallest change and needs no new colour. The deprecated row already
+    says "withdrawn, nothing to install" where its link would be, so the pill
+    only has to stop claiming to be the same thing.
+  - From: UI/UX Override - install page and saved page
+- [ ] The saved page's byline block loses its own shape on the dark canvas
+  - **Issue**: the fixed block in the top left corner is `background: #000`
+    behind a `2px solid black` border, with the 80px bottom-right radius that
+    is the shape of the badge. Measured against the page beside it, its
+    surface reads 20.08:1 in light and 1.14:1 in dark, where the canvas is
+    rgb(19,20,20) - so in dark the block's own outline is all but gone and the
+    rounded corner with it, though the white label on it still reads at 21:1.
+    `test/gallery.test.js` holds four readings of this block, all of where the
+    label sits inside it, and none of whether the block reads against what is
+    behind it.
+  - **Goal**: the border is already 2px and is the cheapest thing to colour:
+    give it a dark-scheme value that clears 3:1 against rgb(19,20,20) and
+    leave the `#000` surface, so the badge keeps its weight in light and gains
+    an edge in dark. Add the reading to `test/gallery.test.js` beside the four
+    it has, as the contrast of the block against the canvas in each scheme.
+  - From: UI/UX Override - install page and saved page
+- [ ] `<code>` and `<kbd>` on `index.html` are drawn in the body's own face
+  - **Issue**: `index.html` opens with `* { font-family: sans-serif,
+    system-ui, helvetica; }` and carries no `code` or `kbd` rule, so the
+    `<code>javascript:</code>` in the new Installing one paragraph computes to
+    the body's own sans-serif at the body's own 16px with no background, no
+    border and no weight of its own. It is legible - `#000` on white at 21:1 -
+    but legible as prose: nothing marks it as the text of an address. The
+    `<kbd>Ctrl</kbd>` and `<kbd>A</kbd>` in the paragraph below are not drawn
+    as keys for the same reason. `install.html` does not have this: its
+    `code.file` names `ui-monospace, SFMono-Regular, Consolas, monospace` and
+    is painted in it.
+  - **Goal**: one `code, kbd` rule in `index.html`'s style giving both the
+    monospace stack `install.html` uses and a faint background, with a border
+    and a little padding on `kbd` alone. The two places to check are the
+    `javascript:` in the first Installing one paragraph and the `Ctrl` + `A`
+    line in the second.
+  - From: UI/UX Override - install page and saved page
+
+### Create and Deploy GitHub Pages Override
+
+- No site
+
+## Test Harness
+
+A script that answers one question for any bookmarklet: does it still work on
+the page it was written for? Playwright drives a real Chromium, which is the
+nearest thing to a user clicking the bookmark: real layout, real content
+security policies, real dialogs and clipboard. It records video when asked, and
+it can reuse a signed-in session without the session ever entering the
+repository. Puppeteer covers Chromium only, and Selenium needs a driver per
+browser for the same result.
+
+Every item that built this section is finished and archived in `## Complete`,
+the last of them on 11.23.2026. What they built is `test-bm.js` with its
+`test-bm.json` schema, `docs/testing.md`, and the first three of the five
+`node --test` files `npm test` runs ahead of the bookmarklets:
+`test/harness.test.js` (138), `test/pages.test.js` (17),
+`test/gallery.test.js` (35), `test/install.test.js` (11) and
+`test/paste-ready.test.js` (11). `test/site.test.js` (6) reads the deployed site
+and is the unattended run's second command rather than an `npm test` stage,
+since it is the one reading here that needs a network and a build. New harness work is queued here when there is
+some; the section stays as the record of what the harness is and why it is
+Playwright. Its one open item, the badge label reading in the corner sweep, was
+queued into `## Current` on 11.26.2026.
 
 ## Test Configurations
 
@@ -189,13 +310,16 @@ from here carry `From: version.control = null`.
 
 The site at `https://isocialpractice.github.io/bookmarklets/` stays the
 repository's one site. It is `index.html`, a gallery that shows the pages in
-`examples/` in a frame, served by a legacy GitHub Pages build from `main` at
-`/`, and the README's intro links to it. The README is past the automation's
-documentation-site thresholds, so `- No site` under
+`examples/` in a frame, and `install.html`, which lists every bookmarklet with
+a link to drag onto the bookmarks bar and is generated by
+`make-install-page.js`; both are served by a legacy GitHub Pages build from
+`main` at `/`, and the README's intro links to each. The README is past the
+automation's documentation-site thresholds, so `- No site` under
 `### Create and Deploy GitHub Pages Override` stays. Every item here improves
 the deployed site's own files; none changes the Pages source or build type or
 adds a second site. Pages publishes what is committed to `main`, so a page
-committed here is a page on the site.
+committed here is a page on the site, and `npm run test:site` is what reads the
+site as it is served.
 
 - [ ] Add examples from the other two bookmarklets that save an answer as a
   bookmark: `ChatGPT - Bookmark a specific response` and
@@ -335,9 +459,6 @@ the bookmarklet has a demo.
     deprecated (11.23.2026) and gets no short.
   - The three Gmail bookmarklets are tested by hand (11.23.2026): no run
     opens their page, so each short is the maintainer's own recording.
-- [ ] Make a short part of every new bookmarklet: extend the paragraph at the
-  top of this file so a new bookmarklet's item ends with its short posted and
-  its video block in the README
 
 ## Demo Videos - paused
 
@@ -623,18 +744,9 @@ Browser plugins in the old sense (NPAPI) are gone from every current browser,
 so a port means a WebExtension: Manifest V3 for Chrome and Edge, and
 Firefox's WebExtensions.
 
-- [ ] Document which bookmarklets, alone or as a set, are worth porting to a
-  browser extension, in `docs/extensions.md` linked from the README
-  - One row per bookmarklet or set: what the port would gain, the permissions
-    it would ask for (`activeTab` rather than broad host permissions wherever
-    it can), what would block it, and whether a userscript is the lighter
-    route.
-  - Sets that belong together, such as the `window_style_` family, the
-    YouTube notes and time-mark bookmarklets, the GitHub repository-table
-    bookmarklets, and the ChatGPT answer bookmarklets.
-  - A port keeps the safety rule under `## Test Harness`, and asks for no
-    permission it does not use.
-  - Nothing is built here; the document decides what would be.
+Its one item, the `docs/extensions.md` survey, was queued into `## Current` on
+11.26.2026. Nothing is left here until that document says which ports are worth
+making.
 
 ## User Use Only
 
@@ -1977,5 +2089,37 @@ roadmap section each one came from.
     applied: the ask was for the fix, a run cannot take that status back, and the
     entry's signed-in run is the maintainer's to stop or keep.
   - From: Existing Bookmarklets
+- [x] Check the deployed site in the scheduled run
+  - Open the live site, open every example and practice page from its
+    navigation, and fail on a broken link, a missing page, or a console error
+    from the site's own script.
+  - After a push that changes the site, wait for the Pages build to finish
+    (`gh api repos/isocialPractice/bookmarklets/pages/builds/latest`) before
+    checking.
+  - From: Improve GitHub Pages Site
+- [x] Give the page `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` writes a
+  real dark colour scheme, or take its dark rules out
+  - Its `@media (prefers-color-scheme: dark)` block still darkens the code blocks
+    on a page that never darkens. `body` carries `background: rgb(47 79 79 / 3%)`,
+    which propagates to the canvas, so the saved page is painted near-white in both
+    schemes. A dark code block on it is readable on its own terms, so this is a look
+    rather than a break - but it is the same shape of problem the focus ring had,
+    fixed on 11.22.2026 by dropping its dark branch. Either darken the canvas, the
+    table, the headings and the body text together and keep the dark rules, giving
+    the ring its `#58a6ff` back with them, or drop them. The reading in
+    `test/gallery.test.js` that says the page is painted alike in both schemes is
+    the one to change if the page is given a real dark mode, and it says so.
+  - From: Existing Bookmarklets
+- [x] **Install Page Names**: Add an install page with a drag-to-install link for each bookmarklet
+  - A site can render `<a href="javascript:...">` for a reader to drag onto
+    the bookmarks bar, which a GitHub README cannot. Build each `href` from the
+    same join `test-bm.js` checks, percent-encoded, so what installs is what
+    was tested.
+  - One row per bookmarklet: name, one-line description, status ("ready to
+    use" or "requires N changes"), the link to drag, and links to its README
+    entry, gist and short.
+  - Pages runs no build here, so a script generates the page and the result is
+    committed. Regenerate it whenever a bookmarklet is added or repaired.
+  - From: Improve GitHub Pages Site
 
 </details>
