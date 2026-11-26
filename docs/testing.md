@@ -17,6 +17,7 @@ harness does.
 - [Configuration reference](#configuration-reference)
 - [Scheduling a run](#scheduling-a-run)
 - [What `npm test` runs](#what-npm-test-runs)
+- [Checking the deployed site](#checking-the-deployed-site)
 - [Working with an AI assistant](#working-with-an-ai-assistant)
 - [Giving an assistant a browser](#giving-an-assistant-a-browser)
 
@@ -86,6 +87,14 @@ Windows scheduled task calls, and nothing on this path waits for input. An
 entry is marked scheduled only when its page loads in a headless browser with
 no consent wall and no bot check. `npm run test:scheduled` runs the same
 command.
+
+The unattended run is two commands, not one. The second is
+[`npm run test:site`](#checking-the-deployed-site), which reads the deployed
+site; it belongs to the unattended run and to nothing else, because it is the
+one reading here that needs a network and a built site. The two are kept
+separate rather than chained so that neither can hide the other, and so that
+each keeps its own exit code - see
+[Scheduling a run](#scheduling-a-run), which runs both.
 
 ### See what a run would do
 
@@ -737,34 +746,56 @@ tab.
 
 ## Scheduling a run
 
-`node test-bm.js --scheduled` is the whole of what a scheduled job calls. It
-waits for no input and needs no window. `test-bm.js` finds `JSFormatted/`,
-`test-bm.json` and `test-results/` beside itself, so the job can start in any
-folder as long as it names the script by its full path. `node` must be on the
-`PATH` of the account the job runs as.
+A scheduled job calls two commands:
+
+```sh
+node test-bm.js --scheduled
+node --test test/site.test.js
+```
+
+The first runs the bookmarklets marked `"scheduled": true`; the second reads
+the deployed site. Neither waits for input and neither needs a window.
+
+**Run both, whatever the first one does.** Chaining them with `&&` means a
+failing bookmarklet hides a site that is down, which could then stay down for
+as long as the bookmarklet stays broken. They also answer different questions
+and carry their own exit codes, which the table below reads one at a time.
+
+`test-bm.js` finds `JSFormatted/`, `test-bm.json` and `test-results/` beside
+itself, so that command can start in any folder as long as it names the script
+by its full path. `node --test` is given a path relative to the repository, so
+the second command needs the repository as its working directory. `node` must
+be on the `PATH` of the account the job runs as.
 
 ### Windows Task Scheduler
 
+Point the task at a wrapper rather than at `node`, since there are two commands
+to run. The wrapper below is the one under
+[A notification keyed on the exit code](#a-notification-keyed-on-the-exit-code),
+which does both and reports each.
+
 ```bat
-schtasks /Create /TN "test-bm scheduled" /SC DAILY /ST 06:00 /TR "node C:\path\to\bookmarklets\test-bm.js --scheduled"
+schtasks /Create /TN "test-bm scheduled" /SC DAILY /ST 06:00 /TR "C:\path\to\test-bm-scheduled.cmd"
 ```
 
-`C:\path\to\bookmarklets` is the folder this repository is cloned into.
 `schtasks /Query /TN "test-bm scheduled"` shows the task, and
 `schtasks /Run /TN "test-bm scheduled"` runs it once to try it.
 
 ### cron
 
 ```sh
-0 6 * * * cd /path/to/bookmarklets && node test-bm.js --scheduled
+0 6 * * * /path/to/test-bm-scheduled.sh
 ```
 
 cron's `PATH` is short, so write `node`'s full path (`command -v node` prints
-it) where cron does not find it.
+it) in the script where cron does not find it.
 
 ### A notification keyed on the exit code
 
-The exit code says what happened, so a notification needs nothing else:
+Each command's exit code says what happened, so a notification needs nothing
+else.
+
+`node test-bm.js --scheduled`:
 
 | Code | Notify? | Why |
 | --- | --- | --- |
@@ -772,34 +803,51 @@ The exit code says what happened, so a notification needs nothing else:
 | `1` | Yes: a bookmarklet failed | A site changed or a bookmarklet broke. `summary.txt` and `failure.md` in the newest folder under `test-results/test-bm/` say which and why. |
 | `2` | Yes: the run itself is broken | Playwright or Chromium is missing, `test-bm.json` was refused, or the harness itself stopped. The output says what to fix. |
 
-On Windows, point the task at a small wrapper instead of `node` itself, kept
-outside the clone, such as `C:\path\to\test-bm-scheduled.cmd`.
-`C:\path\to\notify.cmd` stands for whatever reaches you: a mail client's
-command line, a chat webhook, a toast.
+`node --test test/site.test.js`:
+
+| Code | Notify? | Why |
+| --- | --- | --- |
+| `0` | No | The site answered and every page it links opened. A page waiting for a Pages build is said in the output and is not a failure. |
+| Anything else | Yes: the deployed site | A page the gallery links is missing, something of the site's own failed to load, one of its scripts logged an error, or nothing answered at all. The output names which. |
+
+Point the task at a small wrapper kept outside the clone, such as
+`C:\path\to\test-bm-scheduled.cmd`. `C:\path\to\notify.cmd` stands for whatever
+reaches you: a mail client's command line, a chat webhook, a toast.
 
 ```bat
 @echo off
 cd /d "C:\path\to\bookmarklets"
 node test-bm.js --scheduled > "%TEMP%\test-bm-scheduled.txt" 2>&1
 set "_testBmExit=%ERRORLEVEL%"
+node --test test/site.test.js > "%TEMP%\test-bm-site.txt" 2>&1
+set "_testBmSiteExit=%ERRORLEVEL%"
 if %_testBmExit% EQU 1 call "C:\path\to\notify.cmd" "test-bm: a bookmarklet failed"
 if %_testBmExit% GEQ 2 call "C:\path\to\notify.cmd" "test-bm: the run could not start"
+if %_testBmSiteExit% NEQ 0 call "C:\path\to\notify.cmd" "test-bm: the deployed site"
+if %_testBmExit% EQU 0 set "_testBmExit=%_testBmSiteExit%"
 exit /b %_testBmExit%
 ```
 
-With cron, the same as a shell script, run by the cron line in place of
-`node test-bm.js --scheduled`:
+The site check runs whatever the first command returned, and the wrapper's own
+exit code is the bookmarklet run's unless that passed, in which case it is the
+site check's. With cron, the same as a shell script, run by the cron line:
 
 ```sh
 #!/bin/sh
 cd /path/to/bookmarklets || exit 2
 node test-bm.js --scheduled > /tmp/test-bm-scheduled.txt 2>&1
 code=$?
+node --test test/site.test.js > /tmp/test-bm-site.txt 2>&1
+site=$?
 if [ "$code" -eq 1 ]; then
   mail -s "test-bm: a bookmarklet failed" admin@example.com < /tmp/test-bm-scheduled.txt
 elif [ "$code" -ne 0 ]; then
   mail -s "test-bm: the run could not start (exit $code)" admin@example.com < /tmp/test-bm-scheduled.txt
 fi
+if [ "$site" -ne 0 ]; then
+  mail -s "test-bm: the deployed site (exit $site)" admin@example.com < /tmp/test-bm-site.txt
+fi
+[ "$code" -eq 0 ] && code=$site
 exit "$code"
 ```
 
@@ -809,15 +857,19 @@ exit "$code"
 npm test
 ```
 
-Five stages, in order, each run only when the one before it passed:
+Six stages, in order, each run only when the one before it passed:
 
 | Stage | Command | What it proves |
 | --- | --- | --- |
 | `test:harness` | `node --test test/harness.test.js` | That `test-bm.js` itself gives the right verdict. |
 | `test:pages` | `node --test test/pages.test.js` | That the practice pages are fit to show a reader. |
 | `test:gallery` | `node --test test/gallery.test.js` | That the deployed gallery and the pages it frames behave. |
+| `test:install` | `node --test test/install.test.js` | That `install.html` offers every bookmarklet, and offers the code `test-bm.js` ran. |
 | `test:paste-ready` | `node --test test/paste-ready.test.js` | That an answer copied as a bookmark is a bookmark that opens. |
 | `test:bookmarklets` | `node test-bm.js --all` | That every bookmarklet still works where its entry says. |
+
+`test:site` is not among them, and `npm test` needs no network until its last
+stage. See [Checking the deployed site](#checking-the-deployed-site).
 
 ### `test:harness`
 
@@ -911,12 +963,20 @@ where a canvas is the PNG decoder: only focus changed, so every changed pixel is
 the ring and what the second shot holds under those pixels is the page behind it.
 The contrast between the two has to reach the 3:1 WCAG 1.4.11 asks of a focus
 indicator. A declared colour cannot say what surface it landed on, which is the
-whole reason this reading exists: the saved page carries a background on its body
-that propagates to the canvas, so it is painted near-white whatever a reader's
-scheme asks for, and a dark branch that recoloured the ring alone read 2.42:1.
-Its companion asserts the page is painted alike in both schemes, which is why one
-`outline-color` serves both, and is the reading to change if the saved page is
-ever given a real dark mode.
+whole reason this reading exists: each of these five carries a background on its
+body that propagates to the canvas, so it is painted near-white whatever a
+reader's scheme asks for, and a dark branch that recoloured the ring alone read
+2.42:1. Its companion asserts the five are painted alike in both schemes, which
+is why one `outline-color` serves them.
+
+That is a reading of the five pages committed in `examples/` and of nothing else.
+They were saved before the `color-scheme` meta the bookmarklet added on
+11.25.2026 and carry neither it nor a dark rule, so they cannot darken. The page
+the bookmarklet writes now does, and is read in
+[`test:paste-ready`](#testpaste-ready): rgb(249,250,250) in light and
+rgb(19,20,20) in dark, with the ring `#0969da` on the one and `#58a6ff` on the
+other. Bringing these five in step with it is what would bring that reading
+here.
 
 That ring is read a second time on the page as `index.html` frames it, which is
 how the deployed site shows it, and that reading is split by side: a frame paints
@@ -1021,6 +1081,59 @@ paths the page asks for are collected at the phone width: none of them the
 animation while the page paints, exactly one of them once the disclosure is
 opened, and the image arrived when it is.
 
+### `test:install`
+
+`install.html` is the one page in the repository a reader installs a bookmarklet
+from by dragging it, rather than by copying a raw file. GitHub strips a
+`javascript:` address out of rendered markdown, so the README cannot carry such a
+link and a page on the site can.
+
+It is generated by [`make-install-page.js`](../make-install-page.js) and
+committed, because GitHub Pages runs no build for this repository:
+
+```sh
+npm run install-page
+```
+
+Run that whenever a bookmarklet is added or repaired. `node
+make-install-page.js --check` writes nothing and exits 1 when the committed page
+is not what the generator would write now, and `test:install` asserts the same
+thing, so a forgotten run shows up in `npm test` rather than on the site.
+
+A plain run writes the page and then exits 1 as well if it found anything to
+object to - a file with no README entry linking its raw file, or one whose join
+onto a line does not parse. It names each on stdout, and the page it wrote says
+so in the row rather than handing out a link.
+
+The reading that matters most is what each drag link holds. A browser
+percent-decodes the address before it runs what is left, and what has to come out
+is the join `test-bm.js` checks - every line of the file with nothing between
+them - character for character. The whole join is percent-encoded for that
+reason: it is the one way a per cent sign survives, where a raw paste turns the
+`%16` in `i%16` into a control character. So what installs from the page is the
+code a verdict was given on, and a file whose join does not parse is given no
+link at all.
+
+The rest of the file reads the page as a reader meets it: a row for every file in
+`JSFormatted/` and no row for anything else, a status from the README's own
+navigation list, links to each bookmarklet's entry, gist and raw file, a
+deprecated bookmarklet offered as a record rather than as something to install,
+the rows stacked and labelled under 760px with nothing scrolling the page
+sideways at 1280px, 761px or 400px, and one link clicked to show that a click on
+the page runs the bookmarklet it names.
+
+One reading is there to explain an absence. No table on the page holds a column
+out of view at any width, because the file names break and the rows become
+blocks under the breakpoint - so no box on the page is a keyboard stop, since a
+box with nothing to scroll that Tab lands on is a stop with nothing to do on it.
+`overflow-x: auto` stays as the safety net alone, and the day a cell does
+overflow is the day that reading fails and the box wants the run-time `tabindex`
+the saved pages add.
+
+The 168 links the generated rows carry are not read over the network here. The
+raw-file links are what `node ._bookmarklet.js verify --online` checks, for every
+bookmarklet at once.
+
 ### `test:paste-ready`
 
 `siteSpecific_ChatGPT_PasteReadyBookmarkResponse` writes a bookmarklet to the
@@ -1057,6 +1170,26 @@ The bookmark is opened rather than its text read alone. With only the new marks
 named, the clipboard held a bookmarklet that ran, and the page it opened carried
 each code block a second time as broken markup.
 
+That one copy is then opened again in each colour scheme, which is a page load
+apiece and no second copy, and three readings follow:
+
+- the canvas is painted for the scheme asked for - rgb(249,250,250) in light and
+  rgb(19,20,20) in dark, since the page carries
+  `<meta name="color-scheme" content="light dark">` and a 3% background on its
+  body that propagates to the canvas;
+- the body text, the headings, the table cells and the code reach 4.5:1 against
+  the surface behind each of them, which for the code is the block's own;
+- the table box's focus ring carries a colour per surface, at or above the 3:1
+  WCAG 1.4.11 asks: `#0969da` is 4.97:1 on the light canvas and 3.55:1 on the
+  dark, `#58a6ff` 2.42:1 on the light and 7.31:1 on the dark.
+
+The canvas is read as a pixel, because a painted canvas is not a computed style:
+the body's background composites over the browser's own base and nothing in the
+CSSOM says what came out. The ring is read as declared, from the rules that apply
+in the scheme, since the fixture's table fits its box and so is no keyboard stop
+to read a ring off - and [`test:gallery`](#testgallery) already shows that a ring
+declared on this box is painted.
+
 ### `test:bookmarklets`
 
 `node test-bm.js --all`: every bookmarklet in `JSFormatted/`, run as its entry
@@ -1069,6 +1202,57 @@ it, or is a skip, and an everyday entry runs through the driver, or is a skip.
 A skip, such as an entry with `auth` on a machine with no launcher, an everyday
 entry with no driver, or a url variable that is not set, never fails it. It writes its
 report folder as any `--all` run does.
+
+## Checking the deployed site
+
+```sh
+npm run test:site
+```
+
+Reads <https://isocialpractice.github.io/bookmarklets/> as it is served. It is
+the second command an unattended run calls, beside `node test-bm.js
+--scheduled`, and is deliberately not in `npm test`: everything `npm test`
+reads up to its last stage is in the repository or on a fake origin, so the
+suite needs no network until then, and a reading of a live site never could.
+
+It answers the one question nothing else here can. `test:gallery` and
+`test:install` read the committed files, which is what makes them fast and
+offline, but Pages serves what it last built, from its own branch, with its own
+base path - so a page that is right in the repository and 404 on the site reads
+as passing everywhere else, and so does a relative link that resolves beside the
+file locally and above the base path on the site.
+
+What it does, in order:
+
+1. **Waits for the build.** `gh api repos/isocialPractice/bookmarklets/pages/builds/latest`
+   says what the latest build is doing, and the run waits while it is still
+   going, up to three minutes. A `gh` that is not installed or not signed in is
+   not a failure: the run says it could not ask and reads the pages as they
+   stand.
+2. **Opens the gallery and follows its navigation**: every example and practice
+   page it links, the pages those link in turn, and the install page. Fifteen
+   pages at the time of writing, bounded at forty.
+3. **Fails on a page the site does not serve**, on anything of the site's own
+   that failed to load, and on a console error logged by one of the site's own
+   scripts. An error logged from another origin is not counted - there is
+   nothing in this repository that could answer for it.
+4. **Reports the links to other sites** rather than failing on them. A site that
+   answers an automated request with a 403 is behaving normally towards a robot.
+   The generated rows on the install page are left out of that reading, for the
+   reason [`test:install`](#testinstall) gives.
+
+A page in the working tree that the built commit never held is **waiting for a
+build**, not missing from the site. The two are told apart with `git cat-file -e
+<built commit>:<path>`, and anything git cannot answer counts the page as owed,
+which is the direction to be wrong in: a page wrongly read as owed fails loudly,
+and one wrongly excused is never read again.
+
+Nothing answering at all is a failure rather than a skip, unlike a missing
+sign-in or a missing driver. Those are things a run has no way of having; a site
+that does not answer is the thing being checked.
+
+`_BOOKMARKLETS_SITE_URL` reads a different address instead, for a branch preview
+or a local server.
 
 ## Working with an AI assistant
 
