@@ -47,6 +47,10 @@ var TIGHT = { width: 761, height: 900 };
 var NARROW = { width: 400, height: 900 };
 var WIDTHS = [WIDE, TIGHT, NARROW];
 
+// The widest viewport the file names are still broken at, which is the max-width the break is
+// written under in make-install-page.js. The page is read at this width and at one pixel above it.
+var BREAK_AT = 1030;
+
 // The bookmarklet whose link is clicked, and the element it puts on the page. It is here because it
 // works on any page, says so by adding one element, and takes the same element away when it runs
 // again - so one click proves the path from the href on the page to code running in the browser.
@@ -114,8 +118,40 @@ function readPage() {
     .map(function (a) { return { text: words(a), href: a.getAttribute("href") }; })
   };
  });
+ // How many lines each file name is painted on. A range over the name's own text returns one client
+ // rect a line it occupies, which is the only thing on the page that says whether a name was broken:
+ // the cell's own box is the same height either way once the title above it has wrapped, and the
+ // text is still all there.
+ var nameLines = Array.prototype.slice.call(document.querySelectorAll("code.file"))
+  .map(function (code) {
+   var range = document.createRange();
+   range.selectNodeContents(code);
+   var runs = Array.prototype.slice.call(range.getClientRects()).filter(function (r) {
+    return r.width > 0 && r.height > 0;
+   });
+   return { file: words(code), lines: runs.length };
+  });
+ // One pill of each status, as a reader is painted it. Read from the rendered page rather than from
+ // the sheet, because what is in question is whether two statuses arrive at the same pill.
+ var pills = {};
+ Array.prototype.forEach.call(document.querySelectorAll(".state"), function (el) {
+  var kind = String(el.className || "").replace("state", "").trim();
+  if (!kind || pills[kind]) { return; }
+  var s = getComputedStyle(el);
+  pills[kind] = {
+   words: words(el),
+   borderStyle: s.borderTopStyle,
+   borderColor: s.borderTopColor,
+   borderWidth: s.borderTopWidth,
+   color: s.color,
+   radius: s.borderTopLeftRadius,
+   weight: s.fontWeight
+  };
+ });
  return {
   title: document.title,
+  nameLines: nameLines,
+  pills: pills,
   headings: Array.prototype.slice.call(document.querySelectorAll("h1, h2, h3, h4, h5, h6"))
    .map(function (h) { return { level: +h.tagName.slice(1), text: words(h) }; }),
   tables: Array.prototype.slice.call(document.querySelectorAll("table")).map(function (table) {
@@ -150,6 +186,25 @@ function readPage() {
  };
 }
 
+// The two readings the bound is judged on, at whatever width the viewport is set to. One page
+// stepped across the widths rather than a context apiece: what is being read is the layout, and the
+// page carries no script to re-run.
+function readFit() {
+ var lines = Array.prototype.slice.call(document.querySelectorAll("code.file")).map(function (code) {
+  var range = document.createRange();
+  range.selectNodeContents(code);
+  return Array.prototype.slice.call(range.getClientRects())
+   .filter(function (r) { return r.width > 0 && r.height > 0; }).length;
+ });
+ return {
+  broken: lines.filter(function (n) { return n !== 1; }).length,
+  names: lines.length,
+  outOfView: Array.prototype.slice.call(document.querySelectorAll(".rows"))
+   .reduce(function (worst, box) { return Math.max(worst, box.scrollWidth - box.clientWidth); }, 0),
+  sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth
+ };
+}
+
 // Percent escapes decoded the way a browser decodes a javascript: URL, as test-bm.js and
 // paste-ready.test.js do it.
 function percentDecode(text) {
@@ -170,11 +225,26 @@ function percentDecode(text) {
 // Tests
 // ----------------------------------------------------------------------------------------------- //
 
-var wide, tight, narrow, noise, clicked;
+var wide, tight, narrow, noise, clicked, fit, control;
 
 test.before(async function () {
  var browser = await playwright.chromium.launch();
  try {
+  fit = {};
+  var bound = await browser.newContext({ viewport: { width: BREAK_AT + 1, height: 900 } });
+  var at = await bound.newPage();
+  await serveRoot(at);
+  await at.goto(origin + "/install.html", { waitUntil: "load" });
+  for (var b = 0; b < 2; b++) {
+   await at.setViewportSize({ width: BREAK_AT + b, height: 900 });
+   fit[BREAK_AT + b] = await at.evaluate(readFit);
+  }
+  // The control: the same reading at the bound with the break taken back off. It is taken last,
+  // because it adds a rule to the page every other reading here wants unaltered.
+  await at.setViewportSize({ width: BREAK_AT, height: 900 });
+  await at.addStyleTag({ content: "code.file { overflow-wrap: normal !important; }" });
+  control = await at.evaluate(readFit);
+  await bound.close();
   for (var i = 0; i < WIDTHS.length; i++) {
    var context = await browser.newContext({ viewport: WIDTHS[i] });
    var page = await context.newPage();
@@ -407,6 +477,103 @@ test("no table has anything to scroll, which is why no box on the page is a keyb
      + trio[1].laidOut.stops + " element(s) with a tabindex, and nothing on it needs one");
    });
  });
+
+// The break, and what it costs where it is not needed. overflow-wrap: anywhere is the one value
+// that lowers the minimum width a box reports, which is what holds a 52 character file name inside
+// a narrow viewport - and it breaks the name mid-word wherever it applies. It sat in code.file
+// unconditionally, as well as in a media query, until 11.27.2026, and the reading below it passed
+// throughout, because nothing counted the lines a name is painted on: 51 of the 54 names were on
+// more than one line at 1280px and 53 of 54 at 761px, with every table fitting its box and the page
+// scrolling neither way.
+test("a file name is painted on one line at a width wide enough to hold it whole", function () {
+ var read = wide.nameLines;
+ assert.ok(read.length > 40, "at " + WIDE.width + "px only " + read.length + " file names were "
+  + "read, which is too few to be the whole list");
+ var broken = read.filter(function (name) { return name.lines !== 1; });
+ assert.deepStrictEqual(broken, [], "at " + WIDE.width + "px " + broken.length + " of "
+  + read.length + " file names are painted on more than one line: "
+  + broken.slice(0, 4).map(function (n) { return n.file + " on " + n.lines; }).join(", ")
+  + ". A name is one unbreakable word, so a break here is mid-word, and at this width the column "
+  + "is wide enough for the longest of them whole.");
+ // Where the break is on, a name is expected on more than one line; the reading there is only that
+ // each is still painted at all.
+ [["tight", tight, TIGHT], ["narrow", narrow, NARROW]].forEach(function (trio) {
+  assert.ok(trio[1].nameLines.every(function (name) { return name.lines >= 1; }), "at "
+   + trio[2].width + "px a file name is painted on no line at all");
+ });
+});
+
+// The width the break is bounded at, read back off the page. It is a figure about this list's own
+// longest name and the four columns beside it, so it moves when a bookmarklet with a longer name is
+// added - and the two readings here are what name the new figure when it does. Below the bound the
+// name breaks and the table fits; one pixel above it the name is whole and the table still fits,
+// which is what says the bound is in the right place rather than merely somewhere.
+test("the break is bounded at the width the names start fitting whole, and not short of it",
+ function () {
+  var under = fit[BREAK_AT];
+  var over = fit[BREAK_AT + 1];
+  assert.ok(under && over, "the two widths either side of the bound were not read: "
+   + JSON.stringify(Object.keys(fit)));
+  [[BREAK_AT, under], [BREAK_AT + 1, over]].forEach(function (pair) {
+   assert.strictEqual(pair[1].outOfView, 0, "at " + pair[0] + "px a table box holds "
+    + pair[1].outOfView + "px out of view, and nothing on this page is a keyboard stop");
+   assert.ok(pair[1].sideways <= 1, "at " + pair[0] + "px the document scrolls "
+    + pair[1].sideways + "px sideways");
+  });
+  assert.strictEqual(over.broken, 0, "at " + (BREAK_AT + 1) + "px, one pixel above the bound, "
+   + over.broken + " of " + over.names + " names are still broken. The bound is too low: the "
+   + "break is off here and the column is not yet wide enough for the longest name whole, so raise "
+   + "the max-width in make-install-page.js to the width where it is.");
+  assert.ok(under.broken > 0, "at " + BREAK_AT + "px, one pixel below the bound, every name is "
+   + "painted whole with nothing out of view, so the break is not needed at this width either. The "
+   + "bound is too high: lower the max-width in make-install-page.js to the width where a whole "
+   + "name does push a column out of view.");
+ });
+
+// What says the bound is not set too high, which the reading above cannot. That one counts broken
+// names at the bound, and a name there is broken because the rule is on: the count is satisfied by
+// the break having an effect, never by its having a reason. Run against this page with the bound
+// moved to 1280px it passes unchanged - 51 of the 54 names broken at 1280px, 0 at 1281px, every
+// table in view at both - and that is the state the page was actually in until 11.27.2026. So the
+// break is needed at a width only if taking it off at that width pushes a column out of view, and
+// that is read directly here, off a copy of the page with overflow-wrap put back to normal.
+test("the break is needed at the width it is turned on at, and not only applied there", function () {
+ assert.ok(control, "the control reading at " + BREAK_AT + "px was not taken");
+ assert.ok(control.outOfView > 0 || control.sideways > 1,
+  "at " + BREAK_AT + "px with overflow-wrap put back to normal, every table still fits its box and "
+  + "the page scrolls " + control.sideways + "px sideways, so nothing at this width needs the break "
+  + "at all. The bound is too high: lower the max-width in make-install-page.js to the widest width "
+  + "where a whole name does push a column out of view.");
+});
+
+// The two grey statuses mean opposite things - deprecated is withdrawn and not offered to install,
+// tested by hand is maintained and tested by a person - and until 11.27.2026 they shared one rule,
+// so nothing but the words told them apart at a CIE76 dE of 0. The break is deliberately not a
+// colour: a third colour would weaken the three-way reading ready, requires N changes and grey
+// carry, and a reader who sees no colour at all reads a border's style regardless.
+test("deprecated and tested by hand are not painted as the same pill", function () {
+ var pills = wide.pills;
+ ["deprecated", "byHand", "ready", "changes"].forEach(function (kind) {
+  assert.ok(pills[kind], "no " + kind + " pill is on the page, so the reading below says nothing. "
+   + "The statuses on the page are " + Object.keys(pills).join(", "));
+ });
+ var apart = Object.keys(pills.deprecated).filter(function (part) {
+  return pills.deprecated[part] !== pills.byHand[part] && part !== "words";
+ });
+ assert.ok(apart.length > 0, "deprecated and tested by hand are painted identically: "
+  + JSON.stringify(pills.deprecated) + ". One is withdrawn and the other is maintained, so "
+  + "something other than the words has to separate them.");
+ assert.ok(apart.indexOf("borderColor") < 0, "deprecated and tested by hand are separated by "
+  + "their border colour, " + pills.deprecated.borderColor + " against "
+  + pills.byHand.borderColor + ". Three greys read as one grey; the separation is a border style, "
+  + "which a reader who sees no colour still reads.");
+ assert.strictEqual(pills.byHand.borderStyle, "solid", "tested by hand should keep the solid "
+  + "border the ready and requires N changes pills carry, it is "
+  + pills.byHand.borderStyle);
+ assert.strictEqual(pills.deprecated.borderStyle, "dashed", "deprecated should be drawn with a "
+  + "dashed border, which is the one thing on it that is not a colour, it is "
+  + pills.deprecated.borderStyle);
+});
 
 test("a link clicked on the page runs the bookmarklet it names", function () {
  assert.ok(clicked.row, CLICKED + " has no row to click");

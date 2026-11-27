@@ -91,115 +91,50 @@ repository:
   its video block in the README
   - From: Short Videos
 
-### UI/UX Override - install page and saved page
-
-#### Resolve Issues
-
-- [ ] Install Page Names 1: every file name on the install page is broken
-  mid-word, at both widths the page lays the rows out as a table
-  - **Issue**: `code.file` carries `overflow-wrap: anywhere` in its
-    unconditional rule as well as inside `@media (max-width: 760px)`, so the
-    break the media query reserves for the narrow layout applies at every
-    width. Read off the committed page: 51 of the 54 names are painted on more
-    than one line at 1280px and 53 of 54 at 761px, and they break mid-word -
-    `dom_Clipboard_ConvertPageT` / `oMarkdown.js` at 1280px, and
-    `dom_Clipboard_Conv` / `ertPageToMarkdown.` / `js` across three lines at
-    761px, where the first column also sits at its `17ch` floor of 151px and
-    the drag link beside it wraps onto five. The media query's own comment in
-    `make-install-page.js` says `anywhere` is applied "here and not above the
-    breakpoint" because "lowering it where the table lays out columns lets the
-    browser crush the first one and break every name across two lines for no
-    reason" - which is what the duplicate declaration above it does. The
-    400px layout, where the break is wanted, reads correctly.
-  - **Goal**: take `overflow-wrap: anywhere` out of the base `code.file` rule
-    in `STYLE` and leave the copy in the media query, then `npm run
-    install-page` and `node --test test/install.test.js`. Confirm at 761px
-    that the first column still holds the longest name with the page not
-    scrolling sideways and no column out of view; if an unbroken name pushes
-    one out, the answer is a different `min-width` floor or `anywhere`
-    returned at a width above 760px, not at every width.
-  - **Also**: `test/install.test.js` reads that no table has anything to
-    scroll and that the rows stack under 760px, and passes throughout, because
-    nothing there counts the line boxes a name is painted on. Add that
-    reading with the fix: a range over each `code.file` returns one client
-    rect a line, so asserting one rect per name above the breakpoint pins
-    this where a person would otherwise have to look.
-  - From: Improve GitHub Pages Site
+### UI/UX Override - the install page's column floor, and the saved page's heading rule
 
 #### Found Issues
 
-- [ ] The saved page's table keeps its light-mode grid when the reader asks
-  for dark
-  - **Issue**: in `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` the
-    `@media (prefers-color-scheme: dark)` block overrides
-    `div.codeBlockPasteReady`, `div.codeLangPasteReady` and
-    `pre.codePasteReady`, but nothing overrides `table,th,td { border: 1px
-    solid #d9d9e3; }`. Measured on the page the bookmarklet writes, with a
-    nine column table in the answer: that grid reads 1.34:1 against the light
-    canvas and 13.17:1 against the dark one, so the one value that is a quiet
-    rule in light is a near-white grid on a near-black page, while the code
-    block's border two paragraphs below it is `#3d444d` at 1.87:1. The table
-    is the only part of the saved page that still reads as a light-mode
-    element in dark.
-  - **Goal**: add the table's dark rules beside the code block's, with a grid
-    near `#3d444d` so both boxes are drawn at the same weight, and keep it
-    under about 3:1 against rgb(19,20,20) so it reads as a rule and not a
-    highlight. The header wash already follows the scheme - `rgba(236,236,241,
-    .2)` paints `#f6f7f8` in light and `#3e3f40` in dark - so it needs
-    nothing. The figure belongs in `test/paste-ready.test.js` beside the ring
-    reading added this turn.
-  - From: UI/UX Override - install page and saved page
-- [ ] `deprecated` and `tested by hand` are painted as the same pill
-  - **Issue**: `.state.deprecated`, `.state.byHand` and `.state.unknown` share
-    one rule in `make-install-page.js`, so the two statuses that appear are
-    the same `#59636e` text on the same 1px border of the same colour, at the
-    same 10px radius and 400 weight. CIE76 dE between them is 0: nothing but
-    the words separates them, and they mean opposite things - one is withdrawn
-    and not offered to install, the other is maintained and tested by a
-    person. Contrast is not the problem; every pill clears AA on the white row
-    (`ready to use` `#1a7f37` 5.08:1, `requires N changes` `#9a6700` 4.87:1,
-    both greys 6.11:1), and ready against requires N changes is dE 62.5,
-    falling to 14.5 as a reader with protanopia sees it, which still reads.
-  - **Goal**: separate the two greys by something that is not colour, since a
-    third colour would weaken the three-way reading that works. A dashed
-    border on `.state.deprecated` against the solid one on `.state.byHand` is
-    the smallest change and needs no new colour. The deprecated row already
-    says "withdrawn, nothing to install" where its link would be, so the pill
-    only has to stop claiming to be the same thing.
-  - From: UI/UX Override - install page and saved page
-- [ ] The saved page's byline block loses its own shape on the dark canvas
-  - **Issue**: the fixed block in the top left corner is `background: #000`
-    behind a `2px solid black` border, with the 80px bottom-right radius that
-    is the shape of the badge. Measured against the page beside it, its
-    surface reads 20.08:1 in light and 1.14:1 in dark, where the canvas is
-    rgb(19,20,20) - so in dark the block's own outline is all but gone and the
-    rounded corner with it, though the white label on it still reads at 21:1.
-    `test/gallery.test.js` holds four readings of this block, all of where the
-    label sits inside it, and none of whether the block reads against what is
-    behind it.
-  - **Goal**: the border is already 2px and is the cheapest thing to colour:
-    give it a dark-scheme value that clears 3:1 against rgb(19,20,20) and
-    leave the `#000` surface, so the badge keeps its weight in light and gains
-    an edge in dark. Add the reading to `test/gallery.test.js` beside the four
-    it has, as the contrast of the block against the canvas in each scheme.
-  - From: UI/UX Override - install page and saved page
-- [ ] `<code>` and `<kbd>` on `index.html` are drawn in the body's own face
-  - **Issue**: `index.html` opens with `* { font-family: sans-serif,
-    system-ui, helvetica; }` and carries no `code` or `kbd` rule, so the
-    `<code>javascript:</code>` in the new Installing one paragraph computes to
-    the body's own sans-serif at the body's own 16px with no background, no
-    border and no weight of its own. It is legible - `#000` on white at 21:1 -
-    but legible as prose: nothing marks it as the text of an address. The
-    `<kbd>Ctrl</kbd>` and `<kbd>A</kbd>` in the paragraph below are not drawn
-    as keys for the same reason. `install.html` does not have this: its
-    `code.file` names `ui-monospace, SFMono-Regular, Consolas, monospace` and
-    is painted in it.
-  - **Goal**: one `code, kbd` rule in `index.html`'s style giving both the
-    monospace stack `install.html` uses and a faint background, with a border
-    and a little padding on `kbd` alone. The two places to check are the
-    `javascript:` in the first Installing one paragraph and the `Ctrl` + `A`
-    line in the second.
-  - From: UI/UX Override - install page and saved page
+- [ ] The install page's first column gives up 101px at the top of the break
+  band to recover one pixel
+  - **Issue**: the breakpoint itself is right to the pixel - read with
+    `overflow-wrap` forced back to `normal`, 1030px is the widest viewport at
+    which a table really does hold a column out of view, and 1031px overflows
+    nowhere - but `tbody th { min-width: 17ch }` beneath it is tuned for the
+    narrow end of the band. At 1030px the break recovers one pixel in one table
+    of five and the first column falls from 282px to 181px for it, breaking 53
+    of the 54 names mid-word with 11 on three lines, beside roughly 340px of
+    empty row. `dom_Clutter_ClickToHide.js` is split to `dom_Clutter_ClickToHid`
+    / `e.js` at a width where it fitted whole one pixel earlier. A 1024px laptop
+    is a common width and meets the worst of it. Walking the floor up at each
+    width, 44ch still fits every table at 1030px and holds the column at 392px
+    with 8 names broken and none on three lines; 42ch fits at 960px, 35ch at
+    900px, and by 761px the present 17ch is within two characters of the most
+    that fits, which is why the floor reads as correct when it is checked at the
+    narrow end alone.
+  - **Goal**: Resolve to [install-page-column-floor.prompt.md](.claude/prompts/install-page-column-floor.prompt.md)
+  - From: UI/UX Override - the install page's column floor, and the saved page's heading rule
+- [ ] The `<hr>` under the heading on the saved page is painted the same in both
+  schemes, and is now the loudest thing on the dark page
+  - **Issue**: the bookmarklet declares nothing for the `<hr>` it writes after
+    the page heading, so the browser paints it, and what the browser paints does
+    not follow the colour scheme: rgb(238,238,238) in both. That reads 2.69:1
+    against the light canvas and **15.91:1** against the dark one - 8.49:1
+    against the table grid the same turn quieted to 1.87:1, and brighter than
+    the 13.17:1 the grid itself was found at. It is the one near-white rule left
+    on a near-black page, and now the first thing the eye meets there, which is
+    the fault the grid and the badge edge were just fixed for, one element over.
+  - **Goal**: give the `<hr>` a declared colour in the bookmarklet's sheet
+    beside the rules for the table and the code block, quiet in light and
+    quiet in dark, so the page carries one rule weight per scheme. The dark
+    block already names `#3d444d` for both boxes; a heading divider may sit a
+    step above a grid rather than matching it exactly, so pick the figure and
+    say what it is against each canvas. Add the reading to
+    `test/paste-ready.test.js` beside the grid and badge readings it already
+    makes, measuring the rule as painted over the whole of its box - a default
+    `hr` is a 1px inset border round a hollow middle, so a strip through its
+    centre reads the canvas and not the rule.
+  - From: UI/UX Override - the install page's column floor, and the saved page's heading rule
 
 ### Create and Deploy GitHub Pages Override
 
@@ -220,8 +155,8 @@ the last of them on 11.23.2026. What they built is `test-bm.js` with its
 `test-bm.json` schema, `docs/testing.md`, and the first three of the five
 `node --test` files `npm test` runs ahead of the bookmarklets:
 `test/harness.test.js` (138), `test/pages.test.js` (17),
-`test/gallery.test.js` (35), `test/install.test.js` (11) and
-`test/paste-ready.test.js` (11). `test/site.test.js` (6) reads the deployed site
+`test/gallery.test.js` (37), `test/install.test.js` (14) and
+`test/paste-ready.test.js` (13). `test/site.test.js` (6) reads the deployed site
 and is the unattended run's second command rather than an `npm test` stage,
 since it is the one reading here that needs a network and a build. New harness work is queued here when there is
 some; the section stays as the record of what the harness is and why it is
@@ -2121,5 +2056,107 @@ roadmap section each one came from.
   - Pages runs no build here, so a script generates the page and the result is
     committed. Regenerate it whenever a bookmarklet is added or repaired.
   - From: Improve GitHub Pages Site
+- [x] Install Page Names 1: every file name on the install page is broken
+  mid-word, at both widths the page lays the rows out as a table
+  - **Issue**: `code.file` carries `overflow-wrap: anywhere` in its
+    unconditional rule as well as inside `@media (max-width: 760px)`, so the
+    break the media query reserves for the narrow layout applies at every
+    width. Read off the committed page: 51 of the 54 names are painted on more
+    than one line at 1280px and 53 of 54 at 761px, and they break mid-word -
+    `dom_Clipboard_ConvertPageT` / `oMarkdown.js` at 1280px, and
+    `dom_Clipboard_Conv` / `ertPageToMarkdown.` / `js` across three lines at
+    761px, where the first column also sits at its `17ch` floor of 151px and
+    the drag link beside it wraps onto five. The media query's own comment in
+    `make-install-page.js` says `anywhere` is applied "here and not above the
+    breakpoint" because "lowering it where the table lays out columns lets the
+    browser crush the first one and break every name across two lines for no
+    reason" - which is what the duplicate declaration above it does. The
+    400px layout, where the break is wanted, reads correctly.
+  - **Goal**: take `overflow-wrap: anywhere` out of the base `code.file` rule
+    in `STYLE` and leave the copy in the media query, then `npm run
+    install-page` and `node --test test/install.test.js`. Confirm at 761px
+    that the first column still holds the longest name with the page not
+    scrolling sideways and no column out of view; if an unbroken name pushes
+    one out, the answer is a different `min-width` floor or `anywhere`
+    returned at a width above 760px, not at every width.
+  - **Also**: `test/install.test.js` reads that no table has anything to
+    scroll and that the rows stack under 760px, and passes throughout, because
+    nothing there counts the line boxes a name is painted on. Add that
+    reading with the fix: a range over each `code.file` returns one client
+    rect a line, so asserting one rect per name above the breakpoint pins
+    this where a person would otherwise have to look.
+  - From: Improve GitHub Pages Site
+- [x] The saved page's table keeps its light-mode grid when the reader asks
+  for dark
+  - **Issue**: in `siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js` the
+    `@media (prefers-color-scheme: dark)` block overrides
+    `div.codeBlockPasteReady`, `div.codeLangPasteReady` and
+    `pre.codePasteReady`, but nothing overrides `table,th,td { border: 1px
+    solid #d9d9e3; }`. Measured on the page the bookmarklet writes, with a
+    nine column table in the answer: that grid reads 1.34:1 against the light
+    canvas and 13.17:1 against the dark one, so the one value that is a quiet
+    rule in light is a near-white grid on a near-black page, while the code
+    block's border two paragraphs below it is `#3d444d` at 1.87:1. The table
+    is the only part of the saved page that still reads as a light-mode
+    element in dark.
+  - **Goal**: add the table's dark rules beside the code block's, with a grid
+    near `#3d444d` so both boxes are drawn at the same weight, and keep it
+    under about 3:1 against rgb(19,20,20) so it reads as a rule and not a
+    highlight. The header wash already follows the scheme - `rgba(236,236,241,
+    .2)` paints `#f6f7f8` in light and `#3e3f40` in dark - so it needs
+    nothing. The figure belongs in `test/paste-ready.test.js` beside the ring
+    reading added this turn.
+  - From: UI/UX Override - install page and saved page
+- [x] `deprecated` and `tested by hand` are painted as the same pill
+  - **Issue**: `.state.deprecated`, `.state.byHand` and `.state.unknown` share
+    one rule in `make-install-page.js`, so the two statuses that appear are
+    the same `#59636e` text on the same 1px border of the same colour, at the
+    same 10px radius and 400 weight. CIE76 dE between them is 0: nothing but
+    the words separates them, and they mean opposite things - one is withdrawn
+    and not offered to install, the other is maintained and tested by a
+    person. Contrast is not the problem; every pill clears AA on the white row
+    (`ready to use` `#1a7f37` 5.08:1, `requires N changes` `#9a6700` 4.87:1,
+    both greys 6.11:1), and ready against requires N changes is dE 62.5,
+    falling to 14.5 as a reader with protanopia sees it, which still reads.
+  - **Goal**: separate the two greys by something that is not colour, since a
+    third colour would weaken the three-way reading that works. A dashed
+    border on `.state.deprecated` against the solid one on `.state.byHand` is
+    the smallest change and needs no new colour. The deprecated row already
+    says "withdrawn, nothing to install" where its link would be, so the pill
+    only has to stop claiming to be the same thing.
+  - From: UI/UX Override - install page and saved page
+- [x] The saved page's byline block loses its own shape on the dark canvas
+  - **Issue**: the fixed block in the top left corner is `background: #000`
+    behind a `2px solid black` border, with the 80px bottom-right radius that
+    is the shape of the badge. Measured against the page beside it, its
+    surface reads 20.08:1 in light and 1.14:1 in dark, where the canvas is
+    rgb(19,20,20) - so in dark the block's own outline is all but gone and the
+    rounded corner with it, though the white label on it still reads at 21:1.
+    `test/gallery.test.js` holds four readings of this block, all of where the
+    label sits inside it, and none of whether the block reads against what is
+    behind it.
+  - **Goal**: the border is already 2px and is the cheapest thing to colour:
+    give it a dark-scheme value that clears 3:1 against rgb(19,20,20) and
+    leave the `#000` surface, so the badge keeps its weight in light and gains
+    an edge in dark. Add the reading to `test/gallery.test.js` beside the four
+    it has, as the contrast of the block against the canvas in each scheme.
+  - From: UI/UX Override - install page and saved page
+- [x] `<code>` and `<kbd>` on `index.html` are drawn in the body's own face
+  - **Issue**: `index.html` opens with `* { font-family: sans-serif,
+    system-ui, helvetica; }` and carries no `code` or `kbd` rule, so the
+    `<code>javascript:</code>` in the new Installing one paragraph computes to
+    the body's own sans-serif at the body's own 16px with no background, no
+    border and no weight of its own. It is legible - `#000` on white at 21:1 -
+    but legible as prose: nothing marks it as the text of an address. The
+    `<kbd>Ctrl</kbd>` and `<kbd>A</kbd>` in the paragraph below are not drawn
+    as keys for the same reason. `install.html` does not have this: its
+    `code.file` names `ui-monospace, SFMono-Regular, Consolas, monospace` and
+    is painted in it.
+  - **Goal**: one `code, kbd` rule in `index.html`'s style giving both the
+    monospace stack `install.html` uses and a faint background, with a border
+    and a little padding on `kbd` alone. The two places to check are the
+    `javascript:` in the first Installing one paragraph and the `Ctrl` + `A`
+    line in the second.
+  - From: UI/UX Override - install page and saved page
 
 </details>
