@@ -117,7 +117,15 @@ javascript:(function(){
     4.97:1 on the light canvas and 3.55:1 on the dark, #58a6ff 2.42:1 on the light and 7.31:1 on
     the dark, against the 3:1 WCAG 1.4.11 asks of a focus indicator. Until the meta arrived on
     11.25.2026 the page was painted near-white whatever the reader asked for, which is why one
-    outline-color served both from 11.22.2026 until now. The corner badge is
+    outline-color served both from 11.22.2026 until now. The dark block carries two
+    more surfaces for the same reason, both found on 11.26.2026. The table's grid, left at #d9d9e3 by
+    every rule above it, read 1.34:1 on the light canvas and 13.17:1 on the dark, so it was the one
+    near-white box on a near-black page; it now takes the #3d444d the code block's own edge carries,
+    1.87:1 against the dark canvas, so the two boxes are ruled at one weight. And the corner badge's
+    2px border, black on a black surface, read 20.08:1 against the light canvas and 1.14:1 against
+    the dark, which took the block's outline and its rounded corner with it; #6e7681 is 4.02:1 there,
+    past the 3:1 WCAG 1.4.11 asks of a shape a reader has to make out, and the #000 surface is kept.
+    The corner badge is
     a share of the page, so its label is sized as one too: at a phone width a fixed 12pt label left
     the black shape it is written on and was painted over the heading beside it. The padding keeps
     the label clear of the rounded corner, and the overflow clips anything that still is not. The
@@ -252,6 +260,12 @@ javascript:(function(){
  @media (prefers-color-scheme: dark) {
   div.tableScrollPasteReady:focus-visible {
    outline-color: #58a6ff;
+  }
+  div[data-side='1'] {
+   border-color: #6e7681;
+  }
+  table,th,td {
+   border-color: #3d444d;
   }
  }
  th,td {

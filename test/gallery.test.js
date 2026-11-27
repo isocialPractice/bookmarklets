@@ -157,6 +157,13 @@ var SCHEMES = ["light", "dark"];
 // 1137px to 1146px laid one out at 840px to 847px, and 1576px to 1584px at 1191px to 1197px.
 var CORNER_WIDTHS = { from: 320, to: 1600, step: 1 };
 
+// The contrast the corner badge's own 2px border owes the canvas beside it. It is 1.4.11 again
+// rather than 1.4.3: the border is the block's outline and the 80px rounded corner that is the
+// shape of the badge, so under it the block has no edge and no corner however well the white label
+// on it reads. The four readings of this block above are all of where the label sits inside it, and
+// none of them is of whether the block reads against what is behind it.
+var BADGE_CONTRAST = 3;
+
 // The repository root, so index.html finds examples/ and the frame shares the origin of the page
 // framing it, as it does on the deployed site. A path that climbs out of the root is a 404 the page
 // sees.
@@ -613,6 +620,28 @@ function readIdentity() {
   // disclosure and loads lazily. Both together are what keep it off the first paint.
   installLazy: at(".install img", "loading"),
   installFolded: !!document.querySelector(".install details img"),
+  // The two marks in the Installing one paragraphs, against the prose around them. The * rule at
+  // the top of this page gives every element the body's own sans-serif, so a mark with no rule of
+  // its own computes to the body's face at the body's size with no surface and no border - legible
+  // as prose, and marked as nothing. The address is the text of an address and the keys are keys.
+  marks: ["code", "kbd"].reduce(function (out, tag) {
+   var el = document.querySelector(".install " + tag);
+   if (!el) { out[tag] = null; return out; }
+   var s = getComputedStyle(el);
+   out[tag] = {
+    words: (el.textContent || "").trim(),
+    family: s.fontFamily,
+    size: s.fontSize,
+    surface: s.backgroundColor,
+    borderStyle: s.borderTopStyle,
+    borderWidth: s.borderTopWidth,
+    padding: s.paddingLeft
+   };
+   return out;
+  }, { prose: (function () {
+   var p = document.querySelector(".install p");
+   return p ? { family: getComputedStyle(p).fontFamily, size: getComputedStyle(p).fontSize } : null;
+  })() }),
   tells: text
  };
 }
@@ -1294,6 +1323,117 @@ async function readFramedBylines() {
  return found;
 }
 
+// ----------------------------------------------------------------------------------------------- //
+// The corner badge against what is behind it
+// ----------------------------------------------------------------------------------------------- //
+
+// The sRGB relative luminance and contrast formulae, in node this time rather than inside a page:
+// the colour of the block's border comes out of the CSSOM and the colour behind it out of a
+// screenshot, and the two are compared here.
+function lumOf(c) {
+ var f = [c[0], c[1], c[2]].map(function (v) {
+  v = v / 255;
+  return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+ });
+ return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+}
+
+function contrastOf(a, b) {
+ var la = lumOf(a);
+ var lb = lumOf(b);
+ return Math.round(((Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)) * 100) / 100;
+}
+
+function rgbOf(text) {
+ var m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(String(text || ""));
+ return m ? [Math.round(+m[1]), Math.round(+m[2]), Math.round(+m[3])] : null;
+}
+
+// The mean of a clip, decoded in a page of its own: a canvas is the one PNG decoder to hand, as it
+// is for diffShots above, so no image library joins the manifest for this.
+function meanOfShot(shot) {
+ return new Promise(function (res, rej) {
+  var img = new Image();
+  img.onerror = rej;
+  img.onload = function () {
+   var c = document.createElement("canvas");
+   c.width = img.naturalWidth;
+   c.height = img.naturalHeight;
+   var g = c.getContext("2d", { willReadFrequently: true });
+   g.drawImage(img, 0, 0);
+   var d = g.getImageData(0, 0, c.width, c.height).data;
+   var sum = [0, 0, 0];
+   var n = d.length / 4;
+   for (var i = 0; i < d.length; i += 4) {
+    sum[0] += d[i]; sum[1] += d[i + 1]; sum[2] += d[i + 2];
+   }
+   res([Math.round(sum[0] / n), Math.round(sum[1] / n), Math.round(sum[2] / n)]);
+  };
+  img.src = "data:image/png;base64," + shot;
+ });
+}
+
+// The block's own surface and border, as declared for the scheme in force.
+function readBadgeSurface() {
+ var block = document.querySelector("div[data-side='1']");
+ if (!block) { return { error: "the page carries no byline block" }; }
+ var s = getComputedStyle(block);
+ var box = block.getBoundingClientRect();
+ return {
+  border: s.getPropertyValue("border-top-color"),
+  width: s.getPropertyValue("border-top-width"),
+  face: s.getPropertyValue("background-color"),
+  radius: s.getPropertyValue("border-bottom-right-radius"),
+  block: Math.round(box.left) + "," + Math.round(box.top) + " "
+   + Math.round(box.width) + "x" + Math.round(box.height)
+ };
+}
+
+// The badge read against the canvas painted beside it, on all five examples and in both schemes.
+// The canvas is read as a pixel because a painted canvas is not a computed style: the body's
+// background is 3% of a colour and composites over the browser's own base, and nothing in the
+// CSSOM says what came out. The body is half the page wide and centred and the block is fixed to
+// the left, so the top right corner is the one place the canvas shows on its own.
+//
+// What this says of the five committed pages is a reading of one surface, because none of them
+// darkens: each was saved before the color-scheme meta of 11.25.2026 and carries no dark rule, which
+// is the reading two tests below. What it becomes when those five are brought in step with the
+// bookmarklet is a reading of two. The live per-scheme reading, on the page the bookmarklet writes
+// today, is in test/paste-ready.test.js.
+async function readBadges() {
+ var browser = await playwright.chromium.launch();
+ var found = {};
+ try {
+  var decoder = await (await browser.newContext()).newPage();
+  await decoder.goto("about:blank");
+  for (var s = 0; s < SCHEMES.length; s++) {
+   var ctx = await browser.newContext({ viewport: { width: 1280, height: 800 },
+    colorScheme: SCHEMES[s] });
+   var page = await ctx.newPage();
+   await serveRoot(page);
+   for (var e = 0; e < EXAMPLES.length; e++) {
+    var at = EXAMPLES[e].file + " " + SCHEMES[s];
+    await page.goto(origin + "/examples/" + EXAMPLES[e].file, { waitUntil: "load" });
+    // The pages write themselves with document.write and then tidy their own markup on a timer.
+    await page.waitForTimeout(800);
+    var read = await page.evaluate(readBadgeSurface);
+    read.scheme = SCHEMES[s];
+    read.at = EXAMPLES[e].file;
+    if (!read.error) {
+     var shot = (await page.screenshot({ clip: { x: 1266, y: 4, width: 8, height: 8 } }))
+      .toString("base64");
+     read.canvas = await decoder.evaluate(meanOfShot, shot);
+    }
+    found[at] = read;
+   }
+   await ctx.close();
+  }
+ } finally {
+  await browser.close();
+ }
+ return found;
+}
+
 // The corner reading on each example at every width in CORNER_WIDTHS, over all five. All five
 // rather than one, because the rule lives in the bookmarklet and is copied inline into each of the
 // five pages, so the copies are where it can part company - and the two byline readings, taken at
@@ -1354,6 +1494,7 @@ async function readCornerSweep() {
 
 var watched = null;
 var cornerSweep = null;
+var badges = null;
 var examples = null;
 var rings = null;
 var framedRings = null;
@@ -1397,6 +1538,7 @@ test.before(async function () {
  framedRings = await readFramedRings(targets);
  framedBylines = await readFramedBylines();
  cornerSweep = await readCornerSweep();
+ badges = await readBadges();
 }, { timeout: 600000 });
 
 // ----------------------------------------------------------------------------------------------- //
@@ -1962,3 +2104,80 @@ test("the byline block's own label is painted over none of the heading beside it
    + JSON.stringify(read.onHeading));
  });
 });
+
+// The fifth reading of the block, and the first of the block itself rather than of the label on it.
+// The other four all answer where the label sits; this one answers whether the shape the label is
+// written on reads against the page beside it. The block is `background: #000` behind a `2px solid
+// black` border with an 80px bottom-right radius, so the border is its whole outline: at 20.08:1 on
+// a near-white canvas the shape is unmistakable, and at 1.14:1 on the near-black canvas the
+// bookmarklet paints today it is gone, corner and all, while the white label on it still reads at
+// 21:1. The bookmarklet was given a dark-scheme border on 11.27.2026, and what these five say is
+// read in the test two below: none of them darkens, so both schemes here are one surface until they
+// are brought in step with it.
+test("the corner badge reads against the canvas behind it, in both schemes", function () {
+ var ids = Object.keys(badges);
+ assert.strictEqual(ids.length, EXAMPLES.length * SCHEMES.length, "the badge should have been read "
+  + "on all five examples in both schemes, it was read at " + ids.length + ": "
+  + JSON.stringify(ids));
+ ids.forEach(function (id) {
+  var read = badges[id];
+  assert.ok(read && !read.error, id + ": " + (read ? read.error : "no badge reading"));
+  var border = rgbOf(read.border);
+  var face = rgbOf(read.face);
+  assert.ok(border, id + ": the block carries no border colour to read, it gives "
+   + JSON.stringify(read.border));
+  assert.ok(face, id + ": the block carries no surface colour to read, it gives "
+   + JSON.stringify(read.face));
+  assert.ok(parseFloat(read.width) >= 1, id + ": the block's border is " + read.width
+   + " wide, so there is no outline to read whatever colour it is");
+  assert.ok(parseFloat(read.radius) > 0, id + ": the block's bottom right corner is square, and "
+   + "the rounded corner is the shape of the badge");
+  assert.ok(lumOf(face) < 0.05, id + ": the block's surface is rgb(" + face + "). The white label "
+   + "on it is read against that surface, so the surface stays dark and the border is what carries "
+   + "the shape.");
+  var got = contrastOf(border, read.canvas);
+  assert.ok(got >= BADGE_CONTRAST, id + ": the block's border is rgb(" + border + ") over the rgb("
+   + read.canvas + ") painted beside it, a contrast of " + got + ":1, under the " + BADGE_CONTRAST
+   + ":1 WCAG 1.4.11 asks of a shape a reader has to make out. The border is the block's own "
+   + "outline and the 80px corner that is the shape of the badge, so under it the block has no "
+   + "edge and no corner, however well the label on it reads. The bookmarklet's own dark value is "
+   + "#6e7681, 4.02:1 on the rgb(19,20,20) it paints in dark.");
+ });
+});
+
+// The address and the keys in the two Installing one paragraphs, added to the page on 11.26.2026.
+// install.html names a monospace stack for its own file names and is painted in it; index.html
+// opens with `* { font-family: sans-serif, system-ui, helvetica; }` and carried no code or kbd rule
+// until 11.27.2026, so both marks computed to the body's own face at the body's own size with no
+// surface and no border. #000 on white at 21:1 is legible, and legible as prose: nothing said that
+// the javascript: in the first paragraph is the text of an address, or that the Ctrl and A in the
+// second are keys.
+test("the address and the keys in the Installing one paragraphs are drawn as marks, not as prose",
+ function () {
+  var marks = site.identity.marks;
+  assert.ok(marks.prose, "the Installing one section carries no paragraph to read the prose off");
+  ["code", "kbd"].forEach(function (tag) {
+   var mark = marks[tag];
+   assert.ok(mark, "the Installing one paragraphs carry no <" + tag + ">, and the two of them are "
+    + "where the address and the keys are written");
+   assert.ok(/mono/i.test(mark.family), "the <" + tag + "> holding " + JSON.stringify(mark.words)
+    + " is drawn in " + mark.family + ", which is the prose's own face (" + marks.prose.family
+    + "). install.html names ui-monospace, SFMono-Regular, Consolas, monospace for its file names "
+    + "and this page's marks follow it.");
+   assert.notStrictEqual(mark.surface, "rgba(0, 0, 0, 0)", "the <" + tag + "> holding "
+    + JSON.stringify(mark.words) + " is painted on the page's own canvas, so nothing but its face "
+    + "marks it off from the words around it");
+   assert.ok(parseFloat(mark.padding) > 0, "the <" + tag + "> holding " + JSON.stringify(mark.words)
+    + " has no padding, so the surface behind it is drawn tight against the glyphs");
+  });
+  // A key is a key because it is drawn as one. The address is not: a border around it would read as
+  // a box rather than as an address, which is why only one of the two carries one.
+  assert.strictEqual(marks.kbd.borderStyle, "solid", "the <kbd> holding "
+   + JSON.stringify(marks.kbd.words) + " is drawn with a " + marks.kbd.borderStyle + " border, so "
+   + "it is a word on a wash rather than a key");
+  assert.ok(parseFloat(marks.kbd.borderWidth) >= 1, "the <kbd> holding "
+   + JSON.stringify(marks.kbd.words) + " has a border " + marks.kbd.borderWidth + " wide");
+  assert.strictEqual(marks.code.borderStyle, "none", "the <code> holding "
+   + JSON.stringify(marks.code.words) + " is boxed in a " + marks.code.borderStyle + " border, "
+   + "which draws an address as a key");
+ });

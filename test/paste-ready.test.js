@@ -263,6 +263,20 @@ async function copyWith(browser, selector) {
 var SCHEMES = ["light", "dark"];
 var RING_CONTRAST = 3;
 
+// A box ruled with a line, read against the canvas the scheme paints. The ceiling is what keeps the
+// line a rule rather than a highlight, and the window is how far two boxes ruled at one weight may
+// drift apart before they are two weights. The table's grid was #d9d9e3 in both schemes until
+// 11.27.2026: 1.34:1 on the light canvas, 13.17:1 on the dark, which made it the one near-white box
+// on a near-black page while the code block's own edge two paragraphs below it read 1.87:1.
+var RULE_CEILING = 3;
+var RULE_WINDOW = 0.5;
+
+// The corner badge's 2px border against the canvas beside it. It is the block's own outline and the
+// 80px rounded corner that is the shape of the badge, so it answers to 1.4.11 as the ring does. It
+// was `2px solid black` on a #000 surface in both schemes until 11.27.2026: 20.08:1 against the
+// light canvas and 1.14:1 against the dark, where the shape all but disappeared.
+var BADGE_CONTRAST = 3;
+
 // How far two canvases must differ, in any channel, to count as two surfaces rather than one. The
 // two are rgb(249,250,250) and rgb(19,20,20), so the margin is wide; 2 is the figure gallery.test.js
 // calls alike, and this is its opposite.
@@ -344,12 +358,20 @@ function readScheme() {
    });
   })(rules);
  });
+ // The two boxes the page rules a line around, and the corner badge's own edge. The badge is read
+ // straight off the block, since of() skips everything inside it on purpose.
+ var badge = document.querySelector("#chatGPTPasteReadyBookmark div[data-side='1']");
+ var badgeStyle = badge ? getComputedStyle(badge) : null;
  return {
   text: of("p", "color"),
   heading: of("h1", "color"),
   cell: of("td", "color"),
   codeBlock: of("div.codeBlockPasteReady", "background-color"),
   code: of("pre.codePasteReady", "color"),
+  grid: of("td", "border-top-color"),
+  codeEdge: of("div.codeBlockPasteReady", "border-top-color"),
+  badgeEdge: badgeStyle ? badgeStyle.getPropertyValue("border-top-color") : null,
+  badgeFace: badgeStyle ? badgeStyle.getPropertyValue("background-color") : null,
   ring: ring
  };
 }
@@ -539,4 +561,59 @@ test("the table box's ring is coloured for the canvas of each scheme", function 
   + colours.light + "). The page is painted light or dark with the scheme, so one colour is read on "
   + "two surfaces: #0969da is 4.97:1 on the light canvas and 3.55:1 on the dark, #58a6ff 2.42:1 on "
   + "the light and 7.31:1 on the dark.");
+});
+
+test("the table's grid is ruled for the scheme, at the weight of the code block's edge beside it",
+ function () {
+  var grids = {};
+  SCHEMES.forEach(function (scheme) {
+   var read = painted[scheme];
+   var grid = asRgb(read.grid);
+   var edge = asRgb(read.codeEdge);
+   assert.ok(grid, scheme + ": the table's cells carry no border colour to read, they give "
+    + JSON.stringify(read.grid));
+   assert.ok(edge, scheme + ": the code block carries no border colour to read, it gives "
+    + JSON.stringify(read.codeEdge));
+   grids[scheme] = grid;
+   var ruled = contrast(grid, read.canvas);
+   var beside = contrast(edge, read.canvas);
+   assert.ok(ruled <= RULE_CEILING, scheme + ": the grid is rgb(" + grid + ") over the rgb("
+    + read.canvas + ") the scheme paints, a contrast of " + ruled + ":1, over the " + RULE_CEILING
+    + ":1 that keeps a line a rule rather than a highlight");
+   assert.ok(Math.abs(ruled - beside) <= RULE_WINDOW, scheme + ": the grid reads " + ruled
+    + ":1 against the canvas and the code block's own edge reads " + beside + ":1, "
+    + Math.round(Math.abs(ruled - beside) * 100) / 100 + " apart. The two boxes sit paragraphs "
+    + "from each other on one page, so they are ruled at one weight or at two visibly different "
+    + "ones.");
+  });
+  assert.notDeepStrictEqual(grids.light, grids.dark, "both schemes rule the table rgb("
+   + grids.light + "). Every rule above the dark block leaves the grid at #d9d9e3, which is "
+   + "1.34:1 on the light canvas and 13.17:1 on the dark - a quiet rule in one scheme and a "
+   + "near-white grid on a near-black page in the other.");
+ });
+
+test("the corner badge keeps an edge of its own on the canvas each scheme paints", function () {
+ var edges = {};
+ SCHEMES.forEach(function (scheme) {
+  var read = painted[scheme];
+  var edge = asRgb(read.badgeEdge);
+  var face = asRgb(read.badgeFace);
+  assert.ok(edge, scheme + ": the badge carries no border colour to read, it gives "
+   + JSON.stringify(read.badgeEdge));
+  assert.ok(face, scheme + ": the badge carries no surface colour to read, it gives "
+   + JSON.stringify(read.badgeFace));
+  edges[scheme] = edge;
+  assert.ok(lum(face) < 0.05, scheme + ": the badge's surface is rgb(" + face + "). The white "
+   + "label on it is read against that surface, so the surface stays the dark one it has always "
+   + "been and the border is what carries the shape.");
+  var got = contrast(edge, read.canvas);
+  assert.ok(got >= BADGE_CONTRAST, scheme + ": the badge's border is rgb(" + edge + ") over the "
+   + "rgb(" + read.canvas + ") the scheme paints, a contrast of " + got + ":1, under the "
+   + BADGE_CONTRAST + ":1 WCAG 1.4.11 asks of a shape a reader has to make out. The border is the "
+   + "block's own outline and the 80px corner that is the shape of the badge, so under it the "
+   + "block has no edge and no corner, however well the label on it reads.");
+ });
+ assert.notDeepStrictEqual(edges.light, edges.dark, "both schemes draw the badge's border rgb("
+  + edges.light + "). Black on a black surface is 20.08:1 against the light canvas and 1.14:1 "
+  + "against the dark, so one colour cannot hold the shape on both.");
 });

@@ -18,6 +18,23 @@ body {
 h1 {
  margin-left: 10px;
 }
+/* The * rule above gives every element the body's own sans-serif, so a <code> or a <kbd> on this
+   page was drawn as prose until 11.27.2026: legible at 21:1 and marked as nothing. The address in
+   the Installing one paragraph is the text of an address, and the keys below it are keys, so both
+   are given a face of their own. The stack is install.html's own, from code.file there, and the
+   wash is the one the saved pages paint inline code with - so the three pages a reader moves
+   between draw the same thing the same way. */
+code,
+kbd {
+ padding: .2em .4em;
+ border-radius: 6px;
+ background-color: rgba(129, 139, 152, .12);
+ font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+ font-size: 85%;
+}
+kbd {
+ border: 1px solid #d1d9e0;
+}
 a:focus-visible,
 button:focus-visible,
 iframe:focus-visible {
