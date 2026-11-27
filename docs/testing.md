@@ -1024,6 +1024,23 @@ copied inline into each page, so a copy left behind is what this catches - and i
 would pass the two readings above, which stand outside either band. The whole
 sweep is 1281 widths a page and reads in about a second each.
 
+A fourth reading is of the block rather than of the label on it, added on
+11.27.2026. The other three all answer where the label sits; this one answers
+whether the shape the label is written on reads against the page beside it. The
+block is `background: #000` behind a `2px solid black` border with an 80 pixel
+bottom-right radius, so the border is its whole outline, and that outline is held
+to the same 3:1 the ring is - the rounded corner is the shape of the badge, so
+losing the border loses the shape, however well the white label on it reads. The
+border's colour comes out of the CSSOM and the canvas beside it out of a pixel,
+for the reason the ring reading gives: the body is half the page wide and centred
+and the block is fixed to the left, so the top right corner is the one place the
+canvas shows on its own. On a near-white canvas black reads 20.08:1; on the
+rgb(19,20,20) the bookmarklet paints in dark it read 1.14:1, which is what put
+`#6e7681` and its 4.02:1 in the dark block of the bookmarklet on 11.27.2026. What
+these five say is one surface read twice until they are brought in step with it,
+as above; the live per-scheme reading is in
+[`test:paste-ready`](#testpaste-ready).
+
 The keyboard readings press a key until the box has come to rest rather than a
 fixed number of times. Chromium carries 40px a press and animates it, and a
 press sent while the last one is still animating is coalesced rather than
@@ -1053,6 +1070,15 @@ because every reading is of the same unchanged page:
   example scrolling inside the frame by exactly that much is the defect;
 - that the page says what the examples are: the bookmarklet that saved them by
   name, its gist, its short, and the repository;
+- that the `<code>` and the `<kbd>` in the Installing one paragraphs are drawn
+  as marks rather than as prose. The page opens with
+  `* { font-family: sans-serif, system-ui, helvetica; }`, so a mark with no rule
+  of its own computes to the body's own face at the body's own size with no
+  surface and no padding - legible at 21:1, and marked as nothing. Both now
+  carry the monospace stack `install.html` names for its file names and the wash
+  the saved pages paint inline code with, and the `<kbd>` carries a border the
+  `<code>` does not: a key is drawn as a key, and a box around an address reads
+  as a box;
 - that it lists the eight practice pages with what to try on each;
 - that the open example is marked with `aria-current`, and that nothing on the
   page still carries the `data-active` the style sheet alone used to read;
@@ -1122,13 +1148,41 @@ the rows stacked and labelled under 760px with nothing scrolling the page
 sideways at 1280px, 761px or 400px, and one link clicked to show that a click on
 the page runs the bookmarklet it names.
 
+Two of those statuses mean opposite things and were painted as one pill until
+11.27.2026: `deprecated` is withdrawn and offered as a record, `tested by hand`
+is maintained and tested by a person, and both were `#59636e` text on a
+`#59636e` border at the same width and radius, so nothing but the words
+separated them. They are told apart by the border's style rather than by a third
+colour - `deprecated` dashed against `tested by hand` solid - which a reader who
+sees no colour at all still reads, and that is what the reading holds: something
+other than the words apart, and that something not the colour.
+
 One reading is there to explain an absence. No table on the page holds a column
-out of view at any width, because the file names break and the rows become
-blocks under the breakpoint - so no box on the page is a keyboard stop, since a
-box with nothing to scroll that Tab lands on is a stop with nothing to do on it.
-`overflow-x: auto` stays as the safety net alone, and the day a cell does
-overflow is the day that reading fails and the box wants the run-time `tabindex`
-the saved pages add.
+out of view at any width, because the rows become blocks under 760px and the
+file names break from 761px to 1030px - so no box on the page is a keyboard
+stop, since a box with nothing to scroll that Tab lands on is a stop with
+nothing to do on it. `overflow-x: auto` stays as the safety net alone, and the
+day a cell does overflow is the day that reading fails and the box wants the
+run-time `tabindex` the saved pages add.
+
+Where the names break, and how far, is a reading of its own, because the one
+above passes either way. `overflow-wrap: anywhere` is the only value that lowers
+the minimum width a box reports - `break-word` leaves it where it was - so it is
+what holds a 57 character name inside a narrow viewport, and it costs a name
+broken mid-word wherever it applies. It sat in `code.file` unconditionally as
+well as in a media query until 11.27.2026, and the page then broke every name at
+every width: 51 of the 54 at 1280px and 53 of 54 at 761px, with every table
+fitting its box and the page scrolling neither way, which is why nothing read
+it. A range over a name's own text returns one client rect a line, which is the
+only thing on the page that says so, and three readings use it: every name whole
+at 1280px, the bound itself read back - at 1030px a name breaks, at 1031px every
+name is whole and no column is out of view - and the bound shown to be needed
+where it is turned on rather than merely applied there, off a copy of the page
+with `overflow-wrap` put back to `normal`, since a broken name at the bound says
+only that the rule is on and never that it has a reason. That second figure is
+about this list's longest name and the four columns beside it, so a longer name
+added later moves it, and the failure names the width to raise the media query
+to.
 
 The 168 links the generated rows carry are not read over the network here. The
 raw-file links are what `node ._bookmarklet.js verify --online` checks, for every
@@ -1171,7 +1225,7 @@ named, the clipboard held a bookmarklet that ran, and the page it opened carried
 each code block a second time as broken markup.
 
 That one copy is then opened again in each colour scheme, which is a page load
-apiece and no second copy, and three readings follow:
+apiece and no second copy, and five readings follow:
 
 - the canvas is painted for the scheme asked for - rgb(249,250,250) in light and
   rgb(19,20,20) in dark, since the page carries
@@ -1181,7 +1235,23 @@ apiece and no second copy, and three readings follow:
   the surface behind each of them, which for the code is the block's own;
 - the table box's focus ring carries a colour per surface, at or above the 3:1
   WCAG 1.4.11 asks: `#0969da` is 4.97:1 on the light canvas and 3.55:1 on the
-  dark, `#58a6ff` 2.42:1 on the light and 7.31:1 on the dark.
+  dark, `#58a6ff` 2.42:1 on the light and 7.31:1 on the dark;
+- the table's grid is ruled for the scheme, under 3:1 against the canvas so it
+  reads as a rule rather than a highlight, and within half a point of the code
+  block's own edge two paragraphs below it, so the two boxes are ruled at one
+  weight. It was `#d9d9e3` in both schemes until 11.27.2026 - 1.34:1 on the
+  light canvas and 13.17:1 on the dark - which made it the one near-white box on
+  a near-black page, and it is now `#3d444d`, the code block's own value, at
+  1.87:1;
+- the corner badge keeps an edge of its own on each canvas, at or above the same
+  3:1: the border is the block's whole outline and the 80px corner that is the
+  shape of the badge. Black on a black surface read 20.08:1 in light and 1.14:1
+  in dark, and the dark value is `#6e7681` at 4.02:1, with the `#000` surface
+  kept because the white label on it is read against that.
+
+The last two are each also asserted to differ between the schemes, which is the
+defect rather than its symptom: one colour on two surfaces is what both of them
+were.
 
 The canvas is read as a pixel, because a painted canvas is not a computed style:
 the body's background composites over the browser's own base and nothing in the

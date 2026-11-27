@@ -479,7 +479,7 @@ test("no table has anything to scroll, which is why no box on the page is a keyb
  });
 
 // The break, and what it costs where it is not needed. overflow-wrap: anywhere is the one value
-// that lowers the minimum width a box reports, which is what holds a 52 character file name inside
+// that lowers the minimum width a box reports, which is what holds a 57 character file name inside
 // a narrow viewport - and it breaks the name mid-word wherever it applies. It sat in code.file
 // unconditionally, as well as in a media query, until 11.27.2026, and the reading below it passed
 // throughout, because nothing counted the lines a name is painted on: 51 of the 54 names were on

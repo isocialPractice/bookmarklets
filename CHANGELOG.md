@@ -6,6 +6,83 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.27.2026]
+
+### Fixed
+
+- Every file name on the install page was painted on more than one line, broken mid-word, at both
+  widths the page lays its rows out as a table: 51 of the 54 at 1280px and 53 of 54 at 761px, read
+  off the committed page. `make-install-page.js` carried `overflow-wrap: anywhere` in the
+  unconditional `code.file` rule as well as inside `@media (max-width: 760px)`, so the break the
+  media query reserves for the narrow layout applied everywhere - which is the state the media
+  query's own comment says not to put the page in, since `anywhere` is the one value that lowers
+  the minimum width a box reports and lowering it where the table lays out columns lets the browser
+  crush the first one. The break now lives in one place and is bounded at the width it stops being
+  needed: `@media (max-width: 1030px)`, because from 1031px up every table fits its box with the
+  longest name whole, and from 761px to 1030px a name left whole holds a column out of view. The
+  400px layout, where the break was always wanted, is unchanged.
+- `deprecated` and `tested by hand` were painted as the same pill on the install page. The two
+  statuses mean opposite things - one is withdrawn and offered as a record, the other is maintained
+  and tested by a person - and they shared one rule with `unknown`, so both were `#59636e` text on a
+  `#59636e` border at the same width, radius and weight, a CIE76 dE of 0 apart with nothing but the
+  words between them. `deprecated` is now drawn with a dashed border against the solid one every
+  other pill carries. The break is deliberately not a colour: a third grey would weaken the
+  three-way reading the others have - `ready to use` `#1a7f37` at 5.08:1, `requires N changes`
+  `#9a6700` at 4.87:1 and the greys at 6.11:1 on the white row - and a border's style is read by
+  someone who sees no colour at all.
+- `siteSpecific_ChatGPT_PasteReadyBookmarkResponse` rules the saved page's table for the reader's
+  scheme. Nothing overrode `table,th,td { border: 1px solid #d9d9e3; }` in the dark block, so the
+  one value that is a quiet rule in light was a near-white grid on a near-black page: 1.34:1 against
+  rgb(249,250,250) and 13.17:1 against rgb(19,20,20), while the code block's own edge two paragraphs
+  below it read 1.87:1. The dark grid is now `#3d444d`, the code block's value, so both boxes are
+  ruled at one weight. The header wash already followed the scheme and needed nothing.
+- The same bookmarklet's corner badge keeps an edge of its own on the dark canvas. The fixed block
+  in the top left corner is `background: #000` behind a `2px solid black` border with the 80px
+  bottom-right radius that is the shape of the badge, so the border is its whole outline - and at
+  1.14:1 against rgb(19,20,20) the outline and the corner were both gone, though the white label on
+  it still read at 21:1. The dark border is `#6e7681`, 4.02:1 there, past the 3:1 WCAG 1.4.11 asks
+  of a shape a reader has to make out; the `#000` surface is kept, since the label is read against
+  it.
+- The `<code>` and the `<kbd>` in `index.html`'s Installing one paragraphs are drawn as marks
+  rather than as prose. The page opens with `* { font-family: sans-serif, system-ui, helvetica; }`
+  and carried no rule for either, so the `javascript:` address and the `Ctrl` and `A` keys computed
+  to the body's own face at the body's own size with no surface, no border and no padding: legible
+  at 21:1, and marked as nothing. Both now carry the monospace stack `install.html` names for its
+  file names and the wash the saved pages paint inline code with, and the `<kbd>` carries a border
+  the `<code>` does not - a key is drawn as a key, and a box around an address reads as a box.
+
+### Changed
+
+- `test/install.test.js` gains the two readings the broken names got past. Nothing there counted
+  the lines a name is painted on, so every name broke mid-word at every width while the table fitted
+  its box and the page scrolled neither way. A range over a name's own text returns one client rect
+  a line, which is the only thing on the page that says so: the first reading is every name whole at
+  1280px, and the second is the bound read back, at 1030px and at 1031px, where a name has to break
+  below it and be whole with nothing out of view above it. That second figure is about this list's
+  longest name and the four columns beside it, so a longer name added later moves it and the failure
+  names the width to raise the media query to. A third shows the bound is needed where it is turned
+  on and not merely applied there, read off a copy of the page with `overflow-wrap` put back to
+  `normal`: a broken name at the bound says the rule is on, never that it has a reason, and with the
+  bound moved to 1280px the reading above it passes unchanged. A fourth holds the two grey pills
+  apart by something other than the words, and that something not their colour.
+- `test/paste-ready.test.js` reads the table's grid and the badge's border on the page the bookmark
+  opens, in each scheme, beside the three readings of 11.26.2026. The grid is held under 3:1 against
+  the canvas, so it reads as a rule rather than a highlight, and within half a point of the code
+  block's edge, so the two boxes are ruled at one weight; the badge's border is held at or above
+  3:1, with its surface still the dark one the label is read against. Both are also asserted to
+  differ between the schemes, which is the defect rather than its symptom - one colour on two
+  surfaces is what each of them was. Run against the file as it stood, the grid reading fails at
+  13.17:1 and the badge reading at 1.14:1, both in dark, and everything else passes.
+- `test/gallery.test.js` gains the fifth reading of the corner badge, and the first of the block
+  rather than of the label on it: the border's colour out of the CSSOM against the canvas beside it
+  out of a pixel, on all five examples in both schemes. The five committed pages are painted alike
+  in whichever scheme is asked for, so it is one surface read twice there until they are brought in
+  step with the bookmarklet; the live per-scheme reading is the one in `test/paste-ready.test.js`.
+  A second reading is of `index.html`'s own marks, against the prose around them.
+- `docs/testing.md` carries all of it: what the break costs and where it is bounded, the bound read
+  back, the two greys told apart, the grid and the badge in the paste-ready readings, and the badge
+  and the marks in the gallery ones.
+
 ## [11.26.2026]
 
 ### Added
@@ -36,7 +113,7 @@ this file.
   Chromium, as the other `node --test` files here do; the width sweep and the click were read in
   Firefox by hand on 11.26.2026 and agreed. Those last two readings are the page's own first. It
   scrolled the document 78px sideways at 400px, because a file name is one unbreakable word, the
-  longest 52 characters, and a `display: table` box is sized from
+  longest 57 characters, and a `display: table` box is sized from
   the widest thing in it whatever its width says - so the blocks were laid out inside a box the name
   had already widened. `overflow-wrap: anywhere` on the name is what lowers that minimum, since
   `break-word` leaves it where it was, and a `17ch` floor on the first cell is what stops the column

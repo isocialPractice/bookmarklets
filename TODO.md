@@ -155,7 +155,7 @@ the last of them on 11.23.2026. What they built is `test-bm.js` with its
 `test-bm.json` schema, `docs/testing.md`, and the first three of the five
 `node --test` files `npm test` runs ahead of the bookmarklets:
 `test/harness.test.js` (138), `test/pages.test.js` (17),
-`test/gallery.test.js` (37), `test/install.test.js` (14) and
+`test/gallery.test.js` (37), `test/install.test.js` (15) and
 `test/paste-ready.test.js` (13). `test/site.test.js` (6) reads the deployed site
 and is the unattended run's second command rather than an `npm test` stage,
 since it is the one reading here that needs a network and a build. New harness work is queued here when there is
