@@ -51,6 +51,11 @@ var WIDTHS = [WIDE, TIGHT, NARROW];
 // written under in make-install-page.js. The page is read at this width and at one pixel above it.
 var BREAK_AT = 1030;
 
+// The narrow edge of the second floor band, the min-width it is written under in
+// make-install-page.js. Below it the first column falls back to the 17ch floor the rest of the
+// break band carries. The page is read at this width and at one pixel below it.
+var BAND_FROM = 960;
+
 // The bookmarklet whose link is clicked, and the element it puts on the page. It is here because it
 // works on any page, says so by adding one element, and takes the same element away when it runs
 // again - so one click proves the path from the href on the page to code running in the browser.
@@ -198,7 +203,14 @@ function readFit() {
  });
  return {
   broken: lines.filter(function (n) { return n !== 1; }).length,
+  // A name on three or more lines is the shape the floor at the top of the band was raised for: a
+  // broken name is the price of the break, a name in three pieces is the column having been crushed.
+  three: lines.filter(function (n) { return n > 2; }).length,
   names: lines.length,
+  // The narrowest first column on the page, which is what a floor sets.
+  column: Math.min.apply(null, Array.prototype.slice.call(
+   document.querySelectorAll("th[scope='row']"))
+   .map(function (th) { return Math.round(th.getBoundingClientRect().width); })),
   outOfView: Array.prototype.slice.call(document.querySelectorAll(".rows"))
    .reduce(function (worst, box) { return Math.max(worst, box.scrollWidth - box.clientWidth); }, 0),
   sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -235,14 +247,19 @@ test.before(async function () {
   var at = await bound.newPage();
   await serveRoot(at);
   await at.goto(origin + "/install.html", { waitUntil: "load" });
-  for (var b = 0; b < 2; b++) {
-   await at.setViewportSize({ width: BREAK_AT + b, height: 900 });
-   fit[BREAK_AT + b] = await at.evaluate(readFit);
+  var edges = [BAND_FROM - 1, BAND_FROM, BREAK_AT, BREAK_AT + 1];
+  for (var b = 0; b < edges.length; b++) {
+   await at.setViewportSize({ width: edges[b], height: 900 });
+   fit[edges[b]] = await at.evaluate(readFit);
   }
   // The control: the same reading at the bound with the break taken back off. It is taken last,
-  // because it adds a rule to the page every other reading here wants unaltered.
+  // because it adds a rule to the page every other reading here wants unaltered. The floor goes
+  // back to its base value with it: the wider floor from BAND_FROM up exists only because the break
+  // is on, so a control that left it standing would read the floor's own overflow and report the
+  // break as needed whatever the names did.
   await at.setViewportSize({ width: BREAK_AT, height: 900 });
-  await at.addStyleTag({ content: "code.file { overflow-wrap: normal !important; }" });
+  await at.addStyleTag({ content: "code.file { overflow-wrap: normal !important; }"
+   + " tbody th { min-width: 17ch !important; }" });
   control = await at.evaluate(readFit);
   await bound.close();
   for (var i = 0; i < WIDTHS.length; i++) {
@@ -528,6 +545,46 @@ test("the break is bounded at the width the names start fitting whole, and not s
    + "painted whole with nothing out of view, so the break is not needed at this width either. The "
    + "bound is too high: lower the max-width in make-install-page.js to the width where a whole "
    + "name does push a column out of view.");
+ });
+
+// The floor under the first column was one value for the whole break band, and 17ch is within two
+// characters of the most that fits at 761px, the narrow end of it - which is why it read as correct
+// whenever it was checked there alone. At the top of the band it gave up 101px of column to recover
+// one pixel of overflow in one table of five: 282px at 1031px against 181px at 1030px, with 53 of
+// the 54 names broken mid-word and 11 of them in three pieces, beside roughly 340px of empty row,
+// and a 1024px laptop square in the worst of it. A second band from BAND_FROM up holds the floor at
+// 42ch there. What is read back is the shape of that band rather than the pixel counts, because the
+// counts move the moment a longer name or a longer description is added: inside the band the break
+// no longer costs the column any width at all, no name is driven onto a third line, and the wider
+// floor pushes nothing out of view. One pixel below the band the base floor is back, which is what
+// says the band is a band and not a rule that leaked across the whole range.
+test("the first column is held at the top of the break band, and holds nothing out of view",
+ function () {
+  var below = fit[BAND_FROM - 1];
+  var band = [[BAND_FROM, fit[BAND_FROM]], [BREAK_AT, fit[BREAK_AT]]];
+  var whole = fit[BREAK_AT + 1];
+  assert.ok(below && whole && band.every(function (pair) { return pair[1]; }),
+   "the widths the band is judged at were not all read: " + JSON.stringify(Object.keys(fit)));
+  band.forEach(function (pair) {
+   assert.strictEqual(pair[1].outOfView, 0, "at " + pair[0] + "px, inside the floor band, a table "
+    + "box holds " + pair[1].outOfView + "px out of view. The floor in the band is wider than this "
+    + "list can carry here: walk it down a character at a time in make-install-page.js until every "
+    + "table fits, and move the band's min-width up if it reaches the base floor first.");
+   assert.ok(pair[1].sideways <= 1, "at " + pair[0] + "px, inside the floor band, the document "
+    + "scrolls " + pair[1].sideways + "px sideways");
+   assert.strictEqual(pair[1].three, 0, "at " + pair[0] + "px, inside the floor band, "
+    + pair[1].three + " of " + pair[1].names + " file names are painted on three or more lines. "
+    + "The column has been crushed rather than merely broken, which is the state the band was "
+    + "added to end: raise the floor in make-install-page.js to the widest that still fits.");
+   assert.ok(pair[1].column >= whole.column, "at " + pair[0] + "px, inside the floor band, the "
+    + "first column is " + pair[1].column + "px, narrower than the " + whole.column + "px it has "
+    + "at " + (BREAK_AT + 1) + "px with the break off. Turning the break on is costing the column "
+    + "width, which is what the band exists to stop: raise the floor in make-install-page.js.");
+  });
+  assert.ok(below.column < fit[BAND_FROM].column, "at " + (BAND_FROM - 1) + "px, one pixel below "
+   + "the band, the first column is " + below.column + "px, which is already the "
+   + fit[BAND_FROM].column + "px it has inside the band. The band's min-width is not holding it "
+   + "in: check the min-width in make-install-page.js against BAND_FROM here.");
  });
 
 // What says the bound is not set too high, which the reading above cannot. That one counts broken

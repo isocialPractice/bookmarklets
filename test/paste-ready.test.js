@@ -271,6 +271,17 @@ var RING_CONTRAST = 3;
 var RULE_CEILING = 3;
 var RULE_WINDOW = 0.5;
 
+// The heading's own divider, against the canvas the scheme paints. It is a rule like the grid and
+// the code block's edge, so it answers to the same ceiling, but it divides the page heading from the
+// answer rather than ruling a box, so it is allowed a step above them rather than held to their
+// weight. The window is how far the two schemes may read apart before it is two dividers rather than
+// one read on two canvases. The sheet declared nothing for it until 11.28.2026, so the browser
+// painted its 1px inset border: rgb(154,154,154) in light and rgb(238,238,238) in dark, 2.69:1 and
+// 15.91:1 against the two canvases, and 8.49:1 against the grid the turn before had just quieted to
+// 1.87:1 - the one near-white rule left on a near-black page, and the first thing the eye met there.
+var HR_CEILING = 3;
+var HR_WINDOW = 0.5;
+
 // The corner badge's 2px border against the canvas beside it. It is the block's own outline and the
 // 80px rounded corner that is the shape of the badge, so it answers to 1.4.11 as the ring does. It
 // was `2px solid black` on a #000 surface in both schemes until 11.27.2026: 20.08:1 against the
@@ -299,6 +310,33 @@ function contrast(a, b) {
 function asRgb(text) {
  var m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(String(text || ""));
  return m ? [Math.round(+m[1]), Math.round(+m[2]), Math.round(+m[3])] : null;
+}
+
+// The pixel of a clip furthest from the canvas behind it, by the same decoder. A line one pixel high
+// sits in a box of its own margins, so the mean of that box is mostly canvas and says nothing about
+// the line; the colour that is the line is the one least like what it is drawn on.
+function farthestInShot(args) {
+ return new Promise(function (res, rej) {
+  var img = new Image();
+  img.onerror = rej;
+  img.onload = function () {
+   var c = document.createElement("canvas");
+   c.width = img.naturalWidth;
+   c.height = img.naturalHeight;
+   var g = c.getContext("2d", { willReadFrequently: true });
+   g.drawImage(img, 0, 0);
+   var d = g.getImageData(0, 0, c.width, c.height).data;
+   var want = args.canvas;
+   var best = null;
+   var worst = -1;
+   for (var i = 0; i < d.length; i += 4) {
+    var off = Math.abs(d[i] - want[0]) + Math.abs(d[i + 1] - want[1]) + Math.abs(d[i + 2] - want[2]);
+    if (off > worst) { worst = off; best = [d[i], d[i + 1], d[i + 2]]; }
+   }
+   res(best);
+  };
+  img.src = "data:image/png;base64," + args.shot;
+ });
 }
 
 // The mean of a clip, decoded in a page of its own: a canvas is the one PNG decoder to hand, as it
@@ -372,6 +410,18 @@ function readScheme() {
   codeEdge: of("div.codeBlockPasteReady", "border-top-color"),
   badgeEdge: badgeStyle ? badgeStyle.getPropertyValue("border-top-color") : null,
   badgeFace: badgeStyle ? badgeStyle.getPropertyValue("background-color") : null,
+  // Where the heading's divider is, so it can be read as painted rather than as declared. A default
+  // hr is a 1px inset border round a hollow middle, and an inset border is painted neither of the
+  // colours it is given, so what the sheet says and what the reader sees are two different answers
+  // here in a way they are not for a box's own border.
+  rule: (function () {
+   var box = document.getElementById("chatGPTPasteReadyBookmark");
+   var hr = box && box.querySelector("hr");
+   if (!hr) { return null; }
+   var at = hr.getBoundingClientRect();
+   return { x: Math.round(at.left + 8), y: Math.round(at.top), width: 200,
+    height: Math.max(1, Math.round(at.height)) };
+  })(),
   ring: ring
  };
 }
@@ -399,6 +449,12 @@ async function openIn(browser, copied, scheme) {
   var decoder = await context.newPage();
   await decoder.goto("about:blank");
   read.canvas = await decoder.evaluate(meanOfShot, shot);
+  if (read.rule) {
+   read.ruleColour = await decoder.evaluate(farthestInShot, {
+    shot: (await page.screenshot({ clip: read.rule })).toString("base64"),
+    canvas: read.canvas
+   });
+  }
   read.errors = errors;
   read.scheme = scheme;
   return read;
@@ -590,6 +646,43 @@ test("the table's grid is ruled for the scheme, at the weight of the code block'
    + grids.light + "). Every rule above the dark block leaves the grid at #d9d9e3, which is "
    + "1.34:1 on the light canvas and 13.17:1 on the dark - a quiet rule in one scheme and a "
    + "near-white grid on a near-black page in the other.");
+ });
+
+test("the rule under the page heading is drawn for the scheme, a step above the grid below it",
+ function () {
+  var rules = {};
+  var read = {};
+  SCHEMES.forEach(function (scheme) {
+   var painting = painted[scheme];
+   var line = painting.ruleColour;
+   var grid = asRgb(painting.grid);
+   assert.ok(line, scheme + ": the heading's rule was not found on the page to read, it gives "
+    + JSON.stringify(painting.rule));
+   assert.ok(grid, scheme + ": the table's cells carry no border colour to read against, they give "
+    + JSON.stringify(painting.grid));
+   rules[scheme] = line.join(",");
+   read[scheme] = contrast(line, painting.canvas);
+   assert.ok(read[scheme] <= HR_CEILING, scheme + ": the rule under the heading is painted rgb("
+    + line + ") over the rgb(" + painting.canvas + ") the scheme paints, a contrast of "
+    + read[scheme] + ":1, over the " + HR_CEILING + ":1 that keeps a line a rule rather than a "
+    + "highlight. It is the widest thing on the page and sits directly under the heading, so over "
+    + "that it is the first thing the eye meets.");
+   assert.ok(read[scheme] >= contrast(grid, painting.canvas), scheme + ": the rule reads "
+    + read[scheme] + ":1 against the canvas and the table's grid reads "
+    + contrast(grid, painting.canvas) + ":1, so the divider under the page heading is quieter than "
+    + "the lines inside a box further down it. A heading divider sits a step above a grid or at its "
+    + "weight, never under it.");
+  });
+  assert.notDeepStrictEqual(rules.light, rules.dark, "both schemes paint the rule rgb("
+   + rules.light + "). Until 11.28.2026 the sheet declared nothing for it, so the browser's own "
+   + "1px inset border served both: rgb(154,154,154) on the light canvas at 2.69:1 and "
+   + "rgb(238,238,238) on the dark at 15.91:1, which is 8.49:1 against the grid quieted to 1.87:1 "
+   + "the day before, and brighter than the 13.17:1 that grid was found at.");
+  var apart = Math.round(Math.abs(read.light - read.dark) * 100) / 100;
+  assert.ok(apart <= HR_WINDOW, "the rule reads " + read.light + ":1 on the light canvas and "
+   + read.dark + ":1 on the dark, " + apart + " apart. It is one divider read on two surfaces, so "
+   + "the two schemes carry it at one weight or the page is louder in one of them than the reader "
+   + "asked for.");
  });
 
 test("the corner badge keeps an edge of its own on the canvas each scheme paints", function () {

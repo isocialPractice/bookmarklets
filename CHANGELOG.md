@@ -6,6 +6,56 @@ this file.
 > Release mode: dated - this project does not publish versions, tags, or
 > releases. Entries are keyed by the date the work was applied.
 
+## [11.28.2026]
+
+### Fixed
+
+- The install page's first column is held at the top of the break band. The floor that stops the
+  column being crushed once a name is allowed to break was one value, `17ch`, for the whole band
+  from 761px to 1030px, and it is the most that fits at the narrow end of it: at 761px it is within
+  two characters of the widest that still leaves every table inside its box, which is why it read
+  as correct whenever it was checked there. At the top of the band it gave up far more than the
+  overflow it recovered. At 1030px the break turns on to recover one pixel in one table of five,
+  and the column fell from 282px to 181px for it, 53 of the 54 names broken mid-word with 11 of
+  them on three lines - `dom_Clutter_ClickToHid` / `e.js`, a name that fitted whole one pixel
+  earlier - beside roughly 340px of empty row, and a 1024px laptop sits in the worst of it. The top
+  of the band now carries a floor of its own, `42ch` from 960px up, which is the widest that still
+  fits at that edge: `44ch` fits from 1000px up and only `41ch` at 950px, which is what puts the
+  edge where it is. At 1030px the column holds at 374px with 10 names broken and none on three
+  lines, and the description column is 183px against the 134px it has at 1031px with the names
+  whole, so the band reads better than the width above the breakpoint on both columns at once. The
+  breakpoint itself is unchanged: `max-width: 1030px` is right to the pixel.
+- `siteSpecific_ChatGPT_PasteReadyBookmarkResponse` draws the rule under the saved page's heading
+  for the reader's scheme. The sheet declared nothing for the `<hr>` it writes after the page
+  heading, so the browser painted its own 1px inset border - which is neither of the colours it is
+  given and is not the same colour in both schemes: rgb(154,154,154) at 2.69:1 against the light
+  canvas and rgb(238,238,238) at 15.91:1 against the dark. That is 8.49:1 against the table grid
+  quieted to 1.87:1 the day before, and brighter than the 13.17:1 that grid was found at, so it was
+  the one near-white rule left on a near-black page and the first thing the eye met there. The rule
+  is now a 1px block with a colour per scheme, `#afb8c1` at 1.92:1 on the light canvas and
+  `#484f58` at 2.23:1 on the dark: a step above the grid in each, and under the 3:1 that keeps a
+  line a rule rather than a highlight.
+
+### Changed
+
+- `test/install.test.js` gains the reading the crushed column got past. Nothing there measured the
+  first column, so a floor tuned for one end of the band passed every reading at the other end: the
+  tables fitted their boxes, the page scrolled neither way, and names at the bound were expected to
+  break. The new reading is the shape of the band rather than its figures, which move with the
+  longest name and the longest description - inside the band no name is on a third line, nothing is
+  held out of view, and the column is no narrower than it is at 1031px with the break off - and one
+  pixel below the band the base floor is back. The control that shows the break is needed at the
+  width it is turned on at now puts the floor back to its base value along with `overflow-wrap`: a
+  wider floor is itself a reason for a column to overflow, so a control that left it standing would
+  report the break as needed whatever the names did.
+- `test/paste-ready.test.js` gains the heading rule beside the grid, the ring and the badge it
+  already reads. It is read as painted rather than as declared, which the others are not, because an
+  inset border is painted neither of the colours it is given; the colour taken from its box is the
+  pixel furthest from the canvas, since a line one pixel high sits in a box of its own margins and
+  the mean of that box is mostly canvas. Three figures are held: under 3:1 against the canvas, never
+  quieter than the grid below it, and within half a point of itself across the two schemes.
+- `docs/testing.md` records both readings, under `test:install` and `test:paste-ready`.
+
 ## [11.27.2026]
 
 ### Fixed

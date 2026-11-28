@@ -125,6 +125,12 @@ javascript:(function(){
     2px border, black on a black surface, read 20.08:1 against the light canvas and 1.14:1 against
     the dark, which took the block's outline and its rounded corner with it; #6e7681 is 4.02:1 there,
     past the 3:1 WCAG 1.4.11 asks of a shape a reader has to make out, and the #000 surface is kept.
+    The heading's own hr is the third, found on 11.28.2026: the sheet declared nothing for it, so the
+    browser painted its 1px inset border, rgb(154,154,154) in light and rgb(238,238,238) in dark,
+    2.69:1 and 15.91:1 against the two canvases and 8.49:1 against the grid that had just been
+    quieted - the one near-white rule left on a near-black page. It is now a 1px block with a colour
+    per scheme, #afb8c1 at 1.92:1 on the light canvas and #484f58 at 2.23:1 on the dark, a step above
+    the grid in each and under the 3:1 that keeps a line a rule rather than a highlight.
     The corner badge is
     a share of the page, so its label is sized as one too: at a phone width a fixed 12pt label left
     the black shape it is written on and was painted over the heading beside it. The padding keeps
@@ -240,6 +246,11 @@ javascript:(function(){
   top: -15px !important;
   color: white;
  }   
+ hr {
+  height: 1px;
+  border: 0;
+  background: #afb8c1;
+ }
  table,th,td {   
   border: 1px solid #d9d9e3;
  }
@@ -263,6 +274,9 @@ javascript:(function(){
   }
   div[data-side='1'] {
    border-color: #6e7681;
+  }
+  hr {
+   background: #484f58;
   }
   table,th,td {
    border-color: #3d444d;
