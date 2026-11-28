@@ -91,50 +91,35 @@ repository:
   its video block in the README
   - From: Short Videos
 
-### UI/UX Override - the install page's column floor, and the saved page's heading rule
+### UI/UX Override - the install page's break band and the saved page's heading rule
 
 #### Found Issues
 
-- [ ] The install page's first column gives up 101px at the top of the break
-  band to recover one pixel
-  - **Issue**: the breakpoint itself is right to the pixel - read with
-    `overflow-wrap` forced back to `normal`, 1030px is the widest viewport at
-    which a table really does hold a column out of view, and 1031px overflows
-    nowhere - but `tbody th { min-width: 17ch }` beneath it is tuned for the
-    narrow end of the band. At 1030px the break recovers one pixel in one table
-    of five and the first column falls from 282px to 181px for it, breaking 53
-    of the 54 names mid-word with 11 on three lines, beside roughly 340px of
-    empty row. `dom_Clutter_ClickToHide.js` is split to `dom_Clutter_ClickToHid`
-    / `e.js` at a width where it fitted whole one pixel earlier. A 1024px laptop
-    is a common width and meets the worst of it. Walking the floor up at each
-    width, 44ch still fits every table at 1030px and holds the column at 392px
-    with 8 names broken and none on three lines; 42ch fits at 960px, 35ch at
-    900px, and by 761px the present 17ch is within two characters of the most
-    that fits, which is why the floor reads as correct when it is checked at the
-    narrow end alone.
-  - **Goal**: Resolve to [install-page-column-floor.prompt.md](.claude/prompts/install-page-column-floor.prompt.md)
-  - From: UI/UX Override - the install page's column floor, and the saved page's heading rule
-- [ ] The `<hr>` under the heading on the saved page is painted the same in both
-  schemes, and is now the loudest thing on the dark page
-  - **Issue**: the bookmarklet declares nothing for the `<hr>` it writes after
-    the page heading, so the browser paints it, and what the browser paints does
-    not follow the colour scheme: rgb(238,238,238) in both. That reads 2.69:1
-    against the light canvas and **15.91:1** against the dark one - 8.49:1
-    against the table grid the same turn quieted to 1.87:1, and brighter than
-    the 13.17:1 the grid itself was found at. It is the one near-white rule left
-    on a near-black page, and now the first thing the eye meets there, which is
-    the fault the grid and the badge edge were just fixed for, one element over.
-  - **Goal**: give the `<hr>` a declared colour in the bookmarklet's sheet
-    beside the rules for the table and the code block, quiet in light and
-    quiet in dark, so the page carries one rule weight per scheme. The dark
-    block already names `#3d444d` for both boxes; a heading divider may sit a
-    step above a grid rather than matching it exactly, so pick the figure and
-    say what it is against each canvas. Add the reading to
-    `test/paste-ready.test.js` beside the grid and badge readings it already
-    makes, measuring the rule as painted over the whole of its box - a default
-    `hr` is a 1px inset border round a hollow middle, so a strip through its
-    centre reads the canvas and not the rule.
-  - From: UI/UX Override - the install page's column floor, and the saved page's heading rule
+- [ ] Read the description column in the install page's floor band, the half of
+  the trade nothing asserts
+  - **Issue**: the band added on 11.28.2026 holds the first column at 42ch from
+    960px to 1030px, and every character it gains the description column gives
+    up. `test/install.test.js` reads the first column's width, the names driven
+    onto a third line and what goes out of view, and reads a description's text
+    elsewhere; nothing in the suite reads how the description column is laid
+    out at any width. A floor raised further would keep the band reading green
+    with the descriptions crushed to a list of single words.
+  - **Goal**: read `td[data-label='What it does']` in `readFit`, at the four
+    widths `fit` already visits, so it costs no page visit of its own: the
+    narrowest column, the most lines any description takes, and the fewest
+    words a line any of them averages. Bound it against `BREAK_AT + 1` rather
+    than an absolute figure. At 960px the column is 135px and its worst
+    description is 5 words on 4 lines, 1.25 words a line; at 1031px with the
+    break off that same description reads 134px and 1.25. So the band is no
+    worse than the width above the breakpoint, and has one line of its own
+    spare. An absolute "never one word a line" is a one-line margin that a
+    single long description trips at both widths at once, blaming the band for
+    a wrap it had no part in, and a plain `>=` against 1031px lands on exact
+    equality and would flake. Pick the bound with both readings in hand, a
+    ratio of the two widths with a stated tolerance being the likely shape, and
+    say in the test's comment which numbers it was measured from, as the band
+    reading above it does.
+  - From: UI/UX Override - the install page's break band and the saved page's heading rule
 
 ### Create and Deploy GitHub Pages Override
 
@@ -155,13 +140,34 @@ the last of them on 11.23.2026. What they built is `test-bm.js` with its
 `test-bm.json` schema, `docs/testing.md`, and the first three of the five
 `node --test` files `npm test` runs ahead of the bookmarklets:
 `test/harness.test.js` (138), `test/pages.test.js` (17),
-`test/gallery.test.js` (37), `test/install.test.js` (15) and
-`test/paste-ready.test.js` (13). `test/site.test.js` (6) reads the deployed site
+`test/gallery.test.js` (37), `test/install.test.js` (16) and
+`test/paste-ready.test.js` (14). `test/site.test.js` (6) reads the deployed site
 and is the unattended run's second command rather than an `npm test` stage,
 since it is the one reading here that needs a network and a build. New harness work is queued here when there is
 some; the section stays as the record of what the harness is and why it is
 Playwright. Its one open item, the badge label reading in the corner sweep, was
 queued into `## Current` on 11.26.2026.
+
+- [ ] Say what the server answered when the page an entry opened is not that page
+  - `playEntry` throws away the response `page.goto` returns, so an entry whose
+    site answered with an error page still goes on to `checkRequires`, finds
+    none of its selectors there, and reports `site changed: <selector> not found
+    on <url>`. On 11.28.2026 the full run's one failure was
+    `siteSpecific_GitHub_ListOldNewestCommits` on a `Too many requests` page,
+    429 after the suite's other GitHub entries had been through the same host.
+    The bookmarklet and the selector were both fine and the verdict named a
+    redesign. `failure.md` carries the page's own words, so a reader who opens
+    it meets the rate limit in the ARIA snapshot, but the verdict line, the
+    summary and the exit code all say the site changed, and `AGENTS.md` then
+    sends the next run looking for what replaced a selector that never went
+    anywhere.
+  - Keep the response and read its status. A status outside the 2xx range fails
+    the entry with what the server answered rather than with `site changed`, and
+    `failure.md` leads with that instead of with a snapshot of an error page. A
+    rate limit and a 404 are reasons to run again later; a redesign is work, and
+    a verdict that cannot tell them apart costs a triage cycle each time.
+  - The `requires` check stays the judge for a page that was served. This is
+    about a page that was not.
 
 ## Test Configurations
 
@@ -215,6 +221,61 @@ files its failures here. A fix is finished when its posted gist carries it too.
 
 - [ ] Add an `s, s` key sequence to `siteSpecific_ChatGPT_NavigateAnswers.js`
   that returns the page to normal
+- [ ] `bookmarklet-file-names`: Name every remaining bookmarklet file
+  `type_Focus_ShortDescription`, so the folder sorts and reads alike throughout
+  - **Issue**: Twelve files in `JSFormatted/` and one file in `templates/`
+    break the naming rule `AGENTS.md` and the README state as
+    `<type>_<Focus>_<WhatItDoes>`, where the type opens lower case, the focus
+    and the description each open upper case, and each part is one camelCase
+    run with no underscore inside it. `dom_search_page.js` opens both of its
+    later parts lower case. `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js`,
+    `siteSpecific_w3Schools_exampleLineNumbers.js` and
+    `siteSpecific_w3Schools_hideSideBar.js` open the site's part lower case,
+    the last two opening the description lower case as well.
+    `siteSpecific_YouTube_dynamicHistorySearch.js`,
+    `siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks.js` and the four
+    `window_style_*SelectedText.js` files open the description lower case, the
+    four also opening the focus lower case.
+    `siteSpecific_Stackoverflow_Add_Answer_Anchor_Links.js` and
+    `siteSpecific_Stackoverflow_Copy_Answer_Anchor_Links.js` split the
+    description across four underscored words. GitHub lists a folder by
+    character code, every upper-case letter ahead of any lower-case one, so
+    the lower-case focuses sort away from the sites they belong beside,
+    exactly as the five ChatGPT files did before `chatgpt-file-names`.
+  - **Goal**: Rename the thirteen files, with no change to any file's content:
+    `dom_search_page.js` to `dom_Search_SearchPage.js`, after the entry heading
+    `Search - Search Page`; the two Stack Overflow files to
+    `siteSpecific_Stackoverflow_AddAnswerAnchorLinks.js` and
+    `siteSpecific_Stackoverflow_CopyAnswerAnchorLinks.js`;
+    `siteSpecific_YouTube_dynamicHistorySearch.js` to
+    `siteSpecific_YouTube_DynamicHistorySearch.js`;
+    `siteSpecific_YouTube_takeNotesAndAddRemovableTimeMarks.js` to
+    `siteSpecific_YouTube_TakeNotesAndAddRemovableTimeMarks.js`;
+    `siteSpecific_gmail_ExpandLabelFolderMouseMoveEmail.js` to
+    `siteSpecific_Gmail_ExpandLabelFolderMouseMoveEmail.js`;
+    `siteSpecific_w3Schools_exampleLineNumbers.js` and
+    `siteSpecific_w3Schools_hideSideBar.js` to
+    `siteSpecific_W3Schools_ExampleLineNumbers.js` and
+    `siteSpecific_W3Schools_HideSideBar.js`; the four
+    `window_style_<x>SelectedText.js` to `window_Style_<X>SelectedText.js`; and
+    `templates/window_style_TEMPLATE.js` to `templates/window_Style_Template.js`,
+    renaming `templates/siteSpecific_GitHub_TEMPLATE.js` to
+    `templates/siteSpecific_GitHub_Template.js` with it so the two templates
+    keep one spelling. What names them follows, as it did for
+    `chatgpt-file-names`: the keys in `test-bm.json`, the raw link and the gist
+    link's text in each README entry and that entry's anchor in the contents
+    list, the raw links in `index.html`, the names `make-install-page.js`
+    writes into `install.html`, the names in `docs/` and `test/`, the planned
+    names in this roadmap, and the file name inside each posted gist.
+    `CHANGELOG.md` and the items under `## Complete` keep the names they were
+    written with, and so do the pages under `examples/`, which are not named
+    after a bookmarklet file. A case-only rename on this file system needs
+    `git mv -f` through a temporary name, and the maintainer's local gist list
+    holds the old names afterwards until the maintainer corrects it, the way
+    it did for the five ChatGPT files.
+  - **Done when**: `git ls-files JSFormatted templates` lists no name failing
+    the pattern, `npm test` passes, the README check reports no error, and
+    `node ._bookmarklet.js gists --check <name>` passes for every renamed file.
 
 ### From the Open Issues
 
@@ -394,6 +455,44 @@ the bookmarklet has a demo.
     deprecated (11.23.2026) and gets no short.
   - The three Gmail bookmarklets are tested by hand (11.23.2026): no run
     opens their page, so each short is the maintainer's own recording.
+- [ ] `update-short-chatgpt-paste-ready`: Remake and repost the
+  `ChatGPT - Paste Ready Bookmark Response` short, so it shows the inserted
+  Bookmarklet button rather than the page's own copy button
+  - **Issue**: The short the README entry links, and the GIF posted from it,
+    show the bookmarklet being driven from ChatGPT's own copy button on the
+    answer toolbar. `JSFormatted/siteSpecific_ChatGPT_PasteReadyBookmarkResponse.js`
+    no longer works that way: it inserts its own button into
+    `.turn-action-buttons`, labelled by `buttonTextChatGPTPasteReadyBookmark`
+    and carrying `data-paste-ready-bookmark` and the title
+    `Copy as bookmarklet`, and it skips the page's copy buttons through
+    `skipCopySelector`. The entry in `test-bm.json` drives the bookmarklet by
+    clicking `[data-paste-ready-bookmark]`, so the posted video now shows a
+    step the bookmarklet does not take, and a viewer following it would click
+    the one control the bookmarklet deliberately passes over.
+  - **Goal**: Record the bookmarklet as it behaves now, with the inserted
+    Bookmarklet button as the control that is clicked, render the MP4 and make
+    the GIF from it, and post both: the short to the `Bookmarklet Shorts`
+    playlist and the GIF to Giphy with the new short as its source and an add
+    to the `Bookmarklets` collection, the way the remade Google Maps and
+    YouTube shorts in this section were. Then put the new short's link in the
+    README entry's video block in place of the one it carries, leaving the
+    commented demo line as it is. The recording and the render follow
+    `## Video Masking` and `## Create and Post Short` in the repository's
+    constants: no login screen in any frame, no account name, avatar or real
+    conversation, no still of two seconds, and the GIF newer than the MP4 it
+    is made from. The bookmarklet's own `test-bm.json` entry runs on the
+    `self-test-answer` fixture rather than a signed-in page, so a recording
+    can be dressed before it is shot rather than masked afterwards. The short
+    this replaces stays up until the maintainer deletes it, which also takes
+    its GIF out of the collection.
+  - **Done when**: The README entry's short line links the new upload, the new
+    MP4 and GIF are the newest renders for this bookmarklet with the GIF newer
+    than the MP4, the GIF is in the `Bookmarklets` collection, and every frame
+    of the recording, the MP4 and the GIF has been checked against the masking
+    table before either upload.
+  - **Evidence**: `.user-feedback/img/update-short-chatgpt-paste-ready.png` (local only; the answer
+    toolbar with the page's copy button struck through and the inserted
+    Bookmarklet button marked as the one to use)
 
 ## Demo Videos - paused
 
@@ -2158,5 +2257,45 @@ roadmap section each one came from.
     `javascript:` in the first Installing one paragraph and the `Ctrl` + `A`
     line in the second.
   - From: UI/UX Override - install page and saved page
+- [x] The install page's first column gives up 101px at the top of the break
+  band to recover one pixel
+  - **Issue**: the breakpoint itself is right to the pixel - read with
+    `overflow-wrap` forced back to `normal`, 1030px is the widest viewport at
+    which a table really does hold a column out of view, and 1031px overflows
+    nowhere - but `tbody th { min-width: 17ch }` beneath it is tuned for the
+    narrow end of the band. At 1030px the break recovers one pixel in one table
+    of five and the first column falls from 282px to 181px for it, breaking 53
+    of the 54 names mid-word with 11 on three lines, beside roughly 340px of
+    empty row. `dom_Clutter_ClickToHide.js` is split to `dom_Clutter_ClickToHid`
+    / `e.js` at a width where it fitted whole one pixel earlier. A 1024px laptop
+    is a common width and meets the worst of it. Walking the floor up at each
+    width, 44ch still fits every table at 1030px and holds the column at 392px
+    with 8 names broken and none on three lines; 42ch fits at 960px, 35ch at
+    900px, and by 761px the present 17ch is within two characters of the most
+    that fits, which is why the floor reads as correct when it is checked at the
+    narrow end alone.
+  - **Goal**: Resolve to [install-page-column-floor.prompt.md](.claude/prompts/install-page-column-floor.prompt.md)
+  - From: UI/UX Override - the install page's column floor, and the saved page's heading rule
+- [x] The `<hr>` under the heading on the saved page is painted the same in both
+  schemes, and is now the loudest thing on the dark page
+  - **Issue**: the bookmarklet declares nothing for the `<hr>` it writes after
+    the page heading, so the browser paints it, and what the browser paints does
+    not follow the colour scheme: rgb(238,238,238) in both. That reads 2.69:1
+    against the light canvas and **15.91:1** against the dark one - 8.49:1
+    against the table grid the same turn quieted to 1.87:1, and brighter than
+    the 13.17:1 the grid itself was found at. It is the one near-white rule left
+    on a near-black page, and now the first thing the eye meets there, which is
+    the fault the grid and the badge edge were just fixed for, one element over.
+  - **Goal**: give the `<hr>` a declared colour in the bookmarklet's sheet
+    beside the rules for the table and the code block, quiet in light and
+    quiet in dark, so the page carries one rule weight per scheme. The dark
+    block already names `#3d444d` for both boxes; a heading divider may sit a
+    step above a grid rather than matching it exactly, so pick the figure and
+    say what it is against each canvas. Add the reading to
+    `test/paste-ready.test.js` beside the grid and badge readings it already
+    makes, measuring the rule as painted over the whole of its box - a default
+    `hr` is a 1px inset border round a hollow middle, so a strip through its
+    centre reads the canvas and not the rule.
+  - From: UI/UX Override - the install page's column floor, and the saved page's heading rule
 
 </details>
