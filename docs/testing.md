@@ -1184,6 +1184,25 @@ about this list's longest name and the four columns beside it, so a longer name
 added later moves it, and the failure names the width to raise the media query
 to.
 
+The break has a cost, and a fourth reading is what bounds it. Letting a name
+break lets the browser crush the column it is in, so a floor under the first
+column is what stops that, and one floor for the whole band is tuned for the
+narrow end of it: at 761px `17ch` is within two characters of the most that
+fits. At the top of the band it gave up 101px of column to recover one pixel of
+overflow in one table of five - 282px at 1031px against 181px at 1030px, with 53
+of the 54 names broken and 11 of them in three pieces - and a 1024px laptop sits
+in the worst of it. A second band from 960px up holds the floor at `42ch` there,
+`42ch` being the widest that still leaves every table inside its box at that
+edge. What is read back is the shape of that band and not its figures, since the
+figures move with the longest name and the longest description: inside the band
+no name is painted on a third line, nothing is held out of view, and the first
+column is no narrower than it is at 1031px with the break off, which is the
+defect stated as a rule. One pixel below the band the base floor is back, which
+is what says the band is a band. The control that shows the break is needed puts
+the floor back to its base value along with `overflow-wrap`, because a wider
+floor is itself a reason for a column to overflow and would answer the control's
+question for it.
+
 The 168 links the generated rows carry are not read over the network here. The
 raw-file links are what `node ._bookmarklet.js verify --online` checks, for every
 bookmarklet at once.
@@ -1225,7 +1244,7 @@ named, the clipboard held a bookmarklet that ran, and the page it opened carried
 each code block a second time as broken markup.
 
 That one copy is then opened again in each colour scheme, which is a page load
-apiece and no second copy, and five readings follow:
+apiece and no second copy, and six readings follow:
 
 - the canvas is painted for the scheme asked for - rgb(249,250,250) in light and
   rgb(19,20,20) in dark, since the page carries
@@ -1247,11 +1266,26 @@ apiece and no second copy, and five readings follow:
   3:1: the border is the block's whole outline and the 80px corner that is the
   shape of the badge. Black on a black surface read 20.08:1 in light and 1.14:1
   in dark, and the dark value is `#6e7681` at 4.02:1, with the `#000` surface
-  kept because the white label on it is read against that.
+  kept because the white label on it is read against that;
+- the rule under the page heading is drawn for the scheme, under the same 3:1,
+  never quieter than the grid below it, and within half a point of itself across
+  the two schemes. The sheet declared nothing for it until 11.28.2026, so the
+  browser painted its own 1px inset border, which is not the colour it is given
+  and is not the same colour in both schemes: rgb(154,154,154) at 2.69:1 on the
+  light canvas and rgb(238,238,238) at 15.91:1 on the dark, 8.49:1 against the
+  grid quieted the day before. It is now a 1px block, `#afb8c1` at 1.92:1 in
+  light and `#484f58` at 2.23:1 in dark.
 
-The last two are each also asserted to differ between the schemes, which is the
-defect rather than its symptom: one colour on two surfaces is what both of them
+The last three are each also asserted to differ between the schemes, which is the
+defect rather than its symptom: one colour on two surfaces is what all of them
 were.
+
+The heading's rule is read as painted rather than as declared, which the other
+surfaces are not: a default `hr` is a 1px inset border round a hollow middle, and
+an inset border is painted neither of the colours it is given, so what the sheet
+says and what the reader sees are two answers. The colour taken from its box is
+the pixel furthest from the canvas, since a line one pixel high sits in a box of
+its own margins and the mean of that box is mostly canvas.
 
 The canvas is read as a pixel, because a painted canvas is not a computed style:
 the body's background composites over the browser's own base and nothing in the
